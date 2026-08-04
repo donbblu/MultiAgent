@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Loom · Multi-Agent Coding Studio</title>
+  <meta name="description" content="可视化观察多个 Agent 如何规划、实现、验证与返工。">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Agent Loom 首页"><span class="brand-mark">AL</span><span>Agent Loom</span></a>
+    <div class="system-pill"><i></i> 本地安全模式</div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">MULTI-AGENT CODING STUDIO</p>
+      <h1>看见每一次<span>协作</span>，<br>再得到答案。</h1>
+      <p class="intro">输入一个开发需求。角色会依次接手任务，所有交接、变更与验证证据都会在这里清晰呈现。</p>
+    </section>
+
+    <section class="workspace">
+      <aside class="request-panel panel">
+        <div class="panel-heading"><span>01</span><div><h2>描述需求</h2><p>当前生成 Python 标准库项目</p></div></div>
+        <form id="task-form">
+          <label for="requirement">你想构建什么？</label>
+          <textarea id="requirement" maxlength="4000" required placeholder="例如：写一个二分查找函数，处理空列表和重复值，并提供完整单元测试。"></textarea>
+          <div class="field-row">
+            <div><label for="name">项目名称</label><input id="name" pattern="[A-Za-z0-9_-]+" placeholder="自动生成"></div>
+            <div><label for="attempts">最多尝试</label><select id="attempts"><option>1</option><option selected>2</option><option>3</option></select></div>
+          </div>
+          <button id="submit" type="submit"><span>启动协作</span><b>→</b></button>
+          <p class="form-note">只写入 agent-output，验证命令受白名单限制。</p>
+        </form>
+      </aside>
+
+      <section class="process-panel panel">
+        <div class="panel-heading"><span>02</span><div><h2>协作现场</h2><p id="process-caption">等待新任务</p></div><div id="live-badge" class="live-badge">IDLE</div></div>
+        <div id="roles" class="roles" aria-label="Agent 角色状态"></div>
+        <div class="flow-line"><span>任务流</span><i></i><em id="event-count">0 条事件</em></div>
+        <div id="timeline" class="timeline" aria-live="polite">
+          <div class="empty-state"><div class="orbit"><i></i><i></i><i></i></div><h3>协作过程将在这里展开</h3><p>这里展示的是可审计的工作事件，而不是模型的私有推理。</p></div>
+        </div>
+      </section>
+    </section>
+
+    <section id="result" class="result-panel panel" hidden>
+      <div class="result-icon">✓</div>
+      <div><p class="eyebrow">FINAL OUTPUT</p><h2 id="result-title">项目已完成</h2><p id="result-summary"></p><div id="file-list" class="file-list"></div></div>
+      <div class="result-meta" id="result-meta"></div>
+    </section>
+  </main>
+  <footer><span>Agent Loom / Local Runtime</span><span>角色与模型供应商完全解耦</span></footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>

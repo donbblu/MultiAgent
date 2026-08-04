@@ -5,7 +5,7 @@ from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 def _jsonable(value: Any) -> Any:
@@ -15,7 +15,7 @@ def _jsonable(value: Any) -> Any:
         return value.value
     if isinstance(value, dict):
         return {str(key): _jsonable(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, (list, tuple, set, frozenset)):
         return [_jsonable(item) for item in value]
     return value
 
@@ -23,8 +23,13 @@ def _jsonable(value: Any) -> Any:
 class RunRecorder:
     """以 JSONL 追加记录事件，同时保存最新任务快照。"""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(
+        self,
+        root: Path,
+        listener: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
         self.root = root
+        self.listener = listener
 
     def record(self, task_id: str, event: str, payload: Any) -> None:
         task_dir = self.root / task_id
@@ -36,6 +41,8 @@ class RunRecorder:
         }
         with (task_dir / "events.jsonl").open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        if self.listener:
+            self.listener(entry)
 
     def snapshot(self, task: Any) -> None:
         task_dir = self.root / task.task_id

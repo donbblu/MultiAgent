@@ -3,3 +3,10 @@ __pycache__/
 *.py[cod]
 .runs/
 generated_project/
+deepseek_generated_project/
+model_generated_project/
+bubble_sort_output/
+agent-output/
+.env
+.env.*
+!.env.example

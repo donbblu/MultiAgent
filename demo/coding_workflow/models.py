@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from .roles import RoleSpec
+
 
 class TaskState(str, Enum):
     RECEIVED = "received"
@@ -67,6 +69,21 @@ class VerificationResult:
 
 
 @dataclass(frozen=True)
+class ReviewFinding:
+    severity: str
+    message: str
+    path: str = ""
+
+
+@dataclass
+class ReviewResult:
+    passed: bool
+    summary: str
+    findings: list[ReviewFinding] = field(default_factory=list)
+    feedback: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class CriterionResult:
     criterion: str
     passed: bool
@@ -91,11 +108,20 @@ class TaskContext:
     feedback: list[str] = field(default_factory=list)
     implementation: AgentResult | None = None
     verification: VerificationResult | None = None
+    review: ReviewResult | None = None
     history: list[str] = field(default_factory=list)
+    active_role: RoleSpec | None = None
+    role_history: list[str] = field(default_factory=list)
+    version: int = 0
+
+    def assign_role(self, role: RoleSpec) -> None:
+        self.active_role = role
+        self.role_history.append(role.name)
 
     def transition(self, state: TaskState, note: str) -> None:
         self.state = state
         self.history.append(f"{state.value}: {note}")
+        self.version += 1
 
     def model_input(self) -> dict[str, Any]:
         """只暴露模型完成任务所需的信息，不包含运行时对象。"""
@@ -111,4 +137,5 @@ class TaskContext:
             "assumptions": self.assumptions,
             "attempt": self.attempt,
             "feedback": self.feedback,
+            "role": self.active_role.model_input() if self.active_role else None,
         }

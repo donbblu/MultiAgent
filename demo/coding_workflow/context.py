@@ -14,6 +14,8 @@ class ProjectContextBuilder:
         "README.md", "pyproject.toml", "requirements.txt", "package.json",
         "tsconfig.json", "Cargo.toml", "go.mod", "AGENTS.md",
     }
+    SENSITIVE_NAMES = {".env", "credentials", "credentials.json", "secrets.json"}
+    SENSITIVE_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
 
     def __init__(
         self, workspace: ProjectWorkspace, max_files: int = 20, max_total_chars: int = 80_000
@@ -32,6 +34,8 @@ class ProjectContextBuilder:
         ranked: list[tuple[int, str]] = []
         for path in self.workspace.list_files():
             name = Path(path).name
+            if name in self.SENSITIVE_NAMES or Path(path).suffix.lower() in self.SENSITIVE_SUFFIXES:
+                continue
             lower = path.lower()
             score = 100 if name in self.PRIORITY_FILES else 0
             score += sum(10 for term in terms if term in lower)

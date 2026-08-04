@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import subprocess
+import os
+import tempfile
 from pathlib import Path, PurePosixPath
 
 from .models import CommandResult, FileChange
@@ -28,13 +30,32 @@ class ProjectWorkspace:
         return resolved
 
     def apply_changes(self, changes: list[FileChange]) -> list[str]:
-        changed: list[str] = []
-        for change in changes:
-            target = self._resolve(change.path)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(change.content, encoding="utf-8")
-            changed.append(change.path)
-        return changed
+        targets = [(change, self._resolve(change.path)) for change in changes]
+        originals: dict[Path, bytes | None] = {
+            target: target.read_bytes() if target.exists() else None
+            for _, target in targets
+        }
+        applied: list[Path] = []
+        try:
+            with tempfile.TemporaryDirectory(prefix=".runtime-", dir=self.root) as temp:
+                staged: list[tuple[Path, Path]] = []
+                for index, (change, target) in enumerate(targets):
+                    staged_path = Path(temp) / str(index)
+                    staged_path.write_text(change.content, encoding="utf-8")
+                    staged.append((staged_path, target))
+                for staged_path, target in staged:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    os.replace(staged_path, target)
+                    applied.append(target)
+        except OSError as exc:
+            for target in reversed(applied):
+                original = originals[target]
+                if original is None:
+                    target.unlink(missing_ok=True)
+                else:
+                    target.write_bytes(original)
+            raise WorkspaceError(f"文件变更失败并已回滚: {exc}") from exc
+        return [change.path for change, _ in targets]
 
     def read_text(self, relative_path: str, max_chars: int | None = None) -> str:
         content = self._resolve(relative_path).read_text(encoding="utf-8", errors="replace")
