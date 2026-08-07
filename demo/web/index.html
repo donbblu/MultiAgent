@@ -37,10 +37,21 @@
 
       <section class="process-panel panel">
         <div class="panel-heading"><span>02</span><div><h2>协作现场</h2><p id="process-caption">等待新任务</p></div><div id="live-badge" class="live-badge">IDLE</div></div>
-        <div id="roles" class="roles" aria-label="Agent 角色状态"></div>
-        <div class="flow-line"><span>任务流</span><i></i><em id="event-count">0 条事件</em></div>
-        <div id="timeline" class="timeline" aria-live="polite">
-          <div class="empty-state"><div class="orbit"><i></i><i></i><i></i></div><h3>协作过程将在这里展开</h3><p>这里展示的是可审计的工作事件，而不是模型的私有推理。</p></div>
+        <div class="flow-line"><span>工作流 DAG</span><i></i><em id="dag-caption">等待运行</em></div>
+        <div id="dag" class="dag" aria-label="任务工作流"></div>
+        <div class="process-grid">
+          <section class="timeline-pane">
+            <div class="flow-line"><span>实时事件</span><i></i><em id="event-count">0 条事件</em></div>
+            <div id="timeline" class="timeline" aria-live="polite">
+              <div class="empty-state"><div class="orbit"><i></i><i></i><i></i></div><h3>协作过程将在这里展开</h3><p>这里展示的是可审计事件，而不是模型的私有推理。</p></div>
+            </div>
+          </section>
+          <aside class="detail-pane">
+            <div class="flow-line"><span>节点详情</span><i></i><em id="detail-status">未选择</em></div>
+            <div id="node-detail" class="node-detail">
+              <div class="detail-empty"><strong>选择一个 Agent 节点</strong><p>查看职责、权限、执行摘要、产物和关联事件。</p></div>
+            </div>
+          </aside>
         </div>
       </section>
     </section>

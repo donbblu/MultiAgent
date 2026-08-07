@@ -1,5 +1,5 @@
 from .agents import CodingAgent, CommandVerificationAgent, ReviewAgent, VerificationAgent, WorkspaceCodingAgent, WorkspaceReviewAgent
-from .coordinator import Coordinator
+from .coordinator import CodingHarness, Coordinator
 from .models import AgentResult, FileChange, ImplementationPlan, ReviewFinding, ReviewResult, TaskContext, TaskState, VerificationResult
 from .workspace import ProjectWorkspace
 from .context import ProjectContextBuilder
@@ -11,12 +11,15 @@ from .model import ModelClient, ModelClientFactory, ModelConfig, ModelError
 from .roles import Capability, DEFAULT_ROLES, RoleRegistry, RoleSpec
 from .memory import MemoryManager, MemoryPolicy, RoleMemoryView
 from .results import ResultEnvelope, StaleResultError
+from .communication import AgentMessage, MessageType, MessageValidationError
+from .harness import CancellationToken, NodeSpec, WorkerRegistry, WorkflowSpec, coding_workflow_spec
 
 __all__ = [
     "AgentResult",
     "CodingAgent",
     "CommandVerificationAgent",
     "Coordinator",
+    "CodingHarness",
     "FileChange",
     "ImplementationPlan",
     "ProjectWorkspace",
@@ -48,4 +51,12 @@ __all__ = [
     "StructuredReviewBackend",
     "ResultEnvelope",
     "StaleResultError",
+    "AgentMessage",
+    "MessageType",
+    "MessageValidationError",
+    "CancellationToken",
+    "NodeSpec",
+    "WorkerRegistry",
+    "WorkflowSpec",
+    "coding_workflow_spec",
 ]

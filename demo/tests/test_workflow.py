@@ -1,6 +1,7 @@
 import tempfile
 import threading
 import unittest
+import json
 from pathlib import Path
 
 from coding_workflow.agents import (
@@ -38,6 +39,8 @@ from coding_workflow.roles import (
 )
 from coding_workflow.memory import MemoryManager, MemoryPolicy
 from coding_workflow.results import ResultEnvelope, StaleResultError
+from coding_workflow.communication import AgentMessage, MessageType, MessageValidationError
+from coding_workflow.harness import CancellationToken, NodeSpec, WorkerRegistry, WorkflowSpec
 from coding_agent_cli import parse_command, safe_output_path
 
 
@@ -97,6 +100,37 @@ class WorkflowTests(unittest.TestCase):
         )
         self.assertTrue(IMPLEMENTER.allows(Capability.WRITE_PROJECT))
         self.assertFalse(PLANNER.allows(Capability.WRITE_PROJECT))
+
+    def test_workflow_spec_rejects_cycles(self) -> None:
+        with self.assertRaises(ValueError):
+            WorkflowSpec(
+                "invalid",
+                (
+                    NodeSpec("a", "planner", ("b",)),
+                    NodeSpec("b", "implementer", ("a",)),
+                ),
+            )
+
+    def test_worker_registry_decouples_role_from_worker(self) -> None:
+        registry = WorkerRegistry()
+        worker = StubCoder()
+        registry.register("implementer", worker)
+        self.assertIs(registry.resolve("implementer"), worker)
+        with self.assertRaises(ValueError):
+            registry.register("implementer", StubCoder())
+
+    def test_harness_can_cancel_before_worker_execution(self) -> None:
+        token = CancellationToken()
+        token.cancel("用户停止任务")
+        with tempfile.TemporaryDirectory() as temp:
+            result = Coordinator(
+                StubCoder(),
+                CommandVerificationAgent(ProjectWorkspace(Path(temp))),
+                cancellation=token,
+            ).run(self.make_task())
+        self.assertEqual(result.state, TaskState.FAILED)
+        self.assertEqual(result.attempt, 0)
+        self.assertIn("用户停止任务", result.history[-1])
 
     def test_coding_worker_rejects_role_without_write_capability(self) -> None:
         read_only = RoleSpec(
@@ -181,6 +215,57 @@ class WorkflowTests(unittest.TestCase):
         envelope = ResultEnvelope.create("T-1", 2, "tester", "verification", "ok")
         with self.assertRaises(StaleResultError):
             envelope.validate_for("T-1", 3)
+
+    def test_agent_message_has_uniform_fields(self) -> None:
+        message = AgentMessage.create(
+            task_id="T-1",
+            task_version=2,
+            sender="tester",
+            recipient="coordinator",
+            message_type=MessageType.RESULT,
+            summary="验证完成",
+            payload={"passed": True},
+            correlation_id="quality-stage",
+        )
+        self.assertEqual(message.message_type, MessageType.RESULT)
+        self.assertEqual(message.correlation_id, "quality-stage")
+        self.assertEqual(message.payload, {"passed": True})
+
+    def test_agent_message_rejects_sensitive_payload_fields(self) -> None:
+        with self.assertRaises(MessageValidationError):
+            AgentMessage.create(
+                task_id="T-1",
+                task_version=0,
+                sender="implementer",
+                recipient="coordinator",
+                message_type=MessageType.RESULT,
+                summary="非法消息",
+                payload={"nested": {"api_key": "secret"}},
+            )
+
+    def test_workflow_records_agent_messages(self) -> None:
+        with tempfile.TemporaryDirectory() as temp, tempfile.TemporaryDirectory() as project:
+            workspace = ProjectWorkspace(Path(project))
+            task = self.make_task()
+            Coordinator(
+                WorkspaceCodingAgent(FixingBackend(), workspace),
+                CommandVerificationAgent(workspace),
+                recorder=RunRecorder(Path(temp)),
+            ).run(task)
+            entries = [
+                json.loads(line)
+                for line in (Path(temp) / task.task_id / "events.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+            ]
+        messages = [item["payload"] for item in entries if item["event"] == "agent_message"]
+        self.assertGreaterEqual(len(messages), 6)
+        required = {
+            "message_id", "task_id", "task_version", "sender", "recipient",
+            "message_type", "summary", "payload", "correlation_id", "created_at",
+        }
+        self.assertTrue(all(required.issubset(message) for message in messages))
+        self.assertTrue(any(message["message_type"] == "final" for message in messages))
 
     def test_structured_reviewer_blocks_high_severity_findings(self) -> None:
         class FakeReviewClient:

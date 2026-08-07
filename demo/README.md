@@ -1,6 +1,33 @@
-# Coding Multi-Agent Workflow
+# Coding Agent Harness
 
-这个项目实现了一个可扩展的 Coding Multi-Agent 核心。它接收用户的项目要求，由三个 Agent 协作生成文件、执行真实测试，并根据测试反馈自动返工。
+这个项目实现了一个供应商无关、角色可配置、安全可审计的 Coding Agent
+Harness。Harness 接收用户需求，以确定性工作流调度可替换 Worker，执行文件变更、
+真实测试、独立审查和自动返工。
+
+## 架构边界
+
+```text
+CLI / Web / API
+       ↓
+Harness Core ── WorkflowSpec（声明式 DAG）
+       │        TaskState / Cancellation / Result merge
+       ↓
+WorkerRegistry ── Role → Worker（不绑定模型供应商）
+       │
+       ├── Implementer / Fixer → Workspace + Policy
+       ├── Tester             → Command Gateway
+       └── Reviewer           → Read-only Context
+       │
+       ├── MemoryManager      → RoleMemoryView
+       └── ModelClientFactory → Provider Adapter
+```
+
+- Harness 是唯一控制面，拥有状态、调度、中断、重试和结果合并权。
+- Role 只描述职责与能力，Worker 执行单个节点，模型只负责结构化决策。
+- `WorkflowSpec` 描述节点、依赖、可选节点和并发组，避免拓扑散落在 Agent 中。
+- `WorkerRegistry` 将角色映射到 Worker，同一 Worker 可承担多个角色。
+- Workspace、命令策略和 Memory View 继续构成执行与上下文安全边界。
+- `CodingHarness` 是新主入口；`Coordinator` 暂时作为兼容别名保留。
 
 ## 三个 Agent
 
@@ -167,6 +194,34 @@ Coordinator 校验版本并合并
 测试和审查都通过才完成任务；任一失败，其结构化反馈都会交给 Fixer。并行阶段只有
 读取和白名单命令权限，不允许任何 Worker 写入 Workspace。
 
+## Agent 交流协议
+
+Agent 不直接发送自由格式文本。所有任务交接、结果、反馈和最终通知统一使用
+`AgentMessage`：
+
+```json
+{
+  "message_id": "全局唯一消息 ID",
+  "task_id": "所属任务",
+  "task_version": 3,
+  "sender": "tester",
+  "recipient": "coordinator",
+  "message_type": "result",
+  "summary": "全部验证命令通过",
+  "payload": {"passed": true},
+  "correlation_id": "同一并行阶段共用的关联 ID",
+  "created_at": "UTC ISO-8601 时间"
+}
+```
+
+允许的消息类型为 `request`、`handoff`、`result`、`feedback`、`status` 和
+`final`。Coordinator 是唯一消息路由器；业务状态仍由 TaskContext 管理，交流记录
+作为 `agent_message` 事件追加到 RunRecorder。Payload 必须是 JSON，限制为 64KB，
+并递归拒绝 API Key、Token、Password、Secret 和 Authorization 等敏感字段。
+
+Web UI 以 `sender → recipient · message_type` 展示统一消息；原来的角色、实现、
+验证和审查事件继续保存在审计日志中，但不再重复显示为 Agent 对话。
+
 输出固定在 `agent-output/<name>/`。默认允许写入 `*.py`、`tests/*.py` 和
 `README.md`，并运行 `python3 -m unittest discover -s tests -v`。可以补充标准：
 
@@ -191,10 +246,12 @@ python3 web_server.py
 
 然后访问 `http://127.0.0.1:8765`。用户可以直接输入需求，并依次看到：
 
+- 实时工作流 DAG，以及节点的等待、运行、完成和失败状态；
 - planner、implementer、tester、fixer 等角色的接手状态；
 - Coordinator 的状态切换和角色交接；
 - 实现 Agent 提交的文件变更摘要；
 - 验证结果、失败反馈和返工过程；
+- 点击节点查看职责、权限、开始/结束时间、耗时、产物和关联事件；
 - 最终生成目录、文件列表、模型及尝试次数。
 
 界面展示的是结构化、可审计的工作事件，不展示模型私有推理。服务仅监听本机
