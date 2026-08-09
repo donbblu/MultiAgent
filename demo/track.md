@@ -128,3 +128,18 @@
 - 让 WorkflowSpec 真正驱动执行，并明确 Planner 是真实节点还是 Harness 内部准备阶段。
 - 统一 Worker 契约与 Execution Gateway，落实 Memory Scope 和运行中取消。
 - 按实际复杂度评估拆分 ProjectWorkspace 与 RunRecorder 的混合职责。
+
+## 2026-08-09
+
+### 已优化
+
+- 无新增。
+
+### 已解决
+
+- 无新增。
+
+### 待优化
+
+- 评估引入受控 Task Board、版本化通用 Artifact 和固定 Coding 评测集。
+- 补充 Docker、本地模型适配与可量化的成功率、返工率、Token 和耗时指标。
