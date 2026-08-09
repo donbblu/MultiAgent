@@ -111,3 +111,20 @@
 - 让 WorkflowSpec 真正驱动通用 DAG Executor，继续移除 CodingHarness.run 中的硬编码分支。
 - 增加节点级超时、执行中取消、Checkpoint 恢复和统一 Execution Gateway。
 - 将轮询事件更新升级为 SSE，并补充 Token、模型调用和关键路径指标。
+
+## 2026-08-08
+
+### 已优化
+
+- 新增 Harness 架构边界问题清单，按 P0、P1、P2 记录 11 项已确认问题、风险、目标和完成标准。
+- 明确优先从 NodeInput/NodeResult、移除 active_role 隐式依赖和并行不可变输入开始演进。
+
+### 已解决
+
+- 无新增。
+
+### 待优化
+
+- 让 WorkflowSpec 真正驱动执行，并明确 Planner 是真实节点还是 Harness 内部准备阶段。
+- 统一 Worker 契约与 Execution Gateway，落实 Memory Scope 和运行中取消。
+- 按实际复杂度评估拆分 ProjectWorkspace 与 RunRecorder 的混合职责。
