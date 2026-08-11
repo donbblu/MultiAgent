@@ -8,6 +8,7 @@ from coding_workflow.agents import (
     CodingAgent,
     CommandVerificationAgent,
     ReviewAgent,
+    VerificationAgent,
     WorkspaceCodingAgent,
 )
 from coding_workflow.coordinator import Coordinator
@@ -19,6 +20,7 @@ from coding_workflow.models import (
     ReviewResult,
     TaskContext,
     TaskState,
+    InvalidTaskTransition,
     VerificationResult,
 )
 from coding_workflow.workspace import ProjectWorkspace, WorkspaceError
@@ -40,7 +42,15 @@ from coding_workflow.roles import (
 from coding_workflow.memory import MemoryManager, MemoryPolicy
 from coding_workflow.results import ResultEnvelope, StaleResultError
 from coding_workflow.communication import AgentMessage, MessageType, MessageValidationError
-from coding_workflow.harness import CancellationToken, NodeSpec, WorkerRegistry, WorkflowSpec
+from coding_workflow.harness import (
+    CancellationToken,
+    LifecycleController,
+    LifecycleState,
+    NodeSpec,
+    TaskDispatcher,
+    WorkerRegistry,
+    WorkflowSpec,
+)
 from coding_agent_cli import parse_command, safe_output_path
 
 
@@ -128,9 +138,104 @@ class WorkflowTests(unittest.TestCase):
                 CommandVerificationAgent(ProjectWorkspace(Path(temp))),
                 cancellation=token,
             ).run(self.make_task())
-        self.assertEqual(result.state, TaskState.FAILED)
+        self.assertEqual(result.state, TaskState.CANCELLED)
         self.assertEqual(result.attempt, 0)
         self.assertIn("用户停止任务", result.history[-1])
+
+    def test_task_state_machine_rejects_illegal_transition(self) -> None:
+        task = self.make_task()
+        with self.assertRaises(InvalidTaskTransition):
+            task.transition(TaskState.COMPLETED, "禁止跳过工作流")
+
+    def test_lifecycle_pause_blocks_checkpoint_until_resume(self) -> None:
+        controller = LifecycleController()
+        controller.mark_running()
+        self.assertTrue(controller.request_pause("等待人工确认"))
+        passed = threading.Event()
+
+        def wait_at_checkpoint() -> None:
+            controller.checkpoint()
+            passed.set()
+
+        thread = threading.Thread(target=wait_at_checkpoint)
+        thread.start()
+        self.assertFalse(passed.wait(0.05))
+        self.assertEqual(controller.state, LifecycleState.PAUSED)
+        self.assertTrue(controller.resume())
+        self.assertTrue(passed.wait(1))
+        thread.join(1)
+        self.assertEqual(controller.state, LifecycleState.RUNNING)
+        self.assertEqual(
+            [event.current for event in controller.history()],
+            [LifecycleState.CREATED, LifecycleState.RUNNING, LifecycleState.PAUSED, LifecycleState.RUNNING],
+        )
+
+    def test_dispatcher_submits_tracks_and_finishes_task(self) -> None:
+        class PassingVerifier(VerificationAgent):
+            def run(self, task):
+                return VerificationResult(True, "验证通过")
+
+        with tempfile.TemporaryDirectory() as temp:
+            dispatcher = TaskDispatcher(
+                lambda lifecycle: Coordinator(
+                    StubCoder(),
+                    PassingVerifier(),
+                    lifecycle=lifecycle,
+                )
+            )
+            handle = dispatcher.submit(self.make_task())
+            result = handle.result(timeout=2)
+            status = handle.status()
+            dispatcher.shutdown()
+        self.assertEqual(result.state, TaskState.COMPLETED)
+        self.assertEqual(status.lifecycle.state, LifecycleState.COMPLETED)
+        self.assertEqual(status.workflow_state, "completed")
+
+    def test_dispatcher_cancels_running_task_at_checkpoint(self) -> None:
+        started = threading.Event()
+        release = threading.Event()
+
+        class BlockingCoder(CodingAgent):
+            def run(self, task):
+                started.set()
+                release.wait(1)
+                return AgentResult(True, "实现结束")
+
+        class PassingVerifier(VerificationAgent):
+            def run(self, task):
+                return VerificationResult(True, "验证通过")
+
+        dispatcher = TaskDispatcher(
+            lambda lifecycle: Coordinator(
+                BlockingCoder(), PassingVerifier(), lifecycle=lifecycle
+            )
+        )
+        handle = dispatcher.submit(self.make_task())
+        self.assertTrue(started.wait(1))
+        self.assertTrue(handle.cancel("用户终止"))
+        release.set()
+        result = handle.result(timeout=2)
+        dispatcher.shutdown()
+        self.assertEqual(result.state, TaskState.CANCELLED)
+        self.assertEqual(handle.status().lifecycle.state, LifecycleState.CANCELLED)
+
+    def test_dispatcher_graceful_shutdown_stops_new_submissions(self) -> None:
+        class PassingVerifier(VerificationAgent):
+            def run(self, task):
+                return VerificationResult(True, "验证通过")
+
+        dispatcher = TaskDispatcher(
+            lambda lifecycle: Coordinator(
+                StubCoder(), PassingVerifier(), lifecycle=lifecycle
+            )
+        )
+        first = dispatcher.submit(self.make_task())
+        self.assertEqual(first.result(timeout=2).state, TaskState.COMPLETED)
+        dispatcher.shutdown(wait=True)
+        second = self.make_task()
+        second.task_id = "T-2"
+        with self.assertRaises(RuntimeError):
+            dispatcher.submit(second)
 
     def test_coding_worker_rejects_role_without_write_capability(self) -> None:
         read_only = RoleSpec(

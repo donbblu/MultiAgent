@@ -1,6 +1,6 @@
 from .agents import CodingAgent, CommandVerificationAgent, ReviewAgent, VerificationAgent, WorkspaceCodingAgent, WorkspaceReviewAgent
 from .coordinator import CodingHarness, Coordinator
-from .models import AgentResult, FileChange, ImplementationPlan, ReviewFinding, ReviewResult, TaskContext, TaskState, VerificationResult
+from .models import AgentResult, FileChange, ImplementationPlan, InvalidTaskTransition, ReviewFinding, ReviewResult, TaskContext, TaskState, VerificationResult
 from .workspace import ProjectWorkspace
 from .context import ProjectContextBuilder
 from .policy import CommandPolicy
@@ -12,7 +12,7 @@ from .roles import Capability, DEFAULT_ROLES, RoleRegistry, RoleSpec
 from .memory import MemoryManager, MemoryPolicy, RoleMemoryView
 from .results import ResultEnvelope, StaleResultError
 from .communication import AgentMessage, MessageType, MessageValidationError
-from .harness import CancellationToken, NodeSpec, WorkerRegistry, WorkflowSpec, coding_workflow_spec
+from .harness import CancellationToken, LifecycleController, LifecycleEvent, LifecycleState, NodeSpec, TaskDispatcher, TaskHandle, TaskStatus, WorkerRegistry, WorkflowSpec, coding_workflow_spec
 
 __all__ = [
     "AgentResult",
@@ -34,6 +34,7 @@ __all__ = [
     "StructuredCodingBackend",
     "TaskContext",
     "TaskState",
+    "InvalidTaskTransition",
     "VerificationAgent",
     "VerificationResult",
     "WorkspaceCodingAgent",
@@ -55,7 +56,13 @@ __all__ = [
     "MessageType",
     "MessageValidationError",
     "CancellationToken",
+    "LifecycleController",
+    "LifecycleEvent",
+    "LifecycleState",
     "NodeSpec",
+    "TaskDispatcher",
+    "TaskHandle",
+    "TaskStatus",
     "WorkerRegistry",
     "WorkflowSpec",
     "coding_workflow_spec",

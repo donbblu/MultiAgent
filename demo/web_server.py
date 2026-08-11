@@ -10,11 +10,13 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from coding_agent_cli import run_requirement
+from coding_workflow.harness import LifecycleController
 
 
 ROOT = Path(__file__).parent.resolve()
 WEB_ROOT = ROOT / "web"
 TASKS: dict[str, dict[str, object]] = {}
+TASK_CONTROLS: dict[str, LifecycleController] = {}
 TASKS_LOCK = threading.Lock()
 
 WORKFLOW = {
@@ -125,7 +127,11 @@ def public_event(entry: dict[str, object], sequence: int = 0) -> dict[str, objec
     }
 
 
-def run_in_background(task_key: str, request: dict[str, object]) -> None:
+def run_in_background(
+    task_key: str,
+    request: dict[str, object],
+    lifecycle: LifecycleController,
+) -> None:
     def on_event(entry: dict[str, object]) -> None:
         with TASKS_LOCK:
             task = TASKS[task_key]
@@ -200,6 +206,7 @@ def run_in_background(task_key: str, request: dict[str, object]) -> None:
             model=str(request["model"]) if request.get("model") else None,
             max_attempts=int(request.get("max_attempts", 2)),
             event_listener=on_event,
+            lifecycle=lifecycle,
         )
         files = [
             str(path.relative_to(run.output))
@@ -263,6 +270,23 @@ class Handler(BaseHTTPRequestHandler):
                 snapshot = dict(task) if task else None
                 if snapshot and isinstance(snapshot.get("events"), list):
                     snapshot["events"] = list(snapshot["events"])
+                controller = TASK_CONTROLS.get(task_key)
+                if snapshot and controller:
+                    lifecycle = controller.snapshot()
+                    snapshot["lifecycle"] = {
+                        "state": lifecycle.state.value,
+                        "reason": lifecycle.reason,
+                        "updated_at": lifecycle.updated_at,
+                    }
+                    snapshot["lifecycle_history"] = [
+                        {
+                            "previous": event.previous.value if event.previous else None,
+                            "current": event.current.value,
+                            "reason": event.reason,
+                            "timestamp": event.timestamp,
+                        }
+                        for event in controller.history()
+                    ]
             if snapshot is None:
                 self.send_json(404, {"error": "任务不存在"})
             else:
@@ -281,7 +305,36 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def do_POST(self) -> None:
-        if urlparse(self.path).path != "/api/tasks":
+        path = urlparse(self.path).path
+        if path.startswith("/api/tasks/"):
+            parts = path.strip("/").split("/")
+            if len(parts) != 4 or parts[:2] != ["api", "tasks"]:
+                self.send_error(404)
+                return
+            task_key, action = parts[2], parts[3]
+            with TASKS_LOCK:
+                task = TASKS.get(task_key)
+                controller = TASK_CONTROLS.get(task_key)
+                if not task or not controller:
+                    self.send_json(404, {"error": "任务不存在"})
+                    return
+                if action == "pause":
+                    accepted = controller.request_pause("用户从界面暂停任务")
+                elif action == "resume":
+                    accepted = controller.resume()
+                elif action == "cancel":
+                    accepted = controller.cancel("用户从界面取消任务")
+                else:
+                    self.send_error(404)
+                    return
+                snapshot = controller.snapshot()
+                task["status"] = snapshot.state.value
+            self.send_json(
+                200 if accepted else 409,
+                {"accepted": accepted, "state": snapshot.state.value, "reason": snapshot.reason},
+            )
+            return
+        if path != "/api/tasks":
             self.send_error(404)
             return
         try:
@@ -303,6 +356,8 @@ class Handler(BaseHTTPRequestHandler):
                 "max_attempts": min(max(int(data.get("max_attempts", 2)), 1), 3),
             }
             task_key = uuid.uuid4().hex[:12]
+            lifecycle = LifecycleController()
+            lifecycle.mark_queued()
             with TASKS_LOCK:
                 TASKS[task_key] = {
                     "id": task_key,
@@ -316,8 +371,11 @@ class Handler(BaseHTTPRequestHandler):
                     "result": None,
                     "error": None,
                 }
+                TASK_CONTROLS[task_key] = lifecycle
             threading.Thread(
-                target=run_in_background, args=(task_key, request), daemon=True
+                target=run_in_background,
+                args=(task_key, request, lifecycle),
+                daemon=True,
             ).start()
             self.send_json(202, {"id": task_key})
         except (ValueError, TypeError, json.JSONDecodeError) as exc:

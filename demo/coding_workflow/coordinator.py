@@ -9,7 +9,15 @@ from .models import ReviewResult, TaskContext, TaskState, VerificationResult
 from .recording import RunRecorder
 from .results import ResultEnvelope
 from .roles import FIXER, IMPLEMENTER, PLANNER, REVIEWER, TESTER, RoleRegistry, DEFAULT_ROLES
-from .harness import CancellationToken, TaskCancelledError, WorkerRegistry, WorkflowSpec, coding_workflow_spec
+from .harness import (
+    CancellationToken,
+    LifecycleController,
+    LifecycleState,
+    TaskCancelledError,
+    WorkerRegistry,
+    WorkflowSpec,
+    coding_workflow_spec,
+)
 
 
 class CodingHarness:
@@ -26,6 +34,7 @@ class CodingHarness:
         workflow: WorkflowSpec | None = None,
         workers: WorkerRegistry | None = None,
         cancellation: CancellationToken | None = None,
+        lifecycle: LifecycleController | None = None,
     ) -> None:
         if max_attempts < 1:
             raise ValueError("max_attempts 必须大于 0")
@@ -43,17 +52,24 @@ class CodingHarness:
             self.workers.register(TESTER.name, verification_agent)
             if review_agent:
                 self.workers.register(REVIEWER.name, review_agent)
-        self.cancellation = cancellation or CancellationToken()
+        if lifecycle is not None and cancellation is not None:
+            raise ValueError("lifecycle 与 cancellation 不能同时传入")
+        self.lifecycle = lifecycle or (
+            cancellation.controller if cancellation else LifecycleController()
+        )
+        self.cancellation = CancellationToken(self.lifecycle)
 
     def _role_for_node(self, node_name: str) -> str:
         return self.workflow.node(node_name).role
 
-    def _check_cancelled(self, task: TaskContext) -> None:
+    def _checkpoint(self, task: TaskContext) -> None:
         try:
-            self.cancellation.raise_if_cancelled()
+            self.lifecycle.checkpoint()
         except TaskCancelledError as exc:
-            self._transition(task, TaskState.FAILED, str(exc))
-            self._send_message(task, "coordinator", "user", MessageType.FINAL, str(exc))
+            if task.state not in {TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELLED}:
+                self._transition(task, TaskState.CANCELLED, str(exc))
+                self._send_message(task, "coordinator", "user", MessageType.FINAL, str(exc))
+            self.lifecycle.mark_cancelled(str(exc))
             raise
 
     def _assign_role(self, task: TaskContext, role_name: str) -> None:
@@ -189,13 +205,34 @@ class CodingHarness:
         )
 
     def run(self, task: TaskContext) -> TaskContext:
+        try:
+            return self._run_task(task)
+        except Exception as exc:
+            reason = str(exc) or type(exc).__name__
+            if task.state not in {TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELLED}:
+                self._transition(task, TaskState.FAILED, f"未处理异常: {reason}")
+            if self.lifecycle.state is LifecycleState.RUNNING:
+                self.lifecycle.mark_failed(reason)
+            raise
+
+    def _run_task(self, task: TaskContext) -> TaskContext:
+        try:
+            self.lifecycle.checkpoint()
+            if self.lifecycle.state in {LifecycleState.CREATED, LifecycleState.QUEUED}:
+                self.lifecycle.mark_running()
+        except TaskCancelledError as exc:
+            self._transition(task, TaskState.CANCELLED, str(exc))
+            self.lifecycle.mark_cancelled(str(exc))
+            return task
         if not task.objective.strip():
             self._transition(task, TaskState.FAILED, "用户目标不能为空")
             self._send_message(task, "coordinator", "user", MessageType.FINAL, "任务失败：用户目标不能为空")
+            self.lifecycle.mark_failed("用户目标不能为空")
             return task
         if not task.acceptance_criteria:
             self._transition(task, TaskState.FAILED, "至少需要一条验收标准")
             self._send_message(task, "coordinator", "user", MessageType.FINAL, "任务失败：缺少验收标准")
+            self.lifecycle.mark_failed("缺少验收标准")
             return task
 
         self._record(task, "task_started", task.model_input())
@@ -211,7 +248,7 @@ class CodingHarness:
         self._transition(task, TaskState.PLANNING, "已确认目标与验收标准")
         while task.attempt < self.max_attempts:
             try:
-                self._check_cancelled(task)
+                self._checkpoint(task)
             except TaskCancelledError:
                 return task
             task.attempt += 1
@@ -226,6 +263,10 @@ class CodingHarness:
             self._transition(task, TaskState.IMPLEMENTING, f"开始第 {task.attempt} 次实现")
             coding_worker = self.workers.resolve(implementation_role)
             task.implementation = coding_worker.run(task)
+            try:
+                self._checkpoint(task)
+            except TaskCancelledError:
+                return task
             self._record(task, "implementation", task.implementation)
             producer = task.active_role.name if task.active_role else IMPLEMENTER.name
             self._send_message(
@@ -256,6 +297,10 @@ class CodingHarness:
 
             self._transition(task, TaskState.VERIFYING, "开始并行验证与独立审查")
             task.verification, task.review = self._run_parallel_quality_stage(task)
+            try:
+                self._checkpoint(task)
+            except TaskCancelledError:
+                return task
             self._record(task, "verification", task.verification)
             if task.review:
                 self._record(task, "review", task.review)
@@ -274,6 +319,7 @@ class CodingHarness:
                     note,
                     {"state": task.state.value, "attempts": task.attempt},
                 )
+                self.lifecycle.mark_completed()
                 return task
 
             task.feedback = list(task.verification.feedback)
@@ -303,6 +349,7 @@ class CodingHarness:
             f"任务失败：达到最大尝试次数 {self.max_attempts}",
             {"state": task.state.value, "attempts": task.attempt},
         )
+        self.lifecycle.mark_failed(f"达到最大尝试次数 {self.max_attempts}")
         return task
 
 

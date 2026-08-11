@@ -29,6 +29,28 @@ WorkerRegistry ── Role → Worker（不绑定模型供应商）
 - Workspace、命令策略和 Memory View 继续构成执行与上下文安全边界。
 - `CodingHarness` 是新主入口；`Coordinator` 暂时作为兼容别名保留。
 
+## Task 生命周期
+
+Harness 使用两层状态，避免暂停操作破坏业务工作流：
+
+- `TaskState` 表示确定性业务阶段：received、planning、implementing、verifying、rework、completed、failed、cancelled。所有迁移经过固定白名单，非法跳转立即拒绝。
+- `LifecycleState` 表示运行控制：created、queued、running、paused、cancelling、completed、failed、cancelled。
+
+`TaskDispatcher.submit()` 会立即返回 `TaskHandle`。调用方可以通过句柄查询状态和完整生命周期历史，执行 `pause()`、`resume()`、`cancel()` 或等待 `result()`。`shutdown(wait=True)` 停止接收新任务并等待在途任务结束；`cancel_running=True` 会先请求协作式取消，再等待任务到达安全检查点。
+
+暂停和取消目前在节点边界及 Implementer、Tester/Reviewer 返回后生效，不会把正在写入的一半状态当成完成结果。当前版本不能强制中断正在进行的模型 HTTP 请求或验证子进程，这部分需要继续将取消信号下传到 ModelClient 和 CommandExecutor。
+
+Web API 提供以下控制入口：
+
+```text
+POST /api/tasks/<id>/pause
+POST /api/tasks/<id>/resume
+POST /api/tasks/<id>/cancel
+GET  /api/tasks/<id>
+```
+
+Web 界面提供“暂停/恢复”和“退出”按钮，并在任务快照中返回当前生命周期与完整迁移历史。
+
 ## 三个 Agent
 
 1. **Coordinator**

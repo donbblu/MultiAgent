@@ -15,6 +15,23 @@ class TaskState(str, Enum):
     REWORK = "rework"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class InvalidTaskTransition(ValueError):
+    pass
+
+
+TASK_TRANSITIONS: dict[TaskState, frozenset[TaskState]] = {
+    TaskState.RECEIVED: frozenset({TaskState.PLANNING, TaskState.FAILED, TaskState.CANCELLED}),
+    TaskState.PLANNING: frozenset({TaskState.IMPLEMENTING, TaskState.FAILED, TaskState.CANCELLED}),
+    TaskState.IMPLEMENTING: frozenset({TaskState.VERIFYING, TaskState.REWORK, TaskState.FAILED, TaskState.CANCELLED}),
+    TaskState.VERIFYING: frozenset({TaskState.COMPLETED, TaskState.REWORK, TaskState.FAILED, TaskState.CANCELLED}),
+    TaskState.REWORK: frozenset({TaskState.IMPLEMENTING, TaskState.FAILED, TaskState.CANCELLED}),
+    TaskState.COMPLETED: frozenset(),
+    TaskState.FAILED: frozenset(),
+    TaskState.CANCELLED: frozenset(),
+}
 
 
 @dataclass(frozen=True)
@@ -119,6 +136,10 @@ class TaskContext:
         self.role_history.append(role.name)
 
     def transition(self, state: TaskState, note: str) -> None:
+        if state not in TASK_TRANSITIONS[self.state]:
+            raise InvalidTaskTransition(
+                f"非法任务状态迁移: {self.state.value} -> {state.value}"
+            )
         self.state = state
         self.history.append(f"{state.value}: {note}")
         self.version += 1

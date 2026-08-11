@@ -15,6 +15,7 @@ from coding_workflow.models import TaskContext
 from coding_workflow.policy import CommandPolicy, CommandPolicyError
 from coding_workflow.recording import RunRecorder
 from coding_workflow.workspace import ProjectWorkspace
+from coding_workflow.harness import LifecycleController
 
 
 ROOT = Path(__file__).parent.resolve()
@@ -97,6 +98,7 @@ def run_requirement(
     max_attempts: int = 2,
     continue_existing: bool = False,
     event_listener: Callable[[dict[str, Any]], None] | None = None,
+    lifecycle: LifecycleController | None = None,
 ) -> CodingRun:
     if not requirement.strip():
         raise ValueError("需求不能为空")
@@ -154,6 +156,7 @@ def run_requirement(
         max_attempts=max_attempts,
         recorder=RunRecorder(ROOT / ".runs", listener=event_listener),
         review_agent=WorkspaceReviewAgent(review_backend, workspace),
+        lifecycle=lifecycle,
     ).run(task)
     return CodingRun(result, output, model_config.provider, model_config.model)
 

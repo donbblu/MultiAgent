@@ -54,16 +54,33 @@ function renderDetail(data){
     <section><h4>关联事件</h4><p class="detail-copy">${events.length} 条可审计事件</p></section>`;
 }
 
+async function controlTask(action){
+  if(!currentTask)return;
+  const response=await fetch(`/api/tasks/${currentTask}/${action}`,{method:'POST'});
+  const data=await response.json();
+  if(!response.ok&&response.status!==409)throw new Error(data.error||'任务控制失败');
+  await poll();
+}
+
+function renderControls(data){
+  const state=data?.lifecycle?.state||data?.status;
+  const terminal=['completed','failed','cancelled'].includes(state);
+  $('pause-task').disabled=!currentTask||terminal||state==='cancelling';
+  $('cancel-task').disabled=!currentTask||terminal||state==='cancelling';
+  $('pause-task').textContent=state==='paused'?'恢复':'暂停';
+  $('pause-task').dataset.action=state==='paused'?'resume':'pause';
+}
+
 async function poll(){
   if(!currentTask)return;
   try{
     const response=await fetch(`/api/tasks/${currentTask}`);const data=await response.json();latestData=data;
     seen=(data.events||[]).length;$('event-count').textContent=`${seen} 条事件`;
-    renderDag(data);renderTimeline(data.events||[]);renderDetail(data);
+    renderDag(data);renderTimeline(data.events||[]);renderDetail(data);renderControls(data);
     const active=(data.active_roles||[]).filter(Boolean);$('process-caption').textContent=active.length?`${active.join(' + ')} 正在工作`:`状态：${data.status}`;
-    if(['completed','failed'].includes(data.status)){
+    if(['completed','failed','cancelled'].includes(data.status)){
       clearInterval(timer);timer=null;$('submit').disabled=false;$('submit').querySelector('span').textContent='启动新任务';
-      $('live-badge').textContent=data.status==='completed'?'DONE':'FAILED';$('live-badge').className=`live-badge ${data.status==='completed'?'done':'failed'}`;showResult(data);
+      $('live-badge').textContent=data.status==='completed'?'DONE':data.status==='cancelled'?'CANCELLED':'FAILED';$('live-badge').className=`live-badge ${data.status==='completed'?'done':'failed'}`;showResult(data);
     }
   }catch(error){console.error(error)}
 }
@@ -86,6 +103,9 @@ $('task-form').addEventListener('submit',async(event)=>{
     const data=await response.json();if(!response.ok)throw new Error(data.error||'无法启动任务');currentTask=data.id;await poll();timer=setInterval(poll,700);
   }catch(error){$('submit').disabled=false;$('live-badge').textContent='ERROR';$('live-badge').className='live-badge failed';$('timeline').innerHTML=`<div class="empty-state"><h3>无法启动</h3><p>${escapeHtml(error.message)}</p></div>`}
 });
+
+$('pause-task').addEventListener('click',()=>controlTask($('pause-task').dataset.action||'pause').catch(console.error));
+$('cancel-task').addEventListener('click',()=>controlTask('cancel').catch(console.error));
 
 latestData={status:'idle',events:[],nodes:Object.fromEntries(roleOrder.map(id=>[id,{id,label:id[0].toUpperCase()+id.slice(1),summary:'等待任务',permissions:[],status:'pending',attempt:0,artifacts:[],last_summary:'等待 Harness 调度'}]))};
 renderDag(latestData);renderDetail(latestData);
