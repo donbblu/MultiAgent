@@ -35,6 +35,10 @@ Harness 使用两层状态，避免暂停操作破坏业务工作流：
 
 - `TaskState` 表示确定性业务阶段：received、planning、implementing、verifying、rework、completed、failed、cancelled。所有迁移经过固定白名单，非法跳转立即拒绝。
 - `LifecycleState` 表示运行控制：created、queued、running、paused、cancelling、completed、failed、cancelled。
+- `TaskSpec / TaskGraph / TaskGraphRuntime` 将 Workflow 模板展开为可校验的任务 DAG；依赖与 Artifact 满足且资源范围不冲突的任务可被同批领取。
+- 记忆按感知、Working、长期和实体四层统一记录，由 Harness 主动触发或 Agent 被动检索，最终仍裁剪为最小权限的 `RoleMemoryView`。设计边界见 [任务图与记忆机制](docs/task-graph-and-memory.md)。
+- `TaskGraphExecutor` 通过 `WorkerRegistry` 并发执行 ready 子任务，结果只经 `ArtifactStore` 交接；失败只重试当前子任务。`SQLiteMemoryStore` 可持久化记忆和 Working Memory Checkpoint，整图验证成功后才晋升长期记忆。
+- CLI/Web 默认使用 `dag` 引擎：结构化 Planner 拆图，Worker 并发生成 Patch Artifact，Integrator 集中检查并原子合并，真实测试通过后才完成；可用 `--engine legacy` 回退旧流程。
 
 `TaskDispatcher.submit()` 会立即返回 `TaskHandle`。调用方可以通过句柄查询状态和完整生命周期历史，执行 `pause()`、`resume()`、`cancel()` 或等待 `result()`。`shutdown(wait=True)` 停止接收新任务并等待在途任务结束；`cancel_running=True` 会先请求协作式取消，再等待任务到达安全检查点。
 

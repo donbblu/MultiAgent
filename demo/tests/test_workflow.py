@@ -39,7 +39,18 @@ from coding_workflow.roles import (
     FIXER,
     TESTER,
 )
-from coding_workflow.memory import MemoryManager, MemoryPolicy
+from coding_workflow.memory import (
+    MemoryKind,
+    MemoryManager,
+    MemoryPolicy,
+    MemoryRecord,
+    MemoryStore,
+)
+from coding_workflow.memory_sqlite import SQLiteMemoryStore
+from coding_workflow.artifacts import Artifact, ArtifactStore
+from coding_workflow.integration import IntegrationError, PatchIntegrator
+from coding_workflow.planning import StructuredTaskPlanner
+from coding_workflow.dag_runner import run_dag_task
 from coding_workflow.results import ResultEnvelope, StaleResultError
 from coding_workflow.communication import AgentMessage, MessageType, MessageValidationError
 from coding_workflow.harness import (
@@ -48,6 +59,12 @@ from coding_workflow.harness import (
     LifecycleState,
     NodeSpec,
     TaskDispatcher,
+    TaskExecutionState,
+    TaskGraph,
+    TaskGraphRuntime,
+    TaskGraphExecutor,
+    TaskRunResult,
+    TaskSpec,
     WorkerRegistry,
     WorkflowSpec,
 )
@@ -120,6 +137,69 @@ class WorkflowTests(unittest.TestCase):
                     NodeSpec("b", "implementer", ("a",)),
                 ),
             )
+
+    def test_task_graph_selects_parallel_non_conflicting_tasks(self) -> None:
+        graph = TaskGraph(
+            (
+                TaskSpec("contract", "定义契约", "定义接口", "planner", acceptance_criteria=("契约完整",), output_artifacts=("api-contract",)),
+                TaskSpec("backend", "后端", "实现后端", "implementer", dependencies=("contract",), acceptance_criteria=("后端测试通过",), write_scopes=("backend/**",), input_artifacts=("api-contract",), output_artifacts=("backend-patch",)),
+                TaskSpec("frontend", "前端", "实现前端", "implementer", dependencies=("contract",), acceptance_criteria=("前端测试通过",), write_scopes=("frontend/**",), input_artifacts=("api-contract",), output_artifacts=("frontend-patch",)),
+            )
+        )
+        states = {
+            "contract": TaskExecutionState.SUCCEEDED,
+            "backend": TaskExecutionState.PENDING,
+            "frontend": TaskExecutionState.PENDING,
+        }
+        ready = graph.ready_tasks(states, available_artifacts=("api-contract",))
+        self.assertEqual([task.task_id for task in ready], ["backend", "frontend"])
+
+    def test_task_graph_serializes_overlapping_write_scopes(self) -> None:
+        graph = TaskGraph(
+            (
+                TaskSpec("a", "任务 A", "修改模块", "implementer", acceptance_criteria=("完成",), write_scopes=("app.py",)),
+                TaskSpec("b", "任务 B", "修改模块", "implementer", acceptance_criteria=("完成",), write_scopes=("app.py",)),
+            )
+        )
+        ready = graph.ready_tasks({}, limit=2)
+        self.assertEqual(len(ready), 1)
+
+    def test_task_graph_requires_artifact_producer_dependency(self) -> None:
+        with self.assertRaises(ValueError):
+            TaskGraph(
+                (
+                    TaskSpec("a", "生产", "生产契约", "planner", acceptance_criteria=("完成",), output_artifacts=("contract",)),
+                    TaskSpec("b", "消费", "使用契约", "implementer", acceptance_criteria=("完成",), input_artifacts=("contract",)),
+                )
+            )
+
+    def test_task_graph_runtime_releases_dependents_after_artifacts(self) -> None:
+        graph = TaskGraph(
+            (
+                TaskSpec("plan", "规划", "输出计划", "planner", acceptance_criteria=("完成",), output_artifacts=("plan",)),
+                TaskSpec("code", "编码", "实现计划", "implementer", dependencies=("plan",), acceptance_criteria=("完成",), input_artifacts=("plan",), output_artifacts=("patch",)),
+            )
+        )
+        runtime = TaskGraphRuntime(graph)
+        self.assertEqual([item.task_id for item in runtime.claim_ready(2)], ["plan"])
+        runtime.succeed("plan", {"plan": "artifact://plan/1"})
+        self.assertEqual([item.task_id for item in runtime.claim_ready(2)], ["code"])
+        runtime.succeed("code", {"patch": "artifact://patch/1"})
+        self.assertTrue(runtime.finished)
+
+    def test_task_graph_runtime_blocks_dependents_on_failure(self) -> None:
+        graph = TaskGraph(
+            (
+                TaskSpec("plan", "规划", "输出计划", "planner", acceptance_criteria=("完成",)),
+                TaskSpec("code", "编码", "实现计划", "implementer", dependencies=("plan",), acceptance_criteria=("完成",)),
+            )
+        )
+        runtime = TaskGraphRuntime(graph)
+        runtime.claim_ready(1)
+        runtime.fail("plan", "无法规划")
+        snapshot = runtime.snapshot()
+        self.assertEqual(snapshot.states["code"], TaskExecutionState.BLOCKED)
+        self.assertTrue(runtime.finished)
 
     def test_worker_registry_decouples_role_from_worker(self) -> None:
         registry = WorkerRegistry()
@@ -291,6 +371,244 @@ class WorkflowTests(unittest.TestCase):
     def test_memory_policy_rejects_secret_access(self) -> None:
         with self.assertRaises(ValueError):
             MemoryPolicy(frozenset(), frozenset(), 100, secret_access=True)
+
+    def test_memory_active_trigger_and_role_visibility(self) -> None:
+        store = MemoryStore()
+        manager = MemoryManager(store=store)
+        task = self.make_task()
+        visible = MemoryRecord.create(
+            MemoryKind.LONG_TERM,
+            "project_rule",
+            "项目使用 unittest",
+            task_id=task.task_id,
+            visibility=(PLANNER.name,),
+            evidence_refs=("pyproject.toml",),
+        )
+        manager.record(visible)
+        planner_view = manager.build(task, PLANNER, trigger="task_created")
+        fixer_view = manager.build(task, FIXER, trigger="task_created")
+        self.assertEqual(planner_view.memories, (visible,))
+        self.assertEqual(fixer_view.memories, ())
+        self.assertIn(visible.memory_id, manager.working_memory(task.task_id).memory_refs)
+
+    def test_working_memory_checkpoint_is_versioned(self) -> None:
+        manager = MemoryManager()
+        task = self.make_task()
+        record = MemoryRecord.create(
+            MemoryKind.WORKING,
+            "node_result",
+            "规划完成",
+            task_id=task.task_id,
+            visibility=(IMPLEMENTER.name,),
+        )
+        manager.record(record)
+        checkpoint = manager.working_memory(task.task_id).checkpoint()
+        self.assertEqual(checkpoint["version"], 1)
+        self.assertEqual(checkpoint["memory_refs"], (record.memory_id,))
+
+    def test_sqlite_memory_restores_records_and_checkpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "memory.sqlite3"
+            first = MemoryManager(store=SQLiteMemoryStore(path))
+            task = self.make_task()
+            record = MemoryRecord.create(
+                MemoryKind.WORKING, "progress", "完成规划",
+                task_id=task.task_id, visibility=(PLANNER.name,),
+            )
+            first.record(record)
+            first.working_memory(task.task_id).plan_summary = "两阶段实现"
+            first.save_checkpoint(task.task_id)
+
+            second = MemoryManager(store=SQLiteMemoryStore(path))
+            restored = second.working_memory(task.task_id)
+            queried = second.query(task, PLANNER, "完成")
+            self.assertEqual(restored.plan_summary, "两阶段实现")
+            self.assertEqual(queried[0].memory_id, record.memory_id)
+
+    def test_artifact_store_uses_immutable_references(self) -> None:
+        store = ArtifactStore()
+        artifact = Artifact.create("contract", "plan", {"version": 1})
+        reference = store.put(artifact)
+        self.assertTrue(reference.startswith("artifact://"))
+        self.assertIs(store.get(reference), artifact)
+
+    def test_graph_executor_runs_independent_tasks_concurrently(self) -> None:
+        barrier = threading.Barrier(2, timeout=2)
+
+        class Worker:
+            def run_task(self, request):
+                barrier.wait()
+                return TaskRunResult(True, request.task.title, {request.task.output_artifacts[0]: request.task.task_id})
+
+        graph = TaskGraph((
+            TaskSpec("a", "A", "实现 A", "implementer", acceptance_criteria=("完成",), write_scopes=("a/**",), output_artifacts=("a-patch",)),
+            TaskSpec("b", "B", "实现 B", "tester", acceptance_criteria=("完成",), write_scopes=("b/**",), output_artifacts=("b-report",)),
+        ))
+        registry = WorkerRegistry()
+        registry.register("implementer", Worker())
+        registry.register("tester", Worker())
+        result = TaskGraphExecutor(
+            graph, registry, DEFAULT_ROLES, MemoryManager(), max_workers=2
+        ).run(self.make_task())
+        self.assertTrue(result.succeeded)
+        self.assertEqual(result.attempts, {"a": 1, "b": 1})
+
+    def test_graph_executor_retries_only_failed_subtask(self) -> None:
+        calls = {"plan": 0, "code": 0}
+
+        class Worker:
+            def run_task(self, request):
+                calls[request.task.task_id] += 1
+                if request.task.task_id == "code" and calls["code"] == 1:
+                    return TaskRunResult(False, "暂时失败", error="暂时失败")
+                return TaskRunResult(
+                    True, "完成",
+                    {name: request.task.task_id for name in request.task.output_artifacts},
+                )
+
+        graph = TaskGraph((
+            TaskSpec("plan", "规划", "规划", "planner", acceptance_criteria=("完成",), output_artifacts=("plan",)),
+            TaskSpec("code", "编码", "编码", "implementer", dependencies=("plan",), acceptance_criteria=("完成",), input_artifacts=("plan",), output_artifacts=("patch",), retry_limit=1),
+        ))
+        registry = WorkerRegistry()
+        registry.register("planner", Worker())
+        registry.register("implementer", Worker())
+        result = TaskGraphExecutor(
+            graph, registry, DEFAULT_ROLES, MemoryManager(), max_workers=2
+        ).run(self.make_task())
+        self.assertTrue(result.succeeded)
+        self.assertEqual(calls, {"plan": 1, "code": 2})
+
+    def test_graph_executor_persists_verified_long_term_memory(self) -> None:
+        class Worker:
+            def run_task(self, request):
+                return TaskRunResult(True, "规划已验证", {"plan": "内容"})
+
+        with tempfile.TemporaryDirectory() as temp:
+            store = SQLiteMemoryStore(Path(temp) / "memory.sqlite3")
+            memory = MemoryManager(store=store)
+            registry = WorkerRegistry()
+            registry.register("planner", Worker())
+            graph = TaskGraph((
+                TaskSpec("plan", "规划", "规划", "planner", acceptance_criteria=("完成",), output_artifacts=("plan",)),
+            ))
+            result = TaskGraphExecutor(
+                graph, registry, DEFAULT_ROLES, memory
+            ).run(self.make_task())
+            long_term = store.query(kinds=(MemoryKind.LONG_TERM,))
+        self.assertTrue(result.succeeded)
+        self.assertEqual(long_term[0].summary, "规划已验证")
+        self.assertTrue(long_term[0].evidence_refs[0].startswith("artifact://"))
+
+    def test_structured_planner_repairs_invalid_graph(self) -> None:
+        class Client:
+            def __init__(self): self.calls = 0
+            def generate_json(self, messages):
+                self.calls += 1
+                if self.calls == 1:
+                    return {"tasks": []}
+                return {"tasks": [{
+                    "task_id": "code", "title": "编码", "objective": "实现功能",
+                    "role": "implementer", "acceptance_criteria": ["完成"],
+                    "write_scopes": ["app.py"], "output_artifacts": ["patch"],
+                }]}
+
+        client = Client()
+        graph = StructuredTaskPlanner(client).create_graph(self.make_task())
+        self.assertEqual(tuple(graph.tasks), ("code",))
+        self.assertEqual(client.calls, 2)
+
+    def test_patch_integrator_rejects_cross_artifact_conflict(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            integrator = PatchIntegrator(ProjectWorkspace(Path(temp)), ("*.py",))
+            first = Artifact.create("a", "a", ImplementationPlan("a", [FileChange("app.py", "A=1\n", "a")]))
+            second = Artifact.create("b", "b", ImplementationPlan("b", [FileChange("app.py", "A=2\n", "b")]))
+            with self.assertRaises(IntegrationError):
+                integrator.integrate((first, second))
+            self.assertFalse((Path(temp) / "app.py").exists())
+
+    def test_dag_runner_merges_then_verifies(self) -> None:
+        class Client:
+            def __init__(self): self.calls = 0
+            def generate_json(self, messages):
+                self.calls += 1
+                if self.calls == 1:
+                    return {"tasks": [{
+                        "task_id": "code", "title": "编码", "objective": "实现功能",
+                        "role": "implementer", "acceptance_criteria": ["测试通过"],
+                        "write_scopes": ["app.py", "test_app.py"],
+                        "output_artifacts": ["patch"],
+                    }]}
+                return {
+                    "summary": "实现完成",
+                    "changes": [
+                        {"path": "app.py", "content": "VALUE = 1\n", "reason": "实现"},
+                        {"path": "test_app.py", "content": "import unittest\nfrom app import VALUE\nclass T(unittest.TestCase):\n def test_v(self): self.assertEqual(VALUE, 1)\n", "reason": "测试"},
+                    ],
+                    "suggested_checks": [],
+                }
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            workspace = ProjectWorkspace(root)
+            task = TaskContext(
+                "DAG-1", "实现功能", ["测试通过"],
+                [["python3", "-m", "unittest", "-v"]],
+                allowed_paths=["*.py"],
+            )
+            policy = CommandPolicy(allowed_commands=task.verification_commands)
+            result = run_dag_task(
+                task, Client(), workspace, memory_path=root / "memory.sqlite3",
+                command_policy=policy,
+            )
+        self.assertEqual(result.task.state, TaskState.COMPLETED)
+        self.assertTrue(result.task.verification.passed)
+
+    def test_dag_runner_marks_integration_conflict_failed(self) -> None:
+        class Client:
+            def __init__(self): self.calls = 0
+            def generate_json(self, messages):
+                self.calls += 1
+                if self.calls == 1:
+                    return {"tasks": [
+                        {"task_id": "a", "title": "A", "objective": "A", "role": "implementer", "acceptance_criteria": ["完成"], "write_scopes": ["app.py"], "output_artifacts": ["a-patch"]},
+                        {"task_id": "b", "title": "B", "objective": "B", "role": "implementer", "acceptance_criteria": ["完成"], "write_scopes": ["app.py"], "output_artifacts": ["b-patch"]},
+                    ]}
+                return {"summary": "修改", "changes": [{"path": "app.py", "content": "X=1\n", "reason": "实现"}]}
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            task = TaskContext("DAG-C", "冲突", ["完成"], allowed_paths=["*.py"])
+            result = run_dag_task(
+                task, Client(), ProjectWorkspace(root), memory_path=root / "memory.sqlite3"
+            )
+        self.assertEqual(result.task.state, TaskState.FAILED)
+        self.assertTrue(result.task.feedback)
+
+    def test_memory_and_project_files_share_one_context_budget(self) -> None:
+        policy = MemoryPolicy(
+            frozenset({"task", "project_files", "long_term"}),
+            frozenset(),
+            max_context_chars=10,
+            include_project_files=True,
+        )
+        manager = MemoryManager({IMPLEMENTER.name: policy})
+        task = self.make_task()
+        manager.record(
+            MemoryRecord.create(
+                MemoryKind.LONG_TERM,
+                "rule",
+                "123456",
+                task_id=task.task_id,
+                visibility=(IMPLEMENTER.name,),
+            )
+        )
+        view = manager.build(
+            task,
+            IMPLEMENTER,
+            [ProjectFile("app.py", "12345")],
+        )
+        self.assertEqual(view.memories, ())
 
     def test_tester_and_reviewer_run_concurrently(self) -> None:
         barrier = threading.Barrier(2, timeout=2)

@@ -9,10 +9,24 @@ from .validation import PlanValidator
 from .backends import StructuredCodingBackend, StructuredReviewBackend
 from .model import ModelClient, ModelClientFactory, ModelConfig, ModelError
 from .roles import Capability, DEFAULT_ROLES, RoleRegistry, RoleSpec
-from .memory import MemoryManager, MemoryPolicy, RoleMemoryView
+from .memory import (
+    MemoryKind,
+    MemoryManager,
+    MemoryPolicy,
+    MemoryRecord,
+    MemoryStore,
+    RoleMemoryView,
+    TaskWorkingMemory,
+)
+from .memory_sqlite import SQLiteMemoryStore
+from .artifacts import Artifact, ArtifactStore
+from .planning import StructuredTaskPlanner
+from .integration import IntegrationError, IntegrationResult, PatchIntegrator
+from .graph_workers import PlanningCodingWorker
+from .dag_runner import DagRunResult, run_dag_task
 from .results import ResultEnvelope, StaleResultError
 from .communication import AgentMessage, MessageType, MessageValidationError
-from .harness import CancellationToken, LifecycleController, LifecycleEvent, LifecycleState, NodeSpec, TaskDispatcher, TaskHandle, TaskStatus, WorkerRegistry, WorkflowSpec, coding_workflow_spec
+from .harness import CancellationToken, GraphExecutionResult, GraphSnapshot, GraphValidationError, GraphWorker, LifecycleController, LifecycleEvent, LifecycleState, NodeSpec, ResourceConflict, TaskDispatcher, TaskExecutionState, TaskGraph, TaskGraphExecutor, TaskGraphRuntime, TaskHandle, TaskRunRequest, TaskRunResult, TaskSpec, TaskStatus, WorkerRegistry, WorkflowSpec, coding_workflow_spec
 
 __all__ = [
     "AgentResult",
@@ -43,8 +57,22 @@ __all__ = [
     "RoleRegistry",
     "RoleSpec",
     "MemoryManager",
+    "MemoryKind",
     "MemoryPolicy",
+    "MemoryRecord",
+    "MemoryStore",
     "RoleMemoryView",
+    "TaskWorkingMemory",
+    "SQLiteMemoryStore",
+    "Artifact",
+    "ArtifactStore",
+    "StructuredTaskPlanner",
+    "IntegrationError",
+    "IntegrationResult",
+    "PatchIntegrator",
+    "PlanningCodingWorker",
+    "DagRunResult",
+    "run_dag_task",
     "ReviewAgent",
     "WorkspaceReviewAgent",
     "ReviewFinding",
@@ -65,5 +93,17 @@ __all__ = [
     "TaskStatus",
     "WorkerRegistry",
     "WorkflowSpec",
+    "GraphValidationError",
+    "GraphSnapshot",
+    "GraphExecutionResult",
+    "GraphWorker",
+    "ResourceConflict",
+    "TaskExecutionState",
+    "TaskGraph",
+    "TaskGraphExecutor",
+    "TaskGraphRuntime",
+    "TaskRunRequest",
+    "TaskRunResult",
+    "TaskSpec",
     "coding_workflow_spec",
 ]

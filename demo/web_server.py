@@ -108,6 +108,10 @@ def public_event(entry: dict[str, object], sequence: int = 0) -> dict[str, objec
         "parallel_stage_started": ("handoff", "并行质量阶段已启动"),
         "result_envelope": ("status", "结构化结果已提交"),
         "agent_message": ("message", "Agent 消息"),
+        "task_graph_created": ("status", "Planner 已生成任务图"),
+        "task_graph_finished": ("status", "任务图执行结束"),
+        "artifacts_integrated": ("status", "Artifact 已通过门禁并合并"),
+        "artifacts_rejected": ("status", "Artifact 被安全门禁拒绝"),
     }
     kind, title = labels.get(event, ("status", event))
     detail = payload
@@ -207,6 +211,7 @@ def run_in_background(
             max_attempts=int(request.get("max_attempts", 2)),
             event_listener=on_event,
             lifecycle=lifecycle,
+            engine=str(request.get("engine", "dag")),
         )
         files = [
             str(path.relative_to(run.output))
@@ -226,6 +231,7 @@ def run_in_background(
                         "attempts": run.task.attempt,
                         "provider": run.provider,
                         "model": run.model,
+                        "engine": run.engine,
                         "output": str(run.output),
                         "files": files,
                     },
@@ -354,7 +360,10 @@ class Handler(BaseHTTPRequestHandler):
                 "provider": data.get("provider"),
                 "model": data.get("model"),
                 "max_attempts": min(max(int(data.get("max_attempts", 2)), 1), 3),
+                "engine": str(data.get("engine", "dag")),
             }
+            if request["engine"] not in {"dag", "legacy"}:
+                raise ValueError("engine 必须是 dag 或 legacy")
             task_key = uuid.uuid4().hex[:12]
             lifecycle = LifecycleController()
             lifecycle.mark_queued()

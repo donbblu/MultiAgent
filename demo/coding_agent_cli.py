@@ -16,6 +16,7 @@ from coding_workflow.policy import CommandPolicy, CommandPolicyError
 from coding_workflow.recording import RunRecorder
 from coding_workflow.workspace import ProjectWorkspace
 from coding_workflow.harness import LifecycleController
+from coding_workflow.dag_runner import run_dag_task
 
 
 ROOT = Path(__file__).parent.resolve()
@@ -30,6 +31,7 @@ class CodingRun:
     output: Path
     provider: str
     model: str
+    engine: str = "legacy"
 
 
 def safe_output_path(name: str) -> Path:
@@ -79,6 +81,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model", default=None, help="模型名称，默认读取 MODEL_NAME")
     parser.add_argument("--max-attempts", type=int, choices=range(1, 4), default=2)
     parser.add_argument(
+        "--engine", choices=("dag", "legacy"), default="dag",
+        help="执行引擎；dag 使用动态任务图，legacy 使用固定 Coordinator",
+    )
+    parser.add_argument(
         "--continue-existing",
         action="store_true",
         help="允许在已有输出目录中继续修改；默认拒绝覆盖已有任务",
@@ -99,6 +105,7 @@ def run_requirement(
     continue_existing: bool = False,
     event_listener: Callable[[dict[str, Any]], None] | None = None,
     lifecycle: LifecycleController | None = None,
+    engine: str = "dag",
 ) -> CodingRun:
     if not requirement.strip():
         raise ValueError("需求不能为空")
@@ -148,17 +155,29 @@ def run_requirement(
         ],
     )
     model_config = ModelClientFactory.config_from_env(provider, model)
-    backend = StructuredCodingBackend(ModelClientFactory.create(model_config))
-    review_backend = StructuredReviewBackend(ModelClientFactory.create(model_config))
-    result = Coordinator(
-        WorkspaceCodingAgent(backend, workspace),
-        CommandVerificationAgent(workspace, policy),
-        max_attempts=max_attempts,
-        recorder=RunRecorder(ROOT / ".runs", listener=event_listener),
-        review_agent=WorkspaceReviewAgent(review_backend, workspace),
-        lifecycle=lifecycle,
-    ).run(task)
-    return CodingRun(result, output, model_config.provider, model_config.model)
+    if engine == "dag":
+        client = ModelClientFactory.create(model_config)
+        dag_result = run_dag_task(
+            task, client, workspace,
+            memory_path=ROOT / ".runtime" / f"{task.task_id}.sqlite3",
+            lifecycle=lifecycle, max_workers=3, command_policy=policy,
+            event_listener=event_listener,
+        )
+        result = dag_result.task
+    elif engine == "legacy":
+        backend = StructuredCodingBackend(ModelClientFactory.create(model_config))
+        review_backend = StructuredReviewBackend(ModelClientFactory.create(model_config))
+        result = Coordinator(
+            WorkspaceCodingAgent(backend, workspace),
+            CommandVerificationAgent(workspace, policy),
+            max_attempts=max_attempts,
+            recorder=RunRecorder(ROOT / ".runs", listener=event_listener),
+            review_agent=WorkspaceReviewAgent(review_backend, workspace),
+            lifecycle=lifecycle,
+        ).run(task)
+    else:
+        raise ValueError(f"未知执行引擎: {engine}")
+    return CodingRun(result, output, model_config.provider, model_config.model, engine)
 
 
 def main() -> int:
@@ -174,6 +193,7 @@ def main() -> int:
             model=args.model,
             max_attempts=args.max_attempts,
             continue_existing=args.continue_existing,
+            engine=args.engine,
         )
     except (ValueError, CommandPolicyError) as exc:
         raise SystemExit(str(exc)) from exc
@@ -182,6 +202,7 @@ def main() -> int:
     print(f"任务: {result.task_id}")
     print(f"供应商: {run.provider}")
     print(f"模型: {run.model}")
+    print(f"执行引擎: {run.engine}")
     print(f"状态: {result.state.value}")
     print(f"尝试次数: {result.attempt}")
     print(f"输出目录: {run.output}")

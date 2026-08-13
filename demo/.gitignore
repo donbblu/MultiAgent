@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .runs/
+.runtime/
 generated_project/
 deepseek_generated_project/
 model_generated_project/
