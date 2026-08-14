@@ -4,6 +4,7 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from enum import Enum
 from hashlib import sha256
+import ast
 import json
 import re
 from threading import RLock
@@ -11,7 +12,7 @@ from types import MappingProxyType
 from typing import Iterable, Mapping
 from uuid import uuid4
 
-from .models import ProjectFile, TaskContext
+from .models import FileChange, ImplementationPlan, ProjectFile, TaskContext
 from .roles import FIXER, IMPLEMENTER, PLANNER, REVIEWER, TESTER, RoleSpec
 
 
@@ -31,6 +32,109 @@ class MemoryStatus(str, Enum):
 
 class MemoryPermissionError(PermissionError):
     pass
+
+
+@dataclass(frozen=True, order=True)
+class EntityRef:
+    entity_type: str
+    entity_id: str
+
+    def __post_init__(self) -> None:
+        if not self.entity_type.strip() or not self.entity_id.strip():
+            raise ValueError("实体类型和 ID 不能为空")
+
+
+class EntityIndexer:
+    """从结构化 Patch 中确定性提取文件、Python 符号、测试和 Artifact。"""
+
+    @staticmethod
+    def from_plan(
+        plan: ImplementationPlan, artifact_refs: Iterable[str] = ()
+    ) -> tuple[EntityRef, ...]:
+        entities = {
+            EntityRef("artifact", reference) for reference in artifact_refs
+        }
+        for change in plan.changes:
+            entities.add(EntityRef("file", change.path))
+            if "test" in change.path.casefold():
+                entities.add(EntityRef("test_file", change.path))
+            if change.path.endswith(".py"):
+                try:
+                    tree = ast.parse(change.content)
+                except SyntaxError:
+                    continue
+                for node in ast.walk(tree):
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        kind = "test" if node.name.startswith("test") else "symbol"
+                        entities.add(EntityRef(kind, f"{change.path}:{node.name}"))
+                    elif isinstance(node, ast.ClassDef):
+                        entities.add(EntityRef("symbol", f"{change.path}:{node.name}"))
+        return tuple(sorted(entities))
+
+    @classmethod
+    def from_project_files(
+        cls, files: Iterable[ProjectFile]
+    ) -> tuple[EntityRef, ...]:
+        plan = ImplementationPlan(
+            "上下文实体索引",
+            [
+                FileChange(item.path, item.content, "索引")
+                for item in files
+            ],
+        )
+        return cls.from_plan(plan)
+
+
+class TokenCounter:
+    """优先使用本地 tokenizer；不可用时采用保守的 Unicode 估算。"""
+
+    def __init__(self) -> None:
+        self._encoding = None
+        try:
+            import tiktoken  # type: ignore
+            self._encoding = tiktoken.get_encoding("cl100k_base")
+        except (ImportError, ModuleNotFoundError, ValueError):
+            pass
+
+    def count(self, value: object) -> int:
+        text = value if isinstance(value, str) else json.dumps(
+            value, ensure_ascii=False, sort_keys=True, default=str
+        )
+        if self._encoding is not None:
+            return len(self._encoding.encode(text))
+        ascii_count = sum(1 for char in text if ord(char) < 128)
+        return max(1, (ascii_count + 3) // 4 + len(text) - ascii_count)
+
+
+def _search_terms(text: str) -> tuple[str, ...]:
+    normalized = text.casefold().strip()
+    words = re.findall(r"[a-z0-9_./:-]+", normalized)
+    cjk_runs = re.findall(r"[\u3400-\u9fff]+", normalized)
+    cjk_terms = [
+        run[index:index + 2]
+        for run in cjk_runs
+        for index in range(max(1, len(run) - 1))
+    ]
+    return tuple(dict.fromkeys((*words, *cjk_terms)))
+
+
+def _record_score(
+    record: "MemoryRecord", text: str, entities: frozenset[EntityRef]
+) -> tuple[float, float, str]:
+    exact_entities = len(entities & set(record.entity_refs))
+    haystack = " ".join((
+        record.summary,
+        json.dumps(dict(record.content), ensure_ascii=False, default=str),
+        " ".join(item.entity_id for item in record.entity_refs),
+    )).casefold()
+    normalized = text.casefold().strip()
+    terms = _search_terms(text)
+    score = exact_entities * 100.0
+    if normalized and normalized in haystack:
+        score += 40.0
+    score += sum(8.0 for term in terms if term in haystack)
+    score += record.confidence * 10.0
+    return score, record.confidence, record.created_at
 
 
 class MemorySanitizer:
@@ -111,6 +215,7 @@ class MemoryRecord:
     invalidated_at: str | None = None
     invalidated_reason: str = ""
     last_confirmed_at: str = ""
+    entity_refs: tuple[EntityRef, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.memory_id or not self.subtype or not self.summary:
@@ -146,6 +251,7 @@ class MemoryRecord:
         confidence: float = 1.0,
         expires_at: str | None = None,
         semantic_key: str = "",
+        entity_refs: Iterable[EntityRef] = (),
     ) -> "MemoryRecord":
         now = datetime.now(timezone.utc).isoformat()
         if kind is MemoryKind.LONG_TERM and not semantic_key:
@@ -162,6 +268,7 @@ class MemoryRecord:
             expires_at=expires_at,
             semantic_key=semantic_key,
             last_confirmed_at=now,
+            entity_refs=tuple(sorted(set(entity_refs))),
         )
 
     def payload_fingerprint(self) -> str:
@@ -219,6 +326,9 @@ class MemoryStore:
                             (*existing.evidence_refs, *record.evidence_refs)
                         )),
                         last_confirmed_at=record.created_at,
+                        entity_refs=tuple(sorted(set(
+                            (*existing.entity_refs, *record.entity_refs)
+                        ))),
                     )
                     self._records[existing.memory_id] = confirmed
                     return confirmed
@@ -266,11 +376,12 @@ class MemoryStore:
         scopes: Iterable[str] = (),
         role: str = "",
         text: str = "",
+        entity_refs: Iterable[EntityRef] = (),
         include_inactive: bool = False,
     ) -> tuple[MemoryRecord, ...]:
         allowed_kinds = set(kinds)
         allowed_scopes = set(scopes)
-        words = {word.lower() for word in text.split() if word}
+        requested_entities = frozenset(entity_refs)
         with self._lock:
             records = tuple(self._records.values())
         result = []
@@ -300,13 +411,26 @@ class MemoryStore:
                 continue
             if allowed_scopes and record.scope not in allowed_scopes:
                 continue
+            if requested_entities and not requested_entities.intersection(
+                record.entity_refs
+            ):
+                continue
             if role and record.visibility and role not in record.visibility:
                 continue
-            haystack = record.summary.lower()
-            if words and not any(word in haystack for word in words):
+            haystack = " ".join((
+                record.summary,
+                json.dumps(dict(record.content), ensure_ascii=False, default=str),
+                " ".join(item.entity_id for item in record.entity_refs),
+            )).casefold()
+            terms = _search_terms(text)
+            if terms and not any(term in haystack for term in terms):
                 continue
             result.append(record)
-        return tuple(sorted(result, key=lambda item: (item.confidence, item.created_at), reverse=True))
+        return tuple(sorted(
+            result,
+            key=lambda item: _record_score(item, text, requested_entities),
+            reverse=True,
+        ))
 
 
 @dataclass(frozen=True)
@@ -443,12 +567,15 @@ class MemoryPolicy:
     include_feedback: bool = False
     include_verification_commands: bool = False
     secret_access: bool = False
+    max_context_tokens: int | None = None
 
     def __post_init__(self) -> None:
         if self.max_context_chars < 0:
             raise ValueError("max_context_chars 不能小于 0")
         if self.secret_access:
             raise ValueError("当前框架不允许任何角色访问密钥")
+        if self.max_context_tokens is not None and self.max_context_tokens < 1:
+            raise ValueError("max_context_tokens 必须大于 0")
 
 
 @dataclass(frozen=True)
@@ -472,6 +599,7 @@ class RoleMemoryView:
     policy: MemoryPolicy
     working_progress: Mapping[str, object]
     memories: tuple[MemoryRecord, ...] = ()
+    estimated_tokens: int = 0
 
     def model_input(self) -> dict[str, object]:
         return {
@@ -491,6 +619,7 @@ class RoleMemoryView:
                 "readable_scopes": sorted(self.policy.readable_scopes),
                 "writable_scopes": sorted(self.policy.writable_scopes),
                 "max_context_chars": self.policy.max_context_chars,
+                "max_context_tokens": self.policy.max_context_tokens,
                 "secret_access": False,
             },
             "memory_summaries": [
@@ -500,10 +629,15 @@ class RoleMemoryView:
                     "summary": item.summary,
                     "source_ref": item.source_ref,
                     "confidence": item.confidence,
+                    "entities": [
+                        {"type": entity.entity_type, "id": entity.entity_id}
+                        for entity in item.entity_refs
+                    ],
                 }
                 for item in self.memories
             ],
             "working_progress": dict(self.working_progress),
+            "estimated_tokens": self.estimated_tokens,
         }
 
 
@@ -513,18 +647,21 @@ DEFAULT_MEMORY_POLICIES: Mapping[str, MemoryPolicy] = MappingProxyType(
             frozenset({"task", "project"}),
             frozenset({"task"}),
             15_000,
+            max_context_tokens=4_000,
         ),
         IMPLEMENTER.name: MemoryPolicy(
             frozenset({"task", "project"}),
             frozenset({"task"}),
             40_000,
             include_project_files=True,
+            max_context_tokens=10_000,
         ),
         TESTER.name: MemoryPolicy(
             frozenset({"task"}),
             frozenset({"task"}),
             0,
             include_verification_commands=True,
+            max_context_tokens=2_000,
         ),
         FIXER.name: MemoryPolicy(
             frozenset({"task"}),
@@ -532,12 +669,14 @@ DEFAULT_MEMORY_POLICIES: Mapping[str, MemoryPolicy] = MappingProxyType(
             30_000,
             include_project_files=True,
             include_feedback=True,
+            max_context_tokens=7_500,
         ),
         REVIEWER.name: MemoryPolicy(
             frozenset({"task", "project"}),
             frozenset({"task"}),
             25_000,
             include_project_files=True,
+            max_context_tokens=6_250,
         ),
     }
 )
@@ -551,6 +690,7 @@ class MemoryManager:
     ) -> None:
         self.policies = MappingProxyType(dict(policies))
         self.store = store or MemoryStore()
+        self.token_counter = TokenCounter()
         self._working: dict[str, TaskWorkingMemory] = {}
         self._lock = RLock()
 
@@ -586,6 +726,22 @@ class MemoryManager:
         with self._lock:
             working = self.working_memory(task_id)
             working.active_artifacts.update(references)
+            working.version += 1
+
+    def reconcile_artifacts(
+        self, task_id: str, valid_references: Iterable[str]
+    ) -> None:
+        valid = frozenset(valid_references)
+        with self._lock:
+            working = self.working_memory(task_id)
+            stale = set(working.artifacts) - valid
+            if not stale:
+                return
+            for reference in stale:
+                working.artifacts.pop(reference, None)
+            for name, reference in tuple(working.active_artifacts.items()):
+                if reference not in valid:
+                    working.active_artifacts.pop(name, None)
             working.version += 1
 
     def observe_failure(self, task_id: str, failure: FailureObservation) -> None:
@@ -738,6 +894,7 @@ class MemoryManager:
                 project_id=project_id,
                 source_ref=f"{task_id}:{result.source_ref}",
                 evidence_refs=(*evidence, *tuple(verification_refs)),
+                entity_refs=result.entity_refs,
                 confidence=1.0,
                 semantic_key=sha256(
                     (
@@ -783,6 +940,7 @@ class MemoryManager:
         role: RoleSpec,
         *,
         query: str = "",
+        entity_refs: Iterable[EntityRef] = (),
     ) -> tuple[MemoryRecord, ...]:
         """Harness 主动触发入口；确定性事件决定需要检索的记忆层。"""
         policy = self.policy_for(role)
@@ -801,6 +959,7 @@ class MemoryManager:
             scopes=policy.readable_scopes,
             role=role.name,
             text=query,
+            entity_refs=entity_refs,
         )
 
     def query(
@@ -809,6 +968,7 @@ class MemoryManager:
         role: RoleSpec,
         query: str,
         kinds: Iterable[MemoryKind] = (),
+        entity_refs: Iterable[EntityRef] = (),
     ) -> tuple[MemoryRecord, ...]:
         """Agent 被动检索入口，仍强制执行角色可见性过滤。"""
         policy = self.policy_for(role)
@@ -819,6 +979,7 @@ class MemoryManager:
             scopes=policy.readable_scopes,
             role=role.name,
             text=query,
+            entity_refs=entity_refs,
         )
 
     def policy_for(self, role: RoleSpec) -> MemoryPolicy:
@@ -839,12 +1000,21 @@ class MemoryManager:
         policy = self.policy_for(role)
         selected = self._limit_files(project_files, policy)
         memories = self.trigger(trigger, task, role, query=query)
+        context_entities = EntityIndexer.from_project_files(selected)
+        if context_entities:
+            exact = self.trigger(
+                trigger, task, role, entity_refs=context_entities
+            )
+            merged: dict[str, MemoryRecord] = {}
+            for item in (*exact, *memories):
+                merged.setdefault(item.memory_id, item)
+            memories = tuple(merged.values())
         progress = self.progress_view(task.task_id, role)
         memory_budget = max(
             0,
             policy.max_context_chars - sum(len(item.content) for item in selected),
         )
-        return RoleMemoryView(
+        view = RoleMemoryView(
             task_id=task.task_id,
             role=role,
             objective=task.objective,
@@ -870,6 +1040,66 @@ class MemoryManager:
             working_progress=progress,
             memories=self._limit_memories(memories, memory_budget),
         )
+        return self._fit_token_budget(view)
+
+    def _context_payload(self, view: RoleMemoryView) -> dict[str, object]:
+        return {
+            "task": view.model_input(),
+            "context_files": [
+                {"path": item.path, "content": item.content,
+                 "truncated": item.truncated}
+                for item in view.project_files
+            ],
+        }
+
+    def _fit_token_budget(self, view: RoleMemoryView) -> RoleMemoryView:
+        limit = view.policy.max_context_tokens
+        if limit is None:
+            return replace(
+                view,
+                estimated_tokens=self.token_counter.count(
+                    self._context_payload(view)
+                ),
+            )
+        fit_limit = max(1, limit - 16)
+        current = view
+        while current.memories and self.token_counter.count(
+            self._context_payload(current)
+        ) > fit_limit:
+            current = replace(current, memories=current.memories[:-1])
+        files = list(current.project_files)
+        while files and self.token_counter.count(
+            self._context_payload(replace(current, project_files=tuple(files)))
+        ) > fit_limit:
+            item = files[-1]
+            if len(item.content) <= 1:
+                files.pop()
+                continue
+            low, high = 0, len(item.content)
+            best = 0
+            while low <= high:
+                middle = (low + high) // 2
+                candidate = files[:-1] + [ProjectFile(
+                    item.path, item.content[:middle], True
+                )]
+                tokens = self.token_counter.count(self._context_payload(
+                    replace(current, project_files=tuple(candidate))
+                ))
+                if tokens <= fit_limit:
+                    best = middle
+                    low = middle + 1
+                else:
+                    high = middle - 1
+            if best == 0:
+                files.pop()
+            else:
+                files[-1] = ProjectFile(item.path, item.content[:best], True)
+                break
+        current = replace(current, project_files=tuple(files))
+        estimated = self.token_counter.count(self._context_payload(current))
+        current = replace(current, estimated_tokens=estimated)
+        final_estimate = self.token_counter.count(self._context_payload(current))
+        return replace(current, estimated_tokens=final_estimate)
 
     @staticmethod
     def _limit_memories(

@@ -10,6 +10,8 @@ from .backends import StructuredCodingBackend, StructuredReviewBackend
 from .model import ModelClient, ModelClientFactory, ModelConfig, ModelError
 from .roles import Capability, DEFAULT_ROLES, RoleRegistry, RoleSpec
 from .memory import (
+    EntityIndexer,
+    EntityRef,
     MemoryKind,
     MemoryManager,
     MemoryPermissionError,
@@ -22,6 +24,7 @@ from .memory import (
     MemoryStore,
     RoleMemoryView,
     TaskWorkingMemory,
+    TokenCounter,
     WorkingArtifactState,
     WorkingNodeState,
 )
@@ -36,6 +39,11 @@ from .planning import StructuredTaskPlanner
 from .integration import IntegrationError, IntegrationResult, PatchIntegrator
 from .graph_workers import PlanningCodingWorker
 from .dag_runner import DagRunResult, run_dag_task
+from .runtime_sqlite import (
+    RuntimeRecoveryError,
+    RuntimeSnapshot,
+    SQLiteRuntimeStore,
+)
 from .results import ResultEnvelope, StaleResultError
 from .communication import AgentMessage, MessageType, MessageValidationError
 from .harness import CancellationToken, GraphExecutionResult, GraphSnapshot, GraphValidationError, GraphWorker, LifecycleController, LifecycleEvent, LifecycleState, NodeSpec, ResourceConflict, TaskDispatcher, TaskExecutionState, TaskGraph, TaskGraphExecutor, TaskGraphRuntime, TaskHandle, TaskRunRequest, TaskRunResult, TaskSpec, TaskStatus, WorkerRegistry, WorkflowSpec, coding_workflow_spec
@@ -69,6 +77,8 @@ __all__ = [
     "RoleRegistry",
     "RoleSpec",
     "MemoryManager",
+    "EntityIndexer",
+    "EntityRef",
     "MemoryPermissionError",
     "MemoryKind",
     "MemoryPolicy",
@@ -80,6 +90,7 @@ __all__ = [
     "MemoryStore",
     "RoleMemoryView",
     "TaskWorkingMemory",
+    "TokenCounter",
     "WorkingArtifactState",
     "WorkingNodeState",
     "SQLiteMemoryStore",
@@ -94,6 +105,9 @@ __all__ = [
     "PlanningCodingWorker",
     "DagRunResult",
     "run_dag_task",
+    "RuntimeRecoveryError",
+    "RuntimeSnapshot",
+    "SQLiteRuntimeStore",
     "ReviewAgent",
     "WorkspaceReviewAgent",
     "ReviewFinding",

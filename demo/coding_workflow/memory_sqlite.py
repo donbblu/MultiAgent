@@ -10,6 +10,7 @@ from types import MappingProxyType
 from typing import Iterable, Mapping
 
 from .memory import (
+    EntityRef,
     MemoryKind,
     MemoryRecord,
     MemorySanitizer,
@@ -19,6 +20,8 @@ from .memory import (
     TaskWorkingMemory,
     WorkingArtifactState,
     WorkingNodeState,
+    _record_score,
+    _search_terms,
 )
 
 
@@ -51,13 +54,23 @@ class SQLiteMemoryStore:
                     supersedes TEXT, semantic_key TEXT NOT NULL DEFAULT '',
                     status TEXT NOT NULL DEFAULT 'active', invalidated_at TEXT,
                     invalidated_reason TEXT NOT NULL DEFAULT '',
-                    last_confirmed_at TEXT NOT NULL DEFAULT ''
+                    last_confirmed_at TEXT NOT NULL DEFAULT '',
+                    entity_refs TEXT NOT NULL DEFAULT '[]'
                 );
                 CREATE INDEX IF NOT EXISTS idx_memories_task_kind
                     ON memories(task_id, kind);
                 CREATE TABLE IF NOT EXISTS checkpoints (
                     task_id TEXT PRIMARY KEY, payload TEXT NOT NULL, version INTEGER NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS memory_entities (
+                    memory_id TEXT NOT NULL,
+                    entity_type TEXT NOT NULL,
+                    entity_id TEXT NOT NULL,
+                    PRIMARY KEY(memory_id, entity_type, entity_id),
+                    FOREIGN KEY(memory_id) REFERENCES memories(memory_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_memory_entities_lookup
+                    ON memory_entities(entity_type, entity_id, memory_id);
                 """
             )
             columns = {
@@ -74,6 +87,7 @@ class SQLiteMemoryStore:
                 "invalidated_at": "TEXT",
                 "invalidated_reason": "TEXT NOT NULL DEFAULT ''",
                 "last_confirmed_at": "TEXT NOT NULL DEFAULT ''",
+                "entity_refs": "TEXT NOT NULL DEFAULT '[]'",
             }
             for name, declaration in additions.items():
                 if name not in columns:
@@ -105,6 +119,9 @@ class SQLiteMemoryStore:
             record.confidence, record.created_at, record.expires_at, record.version,
             record.supersedes, record.semantic_key, record.status.value,
             record.invalidated_at, record.invalidated_reason, record.last_confirmed_at,
+            json.dumps([
+                [item.entity_type, item.entity_id] for item in record.entity_refs
+            ], ensure_ascii=False),
         )
 
     @classmethod
@@ -114,9 +131,19 @@ class SQLiteMemoryStore:
                 memory_id, kind, subtype, summary, content, source, scope,
                 project_id, visibility, task_id, source_ref, evidence_refs,
                 sensitivity, confidence, created_at, expires_at, version, supersedes,
-                semantic_key, status, invalidated_at, invalidated_reason, last_confirmed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                semantic_key, status, invalidated_at, invalidated_reason,
+                last_confirmed_at, entity_refs
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             cls._values(record),
+        )
+        connection.executemany(
+            """INSERT OR IGNORE INTO memory_entities(
+                memory_id, entity_type, entity_id
+            ) VALUES (?, ?, ?)""",
+            [
+                (record.memory_id, item.entity_type, item.entity_id)
+                for item in record.entity_refs
+            ],
         )
 
     def append(self, record: MemoryRecord) -> MemoryRecord:
@@ -148,16 +175,32 @@ class SQLiteMemoryStore:
                             (*existing.evidence_refs, *record.evidence_refs)
                         )),
                         last_confirmed_at=record.created_at,
+                        entity_refs=tuple(sorted(set(
+                            (*existing.entity_refs, *record.entity_refs)
+                        ))),
                     )
                     connection.execute(
                         """UPDATE memories
-                           SET evidence_refs = ?, last_confirmed_at = ?
+                           SET evidence_refs = ?, last_confirmed_at = ?, entity_refs = ?
                            WHERE memory_id = ?""",
                         (
                             json.dumps(confirmed.evidence_refs, ensure_ascii=False),
                             confirmed.last_confirmed_at,
+                            json.dumps([
+                                [item.entity_type, item.entity_id]
+                                for item in confirmed.entity_refs
+                            ], ensure_ascii=False),
                             confirmed.memory_id,
                         ),
+                    )
+                    connection.executemany(
+                        """INSERT OR IGNORE INTO memory_entities(
+                            memory_id, entity_type, entity_id
+                        ) VALUES (?, ?, ?)""",
+                        [
+                            (confirmed.memory_id, item.entity_type, item.entity_id)
+                            for item in confirmed.entity_refs
+                        ],
                     )
                     return confirmed
                 if same_key:
@@ -191,6 +234,10 @@ class SQLiteMemoryStore:
             row["created_at"], row["expires_at"], row["version"], row["supersedes"],
             row["semantic_key"], MemoryStatus(row["status"]), row["invalidated_at"],
             row["invalidated_reason"], row["last_confirmed_at"],
+            tuple(
+                EntityRef(str(item[0]), str(item[1]))
+                for item in json.loads(row["entity_refs"])
+            ),
         )
 
     def invalidate(self, memory_id: str, reason: str) -> MemoryRecord:
@@ -227,6 +274,7 @@ class SQLiteMemoryStore:
         scopes: Iterable[str] = (),
         role: str = "",
         text: str = "",
+        entity_refs: Iterable[EntityRef] = (),
         include_inactive: bool = False,
     ) -> tuple[MemoryRecord, ...]:
         clauses: list[str] = []
@@ -251,6 +299,17 @@ class SQLiteMemoryStore:
             parameters.append(MemoryStatus.ACTIVE.value)
             clauses.append("(expires_at IS NULL OR expires_at > ?)")
             parameters.append(now)
+        requested_entities = tuple(entity_refs)
+        if requested_entities:
+            entity_conditions = " OR ".join(
+                "(entity_type = ? AND entity_id = ?)"
+                for _ in requested_entities
+            )
+            clauses.append(
+                f"memory_id IN (SELECT memory_id FROM memory_entities WHERE {entity_conditions})"
+            )
+            for item in requested_entities:
+                parameters.extend((item.entity_type, item.entity_id))
         sql = "SELECT * FROM memories"
         if clauses:
             sql += " WHERE " + " AND ".join(clauses)
@@ -269,12 +328,25 @@ class SQLiteMemoryStore:
                 ),
             )
             records = tuple(self._record(row) for row in connection.execute(sql, parameters))
-        words = {word.lower() for word in text.split() if word}
-        return tuple(
+        terms = _search_terms(text)
+        filtered = tuple(
             record for record in records
             if (not role or not record.visibility or role in record.visibility)
-            and (not words or any(word in record.summary.lower() for word in words))
+            and (
+                not terms
+                or any(term in " ".join((
+                    record.summary,
+                    json.dumps(dict(record.content), ensure_ascii=False, default=str),
+                    " ".join(item.entity_id for item in record.entity_refs),
+                )).casefold() for term in terms)
+            )
         )
+        requested_set = frozenset(requested_entities)
+        return tuple(sorted(
+            filtered,
+            key=lambda item: _record_score(item, text, requested_set),
+            reverse=True,
+        ))
 
     def save_checkpoint(self, working: TaskWorkingMemory) -> None:
         payload = dict(working.checkpoint())

@@ -9,6 +9,7 @@ from typing import Callable, Mapping, Protocol
 from ..artifacts import Artifact, ArtifactStore
 from ..memory import (
     FailureObservation,
+    EntityIndexer,
     MemoryKind,
     MemoryManager,
     MemoryRecord,
@@ -225,10 +226,25 @@ class TaskGraphExecutor:
             task_id=parent.task_id, source=spec.role, source_ref=spec.task_id,
             project_id=parent.project_id,
             visibility=tuple(self.roles.names()), evidence_refs=tuple(references.values()),
+            entity_refs=tuple(sorted({
+                entity
+                for name, content in result.artifacts.items()
+                if isinstance(content, ImplementationPlan)
+                for entity in EntityIndexer.from_plan(
+                    content, (references[name],)
+                )
+            })),
         ))
         self.memory.save_checkpoint(parent.task_id)
 
     def run(self, parent: TaskContext) -> GraphExecutionResult:
+        self.memory.reconcile_artifacts(
+            parent.task_id,
+            (
+                f"artifact://{artifact.artifact_id}"
+                for artifact, _ in self.artifacts.snapshot()
+            ),
+        )
         working = self.memory.working_memory(parent.task_id)
         for spec in self.runtime.graph.tasks.values():
             if spec.task_id not in working.nodes:
@@ -237,6 +253,24 @@ class TaskGraphExecutor:
                     input_artifacts=spec.input_artifacts,
                     output_artifacts=spec.output_artifacts,
                 ))
+        restored_references = self.runtime.snapshot().artifacts
+        if restored_references:
+            self.memory.register_artifact_names(parent.task_id, restored_references)
+        for reference in restored_references.values():
+            if reference in self.memory.working_memory(parent.task_id).artifacts:
+                continue
+            artifact = self.artifacts.get(reference)
+            affected_paths = (
+                tuple(change.path for change in artifact.content.changes)
+                if isinstance(artifact.content, ImplementationPlan) else ()
+            )
+            validation = self.artifacts.validation(reference)
+            self.memory.update_artifact(parent.task_id, WorkingArtifactState(
+                reference, artifact.task_id, validation.state.value,
+                affected_paths=affected_paths,
+                superseded_by=validation.superseded_by,
+                verification_refs=validation.verification_refs,
+            ))
         if self.lifecycle.state is LifecycleState.CREATED:
             self.lifecycle.mark_running()
         elif self.lifecycle.state is LifecycleState.QUEUED:

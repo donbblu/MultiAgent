@@ -41,6 +41,8 @@ from coding_workflow.roles import (
     TESTER,
 )
 from coding_workflow.memory import (
+    EntityIndexer,
+    EntityRef,
     FailureObservation,
     MemoryKind,
     MemoryManager,
@@ -52,6 +54,7 @@ from coding_workflow.memory import (
     MemoryStore,
     WorkingArtifactState,
     WorkingNodeState,
+    TokenCounter,
 )
 from coding_workflow.memory_sqlite import SQLiteMemoryStore
 from coding_workflow.artifacts import (
@@ -62,6 +65,11 @@ from coding_workflow.artifacts import (
 from coding_workflow.integration import IntegrationError, PatchIntegrator
 from coding_workflow.planning import StructuredTaskPlanner
 from coding_workflow.dag_runner import run_dag_task
+from coding_workflow.runtime_sqlite import (
+    RuntimeRecoveryError,
+    RuntimeSnapshot,
+    SQLiteRuntimeStore,
+)
 from coding_workflow.results import ResultEnvelope, StaleResultError
 from coding_workflow.communication import AgentMessage, MessageType, MessageValidationError
 from coding_workflow.harness import (
@@ -494,6 +502,82 @@ class WorkflowTests(unittest.TestCase):
             store.validation(new).state, ArtifactValidationState.VERIFIED
         )
 
+    def test_runtime_snapshot_restores_artifacts_and_requeues_running_node(self) -> None:
+        class Worker:
+            def __init__(self):
+                self.calls = []
+
+            def run_task(self, request):
+                self.calls.append(request.task.task_id)
+                self.assert_input = request.inputs["a-patch"].content
+                return TaskRunResult(True, "B 完成", {"b-patch": "B"})
+
+        graph = TaskGraph((
+            TaskSpec(
+                "a", "A", "实现 A", "implementer",
+                acceptance_criteria=("完成",), output_artifacts=("a-patch",),
+            ),
+            TaskSpec(
+                "b", "B", "实现 B", "implementer", dependencies=("a",),
+                acceptance_criteria=("完成",), input_artifacts=("a-patch",),
+                output_artifacts=("b-patch",),
+            ),
+        ))
+        artifact_store = ArtifactStore()
+        a_reference = artifact_store.put(Artifact.create("a-patch", "a", "A"))
+        runtime = TaskGraphRuntime(graph)
+        runtime.claim_ready(1)
+        runtime.succeed("a", {"a-patch": a_reference})
+        runtime.claim_ready(1)
+        lifecycle = LifecycleController()
+        lifecycle.mark_running()
+
+        with tempfile.TemporaryDirectory() as temp:
+            store = SQLiteRuntimeStore(Path(temp) / "runtime.sqlite3")
+            store.save(RuntimeSnapshot(
+                "resume", "T-1", "project-a", "executing",
+                graph, runtime.snapshot(), {"a": 1, "b": 0},
+                lifecycle.snapshot(), artifact_store, {"app.py": "hash"},
+            ))
+            restored = store.load("resume")
+            self.assertIsNotNone(restored)
+            worker = Worker()
+            registry = WorkerRegistry()
+            registry.register("implementer", worker)
+            task = self.make_task()
+            task.project_id = "project-a"
+            result = TaskGraphExecutor(
+                restored.graph, registry, DEFAULT_ROLES, MemoryManager(),
+                artifacts=restored.artifacts, runtime_snapshot=restored,
+                finalize_lifecycle=False,
+            ).run(task)
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(worker.calls, ["b"])
+        self.assertEqual(worker.assert_input, "A")
+        self.assertEqual(restored.lifecycle.state, LifecycleState.RUNNING)
+
+    def test_runtime_recovery_rejects_workspace_changes(self) -> None:
+        graph = TaskGraph((TaskSpec(
+            "a", "A", "实现 A", "implementer",
+            acceptance_criteria=("完成",), output_artifacts=("patch",),
+        ),))
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            workspace = ProjectWorkspace(root)
+            workspace.apply_changes([FileChange("app.py", "A=1\n", "初始")])
+            lifecycle = LifecycleController()
+            snapshot = RuntimeSnapshot(
+                "tamper", "T", "project-a", "executing", graph,
+                TaskGraphRuntime(graph).snapshot(), {"a": 0},
+                lifecycle.snapshot(), ArtifactStore(), workspace.content_hashes(),
+            )
+            workspace.apply_changes([FileChange("app.py", "A=2\n", "外部修改")])
+            with self.assertRaises(RuntimeRecoveryError):
+                SQLiteRuntimeStore.validate_workspace(
+                    snapshot, workspace.content_hashes()
+                )
+
     def test_memory_enforces_scope_and_project_isolation(self) -> None:
         manager = MemoryManager()
         project_memory = MemoryRecord.create(
@@ -532,6 +616,114 @@ class WorkflowTests(unittest.TestCase):
         )
         with self.assertRaises(MemoryPermissionError):
             manager.record_for_role(project_a, FIXER, foreign_task_memory)
+
+    def test_entity_index_extracts_files_symbols_tests_and_artifacts(self) -> None:
+        plan = ImplementationPlan("实现", [
+            FileChange(
+                "app.py",
+                "def greet(name):\n return name\n",
+                "实现函数",
+            ),
+            FileChange(
+                "test_app.py",
+                "def test_empty():\n assert True\n",
+                "增加测试",
+            ),
+        ])
+        entities = set(EntityIndexer.from_plan(plan, ("artifact://patch",)))
+        self.assertTrue({
+            EntityRef("file", "app.py"),
+            EntityRef("symbol", "app.py:greet"),
+            EntityRef("test_file", "test_app.py"),
+            EntityRef("test", "test_app.py:test_empty"),
+            EntityRef("artifact", "artifact://patch"),
+        } <= entities)
+
+    def test_entity_and_chinese_search_are_precise_in_both_stores(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            stores = (
+                MemoryStore(),
+                SQLiteMemoryStore(Path(temp) / "entities.sqlite3"),
+            )
+            target = EntityRef("symbol", "app.py:greet")
+            for store in stores:
+                relevant = store.append(MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "verified_behavior",
+                    "问候函数需要正确处理空输入",
+                    project_id="project-a", scope="project",
+                    entity_refs=(target, EntityRef("file", "app.py")),
+                ))
+                store.append(MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "verified_behavior",
+                    "数据库连接使用只读事务",
+                    project_id="project-a", scope="project",
+                    entity_refs=(EntityRef("file", "db.py"),),
+                ))
+                by_entity = store.query(
+                    project_id="project-a", entity_refs=(target,)
+                )
+                by_chinese = store.query(
+                    project_id="project-a", text="空输入错误"
+                )
+                self.assertEqual(by_entity, (relevant,))
+                self.assertEqual(by_chinese, (relevant,))
+
+    def test_context_files_prioritize_exact_entity_memories(self) -> None:
+        manager = MemoryManager()
+        task = self.make_task()
+        relevant = manager.record(MemoryRecord.create(
+            MemoryKind.LONG_TERM,
+            "verified_behavior",
+            "app.py 的空输入规则",
+            project_id=task.project_id, scope="project", confidence=0.5,
+            entity_refs=(EntityRef("file", "app.py"),),
+        ), include_in_working=False)
+        manager.record(MemoryRecord.create(
+            MemoryKind.LONG_TERM,
+            "verified_behavior",
+            "不相关但置信度更高的数据库规则",
+            project_id=task.project_id, scope="project", confidence=1.0,
+            entity_refs=(EntityRef("file", "db.py"),),
+        ), include_in_working=False)
+        view = manager.build(
+            task, IMPLEMENTER, [ProjectFile("app.py", "VALUE = 1\n")]
+        )
+        self.assertEqual(view.memories[0].memory_id, relevant.memory_id)
+
+    def test_token_budget_counts_final_payload_and_drops_low_priority_memory(self) -> None:
+        policy = MemoryPolicy(
+            frozenset({"task", "project"}), frozenset({"task"}),
+            max_context_chars=20_000, include_project_files=True,
+            max_context_tokens=1_000,
+        )
+        manager = MemoryManager({IMPLEMENTER.name: policy})
+        task = self.make_task()
+        manager.record(MemoryRecord.create(
+            MemoryKind.LONG_TERM,
+            "large_note",
+            "低优先级历史信息" * 300,
+            project_id=task.project_id,
+            scope="project",
+        ), include_in_working=False)
+        view = manager.build(
+            task, IMPLEMENTER,
+            [ProjectFile("app.py", "VALUE = 1\n" * 1000)],
+        )
+        payload = {
+            "task": view.model_input(),
+            "context_files": [
+                {"path": item.path, "content": item.content,
+                 "truncated": item.truncated}
+                for item in view.project_files
+            ],
+        }
+        actual = TokenCounter().count(payload)
+        self.assertLessEqual(actual, 1_000)
+        self.assertEqual(view.memories, ())
+        self.assertTrue(view.project_files)
+        self.assertTrue(view.project_files[0].truncated)
 
     def test_long_term_memory_is_idempotent_and_versioned(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -679,8 +871,15 @@ class WorkflowTests(unittest.TestCase):
                 }
             self.assertTrue({
                 "project_id", "semantic_key", "status", "invalidated_at",
-                "invalidated_reason", "last_confirmed_at",
+                "invalidated_reason", "last_confirmed_at", "entity_refs",
             } <= columns)
+            with sqlite3.connect(path) as connection:
+                tables = {
+                    row[0] for row in connection.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'"
+                    )
+                }
+            self.assertIn("memory_entities", tables)
 
     def test_graph_executor_runs_independent_tasks_concurrently(self) -> None:
         barrier = threading.Barrier(2, timeout=2)
@@ -822,8 +1021,116 @@ class WorkflowTests(unittest.TestCase):
                 task, Client(), workspace, memory_path=root / "memory.sqlite3",
                 command_policy=policy,
             )
+            class NoCallClient:
+                def generate_json(self, messages):
+                    raise AssertionError("已完成恢复不应再次调用模型")
+
+            resumed_task = TaskContext(
+                "DAG-1", "实现功能", ["测试通过"],
+                [["python3", "-m", "unittest", "-v"]],
+                allowed_paths=["*.py"],
+            )
+            resumed = run_dag_task(
+                resumed_task, NoCallClient(), workspace,
+                memory_path=root / "memory.sqlite3", command_policy=policy,
+            )
+            long_term = SQLiteMemoryStore(root / "memory.sqlite3").query(
+                project_id=result.task.project_id,
+                kinds=(MemoryKind.LONG_TERM,),
+            )
+            workspace.apply_changes([
+                FileChange("app.py", "VALUE = 999\n", "模拟外部修改")
+            ])
+            tampered_task = TaskContext(
+                "DAG-1", "实现功能", ["测试通过"],
+                [["python3", "-m", "unittest", "-v"]],
+                allowed_paths=["*.py"],
+            )
+            with self.assertRaises(RuntimeRecoveryError):
+                run_dag_task(
+                    tampered_task, NoCallClient(), workspace,
+                    memory_path=root / "memory.sqlite3", command_policy=policy,
+                )
         self.assertEqual(result.task.state, TaskState.COMPLETED)
         self.assertTrue(result.task.verification.passed)
+        self.assertEqual(resumed.task.state, TaskState.COMPLETED)
+        self.assertTrue(resumed.task.verification.passed)
+        self.assertEqual(len(long_term), 1)
+
+    def test_dag_runner_resumes_interrupted_graph_without_replanning(self) -> None:
+        class ResumeClient:
+            def __init__(self):
+                self.calls = 0
+
+            def generate_json(self, messages):
+                self.calls += 1
+                return {
+                    "summary": "补充测试",
+                    "changes": [{
+                        "path": "test_app.py",
+                        "content": (
+                            "import unittest\nfrom app import VALUE\n"
+                            "class T(unittest.TestCase):\n"
+                            " def test_v(self): self.assertEqual(VALUE, 1)\n"
+                        ),
+                        "reason": "验收测试",
+                    }],
+                }
+
+        graph = TaskGraph((
+            TaskSpec(
+                "code", "代码", "实现代码", "implementer",
+                acceptance_criteria=("完成",), write_scopes=("app.py",),
+                output_artifacts=("code-patch",),
+            ),
+            TaskSpec(
+                "tests", "测试", "补充测试", "implementer",
+                dependencies=("code",), acceptance_criteria=("测试通过",),
+                write_scopes=("test_app.py",), input_artifacts=("code-patch",),
+                output_artifacts=("test-patch",),
+            ),
+        ))
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            workspace = ProjectWorkspace(root)
+            memory_path = root / "memory.sqlite3"
+            task = TaskContext(
+                "DAG-RESUME", "实现功能", ["测试通过"],
+                [["python3", "-m", "unittest", "-v"]],
+                project_root=str(root), allowed_paths=["*.py"],
+            )
+            artifact_store = ArtifactStore()
+            code_ref = artifact_store.put(Artifact.create(
+                "code-patch", "code", ImplementationPlan(
+                    "代码完成", [FileChange("app.py", "VALUE = 1\n", "实现")]
+                ),
+            ))
+            runtime = TaskGraphRuntime(graph)
+            runtime.claim_ready(1)
+            runtime.succeed("code", {"code-patch": code_ref})
+            runtime.claim_ready(1)
+            lifecycle = LifecycleController()
+            lifecycle.mark_running()
+            runtime_store = SQLiteRuntimeStore(memory_path)
+            runtime_store.save(RuntimeSnapshot(
+                "DAG-RESUME:dag", task.task_id, task.project_id, "executing",
+                graph, runtime.snapshot(), {"code": 1, "tests": 0},
+                lifecycle.snapshot(), artifact_store,
+                workspace.content_hashes(exclude={"memory.sqlite3"}),
+            ))
+            client = ResumeClient()
+            result = run_dag_task(
+                task, client, workspace, memory_path=memory_path,
+                command_policy=CommandPolicy(
+                    allowed_commands=task.verification_commands
+                ),
+            )
+
+        self.assertEqual(result.task.state, TaskState.COMPLETED)
+        self.assertEqual(client.calls, 1)
+        self.assertEqual(result.graph_states, {
+            "code": "succeeded", "tests": "succeeded",
+        })
 
     def test_dag_runner_marks_integration_conflict_failed(self) -> None:
         class Client:
@@ -922,6 +1229,10 @@ class WorkflowTests(unittest.TestCase):
             "verification:1",
         )
         self.assertEqual([item.summary for item in long_term], ["局部修复"])
+        self.assertIn(EntityRef("file", "app.py"), long_term[0].entity_refs)
+        self.assertTrue(any(
+            item.entity_type == "artifact" for item in long_term[0].entity_refs
+        ))
         self.assertTrue(
             any(ref.startswith("verification://") for ref in long_term[0].evidence_refs)
         )

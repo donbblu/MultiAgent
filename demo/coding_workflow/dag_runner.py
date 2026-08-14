@@ -125,6 +125,19 @@ def run_dag_task(
              "dependencies": list(spec.dependencies)}
             for spec in graph.tasks.values()
         ]})
+    if restored and (
+        restored.phase == "cancelled"
+        or restored.lifecycle.state in {
+            LifecycleState.CANCELLING, LifecycleState.CANCELLED
+        }
+    ):
+        reason = restored.lifecycle.reason or "任务已取消"
+        task.transition(TaskState.CANCELLED, reason)
+        controller.cancel(reason)
+        return DagRunResult(task, {
+            key: value.value
+            for key, value in restored.graph_snapshot.states.items()
+        })
     registry = WorkerRegistry()
     registry.register(
         "implementer",
