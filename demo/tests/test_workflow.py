@@ -2,6 +2,7 @@ import tempfile
 import threading
 import unittest
 import json
+import sqlite3
 from pathlib import Path
 
 from coding_workflow.agents import (
@@ -40,14 +41,24 @@ from coding_workflow.roles import (
     TESTER,
 )
 from coding_workflow.memory import (
+    FailureObservation,
     MemoryKind,
     MemoryManager,
+    MemoryPermissionError,
     MemoryPolicy,
     MemoryRecord,
+    MemoryStatus,
+    QualityGateState,
     MemoryStore,
+    WorkingArtifactState,
+    WorkingNodeState,
 )
 from coding_workflow.memory_sqlite import SQLiteMemoryStore
-from coding_workflow.artifacts import Artifact, ArtifactStore
+from coding_workflow.artifacts import (
+    Artifact,
+    ArtifactStore,
+    ArtifactValidationState,
+)
 from coding_workflow.integration import IntegrationError, PatchIntegrator
 from coding_workflow.planning import StructuredTaskPlanner
 from coding_workflow.dag_runner import run_dag_task
@@ -406,6 +417,42 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(checkpoint["version"], 1)
         self.assertEqual(checkpoint["memory_refs"], (record.memory_id,))
 
+    def test_structured_working_memory_is_role_scoped(self) -> None:
+        manager = MemoryManager()
+        task = self.make_task()
+        manager.update_node(task.task_id, WorkingNodeState(
+            "code", "implementer", "succeeded", attempt=1, summary="实现完成"
+        ))
+        manager.update_node(task.task_id, WorkingNodeState(
+            "review", "reviewer", "pending"
+        ))
+        manager.update_artifact(task.task_id, WorkingArtifactState(
+            "artifact://patch", "code", "failed", affected_paths=("app.py",)
+        ))
+        manager.observe_failure(task.task_id, FailureObservation(
+            "verification:1", "tester", "测试失败",
+            feedback=("空输入错误",), affected_paths=("app.py",),
+            affected_artifacts=("artifact://patch",),
+        ))
+        manager.update_quality_gate(task.task_id, QualityGateState(
+            full_gate_completed=True, passed=False, summary="测试失败"
+        ))
+
+        fixer = manager.build(task, FIXER)
+        implementer = manager.build(task, IMPLEMENTER)
+        tester = manager.build(task, TESTER)
+        self.assertEqual(fixer.feedback, ("空输入错误",))
+        self.assertEqual(
+            fixer.working_progress["unresolved_failures"][0]["failure_id"],
+            "verification:1",
+        )
+        self.assertEqual(
+            [item["node_id"] for item in implementer.working_progress["nodes"]],
+            ["code"],
+        )
+        self.assertNotIn("unresolved_failures", tester.working_progress)
+        self.assertFalse(tester.working_progress["quality_gate"]["passed"])
+
     def test_sqlite_memory_restores_records_and_checkpoint(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "memory.sqlite3"
@@ -431,6 +478,209 @@ class WorkflowTests(unittest.TestCase):
         reference = store.put(artifact)
         self.assertTrue(reference.startswith("artifact://"))
         self.assertIs(store.get(reference), artifact)
+
+    def test_artifact_validation_lifecycle_tracks_superseded_result(self) -> None:
+        store = ArtifactStore()
+        old = store.put(Artifact.create("old", "code", "错误实现"))
+        new = store.put(Artifact.create("fix", "fix-1", "修复实现"))
+        store.mark_failed((old,), ("verification://failed",))
+        store.supersede((old,), new)
+        store.mark_verified((new,), ("verification://passed",))
+        self.assertEqual(
+            store.validation(old).state, ArtifactValidationState.SUPERSEDED
+        )
+        self.assertEqual(store.validation(old).superseded_by, new)
+        self.assertEqual(
+            store.validation(new).state, ArtifactValidationState.VERIFIED
+        )
+
+    def test_memory_enforces_scope_and_project_isolation(self) -> None:
+        manager = MemoryManager()
+        project_memory = MemoryRecord.create(
+            MemoryKind.LONG_TERM,
+            "project_rule",
+            "项目 A 的规则",
+            project_id="project-a",
+            scope="project",
+        )
+        manager.record(project_memory, include_in_working=False)
+        project_a = self.make_task()
+        project_a.project_id = "project-a"
+        project_b = self.make_task()
+        project_b.project_id = "project-b"
+        self.assertEqual(
+            manager.build(project_a, PLANNER, trigger="task_created").memories,
+            (project_memory,),
+        )
+        self.assertEqual(
+            manager.build(project_b, PLANNER, trigger="task_created").memories,
+            (),
+        )
+        self.assertEqual(
+            manager.build(project_a, FIXER, trigger="task_created").memories,
+            (),
+        )
+        with self.assertRaises(MemoryPermissionError):
+            manager.record_for_role(project_a, FIXER, project_memory)
+        foreign_task_memory = MemoryRecord.create(
+            MemoryKind.WORKING,
+            "node_result",
+            "伪造的其他项目结果",
+            project_id="project-b",
+            task_id=project_a.task_id,
+            scope="task",
+        )
+        with self.assertRaises(MemoryPermissionError):
+            manager.record_for_role(project_a, FIXER, foreign_task_memory)
+
+    def test_long_term_memory_is_idempotent_and_versioned(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            stores = (
+                MemoryStore(),
+                SQLiteMemoryStore(Path(temp) / "versions.sqlite3"),
+            )
+            for store in stores:
+                first = MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "project_rule",
+                    "统一使用 unittest",
+                    project_id="project-a",
+                    scope="project",
+                    semantic_key="testing-framework",
+                    evidence_refs=("artifact://one",),
+                )
+                duplicate = MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "project_rule",
+                    "统一使用 unittest",
+                    project_id="project-a",
+                    scope="project",
+                    semantic_key="testing-framework",
+                    evidence_refs=("artifact://two",),
+                )
+                stored_first = store.append(first)
+                stored_duplicate = store.append(duplicate)
+                self.assertEqual(stored_duplicate.memory_id, stored_first.memory_id)
+                self.assertEqual(
+                    stored_duplicate.evidence_refs,
+                    ("artifact://one", "artifact://two"),
+                )
+
+                replacement = MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "project_rule",
+                    "统一使用 pytest",
+                    project_id="project-a",
+                    scope="project",
+                    semantic_key="testing-framework",
+                )
+                stored_replacement = store.append(replacement)
+                active = store.query(
+                    project_id="project-a", kinds=(MemoryKind.LONG_TERM,)
+                )
+                history = store.query(
+                    project_id="project-a",
+                    kinds=(MemoryKind.LONG_TERM,),
+                    include_inactive=True,
+                )
+                self.assertEqual(active, (stored_replacement,))
+                self.assertEqual(stored_replacement.version, 2)
+                self.assertEqual(stored_replacement.supersedes, stored_first.memory_id)
+                self.assertEqual(
+                    {item.status for item in history},
+                    {MemoryStatus.ACTIVE, MemoryStatus.SUPERSEDED},
+                )
+
+    def test_invalidated_and_expired_memories_are_not_retrieved(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            stores = (
+                MemoryStore(),
+                SQLiteMemoryStore(Path(temp) / "expiry.sqlite3"),
+            )
+            for store in stores:
+                manager = MemoryManager(store=store)
+                invalid = manager.record(MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "rule",
+                    "已经失效的规则",
+                    project_id="project-a",
+                    scope="project",
+                ))
+                manager.invalidate(invalid.memory_id, "项目已经迁移")
+                expired = store.append(MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "rule",
+                    "已经过期的规则",
+                    project_id="project-a",
+                    scope="project",
+                    expires_at="2000-01-01T00:00:00+00:00",
+                ))
+                self.assertEqual(store.query(project_id="project-a"), ())
+                history = store.query(project_id="project-a", include_inactive=True)
+                statuses = {item.memory_id: item.status for item in history}
+                self.assertEqual(
+                    statuses[invalid.memory_id], MemoryStatus.INVALIDATED
+                )
+                self.assertEqual(statuses[expired.memory_id], MemoryStatus.EXPIRED)
+
+    def test_memory_store_redacts_common_secrets_before_persistence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            stores = (
+                MemoryStore(),
+                SQLiteMemoryStore(Path(temp) / "secrets.sqlite3"),
+            )
+            for store in stores:
+                stored = store.append(MemoryRecord.create(
+                    MemoryKind.LONG_TERM,
+                    "diagnostic",
+                    "password=hunter2",
+                    project_id="project-a",
+                    scope="project",
+                    content={
+                        "header": "Bearer abcdefghijklmnop",
+                        "api_key": "api_key=sk-secret-value",
+                        "password": "plain-secret",
+                    },
+                ))
+                persisted = store.query(
+                    project_id="project-a", kinds=(MemoryKind.LONG_TERM,)
+                )[0]
+                self.assertEqual(persisted.memory_id, stored.memory_id)
+                serialized = json.dumps(
+                    {"summary": persisted.summary, "content": dict(persisted.content)},
+                    ensure_ascii=False,
+                )
+                self.assertNotIn("hunter2", serialized)
+                self.assertNotIn("abcdefghijklmnop", serialized)
+                self.assertNotIn("sk-secret-value", serialized)
+                self.assertNotIn("plain-secret", serialized)
+                self.assertIn("REDACTED", serialized)
+
+    def test_sqlite_memory_migrates_legacy_project_id_column(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "legacy.sqlite3"
+            with sqlite3.connect(path) as connection:
+                connection.execute(
+                    """CREATE TABLE memories (
+                        memory_id TEXT PRIMARY KEY, kind TEXT NOT NULL,
+                        subtype TEXT NOT NULL, summary TEXT NOT NULL,
+                        content TEXT NOT NULL, source TEXT NOT NULL,
+                        scope TEXT NOT NULL, visibility TEXT NOT NULL,
+                        task_id TEXT, source_ref TEXT NOT NULL,
+                        evidence_refs TEXT NOT NULL, sensitivity TEXT NOT NULL,
+                        confidence REAL NOT NULL, created_at TEXT NOT NULL,
+                        expires_at TEXT, version INTEGER NOT NULL, supersedes TEXT
+                    )"""
+                )
+            SQLiteMemoryStore(path)
+            with sqlite3.connect(path) as connection:
+                columns = {
+                    row[1] for row in connection.execute("PRAGMA table_info(memories)")
+                }
+            self.assertTrue({
+                "project_id", "semantic_key", "status", "invalidated_at",
+                "invalidated_reason", "last_confirmed_at",
+            } <= columns)
 
     def test_graph_executor_runs_independent_tasks_concurrently(self) -> None:
         barrier = threading.Barrier(2, timeout=2)
@@ -473,11 +723,16 @@ class WorkflowTests(unittest.TestCase):
         registry = WorkerRegistry()
         registry.register("planner", Worker())
         registry.register("implementer", Worker())
+        memory = MemoryManager()
         result = TaskGraphExecutor(
-            graph, registry, DEFAULT_ROLES, MemoryManager(), max_workers=2
+            graph, registry, DEFAULT_ROLES, memory, max_workers=2
         ).run(self.make_task())
         self.assertTrue(result.succeeded)
         self.assertEqual(calls, {"plan": 1, "code": 2})
+        working = memory.working_memory("T-1")
+        self.assertEqual(working.nodes["code"].attempt, 2)
+        self.assertEqual(working.nodes["code"].state, "succeeded")
+        self.assertEqual(working.failures["worker:code:1"].resolved_by, "code")
 
     def test_graph_executor_persists_verified_long_term_memory(self) -> None:
         class Worker:
@@ -495,8 +750,14 @@ class WorkflowTests(unittest.TestCase):
             result = TaskGraphExecutor(
                 graph, registry, DEFAULT_ROLES, memory
             ).run(self.make_task())
+            memory.consolidate(
+                "T-1",
+                project_id="",
+                verified_artifacts=tuple(result.snapshot.artifacts.values()),
+            )
             long_term = store.query(kinds=(MemoryKind.LONG_TERM,))
         self.assertTrue(result.succeeded)
+        self.assertEqual(len(long_term), 1)
         self.assertEqual(long_term[0].summary, "规划已验证")
         self.assertTrue(long_term[0].evidence_refs[0].startswith("artifact://"))
 
@@ -584,6 +845,100 @@ class WorkflowTests(unittest.TestCase):
             )
         self.assertEqual(result.task.state, TaskState.FAILED)
         self.assertTrue(result.task.feedback)
+
+    def test_dag_runner_creates_local_fix_task_after_verification_failure(self) -> None:
+        class Client:
+            def __init__(self):
+                self.calls = 0
+                self.fix_input = None
+
+            def generate_json(self, messages):
+                self.calls += 1
+                if self.calls == 1:
+                    return {"tasks": [{
+                        "task_id": "code", "title": "编码", "objective": "实现功能",
+                        "role": "implementer", "acceptance_criteria": ["值正确"],
+                        "write_scopes": ["app.py", "test_app.py"],
+                        "output_artifacts": ["patch"],
+                    }]}
+                if self.calls == 2:
+                    return {
+                        "summary": "首次实现",
+                        "changes": [
+                            {"path": "app.py", "content": "VALUE = 0\n", "reason": "实现"},
+                            {"path": "test_app.py", "content": (
+                                "import unittest\nfrom app import VALUE\n"
+                                "class T(unittest.TestCase):\n"
+                                " def test_v(self): self.assertEqual(VALUE, 1)\n"
+                            ), "reason": "验收测试"},
+                        ],
+                    }
+                self.fix_input = json.loads(messages[-1]["content"])
+                return {
+                    "summary": "局部修复",
+                    "changes": [
+                        {"path": "app.py", "content": "VALUE = 1\n", "reason": "修复失败"}
+                    ],
+                    "suggested_checks": [["python3", "-m", "unittest", "-v"]],
+                }
+
+        events = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            client = Client()
+            task = TaskContext(
+                "DAG-FIX", "实现功能", ["值正确"],
+                [["python3", "-m", "unittest", "-v"]],
+                allowed_paths=["*.py"],
+            )
+            result = run_dag_task(
+                task, client, ProjectWorkspace(root),
+                memory_path=root / "memory.sqlite3",
+                command_policy=CommandPolicy(allowed_commands=task.verification_commands),
+                event_listener=events.append,
+            )
+            long_term = SQLiteMemoryStore(root / "memory.sqlite3").query(
+                project_id=result.task.project_id,
+                kinds=(MemoryKind.LONG_TERM,),
+            )
+            restored_working = SQLiteMemoryStore(
+                root / "memory.sqlite3"
+            ).load_checkpoint(task.task_id)
+
+        self.assertEqual(result.task.state, TaskState.COMPLETED)
+        self.assertEqual(result.task.attempt, 2)
+        self.assertEqual(result.graph_states["fix-1"], "succeeded")
+        self.assertIn("fixer", result.task.role_history)
+        self.assertTrue(any(event["event"] == "fix_task_created" for event in events))
+        self.assertTrue(any(event["event"] == "affected_tests_finished" for event in events))
+        self.assertEqual(
+            {item["path"] for item in client.fix_input["context_files"]},
+            {"app.py", "test_app.py"},
+        )
+        self.assertTrue(client.fix_input["task"]["feedback"])
+        self.assertEqual(
+            client.fix_input["task"]["working_progress"]
+            ["unresolved_failures"][0]["failure_id"],
+            "verification:1",
+        )
+        self.assertEqual([item.summary for item in long_term], ["局部修复"])
+        self.assertTrue(
+            any(ref.startswith("verification://") for ref in long_term[0].evidence_refs)
+        )
+        self.assertIsNotNone(restored_working)
+        self.assertEqual(restored_working.nodes["code"].state, "succeeded")
+        self.assertEqual(restored_working.nodes["fix-1"].state, "succeeded")
+        self.assertEqual(
+            {item.state for item in restored_working.artifacts.values()},
+            {"superseded", "verified"},
+        )
+        self.assertEqual(
+            restored_working.failures["verification:1"].resolved_by, "fix-1"
+        )
+        self.assertTrue(restored_working.quality_gate.affected_checks_completed)
+        self.assertTrue(restored_working.quality_gate.affected_checks_passed)
+        self.assertTrue(restored_working.quality_gate.full_gate_completed)
+        self.assertTrue(restored_working.quality_gate.passed)
 
     def test_memory_and_project_files_share_one_context_budget(self) -> None:
         policy = MemoryPolicy(

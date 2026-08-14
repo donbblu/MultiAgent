@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from hashlib import sha256
+from pathlib import Path
 from typing import Any
 
 from .roles import RoleSpec
@@ -115,6 +117,7 @@ class TaskContext:
     verification_commands: list[list[str]] = field(default_factory=list)
     user_request: str = ""
     project_root: str = ""
+    project_id: str = ""
     tech_stack: dict[str, str] = field(default_factory=dict)
     constraints: list[str] = field(default_factory=list)
     allowed_paths: list[str] = field(default_factory=lambda: ["**"])
@@ -130,6 +133,11 @@ class TaskContext:
     active_role: RoleSpec | None = None
     role_history: list[str] = field(default_factory=list)
     version: int = 0
+
+    def __post_init__(self) -> None:
+        if not self.project_id and self.project_root:
+            canonical = str(Path(self.project_root).expanduser().resolve())
+            self.project_id = sha256(canonical.encode("utf-8")).hexdigest()
 
     def assign_role(self, role: RoleSpec) -> None:
         self.active_role = role

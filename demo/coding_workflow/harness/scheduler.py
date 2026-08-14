@@ -18,13 +18,27 @@ class GraphSnapshot:
 class TaskGraphRuntime:
     """任务图的确定性运行状态；Dispatcher 可并发领取无冲突任务。"""
 
-    def __init__(self, graph: TaskGraph) -> None:
+    def __init__(self, graph: TaskGraph, snapshot: GraphSnapshot | None = None) -> None:
         self.graph = graph
-        self._states = {
-            task_id: TaskExecutionState.PENDING for task_id in graph.tasks
-        }
-        self._artifacts: dict[str, str] = {}
-        self._failures: dict[str, str] = {}
+        if snapshot is None:
+            self._states = {
+                task_id: TaskExecutionState.PENDING for task_id in graph.tasks
+            }
+            self._artifacts = {}
+            self._failures = {}
+        else:
+            if set(snapshot.states) != set(graph.tasks):
+                raise ValueError("恢复快照与任务图节点不匹配")
+            self._states = {
+                task_id: (
+                    TaskExecutionState.PENDING
+                    if state in {TaskExecutionState.RUNNING, TaskExecutionState.READY}
+                    else state
+                )
+                for task_id, state in snapshot.states.items()
+            }
+            self._artifacts = dict(snapshot.artifacts)
+            self._failures = dict(snapshot.failures)
         self._lock = RLock()
 
     def claim_ready(self, limit: int) -> tuple[TaskSpec, ...]:

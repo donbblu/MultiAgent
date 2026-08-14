@@ -17,6 +17,14 @@
 
 `MemoryRecord` 统一表示感知、短期、长期和实体记忆，记录来源、证据、作用域、角色可见性、可信度和版本。`TaskWorkingMemory` 保存当前任务正在使用的记忆引用、Artifact、节点摘要和反馈，并可生成不可变 checkpoint。
 
+`TaskWorkingMemory` 同时是 Harness 维护的结构化任务进度投影。它分别记录节点的 pending/running/retrying/succeeded/failed 状态和尝试次数、Artifact 的验证与替代状态、带受影响文件和证据的失败观察，以及受影响测试和完整质量门禁结果。失败只有在最终完整门禁通过后才会标记为由对应 FixTask 解决。TaskGraphRuntime、ArtifactStore 和验证器仍是权威事实来源，Working Memory 不反向改变权限、调度或验证结论。
+
+角色不会读取整张进度表。Fixer 只获得未解决失败与相关 Artifact，Tester 获得当前 Artifact 和质量门禁状态，Implementer 只获得同角色节点，Planner 与 Reviewer 获得节点摘要和当前 Artifact。SQLite Checkpoint 已能保存和恢复这张结构化进度表，但本阶段仍不承诺恢复完整运行中的 TaskGraph 或模型请求。
+
+所有记忆都带有稳定的 `project_id`。角色读取必须同时满足项目、任务、scope、kind 和 visibility 约束；角色写入还必须匹配当前项目与任务，并通过 `MemoryPolicy.writable_scopes`。SQLite 启动时会为旧表补充 `project_id`，旧的无归属记录默认不会进入具有项目 ID 的检索结果。
+
+长期记忆还带有 `semantic_key` 和 active、superseded、invalidated、expired 状态。相同事实再次确认时复用原记录并合并证据；同一语义键出现新内容时，新版本通过 `supersedes` 指向旧版本，默认查询只返回 active 且未过期的记录。Harness 可以显式提供原因使错误知识失效。所有 MemoryStore 在持久化前统一扫描摘要和嵌套 content，对常见密码、Token、API Key、Authorization Header 和私钥格式进行脱敏，原始敏感值不写入存储。
+
 Harness 使用 `MemoryManager.trigger()` 主动响应 `task_created`、`task_claimed`、`verification_failed`、`task_resumed` 和 `task_completed` 等确定性事件。Agent 可通过 `MemoryManager.query()` 被动检索，但两种入口都会执行任务作用域和角色可见性过滤。最终输入仍是不可变的 `RoleMemoryView`，因此不会破坏 Role 与 Agent 的解耦。
 
 ## 安全规则
@@ -30,6 +38,8 @@ Harness 使用 `MemoryManager.trigger()` 主动响应 `task_created`、`task_cla
 ## 当前实现与后续阶段
 
 默认 `MemoryStore` 是线程安全的进程内实现；需要跨进程恢复时可以使用 `SQLiteMemoryStore`。SQLite Store 使用短事务保存 MemoryRecord 和 TaskWorkingMemory Checkpoint。`TaskGraphExecutor` 会从 ready 集合并发认领无冲突任务，通过 `ArtifactStore` 传递不可变引用，只对失败子任务执行其 `retry_limit`，并在节点完成或失败时保存 Working Memory。整张图成功后，节点摘要才会作为带 Artifact 证据的长期记忆晋升。
+
+验证失败后，DAG Runner 会把失败报告记录为仅 Fixer 可见的感知记忆，并按首轮 Patch 涉及的文件动态创建单节点 FixTask。Fixer 只读取这些相关文件和失败反馈，修复结果仍须作为 Artifact 通过 `PatchIntegrator` 的路径检查。ArtifactStore 明确记录 unverified、failed、superseded 和 verified 状态；修复合并后旧 Artifact 会指向替代它的新 Artifact。修复 Artifact 可以建议受影响测试，但只能选择任务原先授权的验证命令；之后 Harness 始终再次运行完整质量门禁。只有最终仍生效且显式验证通过的 Artifact 对应节点结果才会晋升长期记忆，并绑定自身 Artifact 与最终验证证据。返工次数有显式上限，耗尽后任务确定性失败。
 
 当前仍有两个明确边界：资源范围使用精确字符串匹配；暂停和取消在 Worker 调用边界生效，不能强制杀死正在运行的模型请求或子进程。后续应把超时和取消信号继续传入 ModelClient 与命令执行器，再增加实体索引。向量检索与图数据库应在精确检索场景得到验证后再引入。
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import subprocess
 import os
 import tempfile
+from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
 from .models import CommandResult, FileChange
@@ -67,6 +68,16 @@ class ProjectWorkspace:
             for path in self.root.rglob("*")
             if path.is_file() and ".git" not in path.parts
         )
+
+    def content_hashes(self, *, exclude: set[str] | None = None) -> dict[str, str]:
+        excluded = exclude or set()
+        return {
+            path: sha256(self._resolve(path).read_bytes()).hexdigest()
+            for path in self.list_files()
+            if path not in excluded
+            and "__pycache__" not in PurePosixPath(path).parts
+            and not path.endswith((".pyc", ".pyo"))
+        }
 
     def run(self, command: list[str]) -> CommandResult:
         if not command or any(not isinstance(part, str) for part in command):

@@ -12,14 +12,26 @@ from .roles import Capability, DEFAULT_ROLES, RoleRegistry, RoleSpec
 from .memory import (
     MemoryKind,
     MemoryManager,
+    MemoryPermissionError,
     MemoryPolicy,
     MemoryRecord,
+    MemorySanitizer,
+    MemoryStatus,
+    FailureObservation,
+    QualityGateState,
     MemoryStore,
     RoleMemoryView,
     TaskWorkingMemory,
+    WorkingArtifactState,
+    WorkingNodeState,
 )
 from .memory_sqlite import SQLiteMemoryStore
-from .artifacts import Artifact, ArtifactStore
+from .artifacts import (
+    Artifact,
+    ArtifactStore,
+    ArtifactValidation,
+    ArtifactValidationState,
+)
 from .planning import StructuredTaskPlanner
 from .integration import IntegrationError, IntegrationResult, PatchIntegrator
 from .graph_workers import PlanningCodingWorker
@@ -57,15 +69,24 @@ __all__ = [
     "RoleRegistry",
     "RoleSpec",
     "MemoryManager",
+    "MemoryPermissionError",
     "MemoryKind",
     "MemoryPolicy",
     "MemoryRecord",
+    "MemorySanitizer",
+    "MemoryStatus",
+    "FailureObservation",
+    "QualityGateState",
     "MemoryStore",
     "RoleMemoryView",
     "TaskWorkingMemory",
+    "WorkingArtifactState",
+    "WorkingNodeState",
     "SQLiteMemoryStore",
     "Artifact",
     "ArtifactStore",
+    "ArtifactValidation",
+    "ArtifactValidationState",
     "StructuredTaskPlanner",
     "IntegrationError",
     "IntegrationResult",
