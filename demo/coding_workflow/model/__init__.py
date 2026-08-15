@@ -1,14 +1,36 @@
-from .base import ModelClient, ModelError
-from .config import ModelConfig, load_env_file
+from .base import (
+    ImageContentPart,
+    ModelCapability,
+    ModelCapabilityError,
+    ModelClient,
+    ModelError,
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    ModelUsage,
+    TextContentPart,
+    require_capabilities,
+)
+from .config import ModelConfig, StructuredOutputMode, load_env_file
 from .factory import ModelClientFactory, ProviderPreset
 from .openai_compatible import OpenAICompatibleClient
 
 __all__ = [
     "ModelClient",
+    "ModelCapability",
+    "ModelCapabilityError",
     "ModelClientFactory",
     "ModelConfig",
     "ModelError",
+    "ModelMessage",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelUsage",
+    "StructuredOutputMode",
+    "TextContentPart",
+    "ImageContentPart",
     "OpenAICompatibleClient",
     "ProviderPreset",
+    "require_capabilities",
     "load_env_file",
 ]

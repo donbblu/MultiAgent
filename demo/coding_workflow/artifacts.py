@@ -110,6 +110,18 @@ class ArtifactStore:
                 store._validation[artifact.artifact_id] = validation
         return store
 
+    def replace_with(self, other: "ArtifactStore") -> None:
+        """原地恢复快照，使已注入同一 Store 的组件继续引用恢复后的状态。"""
+        items = other.snapshot()
+        with self._lock:
+            self._by_id.clear()
+            self._latest_by_name.clear()
+            self._validation.clear()
+            for artifact, validation in items:
+                self._by_id[artifact.artifact_id] = artifact
+                self._latest_by_name[artifact.name] = artifact.artifact_id
+                self._validation[artifact.artifact_id] = validation
+
     def validation(self, reference: str) -> ArtifactValidation:
         artifact_id = reference.removeprefix("artifact://")
         with self._lock:

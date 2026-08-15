@@ -7,7 +7,20 @@ from .policy import CommandPolicy
 from .recording import RunRecorder
 from .validation import PlanValidator
 from .backends import StructuredCodingBackend, StructuredReviewBackend
-from .model import ModelClient, ModelClientFactory, ModelConfig, ModelError
+from .model import (
+    ImageContentPart,
+    ModelCapability,
+    ModelCapabilityError,
+    ModelClient,
+    ModelClientFactory,
+    ModelConfig,
+    ModelError,
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    ModelUsage,
+    TextContentPart,
+)
 from .roles import Capability, DEFAULT_ROLES, RoleRegistry, RoleSpec
 from .memory import (
     EntityIndexer,
@@ -62,9 +75,17 @@ __all__ = [
     "RunRecorder",
     "PlanValidator",
     "ModelClient",
+    "ModelCapability",
+    "ModelCapabilityError",
     "ModelClientFactory",
     "ModelConfig",
     "ModelError",
+    "ModelMessage",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelUsage",
+    "TextContentPart",
+    "ImageContentPart",
     "StructuredCodingBackend",
     "TaskContext",
     "TaskState",

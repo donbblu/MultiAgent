@@ -1,111 +1,205 @@
-const $ = (id) => document.getElementById(id);
-const roleOrder = ['planner','implementer','tester','reviewer','fixer'];
-const roleMarks = {planner:'PL',implementer:'IM',tester:'TS',reviewer:'RV',fixer:'FX'};
-const statusText = {pending:'等待',running:'运行中',success:'完成',failed:'失败',skipped:'未触发'};
-let currentTask=null, timer=null, seen=0, selectedNode='planner', latestData=null;
+const $ = (id) => document.getElementById(id)
+const stageKinds = ['reference_image', 'ui_spec', 'implementation_plan', 'browser_run', 'visual_review', 'quality_gate']
+const kindLabels = {
+  reference_image: '参考图', ui_spec: 'UI Spec', implementation_plan: '初始 Patch',
+  fix_plan: '修复 Patch', integration_result: 'Patch 应用结果', build_result: '构建结果',
+  actual_screenshot: '实际截图', browser_run: 'Browser Run', visual_review: 'Visual Review',
+  quality_gate: '质量门禁', visionforge_run: '最终 Run'
+}
+let selectedFile = null
+let uploadedAsset = null
+let currentTask = null
+let pollTimer = null
+let previewUrl = null
 
-function escapeHtml(value){const div=document.createElement('div');div.textContent=String(value??'');return div.innerHTML}
-function formatTime(value){return value?new Date(value).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—'}
-function formatDuration(value){if(value===null||value===undefined)return '—';return value<1000?`${value} ms`:`${(value/1000).toFixed(1)} s`}
-
-function renderDag(data){
-  const nodes=data?.nodes||{};
-  const card=(id)=>{const node=nodes[id]||{id,label:id,status:'pending',summary:''};return `<button type="button" class="dag-node ${escapeHtml(node.status)} ${selectedNode===id?'selected':''}" data-node="${id}"><span class="dag-avatar">${roleMarks[id]||'AG'}</span><span><strong>${escapeHtml(node.label)}</strong><small>${escapeHtml(node.summary)}</small></span><em>${statusText[node.status]||node.status}</em></button>`};
-  $('dag').innerHTML=`
-    <div class="dag-row single">${card('planner')}</div><div class="dag-arrow">↓</div>
-    <div class="dag-row single">${card('implementer')}</div><div class="dag-split"><span>↙</span><b>并行质量检查</b><span>↘</span></div>
-    <div class="dag-row parallel">${card('tester')}${card('reviewer')}</div>
-    <div class="dag-return">失败反馈 ↘　↙ 汇合结果</div>
-    <div class="dag-row single">${card('fixer')}</div>`;
-  $('dag').querySelectorAll('[data-node]').forEach(el=>el.addEventListener('click',()=>{selectedNode=el.dataset.node;renderDag(latestData);renderDetail(latestData)}));
-  const running=Object.values(nodes).filter(node=>node.status==='running').map(node=>node.label);
-  $('dag-caption').textContent=running.length?`${running.join(' + ')} 正在运行`:`状态：${data?.status||'idle'}`;
+function formatBytes(value) {
+  if (!Number.isFinite(value)) return '—'
+  if (value < 1024) return `${value} B`
+  return `${(value / 1024 / 1024).toFixed(2)} MiB`
 }
 
-function summarize(event){
-  const detail=event.detail||{};
-  if(event.event==='agent_message')return `${detail.summary}${detail.payload&&Object.keys(detail.payload).length?'\n'+JSON.stringify(detail.payload,null,2):''}`;
-  if(event.event==='state_transition')return `${detail.state} · ${detail.note}`;
-  if(event.event==='parallel_stage_started')return `${(detail.roles||[]).join(' + ')} 同时开始工作`;
-  return JSON.stringify(detail,null,2);
+function artifactMap(artifacts) {
+  return new Map((artifacts || []).map((artifact) => [artifact.ref, artifact]))
 }
 
-function renderTimeline(events){
-  if(!events.length){$('timeline').innerHTML='<div class="empty-state"><div class="orbit"><i></i><i></i><i></i></div><h3>协作过程将在这里展开</h3><p>这里展示的是可审计事件，而不是模型的私有推理。</p></div>';return}
-  $('timeline').innerHTML=events.map(event=>{
-    const active=event.node_id===selectedNode?'selected':'';
-    const icon={agent_message:'↗',state_transition:'ST',parallel_stage_started:'∥'}[event.event]||'·';
-    return `<article class="event ${event.event} ${active}" data-node="${escapeHtml(event.node_id||'')}"><div class="event-marker">${icon}</div><div class="event-card"><div class="event-top"><strong>${escapeHtml(event.title)}</strong><time>${formatTime(event.timestamp)}</time></div><div class="event-detail">${escapeHtml(summarize(event))}</div></div></article>`;
-  }).join('');
-  $('timeline').querySelectorAll('[data-node]').forEach(el=>el.addEventListener('click',()=>{if(el.dataset.node){selectedNode=el.dataset.node;renderDag(latestData);renderDetail(latestData);renderTimeline(latestData.events||[])}}));
+function latestByKind(artifacts, kind) {
+  return [...(artifacts || [])].reverse().find((artifact) => artifact.kind === kind)
 }
 
-function renderDetail(data){
-  const node=data?.nodes?.[selectedNode];
-  if(!node)return;
-  const events=(data.events||[]).filter(event=>event.node_id===selectedNode);
-  $('detail-status').textContent=statusText[node.status]||node.status;
-  $('node-detail').innerHTML=`
-    <div class="detail-head"><span class="dag-avatar">${roleMarks[selectedNode]}</span><div><h3>${escapeHtml(node.label)}</h3><p>${escapeHtml(node.summary)}</p></div><b class="status-chip ${escapeHtml(node.status)}">${statusText[node.status]||node.status}</b></div>
-    <dl><div><dt>开始</dt><dd>${formatTime(node.started_at)}</dd></div><div><dt>结束</dt><dd>${formatTime(node.finished_at)}</dd></div><div><dt>耗时</dt><dd>${formatDuration(node.duration_ms)}</dd></div><div><dt>尝试</dt><dd>${node.attempt||0}</dd></div></dl>
-    <section><h4>允许能力</h4><div class="tag-list">${(node.permissions||[]).map(item=>`<span>${escapeHtml(item)}</span>`).join('')}</div></section>
-    <section><h4>最近结果</h4><p class="detail-copy">${escapeHtml(node.last_summary)}</p></section>
-    <section><h4>产物</h4><div class="artifact-list">${(node.artifacts||[]).length?node.artifacts.map(item=>`<code>${escapeHtml(item)}</code>`).join(''):'<small>暂无文件产物</small>'}</div></section>
-    <section><h4>关联事件</h4><p class="detail-copy">${events.length} 条可审计事件</p></section>`;
+function setStatus(status) {
+  const pill = $('run-status')
+  const text = {queued: 'QUEUED', preparing: 'PREPARING', running: 'RUNNING', completed: 'PASSED', failed: 'FAILED'}[status] || 'IDLE'
+  pill.textContent = text
+  pill.className = `status-pill ${status || 'idle'}`
 }
 
-async function controlTask(action){
-  if(!currentTask)return;
-  const response=await fetch(`/api/tasks/${currentTask}/${action}`,{method:'POST'});
-  const data=await response.json();
-  if(!response.ok&&response.status!==409)throw new Error(data.error||'任务控制失败');
-  await poll();
+function updatePipeline(data) {
+  const kinds = new Set((data.artifacts || []).map((artifact) => artifact.kind))
+  document.querySelectorAll('#pipeline [data-stage]').forEach((node) => {
+    const stage = node.dataset.stage
+    const index = stageKinds.indexOf(stage)
+    const reached = stage === 'reference' || kinds.has(stage)
+    const previousReached = index <= 0 || stageKinds.slice(0, index).every((kind) => kinds.has(kind) || kind === 'reference_image')
+    node.classList.toggle('done', reached)
+    node.classList.toggle('active', !reached && previousReached && ['queued', 'preparing', 'running'].includes(data.status))
+  })
 }
 
-function renderControls(data){
-  const state=data?.lifecycle?.state||data?.status;
-  const terminal=['completed','failed','cancelled'].includes(state);
-  $('pause-task').disabled=!currentTask||terminal||state==='cancelling';
-  $('cancel-task').disabled=!currentTask||terminal||state==='cancelling';
-  $('pause-task').textContent=state==='paused'?'恢复':'暂停';
-  $('pause-task').dataset.action=state==='paused'?'resume':'pause';
+function renderRounds(data, artifactsByRef) {
+  const cycles = data.result?.cycles || []
+  $('round-count').textContent = `${cycles.length} 轮`
+  const container = $('rounds')
+  container.replaceChildren()
+  cycles.forEach((cycle) => {
+    const review = artifactsByRef.get(cycle.visual_review_artifact_ref)?.content || {}
+    const gate = artifactsByRef.get(cycle.quality_gate_artifact_ref)?.content || {}
+    const article = document.createElement('article')
+    article.className = `round ${cycle.passed ? 'passed' : 'failed'}`
+    const head = document.createElement('div')
+    const title = document.createElement('strong')
+    title.textContent = cycle.round_index === 0 ? '首次生成' : `自动修复 ${cycle.round_index}`
+    const badge = document.createElement('span')
+    badge.textContent = cycle.passed ? '门禁通过' : '需要修复'
+    head.append(title, badge)
+    const score = document.createElement('p')
+    score.textContent = `视觉评分 ${review.score ?? '—'} · ${(review.issues || []).length} 个视觉问题`
+    const failures = document.createElement('small')
+    failures.textContent = (gate.failures || []).join('；') || '构建、交互与视觉门禁全部满足'
+    article.append(head, score, failures)
+    container.append(article)
+  })
+  if (!cycles.length) {
+    const empty = document.createElement('p')
+    empty.className = 'inline-empty'
+    empty.textContent = '浏览器验证尚未产生轮次。'
+    container.append(empty)
+  }
 }
 
-async function poll(){
-  if(!currentTask)return;
-  try{
-    const response=await fetch(`/api/tasks/${currentTask}`);const data=await response.json();latestData=data;
-    seen=(data.events||[]).length;$('event-count').textContent=`${seen} 条事件`;
-    renderDag(data);renderTimeline(data.events||[]);renderDetail(data);renderControls(data);
-    const active=(data.active_roles||[]).filter(Boolean);$('process-caption').textContent=active.length?`${active.join(' + ')} 正在工作`:`状态：${data.status}`;
-    if(['completed','failed','cancelled'].includes(data.status)){
-      clearInterval(timer);timer=null;$('submit').disabled=false;$('submit').querySelector('span').textContent='启动新任务';
-      $('live-badge').textContent=data.status==='completed'?'DONE':data.status==='cancelled'?'CANCELLED':'FAILED';$('live-badge').className=`live-badge ${data.status==='completed'?'done':'failed'}`;showResult(data);
+function renderArtifacts(data) {
+  const container = $('artifacts')
+  container.replaceChildren()
+  ;(data.artifacts || []).forEach((artifact) => {
+    const details = document.createElement('details')
+    details.className = 'artifact'
+    const summary = document.createElement('summary')
+    const label = document.createElement('span')
+    label.textContent = kindLabels[artifact.kind] || artifact.kind
+    const meta = document.createElement('small')
+    meta.textContent = `${artifact.validation_state} · ${artifact.ref.slice(-8)}`
+    summary.append(label, meta)
+    const pre = document.createElement('pre')
+    pre.textContent = JSON.stringify(artifact.content, null, 2)
+    details.append(summary, pre)
+    container.append(details)
+  })
+}
+
+function renderEvidence(data) {
+  const artifacts = data.artifacts || []
+  const byRef = artifactMap(artifacts)
+  $('waiting-state').hidden = true
+  $('evidence').hidden = false
+  $('metric-status').textContent = data.status === 'completed' ? '通过' : data.status === 'failed' ? '失败' : '运行中'
+  $('metric-score').textContent = data.result?.visual_score ?? '—'
+  $('metric-fixes').textContent = data.result?.fix_attempts ?? '—'
+  $('metric-artifacts').textContent = artifacts.length
+  $('final-reference').src = data.reference_image.url
+  const finalCycle = data.result?.cycles?.at(-1)
+  const screenshot = finalCycle ? byRef.get(finalCycle.actual_screenshot_artifact_ref) : latestByKind(artifacts, 'actual_screenshot')
+  if (screenshot?.content?.url) {
+    $('final-actual').src = screenshot.content.url
+    $('final-actual').hidden = false
+    $('actual-frame').querySelector('p').hidden = true
+  }
+  renderRounds(data, byRef)
+  renderArtifacts(data)
+}
+
+async function uploadReference() {
+  if (uploadedAsset) return uploadedAsset
+  if (!selectedFile) throw new Error('请先选择参考图')
+  if (!['image/png', 'image/jpeg'].includes(selectedFile.type)) throw new Error('只支持 PNG 或 JPEG')
+  if (selectedFile.size <= 0 || selectedFile.size > 10 * 1024 * 1024) throw new Error('图片必须小于 10 MiB')
+  $('upload-status').textContent = '正在写入本地内容寻址存储…'
+  const response = await fetch('/api/visionforge/assets', {
+    method: 'POST', headers: {'Content-Type': selectedFile.type}, body: selectedFile
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || '图片上传失败')
+  uploadedAsset = data
+  $('upload-status').textContent = `已保存 ${data.width}×${data.height} · ${formatBytes(data.size_bytes)} · ${data.asset_id.slice(0, 10)}…`
+  return data
+}
+
+async function pollTask() {
+  if (!currentTask) return
+  try {
+    const response = await fetch(`/api/visionforge/tasks/${currentTask}`)
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || '读取任务失败')
+    setStatus(data.status)
+    updatePipeline(data)
+    $('task-caption').textContent = `${data.id} · ${data.status}`
+    if ((data.artifacts || []).length) renderEvidence(data)
+    if (['completed', 'failed'].includes(data.status)) {
+      clearInterval(pollTimer)
+      pollTimer = null
+      $('submit-task').disabled = false
+      $('submit-task').querySelector('span').textContent = '启动新任务'
+      renderEvidence(data)
+      if (data.error) $('task-caption').textContent = `执行失败：${data.error}`
     }
-  }catch(error){console.error(error)}
+  } catch (error) {
+    clearInterval(pollTimer)
+    pollTimer = null
+    setStatus('failed')
+    $('task-caption').textContent = error.message
+    $('submit-task').disabled = false
+  }
 }
 
-function showResult(data){
-  const result=$('result');result.hidden=false;
-  if(data.status==='completed'){
-    $('result-title').textContent='项目已生成并通过验证';$('result-summary').textContent=data.result.summary;
-    $('file-list').innerHTML=(data.result.files||[]).map(file=>`<span>${escapeHtml(file)}</span>`).join('');
-    $('result-meta').innerHTML=`${escapeHtml(data.result.provider)} / ${escapeHtml(data.result.model)}<br>${data.result.attempts} 次尝试<br>${escapeHtml(data.result.output)}`;
-  }else{$('result-title').textContent='任务未能完成';$('result-summary').textContent=data.error||'已达到最大尝试次数';$('file-list').innerHTML='';$('result-meta').textContent='请检查事件反馈后重试'}
-}
+$('reference-file').addEventListener('change', (event) => {
+  selectedFile = event.target.files?.[0] || null
+  uploadedAsset = null
+  if (previewUrl) URL.revokeObjectURL(previewUrl)
+  if (!selectedFile) {
+    $('reference-preview').hidden = true
+    $('upload-placeholder').hidden = false
+    $('upload-status').textContent = '尚未选择图片'
+    return
+  }
+  previewUrl = URL.createObjectURL(selectedFile)
+  $('reference-preview').src = previewUrl
+  $('reference-preview').hidden = false
+  $('upload-placeholder').hidden = true
+  $('upload-status').textContent = `${selectedFile.name} · ${formatBytes(selectedFile.size)}`
+})
 
-$('task-form').addEventListener('submit',async(event)=>{
-  event.preventDefault();clearInterval(timer);seen=0;selectedNode='planner';latestData=null;$('result').hidden=true;
-  $('timeline').innerHTML='<div class="empty-state"><div class="orbit"><i></i><i></i><i></i></div><h3>正在建立安全工作区</h3><p>准备角色、上下文和权限边界。</p></div>';
-  $('submit').disabled=true;$('submit').querySelector('span').textContent='协作进行中';$('live-badge').textContent='LIVE';$('live-badge').className='live-badge running';
-  try{
-    const response=await fetch('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requirement:$('requirement').value,name:$('name').value,max_attempts:Number($('attempts').value)})});
-    const data=await response.json();if(!response.ok)throw new Error(data.error||'无法启动任务');currentTask=data.id;await poll();timer=setInterval(poll,700);
-  }catch(error){$('submit').disabled=false;$('live-badge').textContent='ERROR';$('live-badge').className='live-badge failed';$('timeline').innerHTML=`<div class="empty-state"><h3>无法启动</h3><p>${escapeHtml(error.message)}</p></div>`}
-});
-
-$('pause-task').addEventListener('click',()=>controlTask($('pause-task').dataset.action||'pause').catch(console.error));
-$('cancel-task').addEventListener('click',()=>controlTask('cancel').catch(console.error));
-
-latestData={status:'idle',events:[],nodes:Object.fromEntries(roleOrder.map(id=>[id,{id,label:id[0].toUpperCase()+id.slice(1),summary:'等待任务',permissions:[],status:'pending',attempt:0,artifacts:[],last_summary:'等待 Harness 调度'}]))};
-renderDag(latestData);renderDetail(latestData);
+$('visionforge-form').addEventListener('submit', async (event) => {
+  event.preventDefault()
+  clearInterval(pollTimer)
+  $('submit-task').disabled = true
+  $('submit-task').querySelector('span').textContent = '准备任务中'
+  $('waiting-state').hidden = false
+  $('evidence').hidden = true
+  try {
+    const asset = await uploadReference()
+    const response = await fetch('/api/visionforge/tasks', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({requirement: $('requirement').value, asset_id: asset.asset_id})
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || '无法启动任务')
+    currentTask = data.id
+    setStatus('queued')
+    $('submit-task').querySelector('span').textContent = '视觉交付进行中'
+    await pollTask()
+    pollTimer = setInterval(pollTask, 900)
+  } catch (error) {
+    setStatus('failed')
+    $('task-caption').textContent = error.message
+    $('submit-task').disabled = false
+    $('submit-task').querySelector('span').textContent = '重新尝试'
+  }
+})

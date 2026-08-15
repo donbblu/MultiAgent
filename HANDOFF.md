@@ -1,4 +1,4 @@
-# MultiAgent 项目交接
+# VisionForge 项目交接
 
 ## 使用方式
 
@@ -15,7 +15,9 @@
 
 ## 项目目标
 
-构建一个供应商无关的单机 Coding Multi-Agent Harness。Harness 负责需求拆分、任务调度、生命周期、权限、Artifact、记忆、验证和收敛；Role、Agent 与模型供应商保持解耦。
+在现有供应商无关的单机 Coding Multi-Agent Harness 上，逐步构建 **VisionForge——基于 LLM/VLM 的多模态全栈开发与视觉验收 Agent 系统**。
+
+第一阶段聚焦“页面需求与 UI 参考图 → 可运行 Vue 页面 → 浏览器功能验收 → VLM 视觉审查 → 自动修复”。TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace、SQLite Runtime、生命周期、权限、Checkpoint 和 Web/API 尽可能复用；Multi-Agent 是工程手段，不是产品目的。
 
 ## 当前默认 Workflow
 
@@ -30,7 +32,9 @@
   → ProjectWorkspace 原子合并
   → Tester 运行白名单验证命令
   → 通过：整合已验证长期记忆并 completed
-  → 失败：记录反馈和 Checkpoint 并 failed
+  → 失败：记录证据并创建局部 FixTask
+  → Fixer 生成修复 Artifact，安全合并并运行受影响测试
+  → 最终完整质量门禁通过后整合长期记忆并 completed
 ```
 
 CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coordinator 流程。
@@ -51,7 +55,28 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - 只有真实测试通过且拥有 Artifact 证据的节点结果才会晋升长期记忆。
 - CLI/Web 已接入真实 DAG 执行路径，并保留 legacy 回退。
 - Web 展示任务图、状态、Artifact 和验证事件，不展示模型原始推理。
-- 当前共有 58 个单元测试通过。
+- 动态创建局部 FixTask，修复 Artifact 通过安全合并、受影响验证和最终完整质量门禁。
+- 持久化并恢复完整 TaskGraphRuntime、尝试次数、生命周期、Artifact 和 Workspace 哈希。
+- 建立文件、符号、测试和 Artifact 实体索引，并支持中文文本与实体精确检索。
+- 长期记忆支持幂等去重、失效、过期和 `supersedes` 版本替代，持久化前扫描并脱敏常见秘密。
+- 建立 VisionForge 1.0 UI Spec 与 Visual Review 协议，包含受控交互、P1/P2/P3 问题和 Runtime 视觉通过判定。
+- ModelClient 支持 text、vision、tool_calling、structured_output 能力声明，以及多模态结构化请求和 Token/耗时响应元数据。
+- 图片按 SHA-256 内容寻址存储；Artifact 与 SQLite 只保存 PNG/JPEG 引用、尺寸、MIME 和哈希。
+- 建立固定 Vue 3 + Vite 模板、保护路径、锁文件和稳定 DOM Hook，并通过真实生产构建。
+- 建立受控命令运行器和 Vue 开发服务器生命周期，支持白名单、readiness、超时、取消与进程组清理。
+- Playwright Browser Tester 使用固定 viewport 和受控交互，阻止外部网络请求并记录 DOM 断言、控制台、页面错误和实际截图 Artifact。
+- Requirement Analyst、Developer 和 Visual Reviewer 已通过供应商无关 ModelClient 接入，并在调用前检查所需模型能力。
+- `VisionForgeRunner` 已串联一次 UI Spec、受控 Patch、真实浏览器和 Visual Review，完整调用链与模型用量保存为 Artifact。
+- Runtime 质量门禁组合构建、DOM/交互、控制台、页面/网络错误、视觉分数和 P1/P2，模型不能自行宣告 completed。
+- Fixer 根据结构化反馈生成局部 Patch，最多修复两轮；旧 Patch、失败证据和最终验证状态通过 ArtifactStore 追踪。
+- SQLite 返工 Checkpoint 保存 Artifact 快照、阶段、轮数和 Workspace 哈希，可恢复已应用 Patch 后的验证阶段并拒绝 Workspace 漂移。
+- Web 提供受控 PNG/JPEG 内容寻址上传和 VisionForge 任务 API；任务只接收 asset ID 与需求，固定使用 Runtime 创建的 Vue 项目目录。
+- Web 可查看参考图、实际截图、评分、修复轮次和结构化 Artifact 调用链，不展示模型原始推理或内部项目路径。
+- 建立 3 个版本化固定页面任务、Runtime 拥有的 DOM/交互断言和受控 HTML→PNG 参考图渲染器。
+- 建立三方案统一评测协议与 JSON 报告，记录构建、功能、视觉、首次通过、自动修复、轮数、Token、耗时和人工介入。
+- 建立 DeepSeek 文本模型与 DashScope Qwen 视觉模型的独立配置和按角色路由；客户端适配供应商级结构化输出模式与请求选项。
+- 已用 `deepseek-v4-pro` 和 `qwen3.7-plus` 各完成一次经授权的最小真实能力烟测，图片输入、JSON 解析及 Token/耗时元数据均验证通过。
+- 当前共有 123 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
 
 ## 关键设计决策
 
@@ -65,38 +90,35 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 
 ## 当前限制
 
-- 合并后测试失败会直接结束任务，还不会动态生成局部 FixTask。
 - `timeout_seconds` 主要是策略元数据，不能强制终止运行中的模型线程。
 - 暂停和取消只在 Worker 边界生效，不能立即中断 HTTP 请求或验证子进程。
 - 资源冲突目前主要依赖精确 scope 字符串，尚无可靠的 glob 交集和符号级分析。
-- SQLite 已恢复 Working Memory，但尚未持久化和恢复完整 TaskGraphRuntime、尝试次数与生命周期。
 - Reviewer 和 Safety 尚未成为 DAG 最终收敛门禁。
-- 实体记忆已有类型边界，但尚未建立文件、符号、测试和 Artifact 的实体索引。
-- 长期记忆尚缺少完整的去重、失效和 `supersedes` 管理。
+- 记忆检索已有确定性单元测试，但尚未建立独立测评集、质量指标、真实任务对照实验和调优闭环。
+- 当前使用实体精确命中和文本排序；是否需要向量或混合检索应由测评结果决定。
+- 当前 Browser Tester 只支持固定 Vue 模板、单一本地 HTTP origin 和 Chromium；浏览器二进制由 Playwright 安装或由 Runtime 显式指定。
+- 当前已用真实供应商完成最小连接与结构化能力烟测，但纵向页面交付、视觉判断质量和自动修复效果仍只使用 Fake Model 做确定性契约与真实浏览器测试。
+- 当前返工恢复保证不重复已 Checkpoint 的 Patch 应用；如果 Workspace 在 Checkpoint 后被外部修改，会拒绝自动恢复并要求人工处理。
+- Web 上传资产目录会跨进程保存，但 Web 任务列表目前只保存在内存中，服务重启后不能继续查询旧任务。
+- 固定 Vue 模板当前共享单一浏览器端口，因此 Web Runtime 串行执行页面任务；尚未支持取消正在运行的任务。
+- 固定评测框架已经执行第一次真实供应商试跑，但协议校准错误和后续连接拒绝使 9 个试验均失败；该报告只能作为失败诊断证据，尚不能证明业务效果提升。
+- 第一版固定任务集只有 3 个页面，适合 MVP 烟测，不足以产生统计上稳定的普遍结论。
 
 ## 下一步
 
-最高优先级是闭合动态返工环路：
+优化事项统一维护在 `OPTIMIZATION_BACKLOG.md`，开始和完成每个批次时同步更新状态、验收结果和下一批内容。
 
-```text
-测试失败
-  → 分析失败报告和受影响 Artifact
-  → 动态创建局部 FixTask
-  → Fixer 只读取失败证据和相关文件
-  → 生成修复 Artifact
-  → 安全合并
-  → 运行受影响测试
-  → 最终完整质量门禁
-```
+VisionForge MVP 批次 8 已开始。三方案真实执行器、Runtime 反馈隔离、固定验收 Spec、证据落盘和预算预检已完成；首次真实试跑已保留失败报告并完成协议校准，当前等待用户确认额外预算后重新运行。
 
-之后依次推进：
+下一批只做真实模型小规模基线试跑与校准：
 
-1. 将 timeout/cancel 传递到 ModelClient 和验证子进程组。
-2. 持久化完整 TaskGraphRuntime、尝试次数和生命周期快照。
-3. 增加 glob 或符号级读写冲突分析。
-4. 将 Reviewer 与 Safety 接入 DAG 收敛门禁。
-5. 建立实体索引以及记忆去重、失效和版本替代。
-6. 建立任务拆分质量、并发收益、返工率和记忆命中率评测。
+1. 已完成三种方案各自的真实执行边界、固定验收注入、构建失败反馈、Artifact Bundle 和默认无外部调用的预算预检。
+2. 当前预检上限：3 个任务 × 3 种方案 × 1 次重复，最坏 21 次文本调用、30 次视觉调用，共 51 次；总 Token 停止阈值 600000。
+3. 首次获批运行尝试了 10 次调用、观察到 19604 Token；SaaS 暴露的嵌套布局协议问题已修复，之后的供应商连接拒绝按原样保留在 `baseline-20260815-01/report.json`，没有产生可比较的交付指标。
+4. 用户重新确认额外调用预算后，使用新 Run ID 重新执行校准后的 DeepSeek/Qwen 基线；不得覆盖首次失败报告。
+5. 随后再对少量结果做人工盲审，确认 VLM 分数、P1/P2 和 Runtime 阈值是否与人的判断一致。
+
+这一批会产生真实模型调用成本；未获得用户确认前不执行。仍不扩展通用聊天、记忆或调度。
 
 ## 关键文件
 
@@ -110,11 +132,40 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - `demo/coding_workflow/integration.py`：Patch 安全检查和集中合并。
 - `demo/coding_workflow/memory.py`：分层记忆、Working Memory 和 RoleMemoryView。
 - `demo/coding_workflow/memory_sqlite.py`：记忆和 Checkpoint 持久化。
+- `demo/coding_workflow/runtime_sqlite.py`：TaskGraphRuntime、生命周期和 Artifact 快照持久化。
+- `demo/coding_workflow/visionforge/contracts.py`：UI Spec 与 Visual Review 1.0 协议。
+- `demo/coding_workflow/visionforge/assets.py`：图片内容寻址存储与 Artifact 引用。
+- `demo/coding_workflow/visionforge/agents.py`：四个 VisionForge 角色、结构化 Schema、模型能力和输入裁剪。
+- `demo/coding_workflow/visionforge/browser.py`：受控进程、Vue 服务器生命周期、Playwright 调用与浏览器 Artifact。
+- `demo/coding_workflow/visionforge/quality.py`：Runtime 组合质量门禁与可审计失败原因。
+- `demo/coding_workflow/visionforge/recovery.py`：SQLite 返工 Checkpoint、Artifact 快照和 Workspace 漂移检查。
+- `demo/coding_workflow/visionforge/runner.py`：纵向执行、最多两轮修复、Artifact 状态和最终收敛。
+- `demo/coding_workflow/visionforge/web_runtime.py`：图片上传目录、固定项目准备、任务执行与安全公开快照。
+- `demo/coding_workflow/visionforge/evaluation.py`：固定任务加载、参考图渲染、三方案试验记录、指标汇总和 JSON 报告。
+- `demo/coding_workflow/visionforge/evaluation_runtime.py`：三方案隔离执行器、模型预算、固定验收注入和 Artifact Bundle 持久化。
+- `demo/visionforge_eval_run.py`：真实基线预算预检与显式授权执行入口；默认不调用外部模型。
+- `demo/coding_workflow/model/factory.py`：DeepSeek/Qwen 配置预设、环境变量读取和文本/视觉客户端独立路由。
+- `demo/coding_workflow/model/openai_compatible.py`：OpenAI 兼容请求、多模态输入、供应商结构化输出模式和本地 Schema 约束。
+- `demo/visionforge_model_smoke.py`：两次最小真实能力烟测入口；只报告安全的验证元数据。
+- `demo/visionforge_vue_template/`：受保护的固定 Vue 3 + Vite 页面模板。
+- `demo/visionforge_vue_template/.visionforge/browser-runner.mjs`：固定 viewport、受控交互、截图和浏览器证据采集。
+- `demo/visionforge_vue_template/visionforge.ui-spec.json`：固定页面的可执行 UI Spec 测试用例。
+- `demo/tests/test_visionforge.py`：VisionForge 协议、模型能力、图片和模板测试。
+- `demo/tests/test_visionforge_browser.py`：命令生命周期和真实浏览器闭环测试。
+- `demo/tests/test_visionforge_runner.py`：Fake Model 契约、安全 Patch、Artifact 链和真实纵向链路测试。
+- `demo/tests/test_visionforge_rework.py`：质量门禁、修复上限、Artifact 替代、恢复和真实浏览器修复闭环测试。
+- `demo/tests/test_visionforge_evaluation.py`：固定任务、实验配置、三方案汇总、Run 适配和真实参考图渲染测试。
+- `demo/visionforge_eval/v1/`：版本化任务 manifest、3 个参考页面和 Runtime 固定验收 UI Spec。
+- `demo/visionforge_eval/render-reference.mjs`：无外部网络、固定环境的 HTML→PNG 渲染器。
+- `demo/visionforge_eval/README.md`：三方案反馈边界、统一评分口径和指标说明。
 - `demo/coding_agent_cli.py`：CLI 的 dag/legacy 入口。
-- `demo/web_server.py`：Web 执行入口、状态控制和安全事件展示。
+- `demo/web_server.py`：通用 Harness 兼容入口与 VisionForge 上传、任务、图片读取 API。
+- `demo/web/index.html`、`demo/web/app.js`、`demo/web/styles.css`：VisionForge 上传、进度、截图、轮次和 Artifact 调用链界面。
+- `demo/tests/test_web_server.py`：Web Runtime、上传目录、受控请求字段和前端入口测试。
 - `demo/tests/test_workflow.py`：Harness、DAG、记忆和端到端测试。
 - `demo/docs/task-graph-and-memory.md`：设计边界说明。
 - `Plan/Plan06.md`：任务拆分和记忆机制的策略归档。
+- `OPTIMIZATION_BACKLOG.md`：优化批次、优先级、状态和验收标准。
 
 ## 验证命令
 
@@ -123,6 +174,8 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 ```bash
 python3 -m unittest discover -s tests -q
 ```
+
+真实浏览器测试需要先安装 Chromium，或通过 `VISIONFORGE_BROWSER_EXECUTABLE` 指定 Runtime 管理的 Chrome/Chromium，再设置 `VISIONFORGE_E2E=1` 执行 `test_visionforge_browser.py`。
 
 在仓库根目录执行：
 
@@ -136,7 +189,7 @@ git status --short
 - 仓库：`/Users/donbblu/codex/multiAgent`
 - 分支：`main`
 - 远端：`git@github.com:donbblu/MultiAgent.git`
-- 本文创建时的最近提交：`1c70347 chore: archive daily progress 2026-08-13`
+- 当前基线提交：`1921f90 feat: improve memory retrieval and recovery`
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒

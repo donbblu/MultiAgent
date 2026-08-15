@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 from coding_agent_cli import run_requirement
 from coding_workflow.harness import LifecycleController
+from coding_workflow.visionforge import VisionForgeWebError, VisionForgeWebRuntime
 
 
 ROOT = Path(__file__).parent.resolve()
@@ -18,6 +19,11 @@ WEB_ROOT = ROOT / "web"
 TASKS: dict[str, dict[str, object]] = {}
 TASK_CONTROLS: dict[str, LifecycleController] = {}
 TASKS_LOCK = threading.Lock()
+VISIONFORGE_WEB = VisionForgeWebRuntime(
+    ROOT / ".runtime" / "visionforge-web",
+    ROOT / "visionforge_vue_template",
+    env_file=ROOT / ".env",
+)
 
 WORKFLOW = {
     "nodes": [
@@ -71,6 +77,19 @@ def finalize_node_states(
                 ),
             }
         )
+
+
+def parse_visionforge_task_payload(
+    data: object,
+) -> tuple[str, str]:
+    if not isinstance(data, dict):
+        raise VisionForgeWebError("请求必须是 JSON 对象")
+    unknown = set(data) - {"requirement", "asset_id"}
+    if unknown:
+        raise VisionForgeWebError(
+            "任务请求包含未知字段: " + ", ".join(sorted(unknown))
+        )
+    return str(data.get("requirement", "")), str(data.get("asset_id", ""))
 
 
 def role_from_event(entry: dict[str, object]) -> str | None:
@@ -257,6 +276,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' blob:; "
+            "style-src 'self'; script-src 'self'; connect-src 'self'",
+        )
         super().end_headers()
 
     def send_json(self, status: int, value: object) -> None:
@@ -269,6 +293,33 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith("/api/visionforge/assets/"):
+            parts = path.strip("/").split("/")
+            if len(parts) != 4 or parts[:3] != ["api", "visionforge", "assets"]:
+                self.send_error(404)
+                return
+            try:
+                content, mime_type = VISIONFORGE_WEB.read_asset(parts[3])
+            except KeyError as exc:
+                self.send_json(404, {"error": str(exc.args[0])})
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", mime_type)
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Cache-Control", "private, max-age=31536000, immutable")
+            self.end_headers()
+            self.wfile.write(content)
+            return
+        if path.startswith("/api/visionforge/tasks/"):
+            parts = path.strip("/").split("/")
+            if len(parts) != 4 or parts[:3] != ["api", "visionforge", "tasks"]:
+                self.send_error(404)
+                return
+            try:
+                self.send_json(200, VISIONFORGE_WEB.task_snapshot(parts[3]))
+            except KeyError as exc:
+                self.send_json(404, {"error": str(exc.args[0])})
+            return
         if path.startswith("/api/tasks/"):
             task_key = path.removeprefix("/api/tasks/")
             with TASKS_LOCK:
@@ -312,6 +363,41 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+        if path == "/api/visionforge/assets":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length <= 0 or length > 10 * 1024 * 1024:
+                    raise VisionForgeWebError("图片大小必须在 1 字节到 10 MiB 之间")
+                content_type = self.headers.get("Content-Type", "")
+                uploaded = VISIONFORGE_WEB.upload_image(
+                    self.rfile.read(length), content_type
+                )
+                self.send_json(201, uploaded)
+            except (ValueError, TypeError, VisionForgeWebError) as exc:
+                self.send_json(400, {"error": str(exc)})
+            return
+        if path == "/api/visionforge/tasks":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length <= 0 or length > 32768:
+                    raise VisionForgeWebError("请求大小不合法")
+                data = json.loads(self.rfile.read(length))
+                requirement, asset_id = parse_visionforge_task_payload(data)
+                task_id = VISIONFORGE_WEB.submit_task(
+                    requirement,
+                    asset_id,
+                )
+                self.send_json(202, {"id": task_id})
+            except KeyError as exc:
+                self.send_json(404, {"error": str(exc.args[0])})
+            except (
+                ValueError,
+                TypeError,
+                json.JSONDecodeError,
+                VisionForgeWebError,
+            ) as exc:
+                self.send_json(400, {"error": str(exc)})
+            return
         if path.startswith("/api/tasks/"):
             parts = path.strip("/").split("/")
             if len(parts) != 4 or parts[:2] != ["api", "tasks"]:
@@ -396,7 +482,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     host, port = "127.0.0.1", 8765
-    print(f"Multi-Agent UI: http://{host}:{port}")
+    print(f"VisionForge UI: http://{host}:{port}")
     ThreadingHTTPServer((host, port), Handler).serve_forever()
 
 

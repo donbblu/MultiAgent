@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "suite_id": "visionforge-mvp-pages",
+  "version": "1.0.0",
+  "tasks": [
+    {
+      "task_id": "saas-signup",
+      "title": "SaaS 注册落地页",
+      "requirement": "实现一个明亮简洁的 SaaS 注册落地页。页面包含品牌导航、两栏 Hero、邮箱输入框与“开始体验”按钮；提交合法邮箱后显示成功提示。严格保留固定 data-testid。",
+      "reference_source": "references/saas-signup.html",
+      "acceptance_spec": "specs/saas-signup.json",
+      "tags": ["landing", "form", "interaction"]
+    },
+    {
+      "task_id": "analytics-dashboard",
+      "title": "数据分析仪表盘",
+      "requirement": "实现一个深色数据分析仪表盘，包含侧边导航、关键指标卡、趋势图区域和活动列表；点击时间范围按钮后显示“最近 30 天”。严格保留固定 data-testid。",
+      "reference_source": "references/analytics-dashboard.html",
+      "acceptance_spec": "specs/analytics-dashboard.json",
+      "tags": ["dashboard", "dense-layout", "interaction"]
+    },
+    {
+      "task_id": "commerce-product",
+      "title": "电商商品详情页",
+      "requirement": "实现一个暖色调商品详情页，左侧为商品展示区，右侧包含标题、价格、颜色选项、数量选择和加入购物袋按钮；点击按钮后显示已加入提示。严格保留固定 data-testid。",
+      "reference_source": "references/commerce-product.html",
+      "acceptance_spec": "specs/commerce-product.json",
+      "tags": ["commerce", "product", "interaction"]
+    }
+  ]
+}

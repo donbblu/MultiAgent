@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "page_type": "product_detail",
+  "viewport": {"width": 1440, "height": 900, "device_scale_factor": 1},
+  "layout": [
+    {"region_id": "gallery", "role": "complementary", "order": 0, "children": []},
+    {"region_id": "details", "role": "main", "order": 1, "children": []}
+  ],
+  "components": [
+    {"component_id": "shell", "component_type": "page", "region_id": "details", "text": "", "test_id": "page-shell", "properties": {}},
+    {"component_id": "title", "component_type": "heading", "region_id": "details", "text": "Cloud Soft 扶手椅", "test_id": "product-title", "properties": {}},
+    {"component_id": "add", "component_type": "button", "region_id": "details", "text": "加入购物袋", "test_id": "add-button", "properties": {}},
+    {"component_id": "status", "component_type": "status", "region_id": "details", "text": "已加入购物袋", "test_id": "cart-message", "properties": {}}
+  ],
+  "texts": ["Cloud Soft 扶手椅", "¥2,699", "加入购物袋", "已加入购物袋"],
+  "interactions": [
+    {"interaction_id": "page-visible", "action": "expect_visible", "target": "[data-testid=page-shell]", "value": "", "expected": "visible"},
+    {"interaction_id": "product-title", "action": "expect_text", "target": "[data-testid=product-title]", "value": "", "expected": "Cloud Soft 扶手椅"},
+    {"interaction_id": "price-visible", "action": "expect_text", "target": "[data-testid=product-price]", "value": "", "expected": "¥2,699"},
+    {"interaction_id": "add-product", "action": "click", "target": "[data-testid=add-button]", "value": "", "expected": ""},
+    {"interaction_id": "cart-updated", "action": "expect_text", "target": "[data-testid=cart-message]", "value": "", "expected": "已加入购物袋"}
+  ],
+  "acceptance_criteria": [
+    {"criterion_id": "fixed-dom", "kind": "dom", "target": "[data-testid=page-shell]", "expected": "商品标题和价格存在"},
+    {"criterion_id": "cart-flow", "kind": "interaction", "target": "[data-testid=cart-message]", "expected": "点击后显示购物袋反馈"}
+  ],
+  "style_tokens": {"color_scheme": "light", "tone": "warm"}
+}

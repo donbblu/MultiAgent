@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "page_type": "landing_page",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "device_scale_factor": 1
+  },
+  "layout": [
+    {
+      "region_id": "hero",
+      "role": "main",
+      "order": 0,
+      "children": []
+    }
+  ],
+  "components": [
+    {
+      "component_id": "email-input",
+      "component_type": "input",
+      "region_id": "hero",
+      "text": "",
+      "test_id": "email-input",
+      "properties": {
+        "type": "email"
+      }
+    },
+    {
+      "component_id": "submit-button",
+      "component_type": "button",
+      "region_id": "hero",
+      "text": "开始体验",
+      "test_id": "submit-button",
+      "properties": {}
+    }
+  ],
+  "texts": [
+    "从视觉参考到可运行页面",
+    "开始体验",
+    "已收到，我们会继续完成视觉验收。"
+  ],
+  "interactions": [
+    {
+      "interaction_id": "page-visible",
+      "action": "expect_visible",
+      "target": "[data-testid=page-shell]",
+      "value": "",
+      "expected": "visible"
+    },
+    {
+      "interaction_id": "fill-email",
+      "action": "fill",
+      "target": "[data-testid=email-input]",
+      "value": "demo@example.com",
+      "expected": ""
+    },
+    {
+      "interaction_id": "submit-form",
+      "action": "click",
+      "target": "[data-testid=submit-button]",
+      "value": "",
+      "expected": ""
+    },
+    {
+      "interaction_id": "success-message",
+      "action": "expect_text",
+      "target": "[data-testid=success-message]",
+      "value": "",
+      "expected": "已收到，我们会继续完成视觉验收。"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "form-submit",
+      "kind": "interaction",
+      "target": "[data-testid=success-message]",
+      "expected": "提交邮箱后显示成功反馈"
+    }
+  ],
+  "style_tokens": {
+    "color_scheme": "light"
+  }
+}

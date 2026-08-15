@@ -69,12 +69,21 @@ class ProjectWorkspace:
             if path.is_file() and ".git" not in path.parts
         )
 
-    def content_hashes(self, *, exclude: set[str] | None = None) -> dict[str, str]:
+    def content_hashes(
+        self,
+        *,
+        exclude: set[str] | None = None,
+        exclude_prefixes: tuple[str, ...] = (),
+    ) -> dict[str, str]:
         excluded = exclude or set()
         return {
             path: sha256(self._resolve(path).read_bytes()).hexdigest()
             for path in self.list_files()
             if path not in excluded
+            and not any(
+                path == prefix.rstrip("/") or path.startswith(prefix.rstrip("/") + "/")
+                for prefix in exclude_prefixes
+            )
             and "__pycache__" not in PurePosixPath(path).parts
             and not path.endswith((".pyc", ".pyo"))
         }

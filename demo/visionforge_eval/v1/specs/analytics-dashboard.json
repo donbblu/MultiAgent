@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "page_type": "dashboard",
+  "viewport": {"width": 1440, "height": 900, "device_scale_factor": 1},
+  "layout": [
+    {"region_id": "sidebar", "role": "navigation", "order": 0, "children": []},
+    {"region_id": "main", "role": "main", "order": 1, "children": []}
+  ],
+  "components": [
+    {"component_id": "shell", "component_type": "page", "region_id": "main", "text": "", "test_id": "page-shell", "properties": {}},
+    {"component_id": "range", "component_type": "button", "region_id": "main", "text": "切换时间范围", "test_id": "range-button", "properties": {}},
+    {"component_id": "range-label", "component_type": "status", "region_id": "main", "text": "最近 7 天", "test_id": "range-label", "properties": {}},
+    {"component_id": "metric", "component_type": "metric-card", "region_id": "main", "text": "总收入", "test_id": "revenue-card", "properties": {}}
+  ],
+  "texts": ["数据概览", "总收入", "最近 30 天"],
+  "interactions": [
+    {"interaction_id": "page-visible", "action": "expect_visible", "target": "[data-testid=page-shell]", "value": "", "expected": "visible"},
+    {"interaction_id": "dashboard-title", "action": "expect_text", "target": "[data-testid=dashboard-title]", "value": "", "expected": "数据概览"},
+    {"interaction_id": "revenue-visible", "action": "expect_visible", "target": "[data-testid=revenue-card]", "value": "", "expected": "visible"},
+    {"interaction_id": "change-range", "action": "click", "target": "[data-testid=range-button]", "value": "", "expected": ""},
+    {"interaction_id": "range-updated", "action": "expect_text", "target": "[data-testid=range-label]", "value": "", "expected": "最近 30 天"}
+  ],
+  "acceptance_criteria": [
+    {"criterion_id": "fixed-dom", "kind": "dom", "target": "[data-testid=page-shell]", "expected": "仪表盘主区域存在"},
+    {"criterion_id": "range-flow", "kind": "interaction", "target": "[data-testid=range-label]", "expected": "点击后切换为最近 30 天"}
+  ],
+  "style_tokens": {"color_scheme": "dark", "density": "compact"}
+}

@@ -3,66 +3,92 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent Loom · Multi-Agent Coding Studio</title>
-  <meta name="description" content="可视化观察多个 Agent 如何规划、实现、验证与返工。">
+  <title>VisionForge · 从参考图到可运行页面</title>
+  <meta name="description" content="上传 UI 参考图，通过真实浏览器和视觉审查生成、验证并修复 Vue 页面。">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="Agent Loom 首页"><span class="brand-mark">AL</span><span>Agent Loom</span></a>
-    <div class="system-pill"><i></i> 本地安全模式</div>
+    <a class="brand" href="/" aria-label="VisionForge 首页">
+      <span class="brand-mark">VF</span>
+      <span><strong>VisionForge</strong><small>Multimodal Delivery Runtime</small></span>
+    </a>
+    <div class="runtime-pill"><i></i> 本地确定性 Runtime</div>
   </header>
 
   <main>
     <section class="hero">
-      <p class="eyebrow">MULTI-AGENT CODING STUDIO</p>
-      <h1>看见每一次<span>协作</span>，<br>再得到答案。</h1>
-      <p class="intro">输入一个开发需求。角色会依次接手任务，所有交接、变更与验证证据都会在这里清晰呈现。</p>
+      <p class="eyebrow">REFERENCE → CODE → BROWSER → REVIEW → FIX</p>
+      <h1>把一张参考图，<br>变成<span>验收过</span>的页面。</h1>
+      <p class="intro">模型负责理解、生成和修复；Runtime 负责权限、真实浏览器、证据与最终门禁。</p>
     </section>
 
-    <section class="workspace">
-      <aside class="request-panel panel">
-        <div class="panel-heading"><span>01</span><div><h2>描述需求</h2><p>当前生成 Python 标准库项目</p></div></div>
-        <form id="task-form">
-          <label for="requirement">你想构建什么？</label>
-          <textarea id="requirement" maxlength="4000" required placeholder="例如：写一个二分查找函数，处理空列表和重复值，并提供完整单元测试。"></textarea>
-          <div class="field-row">
-            <div><label for="name">项目名称</label><input id="name" pattern="[A-Za-z0-9_-]+" placeholder="自动生成"></div>
-            <div><label for="attempts">最多尝试</label><select id="attempts"><option>1</option><option selected>2</option><option>3</option></select></div>
-          </div>
-          <button id="submit" type="submit"><span>启动协作</span><b>→</b></button>
-          <p class="form-note">只写入 agent-output，验证命令受白名单限制。</p>
+    <section class="studio">
+      <aside class="brief-card card">
+        <div class="section-title"><span>01</span><div><h2>页面任务</h2><p>当前固定目标：预置 Vue 3 项目</p></div></div>
+        <form id="visionforge-form">
+          <label for="reference-file">UI 参考图</label>
+          <label id="upload-zone" class="upload-zone" for="reference-file">
+            <input id="reference-file" type="file" accept="image/png,image/jpeg" required>
+            <img id="reference-preview" alt="参考图预览" hidden>
+            <span id="upload-placeholder"><b>＋</b><strong>选择 PNG 或 JPEG</strong><small>最大 10 MiB，上传后使用 asset ID</small></span>
+          </label>
+          <p id="upload-status" class="field-note">尚未选择图片</p>
+
+          <label for="requirement">页面需求</label>
+          <textarea id="requirement" minlength="3" maxlength="4000" required placeholder="例如：根据参考图实现邮箱注册落地页，提交后显示成功提示；保持清晰的视觉层级和响应式布局。"></textarea>
+
+          <button id="submit-task" type="submit"><span>启动视觉交付</span><b>→</b></button>
+          <p class="security-note">不会上传项目路径、密钥或 Base64 图片；模型不能自行宣告通过。</p>
         </form>
       </aside>
 
-      <section class="process-panel panel">
-        <div class="panel-heading"><span>02</span><div><h2>协作现场</h2><p id="process-caption">等待新任务</p></div><div class="task-controls"><button id="pause-task" type="button" disabled>暂停</button><button id="cancel-task" type="button" disabled>退出</button></div><div id="live-badge" class="live-badge">IDLE</div></div>
-        <div class="flow-line"><span>工作流 DAG</span><i></i><em id="dag-caption">等待运行</em></div>
-        <div id="dag" class="dag" aria-label="任务工作流"></div>
-        <div class="process-grid">
-          <section class="timeline-pane">
-            <div class="flow-line"><span>实时事件</span><i></i><em id="event-count">0 条事件</em></div>
-            <div id="timeline" class="timeline" aria-live="polite">
-              <div class="empty-state"><div class="orbit"><i></i><i></i><i></i></div><h3>协作过程将在这里展开</h3><p>这里展示的是可审计事件，而不是模型的私有推理。</p></div>
-            </div>
-          </section>
-          <aside class="detail-pane">
-            <div class="flow-line"><span>节点详情</span><i></i><em id="detail-status">未选择</em></div>
-            <div id="node-detail" class="node-detail">
-              <div class="detail-empty"><strong>选择一个 Agent 节点</strong><p>查看职责、权限、执行摘要、产物和关联事件。</p></div>
-            </div>
-          </aside>
+      <section class="run-card card">
+        <div class="section-title"><span>02</span><div><h2>交付链路</h2><p id="task-caption">等待任务</p></div><em id="run-status" class="status-pill idle">IDLE</em></div>
+        <div id="pipeline" class="pipeline" aria-label="VisionForge 执行阶段">
+          <div data-stage="reference"><i>1</i><strong>参考图</strong><small>Asset</small></div>
+          <span>→</span>
+          <div data-stage="ui_spec"><i>2</i><strong>UI Spec</strong><small>VLM</small></div>
+          <span>→</span>
+          <div data-stage="implementation_plan"><i>3</i><strong>页面代码</strong><small>LLM</small></div>
+          <span>→</span>
+          <div data-stage="browser_run"><i>4</i><strong>真实浏览器</strong><small>Playwright</small></div>
+          <span>→</span>
+          <div data-stage="visual_review"><i>5</i><strong>视觉审查</strong><small>VLM</small></div>
+          <span>→</span>
+          <div data-stage="quality_gate"><i>6</i><strong>质量门禁</strong><small>Runtime</small></div>
         </div>
+
+        <div id="waiting-state" class="waiting-state">
+          <div class="forge-orbit"><i></i><i></i><i></i></div>
+          <h3>完整证据会出现在这里</h3>
+          <p>UI Spec、Patch、浏览器截图、视觉问题与修复轮次都通过 Artifact 引用连接。</p>
+        </div>
+
+        <section id="evidence" class="evidence" hidden>
+          <div class="metrics">
+            <article><small>最终状态</small><strong id="metric-status">—</strong></article>
+            <article><small>视觉评分</small><strong id="metric-score">—</strong></article>
+            <article><small>修复轮数</small><strong id="metric-fixes">—</strong></article>
+            <article><small>Artifacts</small><strong id="metric-artifacts">0</strong></article>
+          </div>
+
+          <div class="comparison">
+            <figure><figcaption>参考图</figcaption><div><img id="final-reference" alt="任务参考图"></div></figure>
+            <figure><figcaption>实际页面截图</figcaption><div id="actual-frame"><p>等待浏览器截图</p><img id="final-actual" alt="实际页面截图" hidden></div></figure>
+          </div>
+
+          <div class="subsection-heading"><div><p class="eyebrow">REWORK HISTORY</p><h3>验证与修复轮次</h3></div><span id="round-count">0 轮</span></div>
+          <div id="rounds" class="rounds"></div>
+
+          <div class="subsection-heading"><div><p class="eyebrow">ARTIFACT CHAIN</p><h3>可审计产物</h3></div><span>点击展开结构化内容</span></div>
+          <div id="artifacts" class="artifacts"></div>
+        </section>
       </section>
     </section>
-
-    <section id="result" class="result-panel panel" hidden>
-      <div class="result-icon">✓</div>
-      <div><p class="eyebrow">FINAL OUTPUT</p><h2 id="result-title">项目已完成</h2><p id="result-summary"></p><div id="file-list" class="file-list"></div></div>
-      <div class="result-meta" id="result-meta"></div>
-    </section>
   </main>
-  <footer><span>Agent Loom / Local Runtime</span><span>角色与模型供应商完全解耦</span></footer>
+
+  <footer><span>VisionForge / Local MVP</span><span>模型输出是不可信输入，最终状态由 Runtime 决定</span></footer>
   <script src="/app.js" defer></script>
 </body>
 </html>

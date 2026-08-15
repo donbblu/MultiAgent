@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "page_type": "landing_page",
+  "viewport": {"width": 1440, "height": 900, "device_scale_factor": 1},
+  "layout": [
+    {"region_id": "header", "role": "navigation", "order": 0, "children": []},
+    {"region_id": "hero", "role": "main", "order": 1, "children": []}
+  ],
+  "components": [
+    {"component_id": "shell", "component_type": "page", "region_id": "hero", "text": "", "test_id": "page-shell", "properties": {}},
+    {"component_id": "email", "component_type": "input", "region_id": "hero", "text": "", "test_id": "email-input", "properties": {"type": "email"}},
+    {"component_id": "submit", "component_type": "button", "region_id": "hero", "text": "开始体验", "test_id": "submit-button", "properties": {}},
+    {"component_id": "success", "component_type": "status", "region_id": "hero", "text": "注册成功，欢迎加入。", "test_id": "success-message", "properties": {}}
+  ],
+  "texts": ["让团队的工作流更清晰", "开始体验", "注册成功，欢迎加入。"],
+  "interactions": [
+    {"interaction_id": "page-visible", "action": "expect_visible", "target": "[data-testid=page-shell]", "value": "", "expected": "visible"},
+    {"interaction_id": "headline-text", "action": "expect_text", "target": "[data-testid=hero-title]", "value": "", "expected": "让团队的工作流更清晰"},
+    {"interaction_id": "fill-email", "action": "fill", "target": "[data-testid=email-input]", "value": "demo@example.com", "expected": ""},
+    {"interaction_id": "submit-form", "action": "click", "target": "[data-testid=submit-button]", "value": "", "expected": ""},
+    {"interaction_id": "success-visible", "action": "expect_text", "target": "[data-testid=success-message]", "value": "", "expected": "注册成功，欢迎加入。"}
+  ],
+  "acceptance_criteria": [
+    {"criterion_id": "fixed-dom", "kind": "dom", "target": "[data-testid=page-shell]", "expected": "页面和主标题存在"},
+    {"criterion_id": "signup-flow", "kind": "interaction", "target": "[data-testid=success-message]", "expected": "提交邮箱后显示成功提示"}
+  ],
+  "style_tokens": {"color_scheme": "light", "density": "airy"}
+}
