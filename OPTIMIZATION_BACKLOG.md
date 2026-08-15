@@ -1,10 +1,10 @@
-# VisionForge 优化待办
+# 多模态 Coding Multi-Agent 优化待办
 
 本文是项目方向和优化工作的单一待办清单。`HANDOFF.md` 负责恢复上下文；具体批次、状态和验收条件以本文为准。
 
-- 最后核对：2026-08-15
-- 当前批次：批次 8 进行中，等待真实基线调用费用确认
-- 下一项：`VF-PILOT-001`
+- 最后核对：2026-08-16
+- 当前批次：批次 9 已完成，等待用户确认下一批
+- 下一项：`CORE-INPUT-001`
 
 ## 维护规则
 
@@ -17,24 +17,26 @@
 
 ## 产品方向
 
-项目逐步从通用 Coding Multi-Agent Harness 演进为 **VisionForge——基于 LLM/VLM 的多模态全栈开发与视觉验收 Agent 系统**。
+项目核心是一个支持文本、图片、音频和视频需求证据的 **Coding Multi-Agent Harness**。多模态负责表达需求和问题证据，不限定生成网页；系统可以修改前端、后端、CLI、库或其他现有代码仓库。
 
-MVP 聚焦一条链路：
+核心 MVP 聚焦一条可客观验收的 Coding 链路：
 
 ```text
-参考图和页面需求
-  → VLM 生成 UI Spec
-  → LLM 修改预置 Vue 3 页面
+多模态输入 Artifact
+  → Requirement Analyst 生成结构化 Coding Requirement
+  → Planner 生成 TaskGraph
+  → Developer 生成受限 Patch
   → Runtime 安全应用 Patch
-  → Playwright 构建、操作并截图
-  → VLM 输出结构化 Visual Review
-  → P1/P2 触发 Fixer
-  → 重新运行完整质量门禁
+  → Validator 运行编译、固定测试和隐藏测试
+  → 失败证据触发 Fixer
+  → 完整回归与权限门禁决定 completed
 ```
 
-TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace、SQLite Runtime、生命周期、权限、Checkpoint 和 Web/API 继续作为确定性基础设施。Multi-Agent 是完成业务闭环的手段，不是产品目标。
+TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace、SQLite Runtime、生命周期、权限、Checkpoint 和 Web/API 是通用确定性基础设施。浏览器、Visual Reviewer、API 测试器和语言测试器是按任务选择的验证场景；模型不能自行声明通过。
 
-## VisionForge MVP 批次
+VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再代表整个产品，也不使用抽象视觉分数评价通用 Coding MVP。
+
+## 已完成的 VisionForge 场景批次
 
 ### 批次 1：协议、模型能力、图片引用和 Vue 模板
 
@@ -152,8 +154,8 @@ TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace�
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
-| VF-PILOT-001 | P1 | 进行中 | 选择一组固定 LLM/VLM 配置执行三方案小规模基线 | 记录模型与 Prompt 版本、成本上限、失败证据和可复现 JSON 报告 |
-| VF-CALIBRATE-001 | P1 | 待开始 | 人工盲审少量结果并校准视觉阈值与问题严重级别 | 人工结论与 VLM 判定差异可追踪；不使用保留任务反复调参 |
+| VF-PILOT-001 | P1 | 已完成 | 选择一组固定 LLM/VLM 配置执行三方案小规模基线 | 记录模型与 Prompt 版本、成本上限、失败证据和可复现 JSON 报告 |
+| VF-CALIBRATE-001 | P1 | 暂缓 | 人工盲审少量结果并校准视觉阈值与问题严重级别 | 人工结论与 VLM 判定差异可追踪；不使用保留任务反复调参 |
 
 批次 8 当前进度：
 
@@ -166,17 +168,71 @@ TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace�
 - 首次获批运行已生成 `.runs/visionforge-eval/baseline-20260815-01/report.json`，共尝试 10 次模型调用、观察到 19604 Token，远低于 51 次/600000 Token 上限；本地参考图渲染和真实浏览器预检通过。
 - 首次运行没有形成可比较的业务指标：SaaS 三个试验暴露了协议未把 `layout.children` 识别为嵌套区域的问题；随后一次 DeepSeek 和六次 DashScope 请求发生连接拒绝，9 个试验均作为失败证据保留，未手工改写报告。
 - 已根据真实失败校准协议：允许组件引用唯一的嵌套 `layout.children` 区域，同时继续拒绝未知或重复区域；失败试验现在会记录验证失败前已消耗的 Token。相关默认回归共 123 项通过。
-- 再次运行前需要重新确认额外调用预算；首次 10 次调用不从历史中抹除。
+- 经用户再次授权，校准后的第二次运行已生成 `.runs/visionforge-eval/baseline-20260815-02/report.json`；共尝试 30 次模型调用、观察到 243016 Token，没有超过额外 51 次/600000 Token 上限。首次 10 次/19604 Token 的失败报告继续保留，没有覆盖或改写。
+- 第二次运行只有 SaaS 注册页的三种方案形成完整横向结果：三者构建和 DOM/交互均通过，视觉均未过 85 分门禁；一次生成和纯浏览器反馈均为 65 分，Browser + VLM 经两轮修复后为 75 分，中间轮曾达到 85 分但随后回退，说明视觉修复存在不稳定性。
+- 数据分析页三次分别因 DeepSeek 空内容、Qwen `component.properties` 类型不符合 Schema、DeepSeek 截断 JSON 而失败；电商页两次因模型引用不存在的本地图片导致构建失败，一次因 DeepSeek 空内容失败。
+- 电商页的 Browser Fixer 连续两轮未修好。已确认 Browser Run 仅截取构建错误末尾，丢失了开头的 `/assets/thumb-caramel.jpg` 无法解析这一根因；这是 Runtime 证据保真问题，不应归因于 Fixer 能力。
+- 当前真实基线不能证明三方案中任何一个具有稳定交付优势：9 个试验交付通过率均为 0；它的价值是暴露了结构化输出可靠性、构建证据截断和视觉修复回退三个具体问题。
+- 人工校准先只检查 SaaS 的参考图和三张最终截图，记录人与 VLM 对 65/65/75 分及 P1/P2 严重级别的分歧。完成前不调整 85 分阈值，也不对固定评测任务反复调用模型调参。
+
+批次 8 方向修正：
+
+- 两次真实报告作为 `web_visual` 场景的探索性失败证据保留，不再用来评价核心 Multi-Agent Coding 能力。
+- 开放式网页设计存在多种合理实现，单一 VLM 视觉分数缺少确定标注，不适合作为第一个 MVP 的主要通过标准。
+- `VF-CALIBRATE-001` 暂缓；只有后续明确需要衡量参考图还原能力时，才使用独立视觉缺陷集和人工标注重新启动。
+
+## 核心 Coding MVP 批次
+
+### 批次 9：产品重新定位与客观评测设计
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-DIRECTION-001 | P0 | 已完成 | 将产品重新定位为多模态输入的 Coding Multi-Agent Harness | 文档明确核心能力、场景边界和非目标；VisionForge 作为可选场景保留 |
+| CORE-MVP-001 | P0 | 已完成 | 定义第一个通用 Coding MVP 的闭环和完成条件 | completed 只由编译、测试、隐藏断言、权限和回归等 Runtime 证据决定 |
+| CORE-EVAL-DESIGN-001 | P0 | 已完成 | 设计容易判断的固定 Coding 任务和多 Agent 对照 | 任务具有确定输入、隐藏验收和唯一通过事实；指标不依赖抽象审美分数 |
+
+批次 9 验收记录：
+
+- 核心输入允许文本、图片、音频和视频 Artifact；输入模态不绑定输出项目类型。
+- Requirement Analyst、Planner、Developer、Tester、Reviewer 和 Fixer 是可组合角色，不要求每个任务全部启用。
+- Validator 按场景选择：语言测试、构建、API、CLI、浏览器 DOM/交互或视觉专项；通用任务不加载 Visual Reviewer。
+- 第一组客观任务覆盖函数 Bug、API 校验、跨文件功能、图片规格/错误证据和确定性修复闭环；最终由固定测试或隐藏测试判定。
+- 对照方案改为单 Agent、Planner + Developer、Planner + Developer + Tester/Fixer，用于回答多 Agent 协作是否提高 Coding 交付率。
+- 本批只修正文档和实施顺序，没有调用外部模型、修改 Runtime 或删除 VisionForge 能力；详细方案见 `Plan/Plan09.md`。
+- 无需用户手动检验；文档差异通过 `git diff --check` 校验。
+
+### 批次 10：通用多模态需求与验证协议
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-INPUT-001 | P0 | 待开始 | 建立通用 `RequirementEvidence`，引用 text/image/audio/video Artifact | MIME、大小、来源和哈希受控；角色只读取获授权的证据引用；非法组合被拒绝 |
+| CORE-REQUIREMENT-001 | P0 | 待开始 | 建立与 UI 无关的 `CodingRequirement` | 目标、约束、验收、仓库范围和证据引用可版本化往返；模型不能扩大权限 |
+| CORE-VALIDATOR-001 | P0 | 待开始 | 建立任务级 Validator Profile | Runtime 根据清单选择 build/test/API/CLI/browser；模型不能添加或降低最终门禁 |
+
+### 批次 11：确定性 Coding 任务集与对照评测
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-EVAL-001 | P0 | 待开始 | 建立固定本地 Coding 任务和隐藏验收 | 每个任务可离线复位；失败原因可定位；最终结果不依赖模型评分 |
+| CORE-ABLATION-001 | P1 | 待开始 | 比较单 Agent、双角色和完整修复闭环 | 报告构建/测试/交付/首次通过/修复/回归/越权/Token/耗时/人工介入 |
+
+### 批次 12：逐步接通多模态输入
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-IMAGE-001 | P1 | 待开始 | 图片中的规格、架构图或错误证据进入 Coding Requirement | 与对应文本任务共用同一隐藏测试；记录需求提取准确性 |
+| CORE-AUDIO-001 | P1 | 待开始 | 音频需求转成受控文本和 Requirement Artifact | 原音频、转录、结构化需求和代码结果可追踪；最终仍由代码测试判定 |
+| CORE-VIDEO-001 | P1 | 待开始 | 录屏提取操作步骤和 Bug 证据 | 时间点、操作、预期/实际结果可追踪；回归测试复现并验证修复 |
 
 ## 暂缓的通用优化
 
-以下工作保留，但在 VisionForge MVP 跑通前不推进：
+以下工作保留，但在核心 Coding MVP 跑通前不推进：
 
 - 通用记忆测评、检索权重调优、向量或混合检索。
 - 符号级调度冲突分析和更复杂的通用 DAG。
-- 自由 Agent 聊天、多租户、语音和复杂长期记忆。
+- 自由 Agent 聊天、多租户和复杂长期记忆。
 - Spring Boot 等后端业务自动生成。
-- 与 VisionForge 当前链路无关的通用工具调用平台。
+- 与核心 Coding 闭环无关的通用工具调用平台。
 
 ## 已完成的 Harness 基线
 
@@ -188,7 +244,7 @@ TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace�
 
 ## 当前基线
 
-- 基线提交：`1921f90 feat: improve memory retrieval and recovery`
+- 基线提交：`7c7c525 chore: archive daily progress 2026-08-15`
 - 当前测试：`python3 -m unittest discover -s tests -q`，123 个测试通过（4 个真实浏览器类默认跳过）。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。

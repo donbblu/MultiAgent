@@ -1,4 +1,4 @@
-# VisionForge 项目交接
+# 多模态 Coding Multi-Agent 项目交接
 
 ## 使用方式
 
@@ -15,9 +15,9 @@
 
 ## 项目目标
 
-在现有供应商无关的单机 Coding Multi-Agent Harness 上，逐步构建 **VisionForge——基于 LLM/VLM 的多模态全栈开发与视觉验收 Agent 系统**。
+项目核心是供应商无关的单机 **Coding Multi-Agent Harness**。系统接受文本、图片、音频和视频形式的需求或问题证据，由多个可组合 Agent 完成需求理解、任务拆分、代码修改、测试、审查和修复；最终结果由 Runtime 的编译、测试、权限和回归证据裁决。
 
-第一阶段聚焦“页面需求与 UI 参考图 → 可运行 Vue 页面 → 浏览器功能验收 → VLM 视觉审查 → 自动修复”。TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace、SQLite Runtime、生命周期、权限、Checkpoint 和 Web/API 尽可能复用；Multi-Agent 是工程手段，不是产品目的。
+VisionForge 的“参考图 → Vue 页面 → 浏览器功能验收 → VLM 视觉审查 → 自动修复”完整保留为 `web_visual` 场景，不再代表整个产品。多模态描述输入方式，不限定输出只能是网页。
 
 ## 当前默认 Workflow
 
@@ -87,6 +87,8 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - 节点之间通过 Artifact 引用交接，不通过共享可变对象隐式通信。
 - 未经验证的推测不能晋升长期记忆。
 - 当前阶段使用线程池和 SQLite，暂不引入外部工作流平台、向量数据库或图数据库。
+- 输入模态与验证场景解耦：图片、音频或视频可以描述后端、CLI、库或前端任务；Visual Reviewer 只在显式 `web_visual` 场景启用。
+- 通用 Coding 任务的 completed 只依赖构建、固定/隐藏测试、行为断言、权限和回归；不使用抽象视觉评分。
 
 ## 当前限制
 
@@ -97,28 +99,30 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - 记忆检索已有确定性单元测试，但尚未建立独立测评集、质量指标、真实任务对照实验和调优闭环。
 - 当前使用实体精确命中和文本排序；是否需要向量或混合检索应由测评结果决定。
 - 当前 Browser Tester 只支持固定 Vue 模板、单一本地 HTTP origin 和 Chromium；浏览器二进制由 Playwright 安装或由 Runtime 显式指定。
-- 当前已用真实供应商完成最小连接与结构化能力烟测，但纵向页面交付、视觉判断质量和自动修复效果仍只使用 Fake Model 做确定性契约与真实浏览器测试。
+- 当前已完成一次保留失败记录和一次校准后真实基线，但 9 个试验的交付通过率仍为 0；结构化输出可靠性、构建错误证据保真和视觉修复稳定性尚未达到可用于产品结论的水平。
 - 当前返工恢复保证不重复已 Checkpoint 的 Patch 应用；如果 Workspace 在 Checkpoint 后被外部修改，会拒绝自动恢复并要求人工处理。
 - Web 上传资产目录会跨进程保存，但 Web 任务列表目前只保存在内存中，服务重启后不能继续查询旧任务。
 - 固定 Vue 模板当前共享单一浏览器端口，因此 Web Runtime 串行执行页面任务；尚未支持取消正在运行的任务。
-- 固定评测框架已经执行第一次真实供应商试跑，但协议校准错误和后续连接拒绝使 9 个试验均失败；该报告只能作为失败诊断证据，尚不能证明业务效果提升。
+- 固定评测框架的第二次真实运行只有 SaaS 任务形成完整三方案结果；其余任务受模型空内容、非法/截断 JSON 和不存在的图片引用影响。该报告可以作为可靠性诊断基线，但尚不能证明业务效果提升。
 - 第一版固定任务集只有 3 个页面，适合 MVP 烟测，不足以产生统计上稳定的普遍结论。
+- 当前还没有通用 `RequirementEvidence`、与 UI 无关的 `CodingRequirement` 或任务级 Validator Profile；图片协议已有场景实现，音频和视频尚未接入。
+- 还没有用于比较单 Agent、Planner + Developer 和完整 Tester/Fixer 闭环的确定性 Coding 任务集。
 
 ## 下一步
 
 优化事项统一维护在 `OPTIMIZATION_BACKLOG.md`，开始和完成每个批次时同步更新状态、验收结果和下一批内容。
 
-VisionForge MVP 批次 8 已开始。三方案真实执行器、Runtime 反馈隔离、固定验收 Spec、证据落盘和预算预检已完成；首次真实试跑已保留失败报告并完成协议校准，当前等待用户确认额外预算后重新运行。
+批次 9 已完成产品与评测方向修正，详细决策见 `Plan/Plan09.md`。两次 VisionForge 真实报告继续保留为 `web_visual` 探索性证据；视觉人工校准暂缓，当前不再重跑开放式网页基线。
 
-下一批只做真实模型小规模基线试跑与校准：
+下一批只实现通用协议，不运行真实模型：
 
-1. 已完成三种方案各自的真实执行边界、固定验收注入、构建失败反馈、Artifact Bundle 和默认无外部调用的预算预检。
-2. 当前预检上限：3 个任务 × 3 种方案 × 1 次重复，最坏 21 次文本调用、30 次视觉调用，共 51 次；总 Token 停止阈值 600000。
-3. 首次获批运行尝试了 10 次调用、观察到 19604 Token；SaaS 暴露的嵌套布局协议问题已修复，之后的供应商连接拒绝按原样保留在 `baseline-20260815-01/report.json`，没有产生可比较的交付指标。
-4. 用户重新确认额外调用预算后，使用新 Run ID 重新执行校准后的 DeepSeek/Qwen 基线；不得覆盖首次失败报告。
-5. 随后再对少量结果做人工盲审，确认 VLM 分数、P1/P2 和 Runtime 阈值是否与人的判断一致。
+1. 建立 `RequirementEvidence`，统一引用 text/image/audio/video Artifact，并校验 MIME、大小、来源、哈希和授权范围。
+2. 建立与 UI 无关的 `CodingRequirement`，保存目标、约束、验收、仓库范围和证据引用。
+3. 建立 Runtime 拥有的 Validator Profile，从 build/test/API/CLI/browser 中选择确定性门禁；模型不能增加、删除或降低门禁。
+4. 保持现有 UI Spec、Visual Review 和 VisionForge Runner 兼容，将其映射为可选 `web_visual` 场景。
+5. 每个协议都增加非法输入、JSON 往返、权限边界和兼容测试；现有测试尽可能全部保持通过。
 
-这一批会产生真实模型调用成本；未获得用户确认前不执行。仍不扩展通用聊天、记忆或调度。
+本批不接供应商、不上传媒体、不调用模型，也不实现音视频转录。完成后等待用户确认，再建立固定 Coding 任务集和三方案评测器。
 
 ## 关键文件
 
@@ -165,6 +169,7 @@ VisionForge MVP 批次 8 已开始。三方案真实执行器、Runtime 反馈�
 - `demo/tests/test_workflow.py`：Harness、DAG、记忆和端到端测试。
 - `demo/docs/task-graph-and-memory.md`：设计边界说明。
 - `Plan/Plan06.md`：任务拆分和记忆机制的策略归档。
+- `Plan/Plan09.md`：多模态 Coding Multi-Agent MVP、客观验收和实施顺序。
 - `OPTIMIZATION_BACKLOG.md`：优化批次、优先级、状态和验收标准。
 
 ## 验证命令
@@ -189,7 +194,7 @@ git status --short
 - 仓库：`/Users/donbblu/codex/multiAgent`
 - 分支：`main`
 - 远端：`git@github.com:donbblu/MultiAgent.git`
-- 当前基线提交：`1921f90 feat: improve memory retrieval and recovery`
+- 当前基线提交：`7c7c525 chore: archive daily progress 2026-08-15`
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒
