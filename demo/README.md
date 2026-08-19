@@ -101,51 +101,13 @@ CommandVerificationAgent 运行真实测试
                          └─ 超过上限 → FAILED
 ```
 
-## 运行
+## 运行测试
 
-无需安装第三方依赖，要求 Python 3.10+：
-
-```bash
-cd /Users/donbblu/codex/multiAgent/demo
-python3 main.py
-```
-
-示例会在 `generated_project/` 创建一个 Python 项目。第一次实现故意遗漏空输入处理，验证失败后第二轮自动修复。
-
-同时会生成运行记录：
-
-```text
-.runs/TASK-001/
-├── events.jsonl
-└── task.json
-```
-
-运行框架测试：
+要求 Python 3.10+。运行框架测试：
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
-
-## 模型 API Demo
-
-复制 `.env.example` 为 `.env` 并填写 `MODEL_API_KEY`，然后运行：
-
-```bash
-python3 model_demo.py
-```
-
-默认配置使用注册表中的 DeepSeek 预设，但 Agent 和 Backend 不依赖该供应商。
-Demo 将结果写入被 Git 忽略的 `model_generated_project/`。模型只负责返回
-`ImplementationPlan`；Runtime
-负责验证和写入。安全边界包括：
-
-- 模型只允许修改 `app.py` 和 `README.md`。
-- `.env`、`.git`、`.verification`、`.runs` 为受保护路径。
-- 密钥不会进入模型上下文、任务状态或运行记录。
-- Runtime 使用独立验收脚本，模型不能修改该脚本。
-- 验证器只允许执行 `python3 .verification/test_acceptance.py`。
-- 多文件写入先暂存，写入失败时回滚本轮已应用文件。
-- API 请求限制超时、重试次数、输出 Token 和响应字节数。
 
 ## 通用 CLI
 
@@ -259,8 +221,8 @@ python3 coding_agent_cli.py "需求" \
 ```
 
 已有输出目录默认拒绝覆盖；只有明确传入 `--continue-existing` 才会继续修改。
-通用模式的测试由 Coding Agent 生成，适合功能验证和原型；高风险项目应像
-`bubble_sort_demo.py` 一样，由 Runtime 或用户提供独立验收测试。
+通用模式的测试由 Coding Agent 生成，适合功能验证和原型；高风险项目应由
+Runtime 或用户提供独立验收测试。
 
 ## 可视化界面
 
