@@ -62,14 +62,23 @@ class ResourceConflict:
 class TaskGraph:
     """不可变任务 DAG；负责依赖、Artifact 和资源冲突校验。"""
 
-    def __init__(self, tasks: Iterable[TaskSpec]) -> None:
+    def __init__(
+        self,
+        tasks: Iterable[TaskSpec],
+        *,
+        external_artifacts: Iterable[str] = (),
+    ) -> None:
         items = tuple(tasks)
         if not items:
             raise GraphValidationError("任务图不能为空")
+        external = frozenset(external_artifacts)
+        if any(not name.strip() for name in external):
+            raise GraphValidationError("外部 Artifact 名称不能为空")
         by_id = {task.task_id: task for task in items}
         if len(by_id) != len(items):
             raise GraphValidationError("任务 ID 不能重复")
         self._tasks: Mapping[str, TaskSpec] = MappingProxyType(by_id)
+        self._external_artifacts = external
         self._validate_dependencies()
         self._validate_acyclic()
         self._validate_artifacts()
@@ -77,6 +86,10 @@ class TaskGraph:
     @property
     def tasks(self) -> Mapping[str, TaskSpec]:
         return self._tasks
+
+    @property
+    def external_artifacts(self) -> frozenset[str]:
+        return self._external_artifacts
 
     def _validate_dependencies(self) -> None:
         ids = self._tasks.keys()
@@ -117,10 +130,12 @@ class TaskGraph:
         for task in self._tasks.values():
             for artifact in task.input_artifacts:
                 producer = producers.get(artifact)
-                if producer is None:
+                if producer is None and artifact not in self._external_artifacts:
                     raise GraphValidationError(
                         f"任务 {task.task_id} 的输入 Artifact 不存在: {artifact}"
                     )
+                if producer is None:
+                    continue
                 if producer not in self.transitive_dependencies(task.task_id):
                     raise GraphValidationError(
                         f"任务 {task.task_id} 未依赖 Artifact {artifact} 的生产者 {producer}"

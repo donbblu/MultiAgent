@@ -1,91 +1,21 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Protocol
-
 from .models import (
-    AgentResult,
-    FileChange,
-    ImplementationPlan,
     CriterionResult,
-    ProjectFile,
-    ReviewResult,
     TaskContext,
     VerificationResult,
 )
-from .context import ProjectContextBuilder
 from .policy import CommandPolicy, CommandPolicyError
-from .validation import PlanValidator, SchemaValidationError
-from .workspace import ProjectWorkspace, WorkspaceError
-from .roles import Capability, IMPLEMENTER, REVIEWER, RoleSpec, TESTER
-from .memory import MemoryManager, RoleMemoryView
-
-
-class CodingBackend(Protocol):
-    """可由任意 LLM/规则引擎实现，只负责生成结构化计划。"""
-
-    def create_plan(self, memory: RoleMemoryView) -> ImplementationPlan: ...
-
-
-class CodingAgent(ABC):
-    @abstractmethod
-    def run(self, task: TaskContext) -> AgentResult:
-        raise NotImplementedError
+from .workspace import ProjectWorkspace
+from .roles import Capability, RoleSpec, TESTER
+from .memory import MemoryManager
 
 
 class VerificationAgent(ABC):
     @abstractmethod
     def run(self, task: TaskContext) -> VerificationResult:
         raise NotImplementedError
-
-
-class ReviewBackend(Protocol):
-    def review(self, memory: RoleMemoryView) -> ReviewResult: ...
-
-
-class ReviewAgent(ABC):
-    @abstractmethod
-    def run(self, task: TaskContext) -> ReviewResult:
-        raise NotImplementedError
-
-
-class WorkspaceCodingAgent(CodingAgent):
-    """让后端做决策，让受限 Workspace 执行文件变更。"""
-
-    def __init__(
-        self,
-        backend: CodingBackend,
-        workspace: ProjectWorkspace,
-        context_builder: ProjectContextBuilder | None = None,
-        validator: PlanValidator | None = None,
-        role: RoleSpec = IMPLEMENTER,
-        memory_manager: MemoryManager | None = None,
-    ) -> None:
-        self.backend = backend
-        self.workspace = workspace
-        self.context_builder = context_builder or ProjectContextBuilder(workspace)
-        self.validator = validator or PlanValidator()
-        self.role = role
-        self.memory_manager = memory_manager or MemoryManager()
-
-    def run(self, task: TaskContext) -> AgentResult:
-        try:
-            role = task.active_role or self.role
-            if not role.allows(Capability.WRITE_PROJECT):
-                return AgentResult(False, "角色权限不足", error=f"角色 {role.name} 无写入能力")
-            context_files = self.context_builder.select(task)
-            memory = self.memory_manager.build(task, role, context_files)
-            plan = self.backend.create_plan(memory)
-            self.validator.validate(plan, task)
-            changed = self.workspace.apply_changes(plan.changes)
-            return AgentResult(
-                success=True,
-                summary=plan.summary,
-                changed_files=changed,
-                evidence=[change.reason for change in plan.changes],
-            )
-        except (WorkspaceError, SchemaValidationError, OSError, ValueError, RuntimeError) as exc:
-            return AgentResult(False, "实现失败", error=str(exc))
 
 
 class CommandVerificationAgent(VerificationAgent):
@@ -174,70 +104,4 @@ class CommandVerificationAgent(VerificationAgent):
             evidence=evidence,
             command_results=results,
             criteria_results=criteria,
-        )
-
-
-class WorkspaceReviewAgent(ReviewAgent):
-    """只读审查项目；不应用文件变更，也不运行命令。"""
-
-    def __init__(
-        self,
-        backend: ReviewBackend,
-        workspace: ProjectWorkspace,
-        context_builder: ProjectContextBuilder | None = None,
-        memory_manager: MemoryManager | None = None,
-        role: RoleSpec = REVIEWER,
-    ) -> None:
-        self.backend = backend
-        self.context_builder = context_builder or ProjectContextBuilder(workspace)
-        self.memory_manager = memory_manager or MemoryManager()
-        self.role = role
-
-    def run(self, task: TaskContext) -> ReviewResult:
-        if not self.role.allows(Capability.REVIEW_CHANGES):
-            return ReviewResult(
-                False,
-                "角色权限不足",
-                feedback=[f"角色 {self.role.name} 无审查能力"],
-            )
-        try:
-            files = self.context_builder.select(task)
-            memory = self.memory_manager.build(task, self.role, files)
-            return self.backend.review(memory)
-        except (OSError, ValueError, RuntimeError) as exc:
-            return ReviewResult(False, "审查失败", feedback=[str(exc)])
-
-
-class DemoProjectBackend:
-    """离线示例后端；生产环境替换为真实模型后端。"""
-
-    def create_plan(self, memory: RoleMemoryView) -> ImplementationPlan:
-        if memory.attempt == 1:
-            app = 'def greet(name):\n    return f"Hello, {name}!"\n'
-        else:
-            app = (
-                'def greet(name):\n'
-                '    if not name:\n'
-                '        return "Hello, stranger!"\n'
-                '    return f"Hello, {name}!"\n'
-            )
-        test = (
-            "import unittest\n"
-            "from app import greet\n\n"
-            "class GreetTests(unittest.TestCase):\n"
-            "    def test_name(self):\n"
-            "        self.assertEqual(greet('Codex'), 'Hello, Codex!')\n\n"
-            "    def test_empty_name(self):\n"
-            "        self.assertEqual(greet(''), 'Hello, stranger!')\n\n"
-            "if __name__ == '__main__':\n"
-            "    unittest.main()\n"
-        )
-        return ImplementationPlan(
-            summary=f"根据需求生成问候项目（第 {memory.attempt} 次实现）",
-            changes=[
-                FileChange("app.py", app, "实现问候功能并处理验证反馈"),
-                FileChange("test_app.py", test, "覆盖正常输入和空输入"),
-                FileChange("README.md", f"# Generated Project\n\n{memory.objective}\n", "记录项目目标"),
-            ],
-            suggested_checks=[["python3", "-m", "unittest", "-v"]],
         )

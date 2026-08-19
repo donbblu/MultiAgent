@@ -18,13 +18,29 @@ class GraphSnapshot:
 class TaskGraphRuntime:
     """任务图的确定性运行状态；Dispatcher 可并发领取无冲突任务。"""
 
-    def __init__(self, graph: TaskGraph, snapshot: GraphSnapshot | None = None) -> None:
+    def __init__(
+        self,
+        graph: TaskGraph,
+        snapshot: GraphSnapshot | None = None,
+        *,
+        initial_artifacts: Mapping[str, str] | None = None,
+    ) -> None:
         self.graph = graph
         if snapshot is None:
+            provided = dict(initial_artifacts or {})
+            unknown = set(provided) - graph.external_artifacts
+            missing = graph.external_artifacts - set(provided)
+            if unknown or missing:
+                raise ValueError(
+                    "外部 Artifact 映射不匹配，"
+                    f"缺少 {sorted(missing)}，多出 {sorted(unknown)}"
+                )
+            if any(not reference.strip() for reference in provided.values()):
+                raise ValueError("外部 Artifact 引用不能为空")
             self._states = {
                 task_id: TaskExecutionState.PENDING for task_id in graph.tasks
             }
-            self._artifacts = {}
+            self._artifacts = provided
             self._failures = {}
         else:
             if set(snapshot.states) != set(graph.tasks):

@@ -1,117 +1,79 @@
-# Coding Agent Harness
+# Multimodal Coding Multi-Agent Harness
 
-这个项目实现了一个供应商无关、角色可配置、安全可审计的 Coding Agent
-Harness。Harness 接收用户需求，以确定性工作流调度可替换 Worker，执行文件变更、
-真实测试、独立审查和自动返工。
+这是一个供应商无关、可审计的 Coding Multi-Agent Harness。系统接收文本及多模态
+需求证据，由 Runtime 负责任务拆分、Worker 调度、文件变更、真实验证、局部修复和
+最终收敛。模型只能提出结构化计划或 Patch，不能自行修改任务状态、扩大权限或宣告
+任务完成。
 
-## 架构边界
+## 当前执行路线
 
-```text
-CLI / Web / API
-       ↓
-Harness Core ── WorkflowSpec（声明式 DAG）
-       │        TaskState / Cancellation / Result merge
-       ↓
-WorkerRegistry ── Role → Worker（不绑定模型供应商）
-       │
-       ├── Implementer / Fixer → Workspace + Policy
-       ├── Tester             → Command Gateway
-       └── Reviewer           → Read-only Context
-       │
-       ├── MemoryManager      → RoleMemoryView
-       └── ModelClientFactory → Provider Adapter
-```
-
-- Harness 是唯一控制面，拥有状态、调度、中断、重试和结果合并权。
-- Role 只描述职责与能力，Worker 执行单个节点，模型只负责结构化决策。
-- `WorkflowSpec` 描述节点、依赖、可选节点和并发组，避免拓扑散落在 Agent 中。
-- `WorkerRegistry` 将角色映射到 Worker，同一 Worker 可承担多个角色。
-- Workspace、命令策略和 Memory View 继续构成执行与上下文安全边界。
-- `CodingHarness` 是新主入口；`Coordinator` 暂时作为兼容别名保留。
-
-## Task 生命周期
-
-Harness 使用两层状态，避免暂停操作破坏业务工作流：
-
-- `TaskState` 表示确定性业务阶段：received、planning、implementing、verifying、rework、completed、failed、cancelled。所有迁移经过固定白名单，非法跳转立即拒绝。
-- `LifecycleState` 表示运行控制：created、queued、running、paused、cancelling、completed、failed、cancelled。
-- `TaskSpec / TaskGraph / TaskGraphRuntime` 将 Workflow 模板展开为可校验的任务 DAG；依赖与 Artifact 满足且资源范围不冲突的任务可被同批领取。
-- 记忆按感知、Working、长期和实体四层统一记录，由 Harness 主动触发或 Agent 被动检索，最终仍裁剪为最小权限的 `RoleMemoryView`。设计边界见 [任务图与记忆机制](docs/task-graph-and-memory.md)。
-- `TaskGraphExecutor` 通过 `WorkerRegistry` 并发执行 ready 子任务，结果只经 `ArtifactStore` 交接；失败只重试当前子任务。`SQLiteMemoryStore` 可持久化记忆和 Working Memory Checkpoint，整图验证成功后才晋升长期记忆。
-- CLI/Web 默认使用 `dag` 引擎：结构化 Planner 拆图，Worker 并发生成 Patch Artifact，Integrator 集中检查并原子合并，真实测试通过后才完成；可用 `--engine legacy` 回退旧流程。
-
-`TaskDispatcher.submit()` 会立即返回 `TaskHandle`。调用方可以通过句柄查询状态和完整生命周期历史，执行 `pause()`、`resume()`、`cancel()` 或等待 `result()`。`shutdown(wait=True)` 停止接收新任务并等待在途任务结束；`cancel_running=True` 会先请求协作式取消，再等待任务到达安全检查点。
-
-暂停和取消目前在节点边界及 Implementer、Tester/Reviewer 返回后生效，不会把正在写入的一半状态当成完成结果。当前版本不能强制中断正在进行的模型 HTTP 请求或验证子进程，这部分需要继续将取消信号下传到 ModelClient 和 CommandExecutor。
-
-Web API 提供以下控制入口：
+通用 CLI 和 Web 任务只使用 DAG Runtime：
 
 ```text
-POST /api/tasks/<id>/pause
-POST /api/tasks/<id>/resume
-POST /api/tasks/<id>/cancel
-GET  /api/tasks/<id>
+用户需求与验收条件
+        ↓
+StructuredTaskPlanner 生成 TaskSpec
+        ↓
+TaskGraph 校验依赖、Artifact 和资源冲突
+        ↓
+TaskGraphExecutor 并发调度 ready Worker
+        ↓
+Worker 提交 ImplementationPlan Artifact
+        ↓
+PatchIntegrator 检查权限、路径和文件冲突
+        ↓
+ProjectWorkspace 原子合并
+        ↓
+真实验证命令
+  ├─ 通过 → completed，并晋升有证据的长期记忆
+  └─ 失败 → 创建局部 FixTask → 合并修复 → 完整质量门禁
 ```
 
-Web 界面提供“暂停/恢复”和“退出”按钮，并在任务快照中返回当前生命周期与完整迁移历史。
+CLI/Web 不再提供旧式顺序执行或引擎回退选项。`web_visual` 由通用
+`ScenarioRuntime` 驱动多轮 `TaskGraphExecutor`：参考图作为外部 Artifact 进入
+DAG，UI Analyst、Web Developer、Patch Integrator、Browser Tester、Visual
+Reviewer 和 Quality Gate 通过强类型 Artifact 交接；门禁失败时按场景策略创建
+最多两轮 Fix DAG。
 
-## 三个 Agent
+## 核心边界
 
-1. **Coordinator**
-   - 校验用户目标和验收标准。
-   - 管理 `规划 → 编码 → 验证 → 返工/完成` 状态机。
-   - 控制最大尝试次数，记录完整执行历史。
-   - 实现异常时不会跳过验证或误报成功。
+- `TaskContext` 保存目标、验收标准、验证命令和权限边界。
+- `TaskSpec / TaskGraph / TaskGraphRuntime` 决定任务依赖、ready 状态和局部重试。
+- `WorkerRegistry` 按 Role 分配 Worker；Role 决定能力与上下文权限，不绑定模型供应商。
+- Worker 只读取裁剪后的 `RoleMemoryView`，并通过 Artifact 交接结果。
+- Worker 只返回 `ArtifactDraft`；共享 `ArtifactStore` 仅由 Executor 接纳和写入。
+- `PatchIntegrator` 是共享项目的唯一 Patch 接纳入口，Workspace 负责原子写入。
+- 测试、构建和行为断言由 Runtime 执行；模型不能降低或删除质量门禁。
+- `SQLiteMemoryStore` 和 `SQLiteRuntimeStore` 分别保存记忆、Working Memory 与可恢复运行快照。
 
-2. **WorkspaceCodingAgent**
-   - 调用可插拔 `CodingBackend` 生成结构化 `ImplementationPlan`。
-   - 将模型决策与文件执行隔离。
-   - 通过受限工作区真正创建或覆盖项目文件。
-   - 将验证反馈带入下一轮计划。
+Task 使用两层状态：`TaskState` 表示业务阶段，`LifecycleState` 表示 queued、running、
+paused、cancelling 等运行控制。暂停和取消在 Worker 边界生效，当前不能强制中断已经
+发出的模型 HTTP 请求。
 
-3. **CommandVerificationAgent**
-   - 在生成项目目录内执行真实验收命令。
-   - 捕获退出码、stdout、stderr 和超时。
-   - 失败时生成结构化反馈，交回 Coding Agent。
-   - 不拥有文件修改职责。
+## Agent 分工
 
-## 第一阶段能力
+- Planner：把目标拆成有依赖、产物和资源范围的可验收子任务。
+- Implementer：针对领取的节点生成结构化文件变更 Artifact。
+- Tester：运行 Runtime 预先授权的真实验证命令并保存证据。
+- Fixer：只读取相关失败证据和文件，生成局部修复 Artifact。
+- Reviewer：提供只读审查能力；通用 DAG 的最终 Reviewer 门禁仍在后续接入计划中。
+- Vision Reviewer：仅在 `web_visual` 场景读取参考图与实际截图，输出结构化视觉问题。
 
-- `TaskContext` 包含用户原始需求、技术栈、约束、允许路径、禁止操作和假设。
-- `PlanValidator` 严格检查模型返回类型、必填字段、重复路径、允许范围和内容规模。
-- `ProjectContextBuilder` 根据需求与反馈筛选相关文件，并优先读取项目配置和说明文件。
-- `CommandPolicy` 使用可执行程序白名单，并拒绝安装、发布、部署等危险参数。
-- `VerificationResult.criteria_results` 为每条验收标准保存通过状态和证据。
-- `RunRecorder` 在 `.runs/<task-id>/` 保存 JSONL 事件和最新任务快照。
-
-## 工作流
-
-```text
-用户需求 + 验收标准 + 验证命令
-                ↓
-Coordinator 校验和调度
-                ↓
-CodingBackend 生成 ImplementationPlan
-                ↓
-WorkspaceCodingAgent 安全写入项目文件
-                ↓
-CommandVerificationAgent 运行真实测试
-        ├─ 全部通过 → COMPLETED
-        └─ 失败反馈 → 下一轮 Coding Agent
-                         └─ 超过上限 → FAILED
-```
+Agent 之间不依赖自由聊天来决定工作。调度器根据任务依赖、Role 能力、资源范围和
+Artifact 是否就绪分配工作；所有关键交接与结果均为结构化 Artifact 和事件。
 
 ## 运行测试
 
-要求 Python 3.10+。运行框架测试：
+要求 Python 3.10+。在本目录执行：
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -q
 ```
 
-## 通用 CLI
+真实浏览器测试默认跳过。安装 Chromium 或设置
+`VISIONFORGE_BROWSER_EXECUTABLE` 后，可通过 `VISIONFORGE_E2E=1` 显式运行。
 
-使用自然语言生成一个隔离的 Python 项目：
+## 通用 CLI
 
 ```bash
 python3 coding_agent_cli.py \
@@ -119,156 +81,63 @@ python3 coding_agent_cli.py \
   --name bubble-sort
 ```
 
-可通过统一参数切换已注册供应商和模型：
+可选择已注册的模型供应商并补充验收标准：
 
 ```bash
 python3 coding_agent_cli.py "需求" \
   --name my-task \
   --provider deepseek \
-  --model deepseek-v4-pro
+  --model deepseek-v4-pro \
+  --criterion "正常输入与边界输入均有自动化测试"
 ```
 
-核心代码只使用 `ModelClient`、`ModelConfig`、`ModelClientFactory` 和
-`StructuredCodingBackend`。供应商差异集中在注册预设与协议适配器中；新增兼容
-供应商不需要修改 Coordinator、Coding Agent、Verification Agent 或 Runtime。
-
-角色同样与 Agent 实例剥离。Coordinator 会按执行阶段动态注入 `RoleSpec`：
-
-- `planner`：理解目标和边界，只读。
-- `implementer`：首次实现，可在允许路径内写入。
-- `tester`：运行白名单验证命令，不能写入；与 reviewer 并行执行。
-- `fixer`：根据失败反馈返工，可在允许路径内写入。
-- `reviewer`：独立只读审查，与 tester 并行执行。
-
-角色包含职责、能力和约束，不包含模型或供应商信息。同一个通用 Worker 可以被
-分配不同角色；Runtime 会检查角色能力，不能只依赖提示词约束。
-
-## Role Memory
-
-每次 Worker 执行前，`MemoryManager` 会从权威 `TaskContext` 创建不可变的
-`RoleMemoryView`。Worker 和模型后端只消费这个裁剪后的视图，不直接把完整任务
-状态作为模型上下文。
-
-| Role | 项目文件预算 | 反馈 | 验证命令 | 可写结果 |
-|---|---:|---|---|---|
-| planner | 15,000 字符摘要预算 | 否 | 否 | planning_result |
-| implementer | 40,000 字符 | 否 | 否 | implementation_result |
-| tester | 不提供项目文件 | 否 | 是 | verification_result |
-| fixer | 30,000 字符 | 是 | 否 | implementation_result |
-| reviewer | 25,000 字符 | 否 | 否 | review_result |
-
-所有 Memory Policy 默认 `secret_access=False`，尝试为任何角色开启密钥访问都会
-在配置阶段被拒绝。项目文件仍先经过敏感文件过滤，再受 Role 预算二次裁剪。
-`TaskContext` 继续由 Coordinator 独占更新，RoleMemoryView 仅作为单次执行输入。
-
-## 并行质量阶段
-
-首次实现或返工完成后，Coordinator 同时启动两个只读 Worker：
-
-```text
-Implementer / Fixer
-        ↓
-  ┌─────┴─────┐
-  ↓           ↓
-Tester     Reviewer
-真实测试    模型代码审查
-  └─────┬─────┘
-        ↓
-Coordinator 校验版本并合并
-```
-
-两个 Worker 获得相同的 `task_version`，返回不可变 `ResultEnvelope`。Coordinator
-只有在任务 ID 和版本均匹配时才合并结果，防止迟到或其他任务的结果覆盖当前状态。
-测试和审查都通过才完成任务；任一失败，其结构化反馈都会交给 Fixer。并行阶段只有
-读取和白名单命令权限，不允许任何 Worker 写入 Workspace。
-
-## Agent 交流协议
-
-Agent 不直接发送自由格式文本。所有任务交接、结果、反馈和最终通知统一使用
-`AgentMessage`：
-
-```json
-{
-  "message_id": "全局唯一消息 ID",
-  "task_id": "所属任务",
-  "task_version": 3,
-  "sender": "tester",
-  "recipient": "coordinator",
-  "message_type": "result",
-  "summary": "全部验证命令通过",
-  "payload": {"passed": true},
-  "correlation_id": "同一并行阶段共用的关联 ID",
-  "created_at": "UTC ISO-8601 时间"
-}
-```
-
-允许的消息类型为 `request`、`handoff`、`result`、`feedback`、`status` 和
-`final`。Coordinator 是唯一消息路由器；业务状态仍由 TaskContext 管理，交流记录
-作为 `agent_message` 事件追加到 RunRecorder。Payload 必须是 JSON，限制为 64KB，
-并递归拒绝 API Key、Token、Password、Secret 和 Authorization 等敏感字段。
-
-Web UI 以 `sender → recipient · message_type` 展示统一消息；原来的角色、实现、
-验证和审查事件继续保存在审计日志中，但不再重复显示为 Agent 对话。
-
-输出固定在 `agent-output/<name>/`。默认允许写入 `*.py`、`tests/*.py` 和
-`README.md`，并运行 `python3 -m unittest discover -s tests -v`。可以补充标准：
+输出固定在 `agent-output/<name>/`。已有非空目录默认拒绝覆盖，只有显式传入
+`--continue-existing` 才会继续修改。默认验证命令为：
 
 ```bash
-python3 coding_agent_cli.py "需求" \
-  --name my-task \
-  --criterion "具体标准一" \
-  --criterion "具体标准二"
+python3 -m unittest discover -s tests -v
 ```
 
-已有输出目录默认拒绝覆盖；只有明确传入 `--continue-existing` 才会继续修改。
-通用模式的测试由 Coding Agent 生成，适合功能验证和原型；高风险项目应由
-Runtime 或用户提供独立验收测试。
-
-## 可视化界面
-
-启动本地界面：
+## Web 界面
 
 ```bash
 python3 web_server.py
 ```
 
-然后访问 `http://127.0.0.1:8765`。用户可以直接输入需求，并依次看到：
+访问 `http://127.0.0.1:8765`。界面展示任务图、角色接手、Artifact、验证证据、
+局部修复和最终状态，不展示模型原始推理。Web 同时提供受控的 VisionForge 图片上传、
+任务和结果查询接口。
 
-- 实时工作流 DAG，以及节点的等待、运行、完成和失败状态；
-- planner、implementer、tester、fixer 等角色的接手状态；
-- Coordinator 的状态切换和角色交接；
-- 实现 Agent 提交的文件变更摘要；
-- 验证结果、失败反馈和返工过程；
-- 点击节点查看职责、权限、开始/结束时间、耗时、产物和关联事件；
-- 最终生成目录、文件列表、模型及尝试次数。
+## 模型接入
 
-界面展示的是结构化、可审计的工作事件，不展示模型私有推理。服务仅监听本机
-`127.0.0.1`，请求继续使用 CLI 相同的输出目录校验、路径权限和命令白名单。
+核心流程只依赖 `ModelClient`、`ModelConfig`、`ModelClientFactory` 和结构化请求协议。
+供应商差异封装在 `coding_workflow/model/` 中；角色选择模型时会先检查 text、vision、
+tool calling 和 structured output 等能力声明。
 
-## 接入真实模型
+## 关键目录
 
-实现 `CodingBackend` 协议即可：
+- `coding_workflow/dag_runner.py`：通用 DAG 端到端入口与局部 FixTask 闭环。
+- `coding_workflow/harness/`：TaskGraph、调度、生命周期、注册表和执行器。
+- `coding_workflow/planning.py`：结构化任务规划与非法图修复。
+- `coding_workflow/graph_workers.py`：DAG Worker 契约实现。
+- `coding_workflow/artifacts.py`：不可变 Artifact 与验证状态。
+- `coding_workflow/integration.py`：Patch 权限、冲突检查与集中合并。
+- `coding_workflow/memory.py`、`memory_sqlite.py`：分层记忆与 Working Memory。
+- `coding_workflow/runtime_sqlite.py`：DAG 快照、恢复和 Workspace 漂移检查。
+- `coding_workflow/visionforge/`：多模态网页生成、浏览器验证、视觉审查和修复场景。
+- `coding_workflow/visionforge/dag.py`：VisionForge Worker、主 DAG 与 Fix 子图入口。
+- `coding_workflow/visionforge/scenario.py`：`WebVisualScenario`、收敛策略和产品执行入口。
+- `coding_workflow/harness/scenario.py`：通用多轮场景 Runtime。
+- `coding_workflow/harness/scenario_sqlite.py`：场景轮次清单和恢复状态。
+- `tests/`：确定性单元、集成及可选真实浏览器测试。
 
-```python
-class MyLLMBackend:
-    def create_plan(self, memory):
-        # 只使用当前角色获准的 RoleMemoryView
-        # 校验模型的结构化响应后返回 ImplementationPlan
-        return ImplementationPlan(...)
-```
+更详细的任务图和记忆边界见
+[docs/task-graph-and-memory.md](docs/task-graph-and-memory.md)。
 
-然后注入 Agent：
+## 安全边界
 
-```python
-workspace = ProjectWorkspace(Path("目标项目目录"))
-coding = WorkspaceCodingAgent(MyLLMBackend(), workspace)
-verifier = CommandVerificationAgent(workspace)
-result = Coordinator(coding, verifier).run(task)
-```
-
-## 当前安全边界
-
-- 文件路径必须是项目内相对路径，拒绝绝对路径和 `..` 路径穿越。
-- 验证命令使用参数数组和 `shell=False`，不解析 shell 拼接语句。
-- 命令有超时限制，输出和退出码会保留为验证证据。
-- 生产环境仍应增加命令白名单、进程/网络隔离、文件数量与大小限制，以及高风险操作审批。
+- 所有文件路径必须位于授权工作区，拒绝绝对路径和 `..` 穿越。
+- 验证命令使用参数数组与 `shell=False`，并受命令白名单约束。
+- 模型不得读取密钥、访问网络、安装依赖或直接写共享目录。
+- 记忆持久化前会扫描并脱敏常见密钥格式。
+- 高风险生产使用仍需增加进程、网络和文件系统沙箱，以及人工审批。

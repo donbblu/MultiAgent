@@ -30,8 +30,8 @@ from .browser import (
     BrowserProjectConfig,
     PlaywrightBrowserTester,
 )
-from .recovery import VisionForgeCheckpointStore
-from .runner import VisionForgeRunResult, VisionForgeRunner
+from .scenario import VisionForgeScenarioRunner
+from .runner import VisionForgeRunResult
 
 
 class VisionForgeTaskExecutor(Protocol):
@@ -326,7 +326,7 @@ class VisionForgeWebRuntime:
             environment=environment,
         )
         workspace = ProjectWorkspace(project_root)
-        return VisionForgeRunner(
+        return VisionForgeScenarioRunner(
             artifacts=artifacts,
             workspace=workspace,
             integrator=PatchIntegrator(workspace, allowed_paths),
@@ -343,15 +343,13 @@ class VisionForgeWebRuntime:
                 vision_client, artifacts, image_assets
             ),
             fixer=VisionForgeFixer(text_client, artifacts),
-            checkpoint_store=VisionForgeCheckpointStore(
-                task_root / "visionforge-runtime.sqlite3"
-            ),
             max_fix_attempts=2,
+            runtime_path=task_root / "visionforge-scenario.sqlite3",
         ).run(
             task_id=task_id,
             requirement=requirement,
             reference_image_artifact_ref=reference_image_artifact_ref,
-            checkpoint_id=f"visionforge-web:{task_id}",
+            run_id=f"visionforge-web:{task_id}",
         )
 
     def _prepare_project(self, destination: Path) -> None:

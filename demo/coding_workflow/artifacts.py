@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from threading import RLock
@@ -49,6 +49,56 @@ class Artifact:
             str(uuid4()), name, task_id, kind, content,
             MappingProxyType(dict(metadata or {})),
             datetime.now(timezone.utc).isoformat(),
+        )
+
+
+@dataclass(frozen=True)
+class ArtifactDraft:
+    """Worker 提交给 Harness 的不可变 Artifact 草稿。"""
+
+    content: object
+    kind: str = "result"
+    metadata: Mapping[str, object] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    artifact_id: str = ""
+    created_at: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+        if not self.kind.strip():
+            raise ValueError("ArtifactDraft kind 不能为空")
+
+    @classmethod
+    def from_artifact(cls, artifact: Artifact) -> "ArtifactDraft":
+        return cls(
+            artifact.content,
+            artifact.kind,
+            artifact.metadata,
+            artifact.artifact_id,
+            artifact.created_at,
+        )
+
+    @property
+    def reference(self) -> str:
+        if not self.artifact_id:
+            raise ValueError("未分配 ID 的 ArtifactDraft 没有引用")
+        return f"artifact://{self.artifact_id}"
+
+    def materialize(self, name: str, task_id: str) -> Artifact:
+        if not self.artifact_id:
+            return Artifact.create(
+                name, task_id, self.content,
+                kind=self.kind, metadata=self.metadata,
+            )
+        return Artifact(
+            self.artifact_id,
+            name,
+            task_id,
+            self.kind,
+            self.content,
+            self.metadata,
+            self.created_at or datetime.now(timezone.utc).isoformat(),
         )
 
 

@@ -6,7 +6,7 @@ from threading import RLock
 from types import MappingProxyType
 from typing import Callable, Mapping, Protocol
 
-from ..artifacts import Artifact, ArtifactStore
+from ..artifacts import Artifact, ArtifactDraft, ArtifactStore
 from ..memory import (
     FailureObservation,
     EntityIndexer,
@@ -78,11 +78,15 @@ class TaskGraphExecutor:
         runtime_store: SQLiteRuntimeStore | None = None,
         snapshot_id: str = "",
         workspace_hashes_provider: Callable[[], Mapping[str, str]] | None = None,
+        initial_artifacts: Mapping[str, str] | None = None,
+        checkpoint_hook: Callable[[str, GraphSnapshot], None] | None = None,
     ) -> None:
         if max_workers < 1:
             raise ValueError("max_workers 必须大于 0")
         self.runtime = TaskGraphRuntime(
-            graph, runtime_snapshot.graph_snapshot if runtime_snapshot else None
+            graph,
+            runtime_snapshot.graph_snapshot if runtime_snapshot else None,
+            initial_artifacts=initial_artifacts if runtime_snapshot is None else None,
         )
         self.workers = workers
         self.roles = roles
@@ -99,6 +103,7 @@ class TaskGraphExecutor:
         self.runtime_store = runtime_store
         self.snapshot_id = snapshot_id
         self.workspace_hashes_provider = workspace_hashes_provider
+        self.checkpoint_hook = checkpoint_hook
         self._lock = RLock()
 
     def _save_runtime(self, parent: TaskContext, phase: str) -> None:
@@ -195,7 +200,14 @@ class TaskGraphExecutor:
             )
         references: dict[str, str] = {}
         for name, content in result.artifacts.items():
-            references[name] = self.artifacts.put(Artifact.create(name, spec.task_id, content))
+            if isinstance(content, ArtifactDraft):
+                references[name] = self.artifacts.put(
+                    content.materialize(name, parent.task_id)
+                )
+            else:
+                references[name] = self.artifacts.put(
+                    Artifact.create(name, parent.task_id, content)
+                )
         self.runtime.succeed(spec.task_id, references)
         self.memory.register_artifact_names(parent.task_id, references)
         self.memory.update_node(parent.task_id, WorkingNodeState(
@@ -205,7 +217,7 @@ class TaskGraphExecutor:
             output_artifacts=tuple(references.values()),
         ))
         for name, reference in references.items():
-            content = result.artifacts[name]
+            content = self.artifacts.get(reference).content
             affected_paths = (
                 tuple(change.path for change in content.changes)
                 if isinstance(content, ImplementationPlan) else ()
@@ -318,6 +330,8 @@ class TaskGraphExecutor:
                             ))
                             self.memory.save_checkpoint(parent.task_id)
                         self._save_runtime(parent, "executing")
+                        if self.checkpoint_hook:
+                            self.checkpoint_hook(spec.task_id, self.runtime.snapshot())
             snapshot = self.runtime.snapshot()
             working_nodes = self.memory.node_states(parent.task_id)
             for task_id, state in snapshot.states.items():

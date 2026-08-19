@@ -156,6 +156,7 @@ class SQLiteRuntimeStore:
     def save(self, snapshot: RuntimeSnapshot) -> None:
         payload = {
             "graph": [self._task_spec(item) for item in snapshot.graph.tasks.values()],
+            "graph_external_artifacts": sorted(snapshot.graph.external_artifacts),
             "states": {
                 key: value.value for key, value in snapshot.graph_snapshot.states.items()
             },
@@ -198,7 +199,7 @@ class SQLiteRuntimeStore:
             return None
         task_id, project_id, phase, raw_payload, version = row
         data = json.loads(raw_payload)
-        graph = TaskGraph(TaskSpec(
+        graph = TaskGraph((TaskSpec(
             task_id=item["task_id"], title=item["title"], objective=item["objective"],
             role=item["role"], dependencies=tuple(item["dependencies"]),
             acceptance_criteria=tuple(item["acceptance_criteria"]),
@@ -208,7 +209,9 @@ class SQLiteRuntimeStore:
             context_queries=tuple(item["context_queries"]), risk_level=item["risk_level"],
             timeout_seconds=int(item["timeout_seconds"]),
             retry_limit=int(item["retry_limit"]), priority=int(item["priority"]),
-        ) for item in data["graph"])
+        ) for item in data["graph"]), external_artifacts=tuple(
+            data.get("graph_external_artifacts", ())
+        ))
         graph_snapshot = GraphSnapshot(
             MappingProxyType({
                 key: TaskExecutionState(value) for key, value in data["states"].items()

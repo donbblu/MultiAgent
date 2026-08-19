@@ -13,7 +13,15 @@ from .lifecycle import (
 )
 from .registry import WorkerRegistry
 from .scheduler import GraphSnapshot, TaskGraphRuntime
-from .spec import NodeSpec, WorkflowSpec, coding_workflow_spec
+from .scenario import (
+    ConvergenceAction,
+    ConvergenceDecision,
+    ScenarioProfile,
+    ScenarioRoundPlan,
+    ScenarioRunState,
+    ScenarioRuntime,
+)
+from .scenario_sqlite import SQLiteScenarioRunStore
 from .task_graph import (
     GraphValidationError,
     ResourceConflict,
@@ -29,7 +37,6 @@ __all__ = [
     "LifecycleSnapshot",
     "LifecycleState",
     "LifecycleTransitionError",
-    "NodeSpec",
     "TaskCancelledError",
     "TaskDispatcher",
     "TaskHandle",
@@ -41,12 +48,17 @@ __all__ = [
     "TaskRunResult",
     "WorkerRegistry",
     "GraphSnapshot",
+    "ConvergenceAction",
+    "ConvergenceDecision",
+    "ScenarioProfile",
+    "ScenarioRoundPlan",
+    "ScenarioRunState",
+    "ScenarioRuntime",
+    "SQLiteScenarioRunStore",
     "TaskGraphRuntime",
-    "WorkflowSpec",
     "GraphValidationError",
     "ResourceConflict",
     "TaskExecutionState",
     "TaskGraph",
     "TaskSpec",
-    "coding_workflow_spec",
 ]

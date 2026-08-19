@@ -7,13 +7,9 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Callable, Any
 
-from coding_workflow.agents import CommandVerificationAgent, WorkspaceCodingAgent, WorkspaceReviewAgent
-from coding_workflow.coordinator import Coordinator
-from coding_workflow.backends import StructuredCodingBackend, StructuredReviewBackend
 from coding_workflow.model import ModelClientFactory, load_env_file
 from coding_workflow.models import TaskContext
 from coding_workflow.policy import CommandPolicy, CommandPolicyError
-from coding_workflow.recording import RunRecorder
 from coding_workflow.workspace import ProjectWorkspace
 from coding_workflow.harness import LifecycleController
 from coding_workflow.dag_runner import run_dag_task
@@ -31,7 +27,7 @@ class CodingRun:
     output: Path
     provider: str
     model: str
-    engine: str = "legacy"
+    engine: str = "dag"
 
 
 def safe_output_path(name: str) -> Path:
@@ -79,11 +75,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--provider", default=None, help="模型供应商，默认读取 MODEL_PROVIDER")
     parser.add_argument("--model", default=None, help="模型名称，默认读取 MODEL_NAME")
-    parser.add_argument("--max-attempts", type=int, choices=range(1, 4), default=2)
-    parser.add_argument(
-        "--engine", choices=("dag", "legacy"), default="dag",
-        help="执行引擎；dag 使用动态任务图，legacy 使用固定 Coordinator",
-    )
     parser.add_argument(
         "--continue-existing",
         action="store_true",
@@ -101,11 +92,9 @@ def run_requirement(
     verification_command: list[str] | None = None,
     provider: str | None = None,
     model: str | None = None,
-    max_attempts: int = 2,
     continue_existing: bool = False,
     event_listener: Callable[[dict[str, Any]], None] | None = None,
     lifecycle: LifecycleController | None = None,
-    engine: str = "dag",
 ) -> CodingRun:
     if not requirement.strip():
         raise ValueError("需求不能为空")
@@ -155,29 +144,16 @@ def run_requirement(
         ],
     )
     model_config = ModelClientFactory.config_from_env(provider, model)
-    if engine == "dag":
-        client = ModelClientFactory.create(model_config)
-        dag_result = run_dag_task(
-            task, client, workspace,
-            memory_path=ROOT / ".runtime" / f"{task.task_id}.sqlite3",
-            lifecycle=lifecycle, max_workers=3, command_policy=policy,
-            event_listener=event_listener,
-        )
-        result = dag_result.task
-    elif engine == "legacy":
-        backend = StructuredCodingBackend(ModelClientFactory.create(model_config))
-        review_backend = StructuredReviewBackend(ModelClientFactory.create(model_config))
-        result = Coordinator(
-            WorkspaceCodingAgent(backend, workspace),
-            CommandVerificationAgent(workspace, policy),
-            max_attempts=max_attempts,
-            recorder=RunRecorder(ROOT / ".runs", listener=event_listener),
-            review_agent=WorkspaceReviewAgent(review_backend, workspace),
-            lifecycle=lifecycle,
-        ).run(task)
-    else:
-        raise ValueError(f"未知执行引擎: {engine}")
-    return CodingRun(result, output, model_config.provider, model_config.model, engine)
+    client = ModelClientFactory.create(model_config)
+    dag_result = run_dag_task(
+        task, client, workspace,
+        memory_path=ROOT / ".runtime" / f"{task.task_id}.sqlite3",
+        lifecycle=lifecycle, max_workers=3, command_policy=policy,
+        event_listener=event_listener,
+    )
+    return CodingRun(
+        dag_result.task, output, model_config.provider, model_config.model, "dag"
+    )
 
 
 def main() -> int:
@@ -191,9 +167,7 @@ def main() -> int:
             verification_command=args.verify,
             provider=args.provider,
             model=args.model,
-            max_attempts=args.max_attempts,
             continue_existing=args.continue_existing,
-            engine=args.engine,
         )
     except (ValueError, CommandPolicyError) as exc:
         raise SystemExit(str(exc)) from exc

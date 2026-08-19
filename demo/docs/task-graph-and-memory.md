@@ -1,6 +1,6 @@
 # 任务图与记忆机制
 
-项目第一阶段将固定 Workflow 模板与实际执行任务分离：`WorkflowSpec` 继续描述业务流程模板，Planner 产生的 `TaskSpec` 则描述可独立验收、可单独重试的实际工作。Harness 必须先用 `TaskGraph` 校验依赖、环、Artifact 生产关系和资源范围，之后 `TaskGraphRuntime` 才允许 Worker 领取 ready 任务。
+Planner 产生的 `TaskSpec` 描述可独立验收、可单独重试的实际工作。Harness 必须先用 `TaskGraph` 校验依赖、环、Artifact 生产关系和资源范围，之后 `TaskGraphRuntime` 才允许 Worker 领取 ready 任务。TaskGraph 是当前执行拓扑的唯一事实来源。
 
 ## 并发边界
 
@@ -57,4 +57,4 @@ Harness 使用 `MemoryManager.trigger()` 主动响应 `task_created`、`task_cla
 
 ## 真实执行入口
 
-CLI 和 Web 默认使用 `dag` 引擎，也可显式选择 `legacy` 回退到固定 Coordinator。DAG 引擎由 `StructuredTaskPlanner` 生成结构化任务图；非法输出会携带校验错误要求模型修复一次。实现 Worker 只产生 `ImplementationPlan` Artifact，不直接修改共享目录。所有 Patch 在 `PatchIntegrator` 中统一检查允许路径和跨 Artifact 文件冲突，然后由 Workspace 原子应用；合并后必须通过真实验证命令，任务和生命周期才能进入 completed。Web 只展示任务图、Artifact、状态和结果摘要，不公开模型原始推理。
+CLI 和 Web 只使用 DAG Runtime。`StructuredTaskPlanner` 生成结构化任务图；非法输出会携带校验错误要求模型修复一次。实现 Worker 只产生 `ImplementationPlan` Artifact，不直接修改共享目录。所有 Patch 在 `PatchIntegrator` 中统一检查允许路径和跨 Artifact 文件冲突，然后由 Workspace 原子应用；合并后必须通过真实验证命令，任务和生命周期才能进入 completed。Web 只展示任务图、Artifact、状态和结果摘要，不公开模型原始推理。

@@ -250,7 +250,7 @@ def run_dag_task(
             for item in verification.evidence
         )
         emit("agent_message", {
-            "sender": "tester", "recipient": "coordinator", "message_type": "result",
+            "sender": "tester", "recipient": "runtime", "message_type": "result",
             "summary": verification.summary, "payload": {"passed": verification.passed},
         })
         previous_gate = memory.working_memory(task.task_id).quality_gate

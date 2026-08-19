@@ -69,15 +69,6 @@ class CommandResult:
 
 
 @dataclass
-class AgentResult:
-    success: bool
-    summary: str
-    changed_files: list[str] = field(default_factory=list)
-    evidence: list[str] = field(default_factory=list)
-    error: str | None = None
-
-
-@dataclass
 class VerificationResult:
     passed: bool
     summary: str
@@ -85,21 +76,6 @@ class VerificationResult:
     evidence: list[str] = field(default_factory=list)
     command_results: list[CommandResult] = field(default_factory=list)
     criteria_results: list[CriterionResult] = field(default_factory=list)
-
-
-@dataclass(frozen=True)
-class ReviewFinding:
-    severity: str
-    message: str
-    path: str = ""
-
-
-@dataclass
-class ReviewResult:
-    passed: bool
-    summary: str
-    findings: list[ReviewFinding] = field(default_factory=list)
-    feedback: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -126,9 +102,7 @@ class TaskContext:
     state: TaskState = TaskState.RECEIVED
     attempt: int = 0
     feedback: list[str] = field(default_factory=list)
-    implementation: AgentResult | None = None
     verification: VerificationResult | None = None
-    review: ReviewResult | None = None
     history: list[str] = field(default_factory=list)
     active_role: RoleSpec | None = None
     role_history: list[str] = field(default_factory=list)

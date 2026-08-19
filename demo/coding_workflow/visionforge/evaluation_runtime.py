@@ -33,8 +33,8 @@ from .evaluation import (
 )
 from .runner import (
     VisionForgeFeedbackPolicy,
-    VisionForgeRunner,
 )
+from .scenario import VisionForgeScenarioRunner
 
 
 class EvaluationBudgetExceeded(RuntimeError):
@@ -179,7 +179,7 @@ class RuntimeEvaluationTrialExecutor:
             if policy is VisionForgeFeedbackPolicy.NONE
             else VisionForgeFixer(self.text_client, artifacts)
         )
-        runner = VisionForgeRunner(
+        runner = VisionForgeScenarioRunner(
             artifacts=artifacts,
             workspace=workspace,
             integrator=PatchIntegrator(workspace, allowed_paths),
@@ -204,6 +204,7 @@ class RuntimeEvaluationTrialExecutor:
             ),
             feedback_policy=policy,
             acceptance_spec=task.acceptance_spec,
+            runtime_path=trial_root / "visionforge-scenario.sqlite3",
         )
         started = time.monotonic()
         budget_before = self.budget.snapshot()

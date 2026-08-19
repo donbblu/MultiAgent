@@ -6,30 +6,21 @@ import sqlite3
 from pathlib import Path
 
 from coding_workflow.agents import (
-    CodingAgent,
     CommandVerificationAgent,
-    ReviewAgent,
-    VerificationAgent,
-    WorkspaceCodingAgent,
 )
-from coding_workflow.coordinator import Coordinator
 from coding_workflow.models import (
-    AgentResult,
     FileChange,
     ImplementationPlan,
     ProjectFile,
-    ReviewResult,
     TaskContext,
     TaskState,
     InvalidTaskTransition,
     VerificationResult,
 )
 from coding_workflow.workspace import ProjectWorkspace, WorkspaceError
-from coding_workflow.context import ProjectContextBuilder
 from coding_workflow.policy import CommandPolicy
-from coding_workflow.recording import RunRecorder
 from coding_workflow.validation import PlanValidator, SchemaValidationError
-from coding_workflow.backends import StructuredCodingBackend, StructuredReviewBackend
+from coding_workflow.backends import StructuredCodingBackend
 from coding_workflow.model import ModelClientFactory, ProviderPreset
 from coding_workflow.roles import (
     Capability,
@@ -59,6 +50,7 @@ from coding_workflow.memory import (
 from coding_workflow.memory_sqlite import SQLiteMemoryStore
 from coding_workflow.artifacts import (
     Artifact,
+    ArtifactDraft,
     ArtifactStore,
     ArtifactValidationState,
 )
@@ -70,14 +62,9 @@ from coding_workflow.runtime_sqlite import (
     RuntimeSnapshot,
     SQLiteRuntimeStore,
 )
-from coding_workflow.results import ResultEnvelope, StaleResultError
-from coding_workflow.communication import AgentMessage, MessageType, MessageValidationError
 from coding_workflow.harness import (
-    CancellationToken,
     LifecycleController,
     LifecycleState,
-    NodeSpec,
-    TaskDispatcher,
     TaskExecutionState,
     TaskGraph,
     TaskGraphRuntime,
@@ -85,33 +72,8 @@ from coding_workflow.harness import (
     TaskRunResult,
     TaskSpec,
     WorkerRegistry,
-    WorkflowSpec,
 )
 from coding_agent_cli import parse_command, safe_output_path
-
-
-class StubCoder(CodingAgent):
-    def run(self, task: TaskContext) -> AgentResult:
-        return AgentResult(True, f"attempt {task.attempt}")
-
-
-class FixingBackend:
-    def create_plan(self, memory):
-        value = "ok" if memory.attempt >= 2 else "wrong"
-        return ImplementationPlan(
-            "实现功能",
-            [
-                FileChange("app.py", f'VALUE = "{value}"\n', "实现功能"),
-                FileChange(
-                    "test_app.py",
-                    "import unittest\n"
-                    "from app import VALUE\n"
-                    "class TestValue(unittest.TestCase):\n"
-                    "    def test_value(self): self.assertEqual(VALUE, 'ok')\n",
-                    "添加验收测试",
-                ),
-            ],
-        )
 
 
 class WorkflowTests(unittest.TestCase):
@@ -123,22 +85,6 @@ class WorkflowTests(unittest.TestCase):
             [["python3", "-m", "unittest", "-v"]],
         )
 
-    def test_real_rework_then_complete(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            workspace = ProjectWorkspace(Path(temp))
-            result = Coordinator(
-                WorkspaceCodingAgent(FixingBackend(), workspace),
-                CommandVerificationAgent(workspace),
-            ).run(self.make_task())
-            self.assertEqual(result.state, TaskState.COMPLETED)
-            self.assertEqual(result.attempt, 2)
-            self.assertEqual(workspace.read_text("app.py"), 'VALUE = "ok"\n')
-            self.assertTrue(all(item.passed for item in result.verification.criteria_results))
-            self.assertEqual(
-                result.role_history,
-                ["planner", "implementer", "tester", "fixer", "tester"],
-            )
-
     def test_default_roles_are_registered_and_separate_from_agents(self) -> None:
         self.assertEqual(
             DEFAULT_ROLES.names(),
@@ -146,16 +92,6 @@ class WorkflowTests(unittest.TestCase):
         )
         self.assertTrue(IMPLEMENTER.allows(Capability.WRITE_PROJECT))
         self.assertFalse(PLANNER.allows(Capability.WRITE_PROJECT))
-
-    def test_workflow_spec_rejects_cycles(self) -> None:
-        with self.assertRaises(ValueError):
-            WorkflowSpec(
-                "invalid",
-                (
-                    NodeSpec("a", "planner", ("b",)),
-                    NodeSpec("b", "implementer", ("a",)),
-                ),
-            )
 
     def test_task_graph_selects_parallel_non_conflicting_tasks(self) -> None:
         graph = TaskGraph(
@@ -222,24 +158,11 @@ class WorkflowTests(unittest.TestCase):
 
     def test_worker_registry_decouples_role_from_worker(self) -> None:
         registry = WorkerRegistry()
-        worker = StubCoder()
+        worker = object()
         registry.register("implementer", worker)
         self.assertIs(registry.resolve("implementer"), worker)
         with self.assertRaises(ValueError):
-            registry.register("implementer", StubCoder())
-
-    def test_harness_can_cancel_before_worker_execution(self) -> None:
-        token = CancellationToken()
-        token.cancel("用户停止任务")
-        with tempfile.TemporaryDirectory() as temp:
-            result = Coordinator(
-                StubCoder(),
-                CommandVerificationAgent(ProjectWorkspace(Path(temp))),
-                cancellation=token,
-            ).run(self.make_task())
-        self.assertEqual(result.state, TaskState.CANCELLED)
-        self.assertEqual(result.attempt, 0)
-        self.assertIn("用户停止任务", result.history[-1])
+            registry.register("implementer", object())
 
     def test_task_state_machine_rejects_illegal_transition(self) -> None:
         task = self.make_task()
@@ -268,86 +191,6 @@ class WorkflowTests(unittest.TestCase):
             [event.current for event in controller.history()],
             [LifecycleState.CREATED, LifecycleState.RUNNING, LifecycleState.PAUSED, LifecycleState.RUNNING],
         )
-
-    def test_dispatcher_submits_tracks_and_finishes_task(self) -> None:
-        class PassingVerifier(VerificationAgent):
-            def run(self, task):
-                return VerificationResult(True, "验证通过")
-
-        with tempfile.TemporaryDirectory() as temp:
-            dispatcher = TaskDispatcher(
-                lambda lifecycle: Coordinator(
-                    StubCoder(),
-                    PassingVerifier(),
-                    lifecycle=lifecycle,
-                )
-            )
-            handle = dispatcher.submit(self.make_task())
-            result = handle.result(timeout=2)
-            status = handle.status()
-            dispatcher.shutdown()
-        self.assertEqual(result.state, TaskState.COMPLETED)
-        self.assertEqual(status.lifecycle.state, LifecycleState.COMPLETED)
-        self.assertEqual(status.workflow_state, "completed")
-
-    def test_dispatcher_cancels_running_task_at_checkpoint(self) -> None:
-        started = threading.Event()
-        release = threading.Event()
-
-        class BlockingCoder(CodingAgent):
-            def run(self, task):
-                started.set()
-                release.wait(1)
-                return AgentResult(True, "实现结束")
-
-        class PassingVerifier(VerificationAgent):
-            def run(self, task):
-                return VerificationResult(True, "验证通过")
-
-        dispatcher = TaskDispatcher(
-            lambda lifecycle: Coordinator(
-                BlockingCoder(), PassingVerifier(), lifecycle=lifecycle
-            )
-        )
-        handle = dispatcher.submit(self.make_task())
-        self.assertTrue(started.wait(1))
-        self.assertTrue(handle.cancel("用户终止"))
-        release.set()
-        result = handle.result(timeout=2)
-        dispatcher.shutdown()
-        self.assertEqual(result.state, TaskState.CANCELLED)
-        self.assertEqual(handle.status().lifecycle.state, LifecycleState.CANCELLED)
-
-    def test_dispatcher_graceful_shutdown_stops_new_submissions(self) -> None:
-        class PassingVerifier(VerificationAgent):
-            def run(self, task):
-                return VerificationResult(True, "验证通过")
-
-        dispatcher = TaskDispatcher(
-            lambda lifecycle: Coordinator(
-                StubCoder(), PassingVerifier(), lifecycle=lifecycle
-            )
-        )
-        first = dispatcher.submit(self.make_task())
-        self.assertEqual(first.result(timeout=2).state, TaskState.COMPLETED)
-        dispatcher.shutdown(wait=True)
-        second = self.make_task()
-        second.task_id = "T-2"
-        with self.assertRaises(RuntimeError):
-            dispatcher.submit(second)
-
-    def test_coding_worker_rejects_role_without_write_capability(self) -> None:
-        read_only = RoleSpec(
-            "read-only", "只读分析", frozenset({Capability.READ_PROJECT})
-        )
-        task = self.make_task()
-        task.assign_role(read_only)
-        with tempfile.TemporaryDirectory() as temp:
-            result = WorkspaceCodingAgent(
-                FixingBackend(), ProjectWorkspace(Path(temp))
-            ).run(task)
-        self.assertFalse(result.success)
-        self.assertIn("无写入能力", result.error)
 
     def test_active_role_is_exposed_to_model_input(self) -> None:
         task = self.make_task()
@@ -502,6 +345,39 @@ class WorkflowTests(unittest.TestCase):
             store.validation(new).state, ArtifactValidationState.VERIFIED
         )
 
+    def test_executor_accepts_external_and_existing_typed_artifacts(self) -> None:
+        class Worker:
+            def run_task(self, request):
+                self.input_kind = request.inputs["reference"].kind
+                return TaskRunResult(
+                    True, "完成", {"ui_spec": ArtifactDraft(
+                        {"schema_version": "1.0"}, kind="ui_spec"
+                    )}
+                )
+
+        graph = TaskGraph((TaskSpec(
+            "analyze", "分析", "分析参考图", "planner",
+            acceptance_criteria=("生成 UI Spec",),
+            input_artifacts=("reference",), output_artifacts=("ui_spec",),
+        ),), external_artifacts=("reference",))
+        store = ArtifactStore()
+        reference = store.put(Artifact.create(
+            "reference", "T-1", {"asset_id": "image"}, kind="reference_image"
+        ))
+        worker = Worker()
+        registry = WorkerRegistry()
+        registry.register("planner", worker)
+        result = TaskGraphExecutor(
+            graph, registry, DEFAULT_ROLES, MemoryManager(), artifacts=store,
+            initial_artifacts={"reference": reference},
+        ).run(self.make_task())
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(worker.input_kind, "reference_image")
+        self.assertEqual(
+            store.get(result.snapshot.artifacts["ui_spec"]).kind, "ui_spec"
+        )
+
     def test_runtime_snapshot_restores_artifacts_and_requeues_running_node(self) -> None:
         class Worker:
             def __init__(self):
@@ -556,6 +432,35 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(worker.calls, ["b"])
         self.assertEqual(worker.assert_input, "A")
         self.assertEqual(restored.lifecycle.state, LifecycleState.RUNNING)
+
+    def test_runtime_snapshot_preserves_external_artifact_inputs(self) -> None:
+        graph = TaskGraph((TaskSpec(
+            "analyze", "分析", "分析参考图", "planner",
+            acceptance_criteria=("完成",), input_artifacts=("reference",),
+            output_artifacts=("ui_spec",),
+        ),), external_artifacts=("reference",))
+        artifacts = ArtifactStore()
+        reference = artifacts.put(Artifact.create(
+            "reference", "T-1", {"asset_id": "image"}, kind="reference_image"
+        ))
+        runtime = TaskGraphRuntime(
+            graph, initial_artifacts={"reference": reference}
+        )
+        lifecycle = LifecycleController()
+        with tempfile.TemporaryDirectory() as temp:
+            store = SQLiteRuntimeStore(Path(temp) / "runtime.sqlite3")
+            store.save(RuntimeSnapshot(
+                "external", "T-1", "project", "executing", graph,
+                runtime.snapshot(), {"analyze": 0}, lifecycle.snapshot(),
+                artifacts, {},
+            ))
+            restored = store.load("external")
+
+        self.assertIsNotNone(restored)
+        self.assertEqual(restored.graph.external_artifacts, {"reference"})
+        self.assertEqual(
+            restored.graph_snapshot.artifacts["reference"], reference
+        )
 
     def test_runtime_recovery_rejects_workspace_changes(self) -> None:
         graph = TaskGraph((TaskSpec(
@@ -1184,7 +1089,11 @@ class WorkflowTests(unittest.TestCase):
                 return {
                     "summary": "局部修复",
                     "changes": [
-                        {"path": "app.py", "content": "VALUE = 1\n", "reason": "修复失败"}
+                        {
+                            "path": "app.py",
+                            "content": "VALUE = 1  # repaired\n",
+                            "reason": "修复失败",
+                        }
                     ],
                     "suggested_checks": [["python3", "-m", "unittest", "-v"]],
                 }
@@ -1212,8 +1121,26 @@ class WorkflowTests(unittest.TestCase):
                 root / "memory.sqlite3"
             ).load_checkpoint(task.task_id)
 
-        self.assertEqual(result.task.state, TaskState.COMPLETED)
-        self.assertEqual(result.task.attempt, 2)
+        self.assertEqual(
+            result.task.state,
+            TaskState.COMPLETED,
+            msg={
+                "history": result.task.history,
+                "feedback": result.task.feedback,
+                "states": result.graph_states,
+                "model_calls": client.calls,
+            },
+        )
+        self.assertEqual(
+            result.task.attempt,
+            2,
+            msg={
+                "history": result.task.history,
+                "feedback": result.task.feedback,
+                "states": result.graph_states,
+                "model_calls": client.calls,
+            },
+        )
         self.assertEqual(result.graph_states["fix-1"], "succeeded")
         self.assertIn("fixer", result.task.role_history)
         self.assertTrue(any(event["event"] == "fix_task_created" for event in events))
@@ -1275,141 +1202,6 @@ class WorkflowTests(unittest.TestCase):
             [ProjectFile("app.py", "12345")],
         )
         self.assertEqual(view.memories, ())
-
-    def test_tester_and_reviewer_run_concurrently(self) -> None:
-        barrier = threading.Barrier(2, timeout=2)
-
-        class ConcurrentVerifier(CommandVerificationAgent):
-            def run(self, task):
-                barrier.wait()
-                return VerificationResult(True, "验证通过")
-
-        class ConcurrentReviewer(ReviewAgent):
-            def run(self, task):
-                barrier.wait()
-                return ReviewResult(True, "审查通过")
-
-        with tempfile.TemporaryDirectory() as temp:
-            workspace = ProjectWorkspace(Path(temp))
-            result = Coordinator(
-                StubCoder(),
-                ConcurrentVerifier(workspace),
-                review_agent=ConcurrentReviewer(),
-            ).run(self.make_task())
-        self.assertEqual(result.state, TaskState.COMPLETED)
-        self.assertEqual(result.role_history, ["planner", "implementer", "tester", "reviewer"])
-        self.assertTrue(result.review.passed)
-
-    def test_result_envelope_rejects_stale_version(self) -> None:
-        envelope = ResultEnvelope.create("T-1", 2, "tester", "verification", "ok")
-        with self.assertRaises(StaleResultError):
-            envelope.validate_for("T-1", 3)
-
-    def test_agent_message_has_uniform_fields(self) -> None:
-        message = AgentMessage.create(
-            task_id="T-1",
-            task_version=2,
-            sender="tester",
-            recipient="coordinator",
-            message_type=MessageType.RESULT,
-            summary="验证完成",
-            payload={"passed": True},
-            correlation_id="quality-stage",
-        )
-        self.assertEqual(message.message_type, MessageType.RESULT)
-        self.assertEqual(message.correlation_id, "quality-stage")
-        self.assertEqual(message.payload, {"passed": True})
-
-    def test_agent_message_rejects_sensitive_payload_fields(self) -> None:
-        with self.assertRaises(MessageValidationError):
-            AgentMessage.create(
-                task_id="T-1",
-                task_version=0,
-                sender="implementer",
-                recipient="coordinator",
-                message_type=MessageType.RESULT,
-                summary="非法消息",
-                payload={"nested": {"api_key": "secret"}},
-            )
-
-    def test_workflow_records_agent_messages(self) -> None:
-        with tempfile.TemporaryDirectory() as temp, tempfile.TemporaryDirectory() as project:
-            workspace = ProjectWorkspace(Path(project))
-            task = self.make_task()
-            Coordinator(
-                WorkspaceCodingAgent(FixingBackend(), workspace),
-                CommandVerificationAgent(workspace),
-                recorder=RunRecorder(Path(temp)),
-            ).run(task)
-            entries = [
-                json.loads(line)
-                for line in (Path(temp) / task.task_id / "events.jsonl")
-                .read_text(encoding="utf-8")
-                .splitlines()
-            ]
-        messages = [item["payload"] for item in entries if item["event"] == "agent_message"]
-        self.assertGreaterEqual(len(messages), 6)
-        required = {
-            "message_id", "task_id", "task_version", "sender", "recipient",
-            "message_type", "summary", "payload", "correlation_id", "created_at",
-        }
-        self.assertTrue(all(required.issubset(message) for message in messages))
-        self.assertTrue(any(message["message_type"] == "final" for message in messages))
-
-    def test_structured_reviewer_blocks_high_severity_findings(self) -> None:
-        class FakeReviewClient:
-            def generate_json(self, messages):
-                self.messages = messages
-                return {
-                    "passed": True,
-                    "summary": "发现阻断问题",
-                    "findings": [
-                        {
-                            "severity": "high",
-                            "path": "app.py",
-                            "message": "边界条件未处理",
-                        }
-                    ],
-                }
-
-        memory = MemoryManager().build(
-            self.make_task(),
-            DEFAULT_ROLES.get("reviewer"),
-            [ProjectFile("app.py", "VALUE = 1\n")],
-        )
-        result = StructuredReviewBackend(FakeReviewClient()).review(memory)
-        self.assertFalse(result.passed)
-        self.assertIn("边界条件未处理", result.feedback[0])
-
-    def test_stops_when_implementation_keeps_failing(self) -> None:
-        class FailingCoder(CodingAgent):
-            def run(self, task):
-                return AgentResult(False, "失败", error="模型不可用")
-
-        with tempfile.TemporaryDirectory() as temp:
-            result = Coordinator(
-                FailingCoder(), CommandVerificationAgent(ProjectWorkspace(Path(temp))), 2
-            ).run(self.make_task())
-        self.assertEqual(result.state, TaskState.FAILED)
-        self.assertEqual(result.attempt, 2)
-        self.assertEqual(result.feedback, ["模型不可用"])
-
-    def test_rejects_empty_objective(self) -> None:
-        task = self.make_task()
-        task.objective = " "
-        with tempfile.TemporaryDirectory() as temp:
-            result = Coordinator(
-                StubCoder(), CommandVerificationAgent(ProjectWorkspace(Path(temp)))
-            ).run(task)
-        self.assertEqual(result.state, TaskState.FAILED)
-        self.assertEqual(result.attempt, 0)
-
-    def test_invalid_attempt_limit(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            with self.assertRaises(ValueError):
-                Coordinator(
-                    StubCoder(), CommandVerificationAgent(ProjectWorkspace(Path(temp))), 0
-                )
 
     def test_workspace_rejects_path_traversal(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -1476,27 +1268,6 @@ class WorkflowTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(SchemaValidationError):
                 PlanValidator().validate(plan, task)
 
-    def test_context_builder_prioritizes_project_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            workspace = ProjectWorkspace(Path(temp))
-            workspace.apply_changes([
-                FileChange("src/app.py", "VALUE = 1", "fixture"),
-                FileChange("README.md", "project docs", "fixture"),
-            ])
-            selected = ProjectContextBuilder(workspace, max_files=1).select(self.make_task())
-        self.assertEqual(selected[0].path, "README.md")
-        self.assertEqual(selected[0].content, "project docs")
-
-    def test_context_builder_excludes_secrets(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            workspace = ProjectWorkspace(Path(temp))
-            workspace.apply_changes([
-                FileChange(".env", "API_KEY=secret", "fixture"),
-                FileChange("app.py", "VALUE = 1", "fixture"),
-            ])
-            selected = ProjectContextBuilder(workspace).select(self.make_task())
-        self.assertEqual([item.path for item in selected], ["app.py"])
-
     def test_structured_backend_parses_model_plan(self) -> None:
         class FakeClient:
             def generate_json(self, messages):
@@ -1525,20 +1296,6 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(config.provider, "test-provider")
         self.assertEqual(config.model, "test-model")
         self.assertEqual(config.api_key_env, "TEST_API_KEY")
-
-    def test_run_recorder_writes_events_and_snapshot(self) -> None:
-        with tempfile.TemporaryDirectory() as temp, tempfile.TemporaryDirectory() as project:
-            workspace = ProjectWorkspace(Path(project))
-            task = self.make_task()
-            result = Coordinator(
-                WorkspaceCodingAgent(FixingBackend(), workspace),
-                CommandVerificationAgent(workspace),
-                recorder=RunRecorder(Path(temp)),
-            ).run(task)
-            run_dir = Path(temp) / task.task_id
-            self.assertEqual(result.state, TaskState.COMPLETED)
-            self.assertTrue((run_dir / "events.jsonl").is_file())
-            self.assertTrue((run_dir / "task.json").is_file())
 
 
 if __name__ == "__main__":

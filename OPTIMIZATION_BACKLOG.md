@@ -236,6 +236,9 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 
 ## 已完成的 Harness 基线
 
+- `ScenarioRuntime + ScenarioProfile + ConvergenceDecision` 统一控制多轮 DAG 和终态。
+- `SQLiteScenarioRunStore` 保存轮次清单并复用 `RuntimeSnapshot` 完成跨轮恢复。
+- `ArtifactDraft` 收回共享 Artifact 接纳权；VisionForge Worker 使用隔离 staging store。
 - 动态局部 FixTask、受影响验证和最终完整质量门禁。
 - TaskGraphRuntime、尝试次数、生命周期、Artifact 与 Workspace 哈希持久化和恢复。
 - 文件、符号、测试和 Artifact 实体索引。
@@ -245,7 +248,7 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 ## 当前基线
 
 - 基线提交：`7c7c525 chore: archive daily progress 2026-08-15`
-- 当前测试：`python3 -m unittest discover -s tests -q`，123 个测试通过（4 个真实浏览器类默认跳过）。
+- 当前测试：`python3 -m unittest discover -s tests -q`，115 个测试通过（4 个真实浏览器类默认跳过）。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。
 - 当前环境 PATH 未提供 Node/npm；已使用 Codex 工作区 Node 24.19.0 与 pnpm 11.19.0 完成锁文件和构建验证。

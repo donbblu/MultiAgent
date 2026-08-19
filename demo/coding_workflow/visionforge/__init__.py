@@ -76,6 +76,7 @@ from .runner import (
     VisionForgeRunner,
     VisionForgeRunResult,
 )
+from .scenario import VisionForgeScenarioRunner, WebVisualScenario
 from .web_runtime import (
     UploadedImage,
     VisionForgeTaskExecutor,
@@ -138,6 +139,8 @@ __all__ = [
     "VisionForgeCheckpointStore",
     "VisionForgeCycle",
     "VisionForgeDeveloper",
+    "VisionForgeScenarioRunner",
+    "WebVisualScenario",
     "VisionForgeEvaluationError",
     "VisionForgeEvaluator",
     "VisionForgeFeedbackPolicy",

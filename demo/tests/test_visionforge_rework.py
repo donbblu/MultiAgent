@@ -32,6 +32,7 @@ from coding_workflow.visionforge import (
     UISpec,
     VisionForgeCheckpointStore,
     VisionForgeDeveloper,
+    VisionForgeScenarioRunner,
     VisionForgeFixer,
     VisionForgeFeedbackPolicy,
     VisionForgeRecoveryError,
@@ -274,6 +275,196 @@ class ReworkFixture:
 
 
 class VisionForgeReworkTests(unittest.TestCase):
+    def test_scenario_resumes_between_failed_gate_and_fix_round(self) -> None:
+        class SimulatedCrash(RuntimeError):
+            pass
+
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = ReworkFixture(
+                Path(temp),
+                reviews=[
+                    review_data(passed=False, score=72, severity="P2"),
+                    review_data(passed=True, score=94),
+                ],
+                fixes=["<template><main>fixed</main></template>"],
+                browser_outcomes=[True, True],
+            )
+            crashed = False
+
+            def hook(event, state):
+                nonlocal crashed
+                if event == "decision_recorded" and not crashed:
+                    crashed = True
+                    raise SimulatedCrash("模拟 Gate 后退出")
+
+            old = fixture.runner
+            scenario = VisionForgeScenarioRunner(
+                artifacts=fixture.artifacts,
+                workspace=fixture.workspace,
+                integrator=old.integrator,
+                analyst=old.analyst,
+                developer=old.developer,
+                browser_tester=fixture.browser,
+                visual_reviewer=old.visual_reviewer,
+                fixer=old.fixer,
+                max_fix_attempts=2,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+                checkpoint_hook=hook,
+            )
+            reference = fixture.reference("vf-gate-resume")
+            with self.assertRaises(SimulatedCrash):
+                scenario.run(
+                    task_id="vf-gate-resume", requirement="实现并修复页面",
+                    reference_image_artifact_ref=reference,
+                )
+            scenario.checkpoint_hook = None
+
+            result = scenario.run(
+                task_id="vf-gate-resume", requirement="实现并修复页面",
+                reference_image_artifact_ref=reference,
+            )
+
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(result.fix_attempts, 1)
+            self.assertEqual(len(fixture.analyst_model.requests), 1)
+            self.assertEqual(len(fixture.developer_model.requests), 1)
+            self.assertEqual(len(fixture.fixer_model.requests), 1)
+            self.assertEqual(len(fixture.reviewer_model.requests), 2)
+            self.assertEqual(fixture.browser.calls, 2)
+
+    def test_scenario_resumes_after_fix_patch_was_integrated(self) -> None:
+        class SimulatedCrash(RuntimeError):
+            pass
+
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = ReworkFixture(
+                Path(temp),
+                reviews=[
+                    review_data(passed=False, score=72, severity="P2"),
+                    review_data(passed=True, score=94),
+                ],
+                fixes=["<template><main>fixed</main></template>"],
+                browser_outcomes=[True, True],
+            )
+            crashed = False
+
+            def hook(event, state):
+                nonlocal crashed
+                if event == "node_checkpointed:fix-1-integration" and not crashed:
+                    crashed = True
+                    raise SimulatedCrash("模拟修复 Patch 合并后退出")
+
+            old = fixture.runner
+            scenario = VisionForgeScenarioRunner(
+                artifacts=fixture.artifacts,
+                workspace=fixture.workspace,
+                integrator=old.integrator,
+                analyst=old.analyst,
+                developer=old.developer,
+                browser_tester=fixture.browser,
+                visual_reviewer=old.visual_reviewer,
+                fixer=old.fixer,
+                max_fix_attempts=2,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+                checkpoint_hook=hook,
+            )
+            reference = fixture.reference("vf-fix-resume")
+            with self.assertRaises(SimulatedCrash):
+                scenario.run(
+                    task_id="vf-fix-resume", requirement="实现并修复页面",
+                    reference_image_artifact_ref=reference,
+                )
+            self.assertIn(
+                "fixed", (fixture.project / "src/App.vue").read_text()
+            )
+            scenario.checkpoint_hook = None
+
+            result = scenario.run(
+                task_id="vf-fix-resume", requirement="实现并修复页面",
+                reference_image_artifact_ref=reference,
+            )
+
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(len(fixture.fixer_model.requests), 1)
+            self.assertEqual(fixture.browser.calls, 2)
+
+    def test_dag_scene_creates_fix_subgraph_and_converges(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = ReworkFixture(
+                Path(temp),
+                reviews=[
+                    review_data(passed=False, score=72, severity="P2"),
+                    review_data(passed=True, score=94),
+                ],
+                fixes=["<template><main>fixed</main></template>"],
+                browser_outcomes=[True, True],
+            )
+            old = fixture.runner
+            dag = VisionForgeScenarioRunner(
+                artifacts=fixture.artifacts,
+                workspace=fixture.workspace,
+                integrator=old.integrator,
+                analyst=old.analyst,
+                developer=old.developer,
+                browser_tester=fixture.browser,
+                visual_reviewer=old.visual_reviewer,
+                fixer=old.fixer,
+                max_fix_attempts=2,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+            )
+
+            result = dag.run(
+                task_id="vf-dag-fix",
+                requirement="实现并修复页面",
+                reference_image_artifact_ref=fixture.reference("vf-dag-fix"),
+            )
+
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(result.fix_attempts, 1)
+            self.assertEqual(len(result.cycles), 2)
+            self.assertEqual(fixture.browser.calls, 2)
+            self.assertIn("fixed", (fixture.project / "src/App.vue").read_text())
+
+    def test_dag_scene_stops_after_two_failed_fix_subgraphs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = ReworkFixture(
+                Path(temp),
+                reviews=[
+                    review_data(passed=False, score=70, severity="P2"),
+                    review_data(passed=False, score=74, severity="P2"),
+                    review_data(passed=False, score=78, severity="P2"),
+                ],
+                fixes=[
+                    "<template><main>fix-one</main></template>",
+                    "<template><main>fix-two</main></template>",
+                ],
+                browser_outcomes=[True, True, True],
+            )
+            old = fixture.runner
+            dag = VisionForgeScenarioRunner(
+                artifacts=fixture.artifacts,
+                workspace=fixture.workspace,
+                integrator=old.integrator,
+                analyst=old.analyst,
+                developer=old.developer,
+                browser_tester=fixture.browser,
+                visual_reviewer=old.visual_reviewer,
+                fixer=old.fixer,
+                max_fix_attempts=2,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+            )
+
+            result = dag.run(
+                task_id="vf-dag-failed",
+                requirement="尝试修复页面",
+                reference_image_artifact_ref=fixture.reference("vf-dag-failed"),
+            )
+
+            self.assertEqual(result.status, "failed")
+            self.assertEqual(result.fix_attempts, 2)
+            self.assertEqual(len(result.cycles), 3)
+            self.assertEqual(fixture.browser.calls, 3)
+
     def test_browser_only_policy_does_not_use_visual_failure_for_fixing(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             fixture = ReworkFixture(

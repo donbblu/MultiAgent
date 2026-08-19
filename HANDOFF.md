@@ -37,7 +37,7 @@ VisionForge 的“参考图 → Vue 页面 → 浏览器功能验收 → VLM 视
   → 最终完整质量门禁通过后整合长期记忆并 completed
 ```
 
-CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coordinator 流程。
+CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回退选项。
 
 ## 已完成
 
@@ -53,7 +53,7 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - 支持 Harness 主动触发和 Agent 被动检索，并按 Task、Role 和上下文预算过滤。
 - 使用 SQLite 保存记忆与 TaskWorkingMemory Checkpoint。
 - 只有真实测试通过且拥有 Artifact 证据的节点结果才会晋升长期记忆。
-- CLI/Web 已接入真实 DAG 执行路径，并保留 legacy 回退。
+- CLI/Web 已接入真实 DAG 执行路径，并移除旧式顺序执行分支。
 - Web 展示任务图、状态、Artifact 和验证事件，不展示模型原始推理。
 - 动态创建局部 FixTask，修复 Artifact 通过安全合并、受影响验证和最终完整质量门禁。
 - 持久化并恢复完整 TaskGraphRuntime、尝试次数、生命周期、Artifact 和 Workspace 哈希。
@@ -66,17 +66,19 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - 建立受控命令运行器和 Vue 开发服务器生命周期，支持白名单、readiness、超时、取消与进程组清理。
 - Playwright Browser Tester 使用固定 viewport 和受控交互，阻止外部网络请求并记录 DOM 断言、控制台、页面错误和实际截图 Artifact。
 - Requirement Analyst、Developer 和 Visual Reviewer 已通过供应商无关 ModelClient 接入，并在调用前检查所需模型能力。
-- `VisionForgeRunner` 已串联一次 UI Spec、受控 Patch、真实浏览器和 Visual Review，完整调用链与模型用量保存为 Artifact。
+- `WebVisualScenario` 已将 UI Analyst、Web Developer、Patch Integrator、Browser Tester、Visual Reviewer 和 Quality Gate 接入通用 `ScenarioRuntime + TaskGraphExecutor`；参考图作为外部 Artifact，失败后按 `ConvergenceDecision` 执行最多两轮 Fix DAG。
+- 新增 `ArtifactDraft` 和 Worker staging store；Agent、Browser Tester 与 Quality Gate 不再直接写共享 `ArtifactStore`，产物只由 Executor 接纳。
+- `SQLiteScenarioRunStore` 保存场景状态、当前轮次、每轮 Runtime Snapshot、活跃 Artifact 和终态结果；支持 Graph 完成后恢复、Gate 与 Fix 轮次之间恢复、completed 幂等恢复及 Workspace 漂移拒绝。
 - Runtime 质量门禁组合构建、DOM/交互、控制台、页面/网络错误、视觉分数和 P1/P2，模型不能自行宣告 completed。
 - Fixer 根据结构化反馈生成局部 Patch，最多修复两轮；旧 Patch、失败证据和最终验证状态通过 ArtifactStore 追踪。
-- SQLite 返工 Checkpoint 保存 Artifact 快照、阶段、轮数和 Workspace 哈希，可恢复已应用 Patch 后的验证阶段并拒绝 Workspace 漂移。
+- 旧 Runner 的 SQLite 返工 Checkpoint 仍保留兼容测试；产品路径改由 `SQLiteScenarioRunStore + SQLiteRuntimeStore` 统一恢复。
 - Web 提供受控 PNG/JPEG 内容寻址上传和 VisionForge 任务 API；任务只接收 asset ID 与需求，固定使用 Runtime 创建的 Vue 项目目录。
 - Web 可查看参考图、实际截图、评分、修复轮次和结构化 Artifact 调用链，不展示模型原始推理或内部项目路径。
 - 建立 3 个版本化固定页面任务、Runtime 拥有的 DOM/交互断言和受控 HTML→PNG 参考图渲染器。
 - 建立三方案统一评测协议与 JSON 报告，记录构建、功能、视觉、首次通过、自动修复、轮数、Token、耗时和人工介入。
 - 建立 DeepSeek 文本模型与 DashScope Qwen 视觉模型的独立配置和按角色路由；客户端适配供应商级结构化输出模式与请求选项。
 - 已用 `deepseek-v4-pro` 和 `qwen3.7-plus` 各完成一次经授权的最小真实能力烟测，图片输入、JSON 解析及 Token/耗时元数据均验证通过。
-- 当前共有 123 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
+- 当前共有 115 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
 
 ## 关键设计决策
 
@@ -100,7 +102,8 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - 当前使用实体精确命中和文本排序；是否需要向量或混合检索应由测评结果决定。
 - 当前 Browser Tester 只支持固定 Vue 模板、单一本地 HTTP origin 和 Chromium；浏览器二进制由 Playwright 安装或由 Runtime 显式指定。
 - 当前已完成一次保留失败记录和一次校准后真实基线，但 9 个试验的交付通过率仍为 0；结构化输出可靠性、构建错误证据保真和视觉修复稳定性尚未达到可用于产品结论的水平。
-- 当前返工恢复保证不重复已 Checkpoint 的 Patch 应用；如果 Workspace 在 Checkpoint 后被外部修改，会拒绝自动恢复并要求人工处理。
+- 场景恢复不会重复已完成 DAG 节点；如果 Workspace 在快照后被外部修改，会拒绝自动恢复并要求人工处理。
+- Web 和评测入口已经切换到 `VisionForgeScenarioRunner`；旧 `VisionForgeRunner` 与文件内 Legacy DAG Runner 只作兼容对照，不再由产品入口调用。
 - Web 上传资产目录会跨进程保存，但 Web 任务列表目前只保存在内存中，服务重启后不能继续查询旧任务。
 - 固定 Vue 模板当前共享单一浏览器端口，因此 Web Runtime 串行执行页面任务；尚未支持取消正在运行的任务。
 - 固定评测框架的第二次真实运行只有 SaaS 任务形成完整三方案结果；其余任务受模型空内容、非法/截断 JSON 和不存在的图片引用影响。该报告可以作为可靠性诊断基线，但尚不能证明业务效果提升。
@@ -119,7 +122,7 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 1. 建立 `RequirementEvidence`，统一引用 text/image/audio/video Artifact，并校验 MIME、大小、来源、哈希和授权范围。
 2. 建立与 UI 无关的 `CodingRequirement`，保存目标、约束、验收、仓库范围和证据引用。
 3. 建立 Runtime 拥有的 Validator Profile，从 build/test/API/CLI/browser 中选择确定性门禁；模型不能增加、删除或降低门禁。
-4. 保持现有 UI Spec、Visual Review 和 VisionForge Runner 兼容，将其映射为可选 `web_visual` 场景。
+4. 保持现有 UI Spec 与 Visual Review 兼容；`web_visual` 已作为首个多轮 DAG 场景，可供后续场景复用。
 5. 每个协议都增加非法输入、JSON 往返、权限边界和兼容测试；现有测试尽可能全部保持通过。
 
 本批不接供应商、不上传媒体、不调用模型，也不实现音视频转录。完成后等待用户确认，再建立固定 Coding 任务集和三方案评测器。
@@ -142,8 +145,12 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - `demo/coding_workflow/visionforge/agents.py`：四个 VisionForge 角色、结构化 Schema、模型能力和输入裁剪。
 - `demo/coding_workflow/visionforge/browser.py`：受控进程、Vue 服务器生命周期、Playwright 调用与浏览器 Artifact。
 - `demo/coding_workflow/visionforge/quality.py`：Runtime 组合质量门禁与可审计失败原因。
+- `demo/coding_workflow/harness/scenario.py`：通用多轮 DAG、收敛决策、终态和恢复控制。
+- `demo/coding_workflow/harness/scenario_sqlite.py`：场景清单、轮次与活跃 Artifact 持久化。
+- `demo/coding_workflow/visionforge/dag.py`：VisionForge GraphWorker、外部参考图、主 DAG 与 Fix DAG Factory。
+- `demo/coding_workflow/visionforge/scenario.py`：`WebVisualScenario` 和 `VisionForgeScenarioRunner` 产品入口。
 - `demo/coding_workflow/visionforge/recovery.py`：SQLite 返工 Checkpoint、Artifact 快照和 Workspace 漂移检查。
-- `demo/coding_workflow/visionforge/runner.py`：纵向执行、最多两轮修复、Artifact 状态和最终收敛。
+- `demo/coding_workflow/visionforge/runner.py`：旧纵向执行兼容实现；Web 与评测已不再使用。
 - `demo/coding_workflow/visionforge/web_runtime.py`：图片上传目录、固定项目准备、任务执行与安全公开快照。
 - `demo/coding_workflow/visionforge/evaluation.py`：固定任务加载、参考图渲染、三方案试验记录、指标汇总和 JSON 报告。
 - `demo/coding_workflow/visionforge/evaluation_runtime.py`：三方案隔离执行器、模型预算、固定验收注入和 Artifact Bundle 持久化。
@@ -162,7 +169,7 @@ CLI 和 Web 默认使用 `dag` 引擎；`--engine legacy` 可以回退到旧 Coo
 - `demo/visionforge_eval/v1/`：版本化任务 manifest、3 个参考页面和 Runtime 固定验收 UI Spec。
 - `demo/visionforge_eval/render-reference.mjs`：无外部网络、固定环境的 HTML→PNG 渲染器。
 - `demo/visionforge_eval/README.md`：三方案反馈边界、统一评分口径和指标说明。
-- `demo/coding_agent_cli.py`：CLI 的 dag/legacy 入口。
+- `demo/coding_agent_cli.py`：通用 Coding DAG 的 CLI 入口。
 - `demo/web_server.py`：通用 Harness 兼容入口与 VisionForge 上传、任务、图片读取 API。
 - `demo/web/index.html`、`demo/web/app.js`、`demo/web/styles.css`：VisionForge 上传、进度、截图、轮次和 Artifact 调用链界面。
 - `demo/tests/test_web_server.py`：Web Runtime、上传目录、受控请求字段和前端入口测试。

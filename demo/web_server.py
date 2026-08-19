@@ -99,8 +99,8 @@ def role_from_event(entry: dict[str, object]) -> str | None:
     if entry.get("event") == "agent_message" and isinstance(payload, dict):
         sender = str(payload.get("sender") or "")
         recipient = str(payload.get("recipient") or "")
-        return sender if sender not in {"user", "coordinator"} else (
-            recipient if recipient not in {"user", "coordinator"} else None
+        return sender if sender not in {"user", "runtime"} else (
+            recipient if recipient not in {"user", "runtime"} else None
         )
     return None
 
@@ -227,10 +227,8 @@ def run_in_background(
             str(request["name"]),
             provider=str(request["provider"]) if request.get("provider") else None,
             model=str(request["model"]) if request.get("model") else None,
-            max_attempts=int(request.get("max_attempts", 2)),
             event_listener=on_event,
             lifecycle=lifecycle,
-            engine=str(request.get("engine", "dag")),
         )
         files = [
             str(path.relative_to(run.output))
@@ -445,11 +443,7 @@ class Handler(BaseHTTPRequestHandler):
                 "name": name,
                 "provider": data.get("provider"),
                 "model": data.get("model"),
-                "max_attempts": min(max(int(data.get("max_attempts", 2)), 1), 3),
-                "engine": str(data.get("engine", "dag")),
             }
-            if request["engine"] not in {"dag", "legacy"}:
-                raise ValueError("engine 必须是 dag 或 legacy")
             task_key = uuid.uuid4().hex[:12]
             lifecycle = LifecycleController()
             lifecycle.mark_queued()

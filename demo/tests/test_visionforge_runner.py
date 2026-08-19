@@ -8,7 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from coding_workflow.artifacts import Artifact, ArtifactStore
+from coding_workflow.artifacts import Artifact, ArtifactDraft, ArtifactStore
+from coding_workflow.harness import TaskRunRequest, TaskSpec
 from coding_workflow.integration import IntegrationError, PatchIntegrator
 from coding_workflow.model import (
     ImageContentPart,
@@ -20,6 +21,9 @@ from coding_workflow.model import (
     OpenAICompatibleClient,
 )
 from coding_workflow.workspace import ProjectWorkspace
+from coding_workflow.runtime_sqlite import RuntimeRecoveryError
+from coding_workflow.models import TaskContext
+from coding_workflow.visionforge.dag import UIAnalystWorker
 from coding_workflow.visionforge import (
     BrowserAssertion,
     BrowserProcessRunner,
@@ -30,6 +34,7 @@ from coding_workflow.visionforge import (
     RequirementAnalyst,
     UISpec,
     VisionForgeDeveloper,
+    VisionForgeScenarioRunner,
     VisionForgeRunner,
     VisualReviewer,
 )
@@ -171,6 +176,37 @@ class StubBrowserTester:
 
 
 class VisionForgeRunnerTests(unittest.TestCase):
+    def test_dag_worker_returns_draft_without_mutating_shared_store(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            artifacts = ArtifactStore()
+            images = ImageAssetStore(Path(temp) / "assets")
+            reference_ref, _ = images.create_artifact(
+                artifacts, name="reference-image", task_id="vf-draft",
+                data=minimal_png(1440, 900),
+            )
+            model = QueueModelClient(ui_spec_data())
+            worker = UIAnalystWorker(
+                RequirementAnalyst(model, artifacts, images)
+            )
+            task = TaskContext(
+                "vf-draft", "分析页面", ["生成 UI Spec"],
+                user_request="分析页面",
+            )
+            spec = TaskSpec(
+                "ui-analysis", "分析", "生成 UI Spec", "ui_analyst",
+                acceptance_criteria=("生成 UI Spec",),
+                input_artifacts=("reference_image",),
+                output_artifacts=("ui_spec",),
+            )
+
+            result = worker.run_task(TaskRunRequest(
+                spec, task, None,
+                {"reference_image": artifacts.get(reference_ref)}, 1,
+            ))
+
+            self.assertEqual(len(artifacts.snapshot()), 1)
+            self.assertIsInstance(result.artifacts["ui_spec"], ArtifactDraft)
+
     def _components(
         self,
         root: Path,
@@ -274,6 +310,165 @@ class VisionForgeRunnerTests(unittest.TestCase):
                 ],
                 result.actual_screenshot_artifact_ref,
             )
+
+    def test_dag_scene_runs_full_single_pass_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "project"
+            runner, artifacts, images, *_ = self._components(root)
+            dag = VisionForgeScenarioRunner(
+                artifacts=artifacts,
+                workspace=runner.workspace,
+                integrator=runner.integrator,
+                analyst=runner.analyst,
+                developer=runner.developer,
+                browser_tester=runner.browser_tester,
+                visual_reviewer=runner.visual_reviewer,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+            )
+            reference_ref, _ = images.create_artifact(
+                artifacts, name="reference-image", task_id="vf-dag",
+                data=minimal_png(1440, 900),
+            )
+
+            result = dag.run(
+                task_id="vf-dag",
+                requirement="实现一个邮箱注册页面",
+                reference_image_artifact_ref=reference_ref,
+            )
+
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(result.fix_attempts, 0)
+            self.assertEqual(result.changed_files, ("src/App.vue",))
+            self.assertEqual(
+                artifacts.get(result.run_artifact_ref).content["engine"],
+                "scenario_dag",
+            )
+
+    def test_scenario_resumes_completed_round_without_recalling_models(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "project"
+            runner, artifacts, images, analyst, developer, reviewer = (
+                self._components(root)
+            )
+            scenario = VisionForgeScenarioRunner(
+                artifacts=artifacts,
+                workspace=runner.workspace,
+                integrator=runner.integrator,
+                analyst=runner.analyst,
+                developer=runner.developer,
+                browser_tester=runner.browser_tester,
+                visual_reviewer=runner.visual_reviewer,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+            )
+            reference_ref, _ = images.create_artifact(
+                artifacts, name="reference-image", task_id="vf-resume",
+                data=minimal_png(1440, 900),
+            )
+            first = scenario.run(
+                task_id="vf-resume", requirement="实现注册页面",
+                reference_image_artifact_ref=reference_ref,
+            )
+            calls = (
+                len(analyst.requests), len(developer.requests),
+                len(reviewer.requests),
+            )
+
+            restored = scenario.run(
+                task_id="vf-resume", requirement="实现注册页面",
+                reference_image_artifact_ref=reference_ref,
+            )
+
+            self.assertEqual(restored.run_artifact_ref, first.run_artifact_ref)
+            self.assertEqual(calls, (
+                len(analyst.requests), len(developer.requests),
+                len(reviewer.requests),
+            ))
+
+    def test_scenario_resumes_after_graph_completed_before_decision(self) -> None:
+        class SimulatedCrash(RuntimeError):
+            pass
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "project"
+            runner, artifacts, images, analyst, developer, reviewer = (
+                self._components(root)
+            )
+            crashed = False
+
+            def hook(event, state):
+                nonlocal crashed
+                if event == "round_graph_completed" and not crashed:
+                    crashed = True
+                    raise SimulatedCrash("模拟进程退出")
+
+            scenario = VisionForgeScenarioRunner(
+                artifacts=artifacts,
+                workspace=runner.workspace,
+                integrator=runner.integrator,
+                analyst=runner.analyst,
+                developer=runner.developer,
+                browser_tester=runner.browser_tester,
+                visual_reviewer=runner.visual_reviewer,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+                checkpoint_hook=hook,
+            )
+            reference_ref, _ = images.create_artifact(
+                artifacts, name="reference-image", task_id="vf-crash",
+                data=minimal_png(1440, 900),
+            )
+            with self.assertRaises(SimulatedCrash):
+                scenario.run(
+                    task_id="vf-crash", requirement="实现注册页面",
+                    reference_image_artifact_ref=reference_ref,
+                )
+            calls = (
+                len(analyst.requests), len(developer.requests),
+                len(reviewer.requests),
+            )
+            scenario.checkpoint_hook = None
+
+            result = scenario.run(
+                task_id="vf-crash", requirement="实现注册页面",
+                reference_image_artifact_ref=reference_ref,
+            )
+
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(calls, (
+                len(analyst.requests), len(developer.requests),
+                len(reviewer.requests),
+            ))
+
+    def test_scenario_recovery_rejects_workspace_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "project"
+            runner, artifacts, images, *_ = self._components(root)
+            scenario = VisionForgeScenarioRunner(
+                artifacts=artifacts,
+                workspace=runner.workspace,
+                integrator=runner.integrator,
+                analyst=runner.analyst,
+                developer=runner.developer,
+                browser_tester=runner.browser_tester,
+                visual_reviewer=runner.visual_reviewer,
+                runtime_path=Path(temp) / "scenario.sqlite3",
+            )
+            reference_ref, _ = images.create_artifact(
+                artifacts, name="reference-image", task_id="vf-drift",
+                data=minimal_png(1440, 900),
+            )
+            scenario.run(
+                task_id="vf-drift", requirement="实现注册页面",
+                reference_image_artifact_ref=reference_ref,
+            )
+            (root / "src" / "App.vue").write_text(
+                "<template>external change</template>", encoding="utf-8"
+            )
+
+            with self.assertRaises(RuntimeRecoveryError):
+                scenario.run(
+                    task_id="vf-drift", requirement="实现注册页面",
+                    reference_image_artifact_ref=reference_ref,
+                )
 
     def test_integrator_rejects_developer_patch_outside_allowed_paths(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
