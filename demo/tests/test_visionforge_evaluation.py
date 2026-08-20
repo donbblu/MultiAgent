@@ -15,6 +15,7 @@ from coding_workflow.model import (
 )
 from coding_workflow.models import FileChange, ImplementationPlan
 from coding_workflow.visionforge import (
+    BROWSER_RUN,
     BudgetedModelClient,
     BrowserProcessRunner,
     BrowserRunResult,
@@ -26,7 +27,9 @@ from coding_workflow.visionforge import (
     EvaluationTrialResult,
     EvaluationVariant,
     ReferenceImageRenderer,
+    RUN,
     RuntimeEvaluationTrialExecutor,
+    VISUAL_REVIEW,
     VisionForgeCycle,
     VisionForgeEvaluator,
     VisionForgeRunResult,
@@ -291,7 +294,7 @@ class EvaluationContractTests(unittest.TestCase):
             }, f"artifact://screenshot-{round_index}")
             browser = artifacts.put(Artifact.create(
                 f"browser-{round_index}", task_id, browser_result.to_dict(),
-                kind="browser_run",
+                kind=BROWSER_RUN,
             ))
             review = artifacts.put(Artifact.create(
                 f"review-{round_index}", task_id,
@@ -306,7 +309,7 @@ class EvaluationContractTests(unittest.TestCase):
                         "evidence": "截图可见", "suggestion": "增加间距",
                     }],
                 },
-                kind="visual_review",
+                kind=VISUAL_REVIEW,
             ))
             return VisionForgeCycle(
                 round_index, "artifact://plan", "artifact://integration", build,
@@ -317,7 +320,7 @@ class EvaluationContractTests(unittest.TestCase):
         first = cycle(0, 70, False)
         final = cycle(1, 92, True)
         run_ref = artifacts.put(Artifact.create(
-            "run", task_id, {"total_tokens": 321}, kind="visionforge_run"
+            "run", task_id, {"total_tokens": 321}, kind=RUN
         ))
         result = VisionForgeRunResult(
             task_id, "artifact://reference", "artifact://ui", "artifact://plan",

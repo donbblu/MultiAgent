@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 from ..artifacts import Artifact, ArtifactStore
 from ..harness.lifecycle import LifecycleController, TaskCancelledError
 from .assets import ImageAssetStore
+from .artifact_types import ACTUAL_SCREENSHOT, BROWSER_RUN
 from .contracts import (
     BrowserAssertion,
     BrowserRunResult,
@@ -428,7 +429,7 @@ class PlaywrightBrowserTester:
                 data=self._placeholder_png(
                     ui_spec.viewport.width, ui_spec.viewport.height
                 ),
-                kind="actual_screenshot",
+                kind=ACTUAL_SCREENSHOT,
             )
             result = BrowserRunResult(
                 BrowserRunResult.CURRENT_VERSION,
@@ -454,7 +455,7 @@ class PlaywrightBrowserTester:
                 f"{artifact_prefix}-run",
                 task_id,
                 result.to_dict(),
-                kind="browser_run",
+                kind=BROWSER_RUN,
                 metadata={
                     "screenshot_artifact_ref": screenshot_ref,
                     "passed": False,
@@ -504,7 +505,7 @@ class PlaywrightBrowserTester:
             name=f"{artifact_prefix}-actual-screenshot",
             task_id=task_id,
             data=screenshot_data,
-            kind="actual_screenshot",
+            kind=ACTUAL_SCREENSHOT,
         )
         try:
             result = BrowserRunResult.from_runner_payload(raw_result, screenshot_ref)
@@ -514,7 +515,7 @@ class PlaywrightBrowserTester:
             f"{artifact_prefix}-run",
             task_id,
             result.to_dict(),
-            kind="browser_run",
+            kind=BROWSER_RUN,
             metadata={
                 "screenshot_artifact_ref": screenshot_ref,
                 "passed": result.passed,

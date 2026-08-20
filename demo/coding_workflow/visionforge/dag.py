@@ -25,6 +25,7 @@ from .agents import (
     VisionForgeFixer,
     VisualReviewer,
 )
+from .artifact_types import REFERENCE_IMAGE, RUN
 from .contracts import UISpec, VisualReview
 from .quality import VisionForgeQualityGate
 from .runner import (
@@ -511,7 +512,7 @@ class _LegacyVisionForgeDagRunner:
         reference_image_artifact_ref: str,
     ) -> VisionForgeRunResult:
         reference = self.artifacts.get(reference_image_artifact_ref)
-        if reference.task_id != task_id or reference.kind != "reference_image":
+        if reference.task_id != task_id or reference.kind != REFERENCE_IMAGE:
             raise ValueError("参考图 Artifact 与任务不匹配")
         roles = _roles()
         memory = _memory(roles)
@@ -697,9 +698,18 @@ class _LegacyVisionForgeDagRunner:
                 cycle.actual_screenshot_artifact_ref,
                 cycle.browser_run_artifact_ref,
                 cycle.visual_review_artifact_ref,
-                cycle.quality_gate_artifact_ref,
             ),
             (cycle.quality_gate_artifact_ref,),
+            validator_kind="visionforge:quality_gate",
+        )
+        self.artifacts.mark_failed(
+            (cycle.quality_gate_artifact_ref,),
+            (
+                cycle.build_artifact_ref,
+                cycle.browser_run_artifact_ref,
+                cycle.visual_review_artifact_ref,
+            ),
+            validator_kind="visionforge:quality_gate",
         )
 
     def _mark_verified(self, cycle: VisionForgeCycle, ui_spec_ref: str) -> None:
@@ -710,9 +720,18 @@ class _LegacyVisionForgeDagRunner:
                 cycle.actual_screenshot_artifact_ref,
                 cycle.browser_run_artifact_ref,
                 cycle.visual_review_artifact_ref,
-                cycle.quality_gate_artifact_ref,
             ),
             (cycle.quality_gate_artifact_ref,),
+            validator_kind="visionforge:quality_gate",
+        )
+        self.artifacts.mark_verified(
+            (cycle.quality_gate_artifact_ref,),
+            (
+                cycle.build_artifact_ref,
+                cycle.browser_run_artifact_ref,
+                cycle.visual_review_artifact_ref,
+            ),
+            validator_kind="visionforge:quality_gate",
         )
 
     def _finalize(
@@ -775,7 +794,7 @@ class _LegacyVisionForgeDagRunner:
                     int(item["latency_ms"]) for item in model_calls
                 ),
             },
-            kind="visionforge_run",
+            kind=RUN,
             metadata={
                 "engine": "dag", "stage": status,
                 "needs_fix": status != "completed", "fix_attempts": fix_attempts,

@@ -41,6 +41,8 @@ class SQLiteScenarioRunStore:
             "summary": state.summary,
             "request_fingerprint": state.request_fingerprint,
             "workspace_hashes": dict(state.workspace_hashes),
+            "plugin_id": state.plugin_id,
+            "plugin_version": state.plugin_version,
         }
         with self._connect() as connection:
             connection.execute(
@@ -86,5 +88,7 @@ class SQLiteScenarioRunStore:
             str(data.get("summary", "")),
             str(data.get("request_fingerprint", "")),
             MappingProxyType(dict(data.get("workspace_hashes", {}))),
+            str(data.get("plugin_id", "")),
+            str(data.get("plugin_version", "")),
             int(version),
         )

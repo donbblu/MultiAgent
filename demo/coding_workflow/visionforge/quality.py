@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..artifacts import Artifact, ArtifactStore
+from .artifact_types import BROWSER_RUN, QUALITY_GATE, VISUAL_REVIEW
 from .contracts import BrowserRunResult, VisualReview
 
 
@@ -53,10 +54,10 @@ class VisionForgeQualityGate:
             build_artifact_ref, task_id, "build_result"
         )
         browser_artifact = self._artifact(
-            browser_run_artifact_ref, task_id, "browser_run"
+            browser_run_artifact_ref, task_id, BROWSER_RUN
         )
         visual_artifact = self._artifact(
-            visual_review_artifact_ref, task_id, "visual_review"
+            visual_review_artifact_ref, task_id, VISUAL_REVIEW
         )
         if not isinstance(build_artifact.content, dict):
             raise QualityGateError("Build Result Artifact 内容必须是对象")
@@ -123,7 +124,7 @@ class VisionForgeQualityGate:
             f"visionforge-quality-gate-{round_index}",
             task_id,
             content,
-            kind="quality_gate",
+            kind=QUALITY_GATE,
             metadata={"round_index": round_index, "passed": passed},
         ))
         return QualityGateDecision(

@@ -120,7 +120,7 @@ class OpenAICompatibleClient:
             "response_format": self._response_format(
                 request, self.config.structured_output_mode
             ),
-            "temperature": 0.1,
+            "temperature": self.config.temperature,
             "stream": False,
             **dict(self.config.request_options),
         }
@@ -138,7 +138,7 @@ class OpenAICompatibleClient:
         return {
             "type": "json_schema",
             "json_schema": {
-                "name": "visionforge_response",
+                "name": "structured_response",
                 "strict": True,
                 "schema": dict(request.response_schema),
             },

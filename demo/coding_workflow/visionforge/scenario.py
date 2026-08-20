@@ -10,6 +10,7 @@ from ..harness import (
     ConvergenceDecision,
     LifecycleController,
     ScenarioRoundPlan,
+    ScenarioRegistration,
     ScenarioRunState,
     ScenarioRuntime,
     SQLiteScenarioRunStore,
@@ -26,6 +27,7 @@ from .agents import (
     VisionForgeFixer,
     VisualReviewer,
 )
+from .artifact_types import REFERENCE_IMAGE, RUN
 from .contracts import UISpec, VisualReview
 from .dag import (
     BrowserDagWorker,
@@ -86,7 +88,7 @@ class WebVisualScenario:
             if component is not None and component_store is not self.artifacts:
                 raise ValueError("VisionForge Worker 必须共享同一个 ArtifactStore")
         reference = self.artifacts.get(self.reference_image_artifact_ref)
-        if reference.kind != "reference_image":
+        if reference.kind != REFERENCE_IMAGE:
             raise ValueError("场景输入必须是 reference_image Artifact")
         if self.quality_gate is None:
             self.quality_gate = VisionForgeQualityGate(
@@ -219,7 +221,7 @@ class WebVisualScenario:
             "visionforge-scenario-run",
             state.task_id,
             content,
-            kind="visionforge_run",
+            kind=RUN,
             metadata={
                 "engine": "scenario_dag", "scenario": self.name,
                 "stage": status, "fix_attempts": state.current_round,
@@ -235,7 +237,7 @@ class WebVisualScenario:
         self, result_artifact_ref: str, artifacts: ArtifactStore
     ) -> VisionForgeRunResult:
         artifact = artifacts.get(result_artifact_ref)
-        if artifact.kind != "visionforge_run" or not isinstance(
+        if artifact.kind != RUN or not isinstance(
             artifact.content, dict
         ):
             raise RuntimeError("场景结果 Artifact 无效")
@@ -317,9 +319,18 @@ class WebVisualScenario:
                 cycle.actual_screenshot_artifact_ref,
                 cycle.browser_run_artifact_ref,
                 cycle.visual_review_artifact_ref,
-                cycle.quality_gate_artifact_ref,
             ),
             (cycle.quality_gate_artifact_ref,),
+            validator_kind="visionforge:quality_gate",
+        )
+        self.artifacts.mark_failed(
+            (cycle.quality_gate_artifact_ref,),
+            (
+                cycle.build_artifact_ref,
+                cycle.browser_run_artifact_ref,
+                cycle.visual_review_artifact_ref,
+            ),
+            validator_kind="visionforge:quality_gate",
         )
 
     def _mark_verified(self, cycle: VisionForgeCycle, ui_spec_ref: str) -> None:
@@ -330,9 +341,18 @@ class WebVisualScenario:
                 cycle.actual_screenshot_artifact_ref,
                 cycle.browser_run_artifact_ref,
                 cycle.visual_review_artifact_ref,
-                cycle.quality_gate_artifact_ref,
             ),
             (cycle.quality_gate_artifact_ref,),
+            validator_kind="visionforge:quality_gate",
+        )
+        self.artifacts.mark_verified(
+            (cycle.quality_gate_artifact_ref,),
+            (
+                cycle.build_artifact_ref,
+                cycle.browser_run_artifact_ref,
+                cycle.visual_review_artifact_ref,
+            ),
+            validator_kind="visionforge:quality_gate",
         )
 
     def _changed_files(
@@ -411,6 +431,7 @@ class VisionForgeScenarioRunner:
     acceptance_spec: UISpec | None = None
     runtime_path: Path | None = None
     checkpoint_hook: Callable[[str, ScenarioRunState], None] | None = None
+    scenario_registration: ScenarioRegistration | None = None
 
     def run(
         self,
@@ -423,6 +444,14 @@ class VisionForgeScenarioRunner:
         reference = self.artifacts.get(reference_image_artifact_ref)
         if reference.task_id != task_id:
             raise ValueError("参考图 Artifact 与任务不匹配")
+        if (
+            self.scenario_registration is not None
+            and self.scenario_registration.reference
+            != "visionforge:web_visual"
+        ):
+            raise ValueError(
+                "VisionForgeScenarioRunner 只接受 visionforge:web_visual"
+            )
         path = self.runtime_path or (
             self.workspace.root / ".runtime" / "visionforge-scenario.sqlite3"
         )
@@ -431,15 +460,25 @@ class VisionForgeScenarioRunner:
             user_request=requirement, project_root=str(self.workspace.root),
             allowed_paths=list(self.integrator.allowed_paths),
         )
-        profile = WebVisualScenario(
+        profile_args = (
             self.artifacts, self.workspace, self.integrator,
             self.analyst, self.developer, self.browser_tester,
             self.visual_reviewer, reference_image_artifact_ref,
-            fixer=self.fixer, quality_gate=self.quality_gate,
-            minimum_visual_score=self.minimum_visual_score,
-            max_rework_rounds=self.max_fix_attempts,
-            feedback_policy=self.feedback_policy,
-            acceptance_spec=self.acceptance_spec,
+        )
+        profile_options = {
+            "fixer": self.fixer,
+            "quality_gate": self.quality_gate,
+            "minimum_visual_score": self.minimum_visual_score,
+            "max_rework_rounds": self.max_fix_attempts,
+            "feedback_policy": self.feedback_policy,
+            "acceptance_spec": self.acceptance_spec,
+        }
+        profile = (
+            self.scenario_registration.create(
+                *profile_args, **profile_options
+            )
+            if self.scenario_registration is not None
+            else WebVisualScenario(*profile_args, **profile_options)
         )
         runtime = ScenarioRuntime(
             runtime_store=SQLiteRuntimeStore(path),

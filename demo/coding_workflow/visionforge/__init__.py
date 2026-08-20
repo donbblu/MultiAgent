@@ -1,6 +1,16 @@
 """VisionForge 多模态页面交付协议和确定性 Runtime 组件。"""
 
 from .assets import ImageArtifactRef, ImageAssetError, ImageAssetStore
+from .artifact_types import (
+    ACTUAL_SCREENSHOT,
+    BROWSER_RUN,
+    QUALITY_GATE,
+    REFERENCE_IMAGE,
+    RUN,
+    UI_SPEC,
+    VISUAL_REVIEW,
+    VISIONFORGE_ARTIFACT_KINDS,
+)
 from .agents import (
     AgentArtifactResult,
     IMPLEMENTATION_PLAN_SCHEMA,
@@ -77,6 +87,15 @@ from .runner import (
     VisionForgeRunResult,
 )
 from .scenario import VisionForgeScenarioRunner, WebVisualScenario
+from .plugin import (
+    VISIONFORGE_CORE_API_VERSION,
+    VISIONFORGE_PLUGIN_ID,
+    VISIONFORGE_PLUGIN_VERSION,
+    WEB_VISUAL_REFERENCE,
+    WEB_VISUAL_SCENARIO,
+    VisionForgePlugin,
+    create_visionforge_plugin_registry,
+)
 from .web_runtime import (
     UploadedImage,
     VisionForgeTaskExecutor,
@@ -86,8 +105,10 @@ from .web_runtime import (
 
 __all__ = [
     "AcceptanceCriterion",
+    "ACTUAL_SCREENSHOT",
     "AgentArtifactResult",
     "BrowserAssertion",
+    "BROWSER_RUN",
     "BrowserConsoleMessage",
     "BrowserRunResult",
     "BrowserProcessRunner",
@@ -118,23 +139,31 @@ __all__ = [
     "PlaywrightBrowserTester",
     "ProcessExecution",
     "QualityGateDecision",
+    "QUALITY_GATE",
     "QualityGateError",
     "RequirementAnalyst",
+    "REFERENCE_IMAGE",
     "ReferenceImageRenderer",
     "RuntimeEvaluationTrialExecutor",
     "BrowserTester",
     "UI_SPEC_SCHEMA",
+    "UI_SPEC",
     "UploadedImage",
     "UIComponent",
     "UISpec",
     "ViewportSpec",
     "VisualCategory",
+    "VISUAL_REVIEW",
     "VisualIssue",
     "VisualReview",
     "VisualSeverity",
     "VisualReviewer",
     "VISUAL_REVIEW_SCHEMA",
     "VisionForgeAgentError",
+    "VISIONFORGE_ARTIFACT_KINDS",
+    "VISIONFORGE_CORE_API_VERSION",
+    "VISIONFORGE_PLUGIN_ID",
+    "VISIONFORGE_PLUGIN_VERSION",
     "VisionForgeCheckpoint",
     "VisionForgeCheckpointStore",
     "VisionForgeCycle",
@@ -149,8 +178,13 @@ __all__ = [
     "VisionForgeRecoveryError",
     "VisionForgeRunner",
     "VisionForgeRunResult",
+    "VisionForgePlugin",
     "VisionForgeTaskExecutor",
     "VisionForgeWebError",
     "VisionForgeWebRuntime",
     "VisionForgeSchemaError",
+    "RUN",
+    "WEB_VISUAL_REFERENCE",
+    "WEB_VISUAL_SCENARIO",
+    "create_visionforge_plugin_registry",
 ]

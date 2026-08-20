@@ -8,6 +8,7 @@ from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
 from ..artifacts import Artifact, ArtifactStore
+from .artifact_types import REFERENCE_IMAGE
 
 
 class ImageAssetError(ValueError):
@@ -145,7 +146,7 @@ class ImageAssetStore:
         name: str,
         task_id: str,
         data: bytes,
-        kind: str = "reference_image",
+        kind: str = REFERENCE_IMAGE,
     ) -> tuple[str, ImageArtifactRef]:
         image = self.put(data)
         reference = artifacts.put(Artifact.create(

@@ -17,6 +17,7 @@ from .harness.lifecycle import LifecycleSnapshot, LifecycleState
 from .harness.scheduler import GraphSnapshot
 from .harness.task_graph import TaskExecutionState, TaskGraph, TaskSpec
 from .models import FileChange, ImplementationPlan
+from .truth import VerificationRecord
 
 
 class RuntimeRecoveryError(RuntimeError):
@@ -73,6 +74,12 @@ class SQLiteRuntimeStore:
             "context_queries": spec.context_queries, "risk_level": spec.risk_level,
             "timeout_seconds": spec.timeout_seconds, "retry_limit": spec.retry_limit,
             "priority": spec.priority,
+            "required_verified_inputs": spec.required_verified_inputs,
+            "required_capabilities": spec.required_capabilities,
+            "input_protocols": spec.input_protocols,
+            "output_protocols": spec.output_protocols,
+            "required_policy_tags": spec.required_policy_tags,
+            "independent_from_tasks": spec.independent_from_tasks,
         }
 
     @staticmethod
@@ -127,6 +134,10 @@ class SQLiteRuntimeStore:
                     "state": validation.state.value,
                     "verification_refs": validation.verification_refs,
                     "superseded_by": validation.superseded_by,
+                    "verification_records": [
+                        dict(record.to_dict())
+                        for record in validation.verification_records
+                    ],
                 },
             }
             for artifact, validation in store.snapshot()
@@ -149,6 +160,12 @@ class SQLiteRuntimeStore:
                 ArtifactValidationState(str(validation_data["state"])),
                 tuple(validation_data.get("verification_refs", ())),
                 validation_data.get("superseded_by"),
+                tuple(
+                    VerificationRecord.from_dict(record)
+                    for record in validation_data.get(
+                        "verification_records", ()
+                    )
+                ),
             )
             restored.append((artifact, validation))
         return ArtifactStore.restore(tuple(restored))
@@ -209,6 +226,20 @@ class SQLiteRuntimeStore:
             context_queries=tuple(item["context_queries"]), risk_level=item["risk_level"],
             timeout_seconds=int(item["timeout_seconds"]),
             retry_limit=int(item["retry_limit"]), priority=int(item["priority"]),
+            required_verified_inputs=tuple(
+                item.get("required_verified_inputs", ())
+            ),
+            required_capabilities=tuple(
+                item.get("required_capabilities", ())
+            ),
+            input_protocols=tuple(item.get("input_protocols", ())),
+            output_protocols=tuple(item.get("output_protocols", ())),
+            required_policy_tags=tuple(
+                item.get("required_policy_tags", ())
+            ),
+            independent_from_tasks=tuple(
+                item.get("independent_from_tasks", ())
+            ),
         ) for item in data["graph"]), external_artifacts=tuple(
             data.get("graph_external_artifacts", ())
         ))

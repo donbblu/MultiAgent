@@ -41,6 +41,7 @@ from .planning import StructuredTaskPlanner
 from .policy import CommandPolicy
 from .roles import DEFAULT_ROLES
 from .runtime_sqlite import RuntimeSnapshot, SQLiteRuntimeStore
+from .truth import workspace_digest
 from .validation import PlanValidator
 from .workspace import ProjectWorkspace
 
@@ -168,6 +169,14 @@ def run_dag_task(
             runtime_store=runtime_store, snapshot_id=runtime_snapshot_id,
             workspace_hashes_provider=workspace_hashes,
         ).run(task)
+    worker_selections_data = {
+        task_id: dict(decision.to_dict())
+        for task_id, decision in execution.worker_selections.items()
+    }
+    if not worker_selections_data and restored:
+        restored_selections = restored.runner_data.get("worker_selections", {})
+        if isinstance(restored_selections, dict):
+            worker_selections_data = dict(restored_selections)
     states = {key: value.value for key, value in execution.snapshot.states.items()}
     emit("task_graph_finished", {
         "states": states, "attempts": dict(execution.attempts)
@@ -225,6 +234,7 @@ def run_dag_task(
             "task_attempt": task.attempt,
             "last_fix_id": last_fix_id,
             "states": dict(states),
+            "worker_selections": worker_selections_data,
         }
         runner_data.update(extra)
         runtime_store.save(RuntimeSnapshot(
@@ -263,7 +273,13 @@ def run_dag_task(
             verification_refs=verification_refs,
         ))
         if verification.passed:
-            artifacts.mark_verified(current_artifact_refs, verification_refs)
+            artifacts.mark_verified(
+                current_artifact_refs,
+                verification_refs,
+                validator_kind="core:test",
+                summary=verification.summary,
+                workspace_hash=workspace_digest(workspace_hashes()),
+            )
             for reference in current_artifact_refs:
                 current = memory.working_memory(task.task_id).artifacts[reference]
                 memory.update_artifact(task.task_id, WorkingArtifactState(
@@ -275,7 +291,13 @@ def run_dag_task(
                 memory.resolve_failures(task.task_id, last_fix_id)
             memory.save_checkpoint(task.task_id)
             break
-        artifacts.mark_failed(current_artifact_refs, verification_refs)
+        artifacts.mark_failed(
+            current_artifact_refs,
+            verification_refs,
+            validator_kind="core:test",
+            summary=verification.summary,
+            workspace_hash=workspace_digest(workspace_hashes()),
+        )
         for reference in current_artifact_refs:
             current = memory.working_memory(task.task_id).artifacts[reference]
             memory.update_artifact(task.task_id, WorkingArtifactState(
@@ -336,6 +358,10 @@ def run_dag_task(
             lifecycle=controller, max_workers=1, finalize_lifecycle=False,
             project_files_provider=relevant_files,
         ).run(task)
+        worker_selections_data.update({
+            task_id: dict(decision.to_dict())
+            for task_id, decision in fix_execution.worker_selections.items()
+        })
         states.update({
             key: value.value for key, value in fix_execution.snapshot.states.items()
         })

@@ -15,6 +15,7 @@ from .agents import (
     VisionForgeFixer,
     VisualReviewer,
 )
+from .artifact_types import RUN
 from .browser import BrowserTestArtifacts
 from .contracts import UISpec, VisualReview
 from .quality import QualityGateDecision, VisionForgeQualityGate
@@ -411,9 +412,18 @@ class VisionForgeRunner:
                 cycle.actual_screenshot_artifact_ref,
                 cycle.browser_run_artifact_ref,
                 cycle.visual_review_artifact_ref,
-                cycle.quality_gate_artifact_ref,
             ),
             (cycle.quality_gate_artifact_ref,),
+            validator_kind="visionforge:quality_gate",
+        )
+        self.artifacts.mark_failed(
+            (cycle.quality_gate_artifact_ref,),
+            (
+                cycle.build_artifact_ref,
+                cycle.browser_run_artifact_ref,
+                cycle.visual_review_artifact_ref,
+            ),
+            validator_kind="visionforge:quality_gate",
         )
 
     def _mark_cycle_verified(
@@ -428,9 +438,18 @@ class VisionForgeRunner:
                 cycle.actual_screenshot_artifact_ref,
                 cycle.browser_run_artifact_ref,
                 cycle.visual_review_artifact_ref,
-                cycle.quality_gate_artifact_ref,
             ),
             (cycle.quality_gate_artifact_ref,),
+            validator_kind="visionforge:quality_gate",
+        )
+        self.artifacts.mark_verified(
+            (cycle.quality_gate_artifact_ref,),
+            (
+                cycle.build_artifact_ref,
+                cycle.browser_run_artifact_ref,
+                cycle.visual_review_artifact_ref,
+            ),
+            validator_kind="visionforge:quality_gate",
         )
 
     def _finalize(
@@ -485,7 +504,7 @@ class VisionForgeRunner:
                     int(item["latency_ms"]) for item in state.model_calls
                 ),
             },
-            kind="visionforge_run",
+            kind=RUN,
             metadata={
                 "stage": status,
                 "needs_fix": status != "completed",

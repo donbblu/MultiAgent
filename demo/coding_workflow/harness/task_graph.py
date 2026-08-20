@@ -39,6 +39,12 @@ class TaskSpec:
     timeout_seconds: int = 120
     retry_limit: int = 1
     priority: int = 0
+    required_verified_inputs: tuple[str, ...] = ()
+    required_capabilities: tuple[str, ...] = ()
+    input_protocols: tuple[str, ...] = ()
+    output_protocols: tuple[str, ...] = ()
+    required_policy_tags: tuple[str, ...] = ()
+    independent_from_tasks: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not all((self.task_id.strip(), self.title.strip(), self.objective.strip(), self.role.strip())):
@@ -49,6 +55,31 @@ class TaskSpec:
             raise GraphValidationError(f"任务 {self.task_id} 的超时或重试配置无效")
         if self.risk_level not in {"low", "medium", "high"}:
             raise GraphValidationError(f"任务 {self.task_id} 的风险级别无效")
+        for field_name in (
+            "required_capabilities", "input_protocols", "output_protocols",
+            "required_policy_tags", "independent_from_tasks",
+        ):
+            values = getattr(self, field_name)
+            if len(set(values)) != len(values) or any(
+                not isinstance(value, str) or not value.strip() for value in values
+            ):
+                raise GraphValidationError(
+                    f"任务 {self.task_id} 的 {field_name} 包含重复或空值"
+                )
+        if len(set(self.required_verified_inputs)) != len(
+            self.required_verified_inputs
+        ):
+            raise GraphValidationError(
+                f"任务 {self.task_id} 的 required_verified_inputs 不能重复"
+            )
+        missing_verified = set(self.required_verified_inputs) - set(
+            self.input_artifacts
+        )
+        if missing_verified:
+            raise GraphValidationError(
+                f"任务 {self.task_id} 要求验证非输入 Artifact: "
+                f"{sorted(missing_verified)}"
+            )
 
 
 @dataclass(frozen=True)
@@ -81,6 +112,7 @@ class TaskGraph:
         self._external_artifacts = external
         self._validate_dependencies()
         self._validate_acyclic()
+        self._validate_independence()
         self._validate_artifacts()
 
     @property
@@ -117,6 +149,22 @@ class TaskGraph:
 
         for task_id in self._tasks:
             visit(task_id)
+
+    def _validate_independence(self) -> None:
+        for task in self._tasks.values():
+            missing = set(task.independent_from_tasks) - self._tasks.keys()
+            if missing:
+                raise GraphValidationError(
+                    f"任务 {task.task_id} 的职责隔离节点不存在: {sorted(missing)}"
+                )
+            non_upstream = set(task.independent_from_tasks) - set(
+                self.transitive_dependencies(task.task_id)
+            )
+            if non_upstream:
+                raise GraphValidationError(
+                    f"任务 {task.task_id} 只能与上游依赖节点声明职责隔离: "
+                    f"{sorted(non_upstream)}"
+                )
 
     def _validate_artifacts(self) -> None:
         producers: dict[str, str] = {}

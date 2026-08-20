@@ -68,4 +68,18 @@ class StructuredTaskPlanner:
             input_artifacts=cls._strings(item, "input_artifacts"),
             output_artifacts=cls._strings(item, "output_artifacts"),
             context_queries=cls._strings(item, "context_queries"),
+            required_verified_inputs=cls._strings(
+                item, "required_verified_inputs"
+            ),
+            required_capabilities=cls._strings(
+                item, "required_capabilities"
+            ),
+            input_protocols=cls._strings(item, "input_protocols"),
+            output_protocols=cls._strings(item, "output_protocols"),
+            required_policy_tags=cls._strings(
+                item, "required_policy_tags"
+            ),
+            independent_from_tasks=cls._strings(
+                item, "independent_from_tasks"
+            ),
         )

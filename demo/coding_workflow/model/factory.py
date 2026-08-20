@@ -54,6 +54,56 @@ class ModelClientFactory:
         cls._providers[preset.name] = preset
 
     @classmethod
+    def config_for_provider(
+        cls,
+        provider: str,
+        *,
+        model: str | None = None,
+        base_url: str | None = None,
+        api_key_env: str | None = None,
+        max_tokens: int = 4_000,
+        max_retries: int = 0,
+        temperature: float = 0.0,
+        enforce_max_tokens: bool = True,
+    ) -> ModelConfig:
+        """不读取环境变量，供可审计 preflight 冻结公开配置。"""
+        preset = cls._providers.get(provider)
+        if preset is None:
+            if not all((model, base_url, api_key_env)):
+                raise ValueError(
+                    "自定义供应商必须显式提供 model、base_url 和 api_key_env"
+                )
+            capabilities = frozenset({
+                ModelCapability.TEXT,
+                ModelCapability.TOOL_CALLING,
+                ModelCapability.STRUCTURED_OUTPUT,
+            })
+            return ModelConfig(
+                provider,
+                str(api_key_env),
+                str(base_url),
+                str(model),
+                max_tokens=max_tokens,
+                max_retries=max_retries,
+                temperature=temperature,
+                capabilities=capabilities,
+                include_max_tokens=enforce_max_tokens,
+            )
+        return ModelConfig(
+            provider,
+            api_key_env or preset.api_key_env,
+            base_url or preset.base_url,
+            model or preset.default_model,
+            max_tokens=max_tokens,
+            max_retries=max_retries,
+            temperature=temperature,
+            capabilities=preset.capabilities,
+            structured_output_mode=preset.structured_output_mode,
+            request_options=preset.request_options,
+            include_max_tokens=enforce_max_tokens,
+        )
+
+    @classmethod
     def config_from_env(
         cls, provider: str | None = None, model: str | None = None
     ) -> ModelConfig:

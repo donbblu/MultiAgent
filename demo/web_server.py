@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from coding_agent_cli import run_requirement
 from coding_workflow.harness import LifecycleController
 from coding_workflow.visionforge import VisionForgeWebError, VisionForgeWebRuntime
+from coding_workflow.visionforge import create_visionforge_plugin_registry
 
 
 ROOT = Path(__file__).parent.resolve()
@@ -19,10 +20,12 @@ WEB_ROOT = ROOT / "web"
 TASKS: dict[str, dict[str, object]] = {}
 TASK_CONTROLS: dict[str, LifecycleController] = {}
 TASKS_LOCK = threading.Lock()
+VISIONFORGE_PLUGINS = create_visionforge_plugin_registry()
 VISIONFORGE_WEB = VisionForgeWebRuntime(
     ROOT / ".runtime" / "visionforge-web",
     ROOT / "visionforge_vue_template",
     env_file=ROOT / ".env",
+    plugin_registry=VISIONFORGE_PLUGINS,
 )
 
 WORKFLOW = {

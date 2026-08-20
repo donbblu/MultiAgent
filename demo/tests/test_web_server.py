@@ -6,13 +6,22 @@ from pathlib import Path
 from coding_workflow.artifacts import Artifact, ArtifactStore
 from coding_workflow.models import FileChange, ImplementationPlan
 from coding_workflow.visionforge import (
+    ACTUAL_SCREENSHOT,
+    BROWSER_RUN,
     ImageArtifactRef,
+    QUALITY_GATE,
+    RUN,
+    UI_SPEC,
+    VISUAL_REVIEW,
     VisionForgeCycle,
     VisionForgeRunResult,
     VisionForgeWebError,
     VisionForgeWebRuntime,
+    create_visionforge_plugin_registry,
 )
 from web_server import (
+    VISIONFORGE_PLUGINS,
+    VISIONFORGE_WEB,
     finalize_node_states,
     initial_nodes,
     parse_visionforge_task_payload,
@@ -46,7 +55,7 @@ def fake_visionforge_executor(
 ):
     ui_ref = artifacts.put(Artifact.create(
         "ui-spec", task_id, {"schema_version": "1.0", "page_type": "landing"},
-        kind="ui_spec",
+        kind=UI_SPEC,
     ))
     plan_ref = artifacts.put(Artifact.create(
         "implementation", task_id,
@@ -72,22 +81,22 @@ def fake_visionforge_executor(
         name="actual",
         task_id=task_id,
         data=image_assets.read(reference_image),
-        kind="actual_screenshot",
+        kind=ACTUAL_SCREENSHOT,
     )
     browser_ref = artifacts.put(Artifact.create(
         "browser", task_id,
         {"passed": True, "screenshot_artifact_ref": screenshot_ref},
-        kind="browser_run",
+        kind=BROWSER_RUN,
     ))
     review_ref = artifacts.put(Artifact.create(
         "review", task_id,
         {"schema_version": "1.0", "passed": True, "score": 94, "summary": "通过", "issues": []},
-        kind="visual_review",
+        kind=VISUAL_REVIEW,
     ))
     gate_ref = artifacts.put(Artifact.create(
         "gate", task_id,
         {"passed": True, "failures": [], "checks": {"no_blocking_issues": True}},
-        kind="quality_gate",
+        kind=QUALITY_GATE,
     ))
     cycle = VisionForgeCycle(
         0, plan_ref, integration_ref, build_ref, screenshot_ref,
@@ -96,7 +105,7 @@ def fake_visionforge_executor(
     run_ref = artifacts.put(Artifact.create(
         "run", task_id,
         {"status": "completed", "artifact_chain": {"quality_gate": gate_ref}},
-        kind="visionforge_run",
+        kind=RUN,
     ))
     return VisionForgeRunResult(
         task_id,
@@ -182,6 +191,39 @@ class VisionForgeWebRuntimeTests(unittest.TestCase):
             self.assertEqual(data, minimal_png(8, 6))
             self.assertEqual(mime_type, "image/png")
 
+    def test_web_composition_resolves_plugin_and_missing_plugin_fails_closed(self) -> None:
+        self.assertIs(VISIONFORGE_WEB.plugin_registry, VISIONFORGE_PLUGINS)
+        self.assertEqual(
+            VISIONFORGE_WEB.resolve_scenario().reference,
+            "visionforge:web_visual",
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            missing = VisionForgeWebRuntime(
+                root / "runtime",
+                TEMPLATE,
+                project_preparer=lambda destination: destination.mkdir(
+                    parents=True
+                ),
+            )
+            with self.assertRaisesRegex(
+                VisionForgeWebError, "未配置场景插件注册表"
+            ):
+                missing.resolve_scenario()
+
+            configured = VisionForgeWebRuntime(
+                root / "runtime-configured",
+                TEMPLATE,
+                plugin_registry=create_visionforge_plugin_registry(),
+                project_preparer=lambda destination: destination.mkdir(
+                    parents=True
+                ),
+            )
+            self.assertEqual(
+                configured.resolve_scenario().reference,
+                "visionforge:web_visual",
+            )
+
     def test_upload_rejects_declared_type_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             runtime = self.runtime(Path(temp))
@@ -203,9 +245,10 @@ class VisionForgeWebRuntimeTests(unittest.TestCase):
             self.assertEqual(snapshot["result"]["fix_attempts"], 0)
             kinds = {item["kind"] for item in snapshot["artifacts"]}
             self.assertTrue({
-                "reference_image", "ui_spec", "implementation_plan",
-                "actual_screenshot", "browser_run", "visual_review",
-                "quality_gate", "visionforge_run",
+                "visionforge:reference_image", "visionforge:ui_spec",
+                "implementation_plan", "visionforge:actual_screenshot",
+                "visionforge:browser_run", "visionforge:visual_review",
+                "visionforge:quality_gate", "visionforge:run",
             }.issubset(kinds))
             serialized = json.dumps(snapshot, ensure_ascii=False)
             self.assertNotIn("base64", serialized.lower())

@@ -251,6 +251,25 @@
 - 实现 RequirementEvidence、通用 CodingRequirement 和 Runtime 拥有的 Validator Profile。
 - 建立固定本地 Coding 任务、隐藏验收和单 Agent/多 Agent 对照评测。
 
+## 2026-08-20
+
+### 已优化
+
+- 完成 Core 场景插件、事实权、RequirementEvidence、CodingRequirement、Validator Profile 与 Role-first Worker 路由。
+- 建立固定离线 Coding 任务、隐藏验收、三方案消融、模型 Worker、调用预算和可复现报告。
+- 将 VisionForge 适配为可选 web_visual 插件，并接通图片需求证据的授权、完整性和幻觉检查。
+- 默认回归扩展至 192 项通过，4 项真实浏览器类保持显式运行。
+
+### 已解决
+
+- 解决模型可混淆事实与建议、角色路由退化为固定 Agent、插件能力污染 Core，以及不同方案验收条件不一致的问题。
+- 解决图片证据可能未经授权外发、引用损坏或被模型补造内容的问题。
+
+### 待优化
+
+- 接入音频转录与录屏证据，同时保持最终代码结果由同一确定性 Validator 裁决。
+- 扩充固定任务与真实消融样本，评估多 Agent 对成功率、修复率、Token 和延迟的实际影响。
+
 ### 已解决
 
 - 无新增。

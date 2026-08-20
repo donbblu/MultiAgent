@@ -20,6 +20,13 @@ from ..model import (
 from ..models import FileChange, ImplementationPlan
 from ..workspace import ProjectWorkspace
 from .assets import ImageArtifactRef, ImageAssetStore
+from .artifact_types import (
+    ACTUAL_SCREENSHOT,
+    BROWSER_RUN,
+    REFERENCE_IMAGE,
+    UI_SPEC,
+    VISUAL_REVIEW,
+)
 from .contracts import BrowserRunResult, UISpec, VisualReview
 
 
@@ -262,7 +269,7 @@ class RequirementAnalyst:
             self.image_assets,
             reference_image_artifact_ref,
             task_id=task_id,
-            kind="reference_image",
+            kind=REFERENCE_IMAGE,
         )
         request = ModelRequest(
             (
@@ -290,7 +297,7 @@ class RequirementAnalyst:
             "visionforge-ui-spec",
             task_id,
             ui_spec.to_dict(),
-            kind="ui_spec",
+            kind=UI_SPEC,
             metadata={
                 "reference_image_artifact_ref": reference_image_artifact_ref,
                 **_model_metadata(response),
@@ -331,7 +338,7 @@ class VisionForgeDeveloper:
             self.artifacts,
             ui_spec_artifact_ref,
             task_id=task_id,
-            kind="ui_spec",
+            kind=UI_SPEC,
         )
         ui_spec = UISpec.from_dict(ui_spec_artifact.content)
         patterns = tuple(allowed_paths)
@@ -461,13 +468,13 @@ class VisionForgeFixer(VisionForgeDeveloper):
         if round_index <= 0:
             raise ValueError("Fixer round_index 必须大于 0")
         ui_artifact = _require_task_artifact(
-            self.artifacts, ui_spec_artifact_ref, task_id=task_id, kind="ui_spec"
+            self.artifacts, ui_spec_artifact_ref, task_id=task_id, kind=UI_SPEC
         )
         browser_artifact = _require_task_artifact(
             self.artifacts,
             browser_run_artifact_ref,
             task_id=task_id,
-            kind="browser_run",
+            kind=BROWSER_RUN,
         )
         visual_artifact = None
         if visual_review_artifact_ref is not None:
@@ -475,7 +482,7 @@ class VisionForgeFixer(VisionForgeDeveloper):
                 self.artifacts,
                 visual_review_artifact_ref,
                 task_id=task_id,
-                kind="visual_review",
+                kind=VISUAL_REVIEW,
             )
         implementation = self.artifacts.get(current_implementation_artifact_ref)
         if implementation.task_id != task_id or not isinstance(
@@ -573,13 +580,13 @@ class VisualReviewer:
         artifact_name: str = "visionforge-visual-review",
     ) -> AgentArtifactResult:
         ui_spec_artifact = _require_task_artifact(
-            self.artifacts, ui_spec_artifact_ref, task_id=task_id, kind="ui_spec"
+            self.artifacts, ui_spec_artifact_ref, task_id=task_id, kind=UI_SPEC
         )
         browser_artifact = _require_task_artifact(
             self.artifacts,
             browser_run_artifact_ref,
             task_id=task_id,
-            kind="browser_run",
+            kind=BROWSER_RUN,
         )
         ui_spec = UISpec.from_dict(ui_spec_artifact.content)
         if not isinstance(browser_artifact.content, dict):
@@ -596,14 +603,14 @@ class VisualReviewer:
             self.image_assets,
             reference_image_artifact_ref,
             task_id=task_id,
-            kind="reference_image",
+            kind=REFERENCE_IMAGE,
         )
         actual_image = _image_part(
             self.artifacts,
             self.image_assets,
             actual_screenshot_artifact_ref,
             task_id=task_id,
-            kind="actual_screenshot",
+            kind=ACTUAL_SCREENSHOT,
         )
         request = ModelRequest(
             (
@@ -638,7 +645,7 @@ class VisualReviewer:
             artifact_name,
             task_id,
             visual_review.to_dict(),
-            kind="visual_review",
+            kind=VISUAL_REVIEW,
             metadata={
                 "reference_image_artifact_ref": reference_image_artifact_ref,
                 "actual_screenshot_artifact_ref": actual_screenshot_artifact_ref,

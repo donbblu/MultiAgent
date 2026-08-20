@@ -97,6 +97,14 @@ class TaskGraphRuntime:
             self._failures[task_id] = reason or "任务执行失败"
             self._block_dependents(task_id)
 
+    def block(self, task_id: str, reason: str) -> None:
+        """Runtime 因缺少能力/授权等前置条件阻塞节点。"""
+        with self._lock:
+            self._require_running(task_id)
+            self._states[task_id] = TaskExecutionState.BLOCKED
+            self._failures[task_id] = reason or "任务缺少可执行前置条件"
+            self._block_dependents(task_id)
+
     def cancel(self, task_id: str) -> None:
         with self._lock:
             state = self._states[task_id]

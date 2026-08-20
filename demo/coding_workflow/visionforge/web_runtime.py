@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Protocol
 
 from ..artifacts import Artifact, ArtifactStore
+from ..harness import PluginRegistry, PluginUnavailableError, ScenarioRegistration
 from ..integration import PatchIntegrator
 from ..model import ModelCapability, ModelClientFactory, load_env_file
 from ..models import ImplementationPlan
@@ -24,6 +25,7 @@ from .agents import (
     VisionForgeFixer,
     VisualReviewer,
 )
+from .artifact_types import ACTUAL_SCREENSHOT, REFERENCE_IMAGE
 from .assets import ImageArtifactRef, ImageAssetError, ImageAssetStore
 from .browser import (
     BrowserProcessRunner,
@@ -80,6 +82,8 @@ class VisionForgeWebRuntime:
         executor: VisionForgeTaskExecutor | None = None,
         project_preparer: Callable[[Path], None] | None = None,
         env_file: Path | None = None,
+        plugin_registry: PluginRegistry | None = None,
+        scenario_reference: str = "visionforge:web_visual",
     ) -> None:
         self.runtime_root = runtime_root.resolve()
         self.template_root = template_root.resolve()
@@ -97,6 +101,10 @@ class VisionForgeWebRuntime:
                 )"""
             )
         self.env_file = env_file
+        self.plugin_registry = plugin_registry
+        if not isinstance(scenario_reference, str) or scenario_reference.count(":") != 1:
+            raise ValueError("scenario_reference 必须使用 plugin_id:scenario")
+        self.scenario_reference = scenario_reference
         self.executor = executor or self._execute_real
         self.project_preparer = project_preparer or self._prepare_project
         self._assets: dict[str, UploadedImage] = {}
@@ -171,7 +179,7 @@ class VisionForgeWebRuntime:
             "reference-image",
             task_id,
             uploaded.image.to_dict(),
-            kind="reference_image",
+            kind=REFERENCE_IMAGE,
             metadata={
                 "asset_uri": uploaded.image.uri,
                 "mime_type": uploaded.image.mime_type,
@@ -287,6 +295,7 @@ class VisionForgeWebRuntime:
         artifacts: ArtifactStore,
         image_assets: ImageAssetStore,
     ) -> VisionForgeRunResult:
+        registration = self.resolve_scenario()
         if self.env_file:
             load_env_file(self.env_file)
         text_client = ModelClientFactory.create(
@@ -345,12 +354,23 @@ class VisionForgeWebRuntime:
             fixer=VisionForgeFixer(text_client, artifacts),
             max_fix_attempts=2,
             runtime_path=task_root / "visionforge-scenario.sqlite3",
+            scenario_registration=registration,
         ).run(
             task_id=task_id,
             requirement=requirement,
             reference_image_artifact_ref=reference_image_artifact_ref,
             run_id=f"visionforge-web:{task_id}",
         )
+
+    def resolve_scenario(self) -> ScenarioRegistration:
+        if self.plugin_registry is None:
+            raise VisionForgeWebError("VisionForge Web 未配置场景插件注册表")
+        try:
+            return self.plugin_registry.resolve_reference(
+                self.scenario_reference
+            )
+        except PluginUnavailableError as exc:
+            raise VisionForgeWebError(str(exc)) from exc
 
     def _prepare_project(self, destination: Path) -> None:
         if destination.exists():
@@ -404,7 +424,7 @@ class VisionForgeWebRuntime:
                 ],
                 "suggested_checks": artifact.content.suggested_checks,
             }
-        elif artifact.kind in {"reference_image", "actual_screenshot"}:
+        elif artifact.kind in {REFERENCE_IMAGE, ACTUAL_SCREENSHOT}:
             image = ImageArtifactRef.from_dict(artifact.content)
             content = self._public_image(image, artifact.created_at)
         elif artifact.kind == "build_result" and isinstance(artifact.content, dict):

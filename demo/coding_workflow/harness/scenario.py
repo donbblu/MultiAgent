@@ -61,6 +61,8 @@ class ScenarioRunState:
     workspace_hashes: Mapping[str, str] = field(
         default_factory=lambda: MappingProxyType({})
     )
+    plugin_id: str = ""
+    plugin_version: str = ""
     version: int = 1
 
 
@@ -140,6 +142,7 @@ class ScenarioRuntime:
         restored: Any = None
         if state is None:
             snapshot_id = self._round_snapshot_id(run_id, 0)
+            plugin_id, plugin_version = self._profile_plugin_identity(profile)
             state = ScenarioRunState(
                 run_id, task.task_id, task.project_id, profile.name, "running",
                 0, profile.max_rework_rounds, (snapshot_id,), snapshot_id,
@@ -147,6 +150,8 @@ class ScenarioRuntime:
                     dict(self.workspace_hashes_provider())
                 ),
                 request_fingerprint=self._request_fingerprint(task),
+                plugin_id=plugin_id,
+                plugin_version=plugin_version,
             )
             self.scenario_store.save(state)
         else:
@@ -303,7 +308,16 @@ class ScenarioRuntime:
                 controller.snapshot(),
                 artifacts,
                 self.workspace_hashes_provider(),
-                {"scenario_run_id": run_id, "scenario": profile.name},
+                {
+                    "scenario_run_id": run_id,
+                    "scenario": profile.name,
+                    "plugin_id": state.plugin_id,
+                    "plugin_version": state.plugin_version,
+                    "worker_selections": {
+                        task_id: dict(decision.to_dict())
+                        for task_id, decision in execution.worker_selections.items()
+                    },
+                },
             ))
             self.scenario_store.save(state)
             self._checkpoint("scenario_finalized", state)
@@ -323,10 +337,15 @@ class ScenarioRuntime:
         task: TaskContext,
         profile: ScenarioProfile,
     ) -> None:
+        plugin_id, plugin_version = ScenarioRuntime._profile_plugin_identity(
+            profile
+        )
         if (
             state.task_id != task.task_id
             or state.project_id != task.project_id
             or state.scenario != profile.name
+            or state.plugin_id != plugin_id
+            or state.plugin_version != plugin_version
             or (
                 state.request_fingerprint
                 and state.request_fingerprint
@@ -334,6 +353,18 @@ class ScenarioRuntime:
             )
         ):
             raise ValueError("场景快照与当前任务、项目或场景不匹配")
+
+    @staticmethod
+    def _profile_plugin_identity(
+        profile: ScenarioProfile,
+    ) -> tuple[str, str]:
+        plugin_id = getattr(profile, "plugin_id", "")
+        plugin_version = getattr(profile, "plugin_version", "")
+        if not isinstance(plugin_id, str) or not isinstance(plugin_version, str):
+            raise ValueError("场景插件身份必须是字符串")
+        if bool(plugin_id) != bool(plugin_version):
+            raise ValueError("场景插件 ID 和版本必须同时提供")
+        return plugin_id, plugin_version
 
     @staticmethod
     def _request_fingerprint(task: TaskContext) -> str:
@@ -344,5 +375,6 @@ class ScenarioRuntime:
             tuple(tuple(item) for item in task.verification_commands),
             tuple(task.allowed_paths),
             tuple(task.prohibited_actions),
+            task.coding_requirement.digest if task.coding_requirement else "",
         ))
         return sha256(value.encode("utf-8")).hexdigest()

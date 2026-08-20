@@ -14,6 +14,13 @@ from .base import (
 from .config import ModelConfig, StructuredOutputMode, load_env_file
 from .factory import ModelClientFactory, ProviderPreset
 from .openai_compatible import OpenAICompatibleClient
+from .budget import (
+    BudgetedModelClient,
+    ModelBudgetExceeded,
+    ModelBudgetSnapshot,
+    ModelCallBudget,
+    conservative_request_token_upper_bound,
+)
 
 __all__ = [
     "ModelClient",
@@ -33,4 +40,9 @@ __all__ = [
     "ProviderPreset",
     "require_capabilities",
     "load_env_file",
+    "BudgetedModelClient",
+    "ModelBudgetExceeded",
+    "ModelBudgetSnapshot",
+    "ModelCallBudget",
+    "conservative_request_token_upper_bound",
 ]

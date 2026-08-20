@@ -78,7 +78,24 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - 建立三方案统一评测协议与 JSON 报告，记录构建、功能、视觉、首次通过、自动修复、轮数、Token、耗时和人工介入。
 - 建立 DeepSeek 文本模型与 DashScope Qwen 视觉模型的独立配置和按角色路由；客户端适配供应商级结构化输出模式与请求选项。
 - 已用 `deepseek-v4-pro` 和 `qwen3.7-plus` 各完成一次经授权的最小真实能力烟测，图片输入、JSON 解析及 Token/耗时元数据均验证通过。
-- 当前共有 115 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
+- 当前共有 192 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
+- 建立 Core `Claim`、三态 `VerificationOutcome` 和不可变 `VerificationRecord`；模型观察、推断和建议不会自动成为已验证事实，验证记录随 SQLite Runtime Snapshot 恢复。
+- Worker Artifact metadata 会拒绝伪造的验证字段，正文中的同名业务数据不会改变外层状态；TaskGraph 节点全部成功不再自动验证产物、晋升长期记忆或宣布 completed，`GraphExecutionResult.acceptance_outcome` 默认是 unknown。
+- VisionForge 质量门禁不再循环自证：build/browser/review 验证 quality gate，quality gate 再验证其他周期产物；场景流程和视觉规则未改变。
+- 建立通用 `RequirementEvidence`、`CodingRequirement`、`RepositoryScope`、`AcceptanceCriterion`、`EvidenceGrant` 和冻结的 `ValidatorProfile`；UI Spec 继续只属于 VisionForge。
+- 结构化需求启用后，Executor 会在调用 Worker 前核对 Evidence Artifact、仓库范围、Profile/Criterion 摘要和 Task/Role 授权；缺失授权不会回退为宽松模式。
+- 建立 Runtime `ValidatorRegistry + ValidatorProfileRunner`，缺失能力或执行异常产生 unknown 和报告 Artifact；组合 profile gate 独占最终 Artifact 验证更新。
+- VerificationRecord 绑定 Artifact 内容哈希和可选 Workspace 摘要；`required_verified_inputs` 会拒绝过期证明，并随 SQLite Runtime Snapshot 恢复。
+- `WorkerRegistry` 已支持同一 Role 多个 `WorkerDescriptor`，按 Role、能力、协议、策略、职责隔离、可用性和稳定 tie-break 选择；结构化选择审计随 SQLite Checkpoint 恢复。
+- 无合格 Worker 会确定性进入 blocked，不跨 Role 或降低要求；Runtime producer provenance 用于阻止 Reviewer/Tester/Validator 对同一 principal 的产物自审或自证。
+- VisionForge 已通过 `VisionForgePlugin` 显式注册为 `visionforge:web_visual`；Web 从 PluginRegistry 解析场景，场景状态保存插件 ID/版本，未启用插件时安全拒绝。
+- UI Spec、参考图、实际截图、Browser Run、Visual Review、视觉质量门禁和场景 Run 使用 `visionforge:*` Artifact kind；Core 不解释这些业务协议。
+- Core 已实现受控 `core:build`、`core:test`、`core:cli` Validator：完整 argv 白名单、无 shell、清理环境、进程组超时清理和脱敏裁剪日志；超时或缺失工具保持 unknown。
+- 建立首个版本化离线 Coding 任务 `python-tax-rounding`；Runtime 只在独立验证副本注入隐藏检查，starter 稳定失败、参考修复稳定通过，Profile gate 与验证 Workspace 摘要绑定。
+- 固定 Core Coding 任务集已扩展为舍入 Bug、API payload 输入契约和跨文件 CLI 三类；build/test/CLI 分别提供确定性门禁，不依赖网页或模型评分。
+- `FixedCodingEvaluationRunner` 每次复位独立 Workspace，并生成版本化离线 JSON 校准报告；3 个 starter 全部失败、3 个参考修复全部通过，坏题不会被误判为校准成功。
+- 建立三方案 `AblationStrategyProfile`、统一预算和 Artifact 可见性策略；单 Agent、Planner + Developer 与完整 Tester/Fixer 使用同一固定任务和 Validator。
+- 脚本化 dry-run 已覆盖 9 个 trial 的首次通过、修复、预算、越权和指标路径；报告明确区分脚本/模型用量，当前真实模型调用为 0，结果不得用于宣称多 Agent 更优。
 
 ## 关键设计决策
 
@@ -91,6 +108,10 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - 当前阶段使用线程池和 SQLite，暂不引入外部工作流平台、向量数据库或图数据库。
 - 输入模态与验证场景解耦：图片、音频或视频可以描述后端、CLI、库或前端任务；Visual Reviewer 只在显式 `web_visual` 场景启用。
 - 通用 Coding 任务的 completed 只依赖构建、固定/隐藏测试、行为断言、权限和回归；不使用抽象视觉评分。
+- Core 通过显式 `PluginRegistry` 接纳可信场景插件；Core 不依赖具体插件，场景使用 `plugin_id:scenario` 命名空间并按 Core API 版本校验；场景快照同时保存插件 ID/版本并在恢复时拒绝漂移。
+- 模型只有提交观察、推断、建议和候选产物的权力；只有 Runtime 根据 Validator 产生的执行证据，才能登记验证结果和决定最终完成。Worker 的正常返回不等于验收通过，证据不足必须保持 `unknown/unverified`，不能解释为通过。
+- Core 只定义通用 Requirement、Evidence、Claim、Verification 和 Validator 协议。`UI Spec`、视觉评分和视觉问题分类属于 VisionForge 插件，Core 只按带命名空间的 Artifact 类型保存、授权和传递。
+- Role 始终是 Worker 路由的第一键，承载职责、权限、记忆视图和职责隔离；同一 Role 后续允许注册多个 Worker，再由能力、输入/输出协议、运行策略和可用性进行确定性筛选，不能因为缺少 Worker 而降低要求或改派其他 Role。
 
 ## 当前限制
 
@@ -108,24 +129,27 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - 固定 Vue 模板当前共享单一浏览器端口，因此 Web Runtime 串行执行页面任务；尚未支持取消正在运行的任务。
 - 固定评测框架的第二次真实运行只有 SaaS 任务形成完整三方案结果；其余任务受模型空内容、非法/截断 JSON 和不存在的图片引用影响。该报告可以作为可靠性诊断基线，但尚不能证明业务效果提升。
 - 第一版固定任务集只有 3 个页面，适合 MVP 烟测，不足以产生统计上稳定的普遍结论。
-- 当前还没有通用 `RequirementEvidence`、与 UI 无关的 `CodingRequirement` 或任务级 Validator Profile；图片协议已有场景实现，音频和视频尚未接入。
-- 还没有用于比较单 Agent、Planner + Developer 和完整 Tester/Fixer 闭环的确定性 Coding 任务集。
+- Core 已有 build/test/CLI Validator 实现，但通用 CLI/Web 产品入口尚未装配固定任务 Profile；API/browser Validator 仍由后续 Core 实现或场景插件提供，VisionForge 继续使用已有场景门禁。
+- EvidenceGrant 当前由 Composition Root 注入且不作为可跨进程复用的授权凭据持久化；恢复时必须重新提供，否则结构化需求会安全拒绝。
+- text/image/audio/video 已有统一 Evidence 描述协议，但音频、视频的存储、转录和内容提取尚未接入。
+- 确定性 Coding 评测已有 3 个小型任务，能够覆盖函数、API 输入和跨文件 CLI，但样本仍不足以代表普遍 Coding 能力；三方案已接入通用 ModelClient Worker 并用 Fake Model 验证，尚未形成真实模型效果对照。
+- VisionForge 仍位于 `coding_workflow/visionforge`，但已作为显式插件装配；本批未做包目录大迁移或删除 Legacy Runner。
 
 ## 下一步
 
 优化事项统一维护在 `OPTIMIZATION_BACKLOG.md`，开始和完成每个批次时同步更新状态、验收结果和下一批内容。
 
-批次 9 已完成产品与评测方向修正，详细决策见 `Plan/Plan09.md`。两次 VisionForge 真实报告继续保留为 `web_visual` 探索性证据；视觉人工校准暂缓，当前不再重跑开放式网页基线。
+批次 10A 已完成 Core 插件边界，详细决策见 `Plan/Plan11.md`。Core 现在能够在零插件下运行，并以原子、版本化、命名空间化方式注册场景；本批没有把 VisionForge 接入 Registry。
 
-下一批只实现通用协议，不运行真实模型：
+后续严格按下面顺序一次推进一个批次。除非用户明确修改方向，不得跳过当前 Core 批次直接迁移 VisionForge、扩展媒体、调度或记忆。
 
-1. 建立 `RequirementEvidence`，统一引用 text/image/audio/video Artifact，并校验 MIME、大小、来源、哈希和授权范围。
-2. 建立与 UI 无关的 `CodingRequirement`，保存目标、约束、验收、仓库范围和证据引用。
-3. 建立 Runtime 拥有的 Validator Profile，从 build/test/API/CLI/browser 中选择确定性门禁；模型不能增加、删除或降低门禁。
-4. 保持现有 UI Spec 与 Visual Review 兼容；`web_visual` 已作为首个多轮 DAG 场景，可供后续场景复用。
-5. 每个协议都增加非法输入、JSON 往返、权限边界和兼容测试；现有测试尽可能全部保持通过。
+批次 10B 已完成事实与验证权边界，见 `Plan/Plan12.md`；批次 10C 已完成通用需求与验收协议，见 `Plan/Plan13.md`；批次 10D 已完成 Role 优先的多 Worker 路由，见 `Plan/Plan14.md`；批次 10E 已完成 VisionForge 插件适配，见 `Plan/Plan15.md`；批次 11A 已完成受控 Validator 与首个固定任务，见 `Plan/Plan16.md`；批次 11B 已完成三类任务与离线校准报告，见 `Plan/Plan17.md`；批次 11C 已完成三方案协议与脚本化 dry-run，见 `Plan/Plan18.md`；批次 11D 已完成 ModelClient Worker 与调用前审计，见 `Plan/Plan19.md`。
 
-本批不接供应商、不上传媒体、不调用模型，也不实现音视频转录。完成后等待用户确认，再建立固定 Coding 任务集和三方案评测器。
+批次 11E 的真实消融入口、全局预算和零网络 preflight 已完成，但真实调用没有获得明确授权，现标记暂缓；恢复时必须重新核对 `Plan/Plan20.md` 中的摘要，不能沿用模糊授权。
+
+批次 12A 已完成 Core 图片需求证据链，见 `Plan/Plan21.md`。图片通过 RequirementEvidence 和 `vision:inspect` 授权进入 `planner` Role 下的视觉感知 Worker，输出通用 Claim Artifact；UI Spec 继续只属于 VisionForge，代码最终仍由同一固定 Validator 验收。
+
+下一批是 12B：实现音频 Evidence → 受控 Transcript/Claim Artifact。保留原音频引用、片段时间范围、说话内容和不确定项；下游 Coding DAG 不重复读取音频，最终继续使用文本任务相同的确定性代码验收。默认只使用 Fake 转录客户端和本地字节测试，不读取 `.env` 或访问网络。
 
 ## 关键文件
 
@@ -136,16 +160,36 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - `demo/coding_workflow/dag_runner.py`：真实 DAG 端到端执行入口。
 - `demo/coding_workflow/graph_workers.py`：DAG Worker 契约实现。
 - `demo/coding_workflow/artifacts.py`：Artifact 与 ArtifactStore。
+- `demo/coding_workflow/truth.py`：Claim、三态验证结果和不可变 VerificationRecord。
+- `demo/coding_workflow/requirements.py`：通用 Evidence、Coding Requirement、仓库范围、验收、授权和冻结 Validator Profile。
+- `demo/coding_workflow/validator_runtime.py`：Runtime Validator 注册、按 Profile 执行、报告 Artifact 和组合门禁。
+- `demo/coding_workflow/command_validators.py`：受控 build/test/CLI 子进程、完整 argv 白名单、日志证据和三态判定。
+- `demo/coding_workflow/coding_evaluation.py`：固定任务清单校验、Agent/私有验证 Workspace 隔离和 Profile 运行入口。
+- `demo/coding_workflow/coding_evaluation_runtime.py`：多任务复位、starter/参考修复校准、trial 指标和 1.0 JSON 报告。
+- `demo/coding_workflow/coding_ablation.py`：三方案 Profile、Artifact 可见性、统一预算、脚本 Worker、trial 和消融报告。
+- `demo/coding_workflow/coding_model_workers.py`：四类 ModelClient Worker、Plan/Patch/Diagnosis Schema、严格解析、源码披露审计与请求哈希。
+- `demo/coding_workflow/coding_ablation_execution.py`：真实实验配置、21 次调用估算、源码 preflight、真实 Runner 装配与报告 Bundle。
+- `demo/coding_workflow/image_perception.py`：通用图片 Evidence、视觉 Claim 协议、感知 Worker、Role-first 注册与客观准确率。
+- `demo/coding_workflow/model/budget.py`：Core 共享模型调用/Token 预留预算和受控客户端包装。
+- `demo/coding_eval/v1/`：版本化 Core Coding starter、隐藏验收、参考答案和哈希清单。
+- `demo/core_coding_eval_run.py`：默认零外部调用的离线题目校准 CLI。
+- `demo/core_coding_ablation_run.py`：默认禁止真实模型的三方案脚本化 dry-run CLI。
+- `demo/core_coding_model_ablation_run.py`：默认零网络的真实消融 preflight 与摘要绑定执行入口。
+- `demo/coding_workflow/harness/registry.py`：WorkerDescriptor、Role-first 多实现筛选、结构化拒绝和选择审计。
+- `demo/coding_workflow/roles.py`：Role 的职责、能力和权限边界；后续仍作为 Worker 第一路由键。
 - `demo/coding_workflow/integration.py`：Patch 安全检查和集中合并。
 - `demo/coding_workflow/memory.py`：分层记忆、Working Memory 和 RoleMemoryView。
 - `demo/coding_workflow/memory_sqlite.py`：记忆和 Checkpoint 持久化。
 - `demo/coding_workflow/runtime_sqlite.py`：TaskGraphRuntime、生命周期和 Artifact 快照持久化。
 - `demo/coding_workflow/visionforge/contracts.py`：UI Spec 与 Visual Review 1.0 协议。
+- `demo/coding_workflow/visionforge/artifact_types.py`：VisionForge 私有 `visionforge:*` Artifact kind。
+- `demo/coding_workflow/visionforge/plugin.py`：VisionForge Manifest、`web_visual` 注册和产品 Registry 工厂。
 - `demo/coding_workflow/visionforge/assets.py`：图片内容寻址存储与 Artifact 引用。
 - `demo/coding_workflow/visionforge/agents.py`：四个 VisionForge 角色、结构化 Schema、模型能力和输入裁剪。
 - `demo/coding_workflow/visionforge/browser.py`：受控进程、Vue 服务器生命周期、Playwright 调用与浏览器 Artifact。
 - `demo/coding_workflow/visionforge/quality.py`：Runtime 组合质量门禁与可审计失败原因。
 - `demo/coding_workflow/harness/scenario.py`：通用多轮 DAG、收敛决策、终态和恢复控制。
+- `demo/coding_workflow/harness/plugins.py`：Core 插件 Manifest、受控注册上下文、命名空间场景和 Registry。
 - `demo/coding_workflow/harness/scenario_sqlite.py`：场景清单、轮次与活跃 Artifact 持久化。
 - `demo/coding_workflow/visionforge/dag.py`：VisionForge GraphWorker、外部参考图、主 DAG 与 Fix DAG Factory。
 - `demo/coding_workflow/visionforge/scenario.py`：`WebVisualScenario` 和 `VisionForgeScenarioRunner` 产品入口。
@@ -174,9 +218,30 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - `demo/web/index.html`、`demo/web/app.js`、`demo/web/styles.css`：VisionForge 上传、进度、截图、轮次和 Artifact 调用链界面。
 - `demo/tests/test_web_server.py`：Web Runtime、上传目录、受控请求字段和前端入口测试。
 - `demo/tests/test_workflow.py`：Harness、DAG、记忆和端到端测试。
+- `demo/tests/test_plugins.py`：Core 插件注册、兼容、原子性、缺失语义和反向依赖禁令测试。
+- `demo/tests/test_truth.py`：事实分类、验证权、伪造字段、unknown、执行/验收分离和 SQLite 往返测试。
+- `demo/tests/test_requirements.py`：需求协议、范围冻结、EvidenceGrant、Profile Runner、验证新鲜度和恢复测试。
+- `demo/tests/test_worker_routing.py`：同 Role 多 Worker、硬过滤、blocked、选择恢复和自审/自证隔离测试。
+- `demo/tests/test_command_validators.py`：命令策略、三态、脱敏裁剪、隐藏边界、任务哈希和 starter/solution 门禁测试。
+- `demo/tests/test_coding_evaluation_runtime.py`：三任务校准、Workspace 复位、JSON 报告和坏题拒绝测试。
+- `demo/tests/test_coding_ablation.py`：三策略、反馈隔离、同预算、越权、预算停止、模型误接入和报告测试。
+- `demo/tests/test_coding_model_workers.py`：Fake Model 纵向修复、能力预检、秘密披露、越权 Patch、伪造通过和 Registry 隔离测试。
+- `demo/tests/test_coding_ablation_execution.py`：调用估算、全局预算、重试/输出限制、源码摘要和授权前零凭据测试。
+- `demo/tests/test_image_perception.py`：图片授权、能力/哈希边界、Claim 幻觉约束、同 Role 路由、感知 F1 和同隐藏验收测试。
 - `demo/docs/task-graph-and-memory.md`：设计边界说明。
 - `Plan/Plan06.md`：任务拆分和记忆机制的策略归档。
 - `Plan/Plan09.md`：多模态 Coding Multi-Agent MVP、客观验收和实施顺序。
+- `Plan/Plan11.md`：Core 插件边界、信任模型和 VisionForge 后续迁移顺序。
+- `Plan/Plan12.md`：Core 事实与验证权边界、兼容策略和未完成事项。
+- `Plan/Plan13.md`：Core 通用需求、Evidence 授权、Validator 执行和新鲜度边界。
+- `Plan/Plan14.md`：Role-first 多 Worker 路由、审计、blocked 和 principal 职责隔离。
+- `Plan/Plan15.md`：VisionForge 插件装配、Web 解析、场景身份和 Artifact 命名空间边界。
+- `Plan/Plan16.md`：受控 Core Validator、私有隐藏验收和首个固定离线 Coding 任务。
+- `Plan/Plan17.md`：多类型固定任务、离线复位、自校准规则和版本化报告。
+- `Plan/Plan18.md`：三方案 Artifact/预算协议、脚本化 dry-run 和结果解释边界。
+- `Plan/Plan19.md`：Core 模型 Worker、结构化输出、调用前披露、请求审计和真实运行前置条件。
+- `Plan/Plan20.md`：真实消融冻结配置、源码外发范围、预算硬边界和授权摘要。
+- `Plan/Plan21.md`：Core 图片需求证据链、视觉感知/文本规划拆分和确定性评测边界。
 - `OPTIMIZATION_BACKLOG.md`：优化批次、优先级、状态和验收标准。
 
 ## 验证命令
@@ -185,6 +250,7 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 
 ```bash
 python3 -m unittest discover -s tests -q
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-pycache python3 -m compileall -q coding_workflow tests
 ```
 
 真实浏览器测试需要先安装 Chromium，或通过 `VISIONFORGE_BROWSER_EXECUTABLE` 指定 Runtime 管理的 Chrome/Chromium，再设置 `VISIONFORGE_E2E=1` 执行 `test_visionforge_browser.py`。
@@ -199,9 +265,9 @@ git status --short
 ## Git 基线
 
 - 仓库：`/Users/donbblu/codex/multiAgent`
-- 分支：`main`
+- 分支：`codex/multimodal-coding-mvp`
 - 远端：`git@github.com:donbblu/MultiAgent.git`
-- 当前基线提交：`7c7c525 chore: archive daily progress 2026-08-15`
+- 当前基线提交：`4a357ef chore: archive daily progress 2026-08-19`
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒

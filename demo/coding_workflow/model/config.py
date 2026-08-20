@@ -37,6 +37,7 @@ class ModelConfig:
     max_tokens: int = 12000
     max_response_bytes: int = 2_000_000
     max_retries: int = 2
+    temperature: float = 0.1
     capabilities: frozenset[ModelCapability] = frozenset({
         ModelCapability.TEXT, ModelCapability.STRUCTURED_OUTPUT,
     })
@@ -53,6 +54,10 @@ class ModelConfig:
             raise ValueError("模型名称不能为空")
         if self.max_retries not in range(0, 6):
             raise ValueError("模型重试次数必须在 0 到 5 之间")
+        if not isinstance(self.temperature, (int, float)) or not (
+            0 <= self.temperature <= 2
+        ):
+            raise ValueError("模型 temperature 必须在 0 到 2 之间")
         if not self.capabilities:
             raise ValueError("模型至少需要声明一种能力")
         if not isinstance(self.structured_output_mode, StructuredOutputMode):

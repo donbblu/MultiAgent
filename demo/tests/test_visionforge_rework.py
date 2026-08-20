@@ -22,6 +22,8 @@ from coding_workflow.model import (
 )
 from coding_workflow.workspace import ProjectWorkspace
 from coding_workflow.visionforge import (
+    ACTUAL_SCREENSHOT,
+    BROWSER_RUN,
     BrowserAssertion,
     BrowserProcessRunner,
     BrowserRunResult,
@@ -168,7 +170,7 @@ class ScriptedBrowserTester:
             name=f"{artifact_prefix}-screenshot",
             task_id=task_id,
             data=minimal_png(ui_spec.viewport.width, ui_spec.viewport.height),
-            kind="actual_screenshot",
+            kind=ACTUAL_SCREENSHOT,
         )
         assertions = []
         for index, item in enumerate(ui_spec.interactions):
@@ -198,7 +200,7 @@ class ScriptedBrowserTester:
             f"{artifact_prefix}-run",
             task_id,
             result.to_dict(),
-            kind="browser_run",
+            kind=BROWSER_RUN,
             metadata={"screenshot_artifact_ref": screenshot_ref},
         ))
         return BrowserTestArtifacts(build_ref, screenshot_ref, browser_ref, result)

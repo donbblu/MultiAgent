@@ -6,6 +6,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+from .requirements import CodingRequirement
 from .roles import RoleSpec
 
 
@@ -107,8 +108,13 @@ class TaskContext:
     active_role: RoleSpec | None = None
     role_history: list[str] = field(default_factory=list)
     version: int = 0
+    coding_requirement: CodingRequirement | None = None
 
     def __post_init__(self) -> None:
+        if self.coding_requirement is not None and not isinstance(
+            self.coding_requirement, CodingRequirement
+        ):
+            raise ValueError("coding_requirement 必须是 CodingRequirement")
         if not self.project_id and self.project_root:
             canonical = str(Path(self.project_root).expanduser().resolve())
             self.project_id = sha256(canonical.encode("utf-8")).hexdigest()
@@ -141,4 +147,8 @@ class TaskContext:
             "attempt": self.attempt,
             "feedback": self.feedback,
             "role": self.active_role.model_input() if self.active_role else None,
+            "coding_requirement": (
+                dict(self.coding_requirement.to_dict())
+                if self.coding_requirement else None
+            ),
         }

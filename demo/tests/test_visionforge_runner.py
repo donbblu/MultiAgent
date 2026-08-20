@@ -9,7 +9,11 @@ import unittest
 from pathlib import Path
 
 from coding_workflow.artifacts import Artifact, ArtifactDraft, ArtifactStore
-from coding_workflow.harness import TaskRunRequest, TaskSpec
+from coding_workflow.harness import (
+    SQLiteScenarioRunStore,
+    TaskRunRequest,
+    TaskSpec,
+)
 from coding_workflow.integration import IntegrationError, PatchIntegrator
 from coding_workflow.model import (
     ImageContentPart,
@@ -25,6 +29,8 @@ from coding_workflow.runtime_sqlite import RuntimeRecoveryError
 from coding_workflow.models import TaskContext
 from coding_workflow.visionforge.dag import UIAnalystWorker
 from coding_workflow.visionforge import (
+    ACTUAL_SCREENSHOT,
+    BROWSER_RUN,
     BrowserAssertion,
     BrowserProcessRunner,
     BrowserRunResult,
@@ -32,11 +38,15 @@ from coding_workflow.visionforge import (
     ImageAssetStore,
     PlaywrightBrowserTester,
     RequirementAnalyst,
+    RUN,
+    VISIONFORGE_PLUGIN_VERSION,
+    WEB_VISUAL_REFERENCE,
     UISpec,
     VisionForgeDeveloper,
     VisionForgeScenarioRunner,
     VisionForgeRunner,
     VisualReviewer,
+    create_visionforge_plugin_registry,
 )
 
 
@@ -140,7 +150,7 @@ class StubBrowserTester:
             name=f"{artifact_prefix}-actual-screenshot",
             task_id=task_id,
             data=minimal_png(ui_spec.viewport.width, ui_spec.viewport.height),
-            kind="actual_screenshot",
+            kind=ACTUAL_SCREENSHOT,
         )
         result = BrowserRunResult(
             "1.0",
@@ -169,7 +179,7 @@ class StubBrowserTester:
             f"{artifact_prefix}-run",
             task_id,
             result.to_dict(),
-            kind="browser_run",
+            kind=BROWSER_RUN,
             metadata={"screenshot_artifact_ref": screenshot_ref, "passed": True},
         ))
         return BrowserTestArtifacts(build_ref, screenshot_ref, browser_ref, result)
@@ -279,7 +289,7 @@ class VisionForgeRunnerTests(unittest.TestCase):
             self.assertTrue(result.browser_passed)
             self.assertFalse(result.needs_fix)
             run = artifacts.get(result.run_artifact_ref)
-            self.assertEqual(run.kind, "visionforge_run")
+            self.assertEqual(run.kind, RUN)
             self.assertEqual(
                 run.content["artifact_chain"]["visual_review"],
                 result.visual_review_artifact_ref,
@@ -343,6 +353,45 @@ class VisionForgeRunnerTests(unittest.TestCase):
                 artifacts.get(result.run_artifact_ref).content["engine"],
                 "scenario_dag",
             )
+
+    def test_plugin_scenario_persists_visionforge_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "project"
+            runner, artifacts, images, *_ = self._components(root)
+            runtime_path = Path(temp) / "scenario.sqlite3"
+            registry = create_visionforge_plugin_registry()
+            scenario = VisionForgeScenarioRunner(
+                artifacts=artifacts,
+                workspace=runner.workspace,
+                integrator=runner.integrator,
+                analyst=runner.analyst,
+                developer=runner.developer,
+                browser_tester=runner.browser_tester,
+                visual_reviewer=runner.visual_reviewer,
+                runtime_path=runtime_path,
+                scenario_registration=registry.resolve_reference(
+                    WEB_VISUAL_REFERENCE
+                ),
+            )
+            reference_ref, _ = images.create_artifact(
+                artifacts, name="reference-image", task_id="vf-plugin",
+                data=minimal_png(1440, 900),
+            )
+
+            result = scenario.run(
+                task_id="vf-plugin",
+                requirement="实现插件场景页面",
+                reference_image_artifact_ref=reference_ref,
+                run_id="visionforge-plugin-run",
+            )
+            state = SQLiteScenarioRunStore(runtime_path).load(
+                "visionforge-plugin-run"
+            )
+
+            self.assertEqual(result.status, "completed")
+            self.assertEqual(state.plugin_id, "visionforge")
+            self.assertEqual(state.plugin_version, VISIONFORGE_PLUGIN_VERSION)
+            self.assertEqual(state.scenario, "web_visual")
 
     def test_scenario_resumes_completed_round_without_recalling_models(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -553,6 +602,9 @@ class VisionForgeRunnerTests(unittest.TestCase):
         )
         response_format = OpenAICompatibleClient._response_format(request)
         self.assertEqual(response_format["type"], "json_schema")
+        self.assertEqual(
+            response_format["json_schema"]["name"], "structured_response"
+        )
         self.assertTrue(response_format["json_schema"]["strict"])
 
 

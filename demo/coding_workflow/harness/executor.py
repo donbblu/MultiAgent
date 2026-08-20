@@ -18,10 +18,24 @@ from ..memory import (
     WorkingNodeState,
 )
 from ..models import ImplementationPlan, ProjectFile, TaskContext
-from ..roles import RoleRegistry
+from ..roles import Capability, RoleRegistry
+from ..requirements import (
+    EvidenceGrant,
+    RepositoryScope,
+    RequirementEvidence,
+    ValidatorProfile,
+)
 from ..runtime_sqlite import RuntimeSnapshot, SQLiteRuntimeStore
+from ..truth import VerificationOutcome, workspace_digest
 from .lifecycle import LifecycleController, LifecycleState, TaskCancelledError
-from .registry import WorkerRegistry
+from .registry import (
+    WorkerDescriptor,
+    WorkerRegistry,
+    WorkerSelection,
+    WorkerSelectionDecision,
+    WorkerSelectionError,
+    WorkerSelectionRequest,
+)
 from .scheduler import GraphSnapshot, TaskGraphRuntime
 from .task_graph import TaskGraph, TaskSpec
 
@@ -33,10 +47,15 @@ class TaskRunRequest:
     memory: RoleMemoryView
     inputs: Mapping[str, Artifact]
     attempt: int
+    evidence_grant: EvidenceGrant | None = None
+    worker_descriptor: WorkerDescriptor | None = None
+    worker_selection: WorkerSelectionDecision | None = None
 
 
 @dataclass(frozen=True)
 class TaskRunResult:
+    """Worker 执行结果；success 不具有验收或 completed 权威。"""
+
     success: bool
     summary: str
     artifacts: Mapping[str, object] = field(default_factory=dict)
@@ -51,10 +70,19 @@ class GraphWorker(Protocol):
 class GraphExecutionResult:
     snapshot: GraphSnapshot
     attempts: Mapping[str, int]
+    acceptance_outcome: VerificationOutcome = VerificationOutcome.UNKNOWN
+    worker_selections: Mapping[str, WorkerSelectionDecision] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
     @property
     def succeeded(self) -> bool:
+        """所有 Worker 节点都正常完成；不表示需求已经验收通过。"""
         return all(state.value == "succeeded" for state in self.snapshot.states.values())
+
+    @property
+    def accepted(self) -> bool:
+        return self.acceptance_outcome is VerificationOutcome.PASSED
 
 
 class TaskGraphExecutor:
@@ -80,6 +108,9 @@ class TaskGraphExecutor:
         workspace_hashes_provider: Callable[[], Mapping[str, str]] | None = None,
         initial_artifacts: Mapping[str, str] | None = None,
         checkpoint_hook: Callable[[str, GraphSnapshot], None] | None = None,
+        evidence_grants: Mapping[str, EvidenceGrant] | None = None,
+        validator_profile: ValidatorProfile | None = None,
+        requirement_evidence: tuple[RequirementEvidence, ...] = (),
     ) -> None:
         if max_workers < 1:
             raise ValueError("max_workers 必须大于 0")
@@ -104,6 +135,27 @@ class TaskGraphExecutor:
         self.snapshot_id = snapshot_id
         self.workspace_hashes_provider = workspace_hashes_provider
         self.checkpoint_hook = checkpoint_hook
+        self.evidence_grants = (
+            None
+            if evidence_grants is None
+            else MappingProxyType(dict(evidence_grants))
+        )
+        self.validator_profile = validator_profile
+        self.requirement_evidence = tuple(requirement_evidence)
+        self._runtime_runner_data = dict(
+            runtime_snapshot.runner_data if runtime_snapshot else {}
+        )
+        restored_selections = self._runtime_runner_data.get(
+            "worker_selections", {}
+        )
+        self._worker_selections: dict[str, WorkerSelectionDecision] = {
+            str(task_id): WorkerSelectionDecision.from_dict(value)
+            for task_id, value in (
+                restored_selections.items()
+                if isinstance(restored_selections, Mapping) else ()
+            )
+            if isinstance(value, Mapping)
+        }
         self._lock = RLock()
 
     def _save_runtime(self, parent: TaskContext, phase: str) -> None:
@@ -113,19 +165,77 @@ class TaskGraphExecutor:
             dict(self.workspace_hashes_provider())
             if self.workspace_hashes_provider else {}
         )
+        runner_data = dict(self._runtime_runner_data)
+        runner_data["worker_selections"] = {
+            task_id: dict(decision.to_dict())
+            for task_id, decision in self._worker_selections.items()
+        }
         self.runtime_store.save(RuntimeSnapshot(
             self.snapshot_id, parent.task_id, parent.project_id, phase,
             self.runtime.graph, self.runtime.snapshot(),
             MappingProxyType(dict(self._attempts)), self.lifecycle.snapshot(),
             self.artifacts, MappingProxyType(hashes),
+            MappingProxyType(runner_data),
         ))
 
-    def _request(self, spec: TaskSpec, parent: TaskContext, attempt: int) -> TaskRunRequest:
+    def _request(
+        self,
+        spec: TaskSpec,
+        parent: TaskContext,
+        attempt: int,
+        selection: WorkerSelection,
+    ) -> TaskRunRequest:
         role = self.roles.get(spec.role)
         snapshot = self.runtime.snapshot()
         inputs = self.artifacts.resolve({
             name: snapshot.artifacts[name] for name in spec.input_artifacts
         })
+        workspace_hash = (
+            workspace_digest(self.workspace_hashes_provider())
+            if self.workspace_hashes_provider else ""
+        )
+        for name in spec.required_verified_inputs:
+            reference = snapshot.artifacts[name]
+            if not self.artifacts.is_verified(
+                reference, workspace_hash=workspace_hash
+            ):
+                raise PermissionError(
+                    f"任务 {spec.task_id} 的输入尚未通过有效验证: {name}"
+                )
+        grant = None
+        external_inputs = set(spec.input_artifacts).intersection(
+            self.runtime.graph.external_artifacts
+        )
+        if self.evidence_grants is not None and external_inputs:
+            grant = self.evidence_grants.get(spec.task_id)
+            if grant is None:
+                raise PermissionError(
+                    f"任务 {spec.task_id} 缺少外部证据授权"
+                )
+            for name in external_inputs:
+                if not grant.allows(
+                    task_id=spec.task_id,
+                    role=role.name,
+                    evidence_ref=snapshot.artifacts[name],
+                ):
+                    raise PermissionError(
+                        f"任务 {spec.task_id} 无权读取外部证据: {name}"
+                    )
+        elif parent.coding_requirement is not None and external_inputs:
+            raise PermissionError(
+                f"任务 {spec.task_id} 使用结构化需求时必须提供 EvidenceGrant"
+            )
+        if parent.coding_requirement is not None:
+            declared = set(parent.coding_requirement.evidence_refs).union(
+                parent.coding_requirement.extension_refs
+            )
+            undeclared = {
+                snapshot.artifacts[name] for name in external_inputs
+            } - declared
+            if undeclared:
+                raise PermissionError(
+                    f"任务 {spec.task_id} 引用了需求未声明的外部证据"
+                )
         child = TaskContext(
             task_id=parent.task_id, objective=spec.objective,
             acceptance_criteria=list(spec.acceptance_criteria),
@@ -136,6 +246,7 @@ class TaskGraphExecutor:
             prohibited_actions=list(parent.prohibited_actions),
             assumptions=list(parent.assumptions), attempt=max(parent.attempt, attempt),
             feedback=list(parent.feedback),
+            coding_requirement=parent.coding_requirement,
         )
         query = " ".join(spec.context_queries)
         project_files = (
@@ -145,12 +256,54 @@ class TaskGraphExecutor:
         view = self.memory.build(
             child, role, project_files, trigger="task_claimed", query=query
         )
-        return TaskRunRequest(spec, parent, view, inputs, attempt)
+        return TaskRunRequest(
+            spec, parent, view, inputs, attempt, grant,
+            selection.descriptor, selection.decision,
+        )
+
+    def _select_worker(self, spec: TaskSpec) -> WorkerSelection:
+        role = self.roles.get(spec.role)
+        excluded = {
+            self._worker_selections[task_id].selected_principal_id
+            for task_id in spec.independent_from_tasks
+            if task_id in self._worker_selections
+            and self._worker_selections[task_id].selected_principal_id
+        }
+        if role.allows(Capability.REVIEW_CHANGES) or role.allows(
+            Capability.RUN_VERIFICATION
+        ):
+            snapshot = self.runtime.snapshot()
+            for name in spec.input_artifacts:
+                reference = snapshot.artifacts.get(name)
+                if not reference:
+                    continue
+                provenance = self.artifacts.get(reference).metadata.get(
+                    "runtime_provenance", {}
+                )
+                if isinstance(provenance, Mapping):
+                    principal = provenance.get("principal_id")
+                    if isinstance(principal, str) and principal:
+                        excluded.add(principal)
+        selection = self.workers.select(WorkerSelectionRequest(
+            spec.task_id,
+            spec.role,
+            frozenset(spec.required_capabilities),
+            frozenset(spec.input_protocols),
+            frozenset(spec.output_protocols),
+            frozenset(spec.required_policy_tags),
+            frozenset(excluded),
+        ))
+        with self._lock:
+            self._worker_selections[spec.task_id] = selection.decision
+        return selection
 
     def _run_one(self, spec: TaskSpec, parent: TaskContext) -> TaskRunResult:
-        worker = self.workers.resolve(spec.role)
+        selection = self._select_worker(spec)
+        worker = selection.worker
         if not hasattr(worker, "run_task"):
-            raise TypeError(f"角色 {spec.role} 的 Worker 不支持 run_task")
+            raise TypeError(
+                f"Worker {selection.descriptor.worker_id} 不支持 run_task"
+            )
         last = TaskRunResult(False, "未执行", error="未执行")
         for attempt in range(1, spec.retry_limit + 2):
             with self._lock:
@@ -161,7 +314,7 @@ class TaskGraphExecutor:
                 output_artifacts=spec.output_artifacts,
             ))
             self.lifecycle.checkpoint()
-            request = self._request(spec, parent, attempt)
+            request = self._request(spec, parent, attempt, selection)
             result = worker.run_task(request)
             if not isinstance(result, TaskRunResult):
                 raise TypeError("Worker 必须返回 TaskRunResult")
@@ -199,14 +352,36 @@ class TaskGraphExecutor:
                 f"任务 {spec.task_id} 输出不匹配，缺少 {sorted(expected-actual)}，多出 {sorted(actual-expected)}"
             )
         references: dict[str, str] = {}
+        selection = self._worker_selections[spec.task_id]
+        provenance = {
+            "worker_id": selection.selected_worker_id,
+            "principal_id": selection.selected_principal_id,
+            "role": selection.role,
+            "task_id": spec.task_id,
+        }
         for name, content in result.artifacts.items():
             if isinstance(content, ArtifactDraft):
-                references[name] = self.artifacts.put(
-                    content.materialize(name, parent.task_id)
-                )
+                materialized = content.materialize(name, parent.task_id)
+                references[name] = self.artifacts.put(Artifact(
+                    materialized.artifact_id,
+                    materialized.name,
+                    materialized.task_id,
+                    materialized.kind,
+                    materialized.content,
+                    MappingProxyType({
+                        **dict(materialized.metadata),
+                        "runtime_provenance": provenance,
+                    }),
+                    materialized.created_at,
+                ))
             else:
                 references[name] = self.artifacts.put(
-                    Artifact.create(name, parent.task_id, content)
+                    Artifact.create(
+                        name,
+                        parent.task_id,
+                        content,
+                        metadata={"runtime_provenance": provenance},
+                    )
                 )
         self.runtime.succeed(spec.task_id, references)
         self.memory.register_artifact_names(parent.task_id, references)
@@ -250,6 +425,22 @@ class TaskGraphExecutor:
         self.memory.save_checkpoint(parent.task_id)
 
     def run(self, parent: TaskContext) -> GraphExecutionResult:
+        if parent.coding_requirement is not None:
+            if self.validator_profile is None:
+                raise PermissionError("结构化 CodingRequirement 缺少 ValidatorProfile")
+            for evidence in self.requirement_evidence:
+                evidence.validate_artifact(
+                    self.artifacts.get(evidence.artifact_ref)
+                )
+            parent.coding_requirement.enforce_runtime_boundaries(
+                runtime_scope=RepositoryScope(
+                    ("**",),
+                    tuple(parent.allowed_paths),
+                    tuple(parent.prohibited_actions),
+                ),
+                validator_profile=self.validator_profile,
+                available_evidence=self.requirement_evidence,
+            )
         self.memory.reconcile_artifacts(
             parent.task_id,
             (
@@ -315,6 +506,29 @@ class TaskGraphExecutor:
                                     output_artifacts=spec.output_artifacts,
                                 ))
                                 self.memory.save_checkpoint(parent.task_id)
+                        except WorkerSelectionError as exc:
+                            with self._lock:
+                                self._worker_selections[spec.task_id] = exc.decision
+                            self.runtime.block(spec.task_id, str(exc))
+                            self.memory.update_node(parent.task_id, WorkingNodeState(
+                                spec.task_id, spec.role, "blocked",
+                                attempt=self._attempts[spec.task_id],
+                                last_error=str(exc),
+                                input_artifacts=spec.input_artifacts,
+                                output_artifacts=spec.output_artifacts,
+                            ))
+                            self.memory.record(MemoryRecord.create(
+                                MemoryKind.PERCEPTION,
+                                "worker_selection_blocked",
+                                str(exc),
+                                task_id=parent.task_id,
+                                source="runtime",
+                                source_ref=spec.task_id,
+                                project_id=parent.project_id,
+                                visibility=tuple(self.roles.names()),
+                                content=dict(exc.to_dict()),
+                            ))
+                            self.memory.save_checkpoint(parent.task_id)
                         except TaskCancelledError:
                             self.runtime.cancel(spec.task_id)
                             self.memory.update_node(parent.task_id, WorkingNodeState(
@@ -344,32 +558,19 @@ class TaskGraphExecutor:
                         input_artifacts=current.input_artifacts,
                         output_artifacts=current.output_artifacts,
                     ))
-            if all(state.value == "succeeded" for state in snapshot.states.values()):
-                if self.finalize_lifecycle:
-                    verified_artifacts = tuple(snapshot.artifacts.values())
-                    self.artifacts.mark_verified(verified_artifacts, ())
-                    for reference in verified_artifacts:
-                        current = self.memory.working_memory(
-                            parent.task_id
-                        ).artifacts[reference]
-                        self.memory.update_artifact(
-                            parent.task_id,
-                            WorkingArtifactState(
-                                reference, current.producer_node_id, "verified",
-                                affected_paths=current.affected_paths,
-                            ),
-                        )
-                    self.memory.consolidate(
-                        parent.task_id,
-                        project_id=parent.project_id,
-                        verified_artifacts=verified_artifacts,
-                    )
-                    self.lifecycle.mark_completed()
-            else:
-                if self.finalize_lifecycle:
-                    self.lifecycle.mark_failed("一个或多个子任务失败")
+            graph_succeeded = all(
+                state.value == "succeeded" for state in snapshot.states.values()
+            )
+            # Graph 执行成功只证明 Worker 正常返回。Artifact 保持未验证，
+            # 外层 Runtime 必须根据 Validator 证据决定验收与 completed。
+            if not graph_succeeded and self.finalize_lifecycle:
+                self.lifecycle.mark_failed("一个或多个子任务失败")
             self._save_runtime(parent, "graph_completed")
-            return GraphExecutionResult(snapshot, MappingProxyType(dict(self._attempts)))
+            return GraphExecutionResult(
+                snapshot,
+                MappingProxyType(dict(self._attempts)),
+                worker_selections=MappingProxyType(dict(self._worker_selections)),
+            )
         except TaskCancelledError as exc:
             for task_id, state in self.runtime.snapshot().states.items():
                 if state.value in {"pending", "ready", "running"}:
@@ -377,4 +578,8 @@ class TaskGraphExecutor:
             self.memory.save_checkpoint(parent.task_id)
             self.lifecycle.mark_cancelled(str(exc))
             self._save_runtime(parent, "cancelled")
-            return GraphExecutionResult(self.runtime.snapshot(), MappingProxyType(dict(self._attempts)))
+            return GraphExecutionResult(
+                self.runtime.snapshot(),
+                MappingProxyType(dict(self._attempts)),
+                worker_selections=MappingProxyType(dict(self._worker_selections)),
+            )

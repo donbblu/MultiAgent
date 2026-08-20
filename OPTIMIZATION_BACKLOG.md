@@ -2,9 +2,9 @@
 
 本文是项目方向和优化工作的单一待办清单。`HANDOFF.md` 负责恢复上下文；具体批次、状态和验收条件以本文为准。
 
-- 最后核对：2026-08-16
-- 当前批次：批次 9 已完成，等待用户确认下一批
-- 下一项：`CORE-INPUT-001`
+- 最后核对：2026-08-21
+- 当前批次：批次 12B 进行中
+- 当前项：`CORE-AUDIO-001`
 
 ## 维护规则
 
@@ -201,28 +201,182 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 - 本批只修正文档和实施顺序，没有调用外部模型、修改 Runtime 或删除 VisionForge 能力；详细方案见 `Plan/Plan09.md`。
 - 无需用户手动检验；文档差异通过 `git diff --check` 校验。
 
-### 批次 10：通用多模态需求与验证协议
+### 批次 10A：Core 插件边界
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
-| CORE-INPUT-001 | P0 | 待开始 | 建立通用 `RequirementEvidence`，引用 text/image/audio/video Artifact | MIME、大小、来源和哈希受控；角色只读取获授权的证据引用；非法组合被拒绝 |
-| CORE-REQUIREMENT-001 | P0 | 待开始 | 建立与 UI 无关的 `CodingRequirement` | 目标、约束、验收、仓库范围和证据引用可版本化往返；模型不能扩大权限 |
-| CORE-VALIDATOR-001 | P0 | 待开始 | 建立任务级 Validator Profile | Runtime 根据清单选择 build/test/API/CLI/browser；模型不能添加或降低最终门禁 |
+| CORE-PLUGIN-001 | P0 | 已完成 | 建立不依赖具体业务场景的插件 SPI 和注册表 | Core 可在零插件下运行；插件按 Core API 版本显式注册；场景引用有命名空间；注册失败不污染 Registry；恢复时校验插件身份与版本 |
+
+批次 10A 验收记录：
+
+- 新增 `PluginManifest`、`ScenarioPlugin`、`PluginRegistrationContext`、`ScenarioRegistration` 和 `PluginRegistry`；Core 只提供接口与显式可信注册，不动态导入或安装第三方代码。
+- 场景使用 `plugin_id:scenario` 引用；Manifest 声明与实际注册必须完全一致，注册过程先 staging、校验成功后再原子提交。
+- Core API 版本不兼容、插件未启用、场景未注册、重复注册和错误工厂输出都有独立确定性错误语义。
+- Registry 创建的场景由 `RegisteredScenarioProfile` 包装；`ScenarioRunState` 和 SQLite 保存插件 ID/版本，恢复时版本不一致会被确定性拒绝，旧的非插件场景保持空身份兼容。
+- 注册上下文完成后关闭，插件不能在启动阶段之外继续修改 Registry；Core 模块禁止导入 `visionforge` 的架构测试已加入。
+- 通用 `OpenAICompatibleClient` 的 JSON Schema 名称由 `visionforge_response` 改为中性的 `structured_response`，避免 Core 模型层携带业务命名。
+- 本批没有迁移或修改 VisionForge、Web、模型路由行为和媒体协议；工作区中既有的 `visionforge-planned-architecture.html` 保持不动。
+- 完整默认回归 123 项通过（4 项真实浏览器类跳过）；Python 编译检查通过；无需用户手动检验、没有外部模型调用。
+- 详细决策见 `Plan/Plan11.md`。
+
+### 批次 10B：事实与验证权边界
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-TRUTH-001 | P0 | 已完成 | 建立 `Claim`，区分 observation、inference 和 proposal | 每个 Claim 的来源、证据引用和不确定性可追踪；模型推断不能伪装成 Runtime 事实 |
+| CORE-VERIFICATION-001 | P0 | 已完成 | 建立三态 `VerificationOutcome` 和不可变 `VerificationRecord` | 只允许 passed/failed/unknown；unknown 保持 Artifact 未验证；无有效执行证据不能标记 VERIFIED |
+| CORE-VERIFICATION-AUTH-001 | P0 | 已完成 | 收紧 Artifact 验证权并分离执行成功和验收通过 | Worker 正常返回只代表执行完成；输出默认 UNVERIFIED；模型/Worker 伪造验证字段会被拒绝；completed 仍由 Runtime 决定 |
+
+批次 10B 验收记录：
+
+- 新增 `ClaimKind`、`Claim`、`VerificationOutcome` 和不可变 `VerificationRecord`，支持严格字段校验和映射往返。
+- observation 必须引用证据，inference 必须写明不确定性；passed/failed 必须包含独立执行证据且不能用被验证 Artifact 自证，unknown 不会把 Artifact 标成通过。
+- `ArtifactStore.record_verification()` 原子检查 subject、Artifact 证据、superseded 状态和重复记录；验证记录随 ArtifactValidation 和 SQLite Runtime Snapshot 持久化恢复。
+- `ArtifactDraft` 拒绝 metadata 中伪造的验证状态与引用字段；正文中的 `passed`、`verified` 等只作为不可信业务数据保存，不会影响 Artifact 的 `UNVERIFIED` 状态，避免 Core 误伤业务 Schema。
+- `TaskRunResult.success` 和 `GraphExecutionResult.succeeded` 只表示执行成功；Executor 不再自动验证全部输出、晋升长期记忆或宣布 completed，新增默认 unknown 的 `acceptance_outcome` 和 `accepted`。
+- 回归发现 VisionForge 旧逻辑让 quality gate 同时充当验证对象和自身证据；现已改为 build/browser/review 验证 quality gate，再由 quality gate 验证其他周期产物，没有改变场景流程。
+- 新增 7 项事实边界测试；完整默认回归 130 项通过（4 项真实浏览器类跳过），Python 编译和差异检查通过；无真实模型、媒体或网络调用。
+- 详细决策见 `Plan/Plan12.md`。
+
+### 批次 10C：通用多模态需求与验收协议
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-INPUT-001 | P0 | 已完成 | 建立通用 `RequirementEvidence`，引用 text/image/audio/video Artifact | MIME、大小、来源、哈希、派生关系和访问分类受控；非法组合被拒绝 |
+| CORE-REQUIREMENT-001 | P0 | 已完成 | 建立与 UI 无关的 `CodingRequirement` | 目标、交付物、约束、验收、仓库范围、假设、开放问题、证据和扩展引用可版本化往返；模型不能扩大权限 |
+| CORE-ACCEPTANCE-001 | P0 | 已完成 | 建立 `AcceptanceCriterion` 和 `EvidenceGrant` | 验收项指向命名空间 Validator；Role 只能读取 Runtime 授权证据；插件扩展不污染 Core 字段 |
+| CORE-VALIDATOR-001 | P0 | 已完成 | 建立任务级 Validator Profile | Runtime 根据冻结清单选择 build/test/API/CLI/browser 或插件 Validator；模型不能增加、删除或降低最终门禁 |
+
+批次 10C 验收记录：
+
+- 新增 `RequirementEvidence`、`CodingRequirement`、`RepositoryScope`、`AcceptanceCriterion`、`EvidenceGrant`、`ValidatorSpec` 和 `ValidatorProfile` 1.0；严格校验类型、MIME、SHA-256、相对范围、命名空间和 JSON 可序列化值。
+- RequirementEvidence 会与真实 Artifact 的引用、MIME、大小和原始内容哈希核对；CodingRequirement 与所有协议支持稳定摘要和 JSON 往返。
+- Runtime 采用保守 RepositoryScope 子集判断，结构化需求不能扩大读写范围或删除 prohibited actions；插件扩展只通过 Artifact 引用进入 Core。
+- ValidatorProfile 同时冻结 Validator 配置和 AcceptanceCriterion 摘要；保留同 ID 但降低 expected_result、required 或描述同样会被拒绝。
+- TaskContext 可携带 CodingRequirement；启用后 Executor 强制要求独立注入匹配的 ValidatorProfile、RequirementEvidence 和 EvidenceGrant，授权与 Task、Role、引用、操作和到期时间绑定。
+- 新增 Runtime `ValidatorRegistry + ValidatorProfileRunner`：缺失能力和执行异常变成 unknown；每次生成可审计 report Artifact，只有组合 profile gate 能改变最终验证状态。
+- VerificationRecord 绑定 subject hash 和可选 Workspace hash；`ArtifactStore.is_verified()` 检查新鲜度，`TaskSpec.required_verified_inputs` 在 Worker 调用前拒绝过期或无效证明并支持 SQLite 往返。
+- 新增 11 项需求/验证测试并扩展 1 项事实测试；完整默认回归 142 项通过（4 项真实浏览器类跳过），Python 编译和差异检查通过；无真实模型、媒体、浏览器或网络调用。
+- 详细决策见 `Plan/Plan13.md`。
+
+### 批次 10D：Role 优先的多 Worker 路由
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-WORKER-DESCRIPTOR-001 | P0 | 已完成 | 为 Worker 声明 ID、支持 Role、能力、输入/输出协议、策略标签和可用性 | 同一 Role 可注册多个实现；描述与实例解耦并可生成不可变快照 |
+| CORE-WORKER-ROUTER-001 | P0 | 已完成 | Role 作为第一键，按能力、协议、策略和可用性确定性选择 Worker | 不满足硬条件的 Worker 不进入评分；稳定 tie-break；选择结果及理由可审计 |
+| CORE-WORKER-SAFETY-001 | P0 | 已完成 | 建立缺失能力和职责隔离语义 | 无合格 Worker 时结构化 blocked，不跨 Role 或降级要求；Reviewer/Validator 不能审批同一执行实例自己的产物 |
+
+批次 10D 验收记录：
+
+- 新增不可变 `WorkerDescriptor`、`WorkerSelectionRequest/Decision`、候选淘汰原因和 Registry Snapshot；描述与实例分离，同一 Role 可注册多个 Worker，旧 `register(role, worker)` 保持兼容。
+- Runtime 严格按 Role、能力、输入协议、输出协议、策略标签、职责隔离和可用性过滤；所有条件都是硬门槛，最后只按 priority 与 worker ID 稳定决胜，不跨 Role、不降低要求。
+- `TaskSpec` 可声明路由要求和 `independent_from_tasks`，字段随 SQLite TaskGraph Snapshot 恢复；选择结果和每个候选的淘汰阶段也随 Checkpoint 保存。
+- 无合格 Worker 时产生结构化 `WorkerSelectionError` 并将任务标为 blocked；Worker 不会被调用，依赖节点保持阻塞，不伪装成模型执行失败。
+- Executor 为接纳的 Artifact 写入不可伪造的 Runtime producer provenance；Reviewer/Tester 自动排除输入产物的生产 principal，ValidatorRegistry 也拒绝同 principal 自证，结果保持 unknown。
+- 新增 7 项路由与职责隔离测试；完整默认回归 149 项通过（4 项真实浏览器类跳过），Python 编译和差异检查通过；无真实模型、媒体、浏览器或网络调用。
+- 详细决策见 `Plan/Plan14.md`。
+
+### 批次 10E：VisionForge 插件适配
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| VF-PLUGIN-001 | P0 | 已完成 | 将现有 `WebVisualScenario` 包装为 `visionforge:web_visual` | Web 从 PluginRegistry 解析场景；未启用插件时 Core 与通用入口正常运行 |
+| VF-BOUNDARY-001 | P0 | 已完成 | 将 UI Spec、Visual Review 和视觉门禁固定在 VisionForge 插件边界 | 使用 `visionforge:*` Artifact/Validator 命名空间；Core 不 import、不解释且不内置视觉通过逻辑 |
+
+批次 10E 验收记录：
+
+- 新增 `VisionForgePlugin` 1.0.0，显式声明 `web_visual` 场景及所需 Runtime 能力；Core 仍为空注册表启动，不会自动 import 或启用 VisionForge。
+- Web Composition Root 显式创建 Registry、注册插件并解析 `visionforge:web_visual`；缺少 Registry 或场景时安全拒绝，不回退到直接装配。
+- `VisionForgeScenarioRunner` 通过 `ScenarioRegistration.create()` 获取包装后的 Profile，场景状态和 SQLite Snapshot 保存 `plugin_id=visionforge`、插件版本和场景身份，恢复时继续使用 Core 的漂移校验。
+- UI Spec、参考图、实际截图、Browser Run、Visual Review、Quality Gate 和最终 Run 的 Artifact kind 已迁移到 `visionforge:*`；视觉 Validator 原有 `visionforge:quality_gate` 保持命名空间化。
+- 新增插件清单、零插件、Web 装配、缺失插件、Artifact 命名空间和真实场景身份持久化测试；完整默认回归 152 项通过（4 项真实浏览器类跳过）。
+- 本批没有做目录大迁移、删除 Legacy Runner、调用真实模型/浏览器、上传媒体或改变视觉评分逻辑；详细决策见 `Plan/Plan15.md`。
 
 ### 批次 11：确定性 Coding 任务集与对照评测
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
-| CORE-EVAL-001 | P0 | 待开始 | 建立固定本地 Coding 任务和隐藏验收 | 每个任务可离线复位；失败原因可定位；最终结果不依赖模型评分 |
-| CORE-ABLATION-001 | P1 | 待开始 | 比较单 Agent、双角色和完整修复闭环 | 报告构建/测试/交付/首次通过/修复/回归/越权/Token/耗时/人工介入 |
+| CORE-VALIDATOR-IMPLEMENTATIONS-001 | P0 | 已完成 | 为 Core 注册受控 build/test/CLI Validator 并接入 Profile Runner | 白名单命令、超时、退出码、stdout/stderr 证据和 Workspace 绑定可审计；缺失工具保持 unknown |
+| CORE-EVAL-FIXTURE-001 | P0 | 已完成 | 建立第一个固定函数 Bug 任务和 Runtime 私有隐藏验收 | starter 稳定失败、参考修复稳定通过；隐藏源码不进入 Agent Workspace；任务文件哈希冻结 |
+| CORE-EVAL-001 | P0 | 已完成 | 建立固定本地 Coding 任务和隐藏验收 | 每个任务可离线复位；失败原因可定位；最终结果不依赖模型评分 |
+| CORE-EVAL-REPORT-001 | P0 | 已完成 | 建立 starter/参考修复自校准和版本化离线 JSON 报告 | 坏题不能通过校准；报告记录任务指纹、Validator、交付、耗时、越权和 Workspace 绑定且不泄漏隐藏源码 |
+| CORE-ABLATION-PROTOCOL-001 | P0 | 已完成 | 冻结单 Agent、双角色和完整修复闭环的 Artifact、预算与指标协议 | 三种方案共用任务/Validator/预算；反馈不串线；脚本化 dry-run 覆盖首次通过、修复、越权和预算分支 |
+| CORE-ABLATION-MODEL-ADAPTER-001 | P0 | 已完成 | 将供应商无关 ModelClient 适配为四种评测 Worker | Plan/Patch/Diagnosis 使用版本化结构化输出；Prompt、可见 Artifact、用量和源码外发预检可审计；Fake Model 回归通过 |
+| CORE-ABLATION-001 | P1 | 暂缓 | 使用冻结配置实际比较单 Agent、双角色和完整修复闭环 | 报告构建/测试/交付/首次通过/修复/回归/越权/Token/耗时/人工介入；脚本 dry-run 不计入效果结论 |
+
+批次 11A 验收记录：
+
+- 新增 `ControlledCommandRunner` 和 `CommandValidator`，Core Composition Root 只能按完整 argv 白名单注册 `core:build`、`core:test` 和 `core:cli`；命令不通过 shell，并使用固定 Workspace、清理后的环境、关闭 stdin 和独立进程组。
+- 超时、缺失工具、策略拒绝和执行异常保持 `unknown`；非预期退出码、缺少固定输出或零测试为 `failed`；全部命令满足冻结断言才为 `passed`。
+- 命令证据 Artifact 保存退出码、耗时、脱敏头尾日志、原长度和 SHA-256；断言使用未裁剪的进程输出，避免日志裁剪导致误判。
+- 新增版本化 `python-tax-rounding` 固定任务。starter 和公开测试进入 Agent Workspace；隐藏检查只注入独立验证副本；参考答案只用于证明任务夹具可解。
+- `suite.json` 固定任务文件 SHA-256、允许写入路径和 Validator 命令。清单哈希漂移、保留隐藏目录和符号链接会被拒绝。
+- 离线证据确认 starter 的 build/公开测试通过但隐藏门禁失败；应用参考修复后 build、公开测试和隐藏检查全部通过，最终结论由绑定 Workspace 的 Profile gate 给出。
+- 新增 8 项命令、三态、安全边界和固定任务纵向测试；完整默认回归 160 项通过（4 项真实浏览器类跳过）。
+- 本批没有调用真实模型、网络、浏览器或上传媒体；详细设计见 `Plan/Plan16.md`。
+
+批次 11B 验收记录：
+
+- 固定任务集从一个函数 Bug 扩展为三类：十进制舍入、API payload 输入契约、跨文件库存 CLI；仍不使用网页或视觉评分。
+- `python-user-payload` 由 build、公开测试和 Runtime 私有检查验证对象类型、允许字段、email、age/bool 与数值边界。
+- `python-inventory-cli` 同时验证 `pricing.py` 和 `cli.py`，由 build/test/CLI Profile 检查折扣结果、stdout、非法输入退出码和 stderr。
+- 新增 `FixedCodingEvaluationRunner`，每次从冻结 starter 创建新 Workspace，并分别运行 starter 与参考修复；只有 starter=failed 且 solution=passed 才通过逐题校准。
+- 版本化 1.0 JSON 报告记录 suite manifest SHA-256、每个 Validator 三态、交付、失败摘要、耗时、越权次数和验证 Workspace 哈希；不保存隐藏源码、具体隐藏输入、临时路径或失效 Artifact 引用。
+- 实际离线运行得到 3 个 starter 全部失败、3 个参考修复全部通过，`calibration_passed=true`；构造“starter 已能通过”的坏题时校准会失败。
+- 新增 4 项多任务、复位、报告和坏题测试；完整默认回归 164 项通过（4 项真实浏览器类跳过），Python 编译和差异检查通过。
+- 本批没有调用真实模型、网络、浏览器或上传媒体；详细设计见 `Plan/Plan17.md`。
+
+批次 11C 验收记录：
+
+- 新增 `AblationStrategyProfile`，冻结 `single_agent`、`planner_developer` 和 `planner_developer_tester_fixer` 的 Role、阶段、输入/输出 Artifact 和同一 `AblationBudget`。
+- Worker 继续由 Role-first `WorkerRegistry` 按能力、协议、`offline-eval` 策略和 principal 隔离选择；Tester principal 与 Implementer 分离。
+- 单 Agent/普通 Developer 看不到 Validator Feedback；Tester 只看到 Runtime 生成的结构化失败摘要；Fixer 额外看到 Test Diagnosis。隐藏测试、具体隐藏输入和参考答案不会进入 Worker 请求或 JSON 报告。
+- Patch 仍由 `PatchIntegrator` 应用，修改公开测试或越过任务允许路径会明确失败并增加越权计数；每轮修复后重新运行原冻结 build/test/CLI Profile。
+- 调用前按最大 Token 预留检查预算，返回后登记脚本或模型用量；预算耗尽保持 unknown。离线 Runner 默认禁止登记模型用量，真实模式必须显式开启。
+- 脚本化 dry-run 完成 3 任务 × 3 方案共 9 个 trial：单 Agent 0/3、Planner + Developer 首次通过 3/3、完整方案经一轮修复通过 3/3；这些是刻意编排的控制流测试，不是多 Agent 效果结论。
+- 报告记录首次通过、修复成功、轮数、Worker 调用、脚本/模型 Token、耗时、越权、人工介入、Validator 结果、budget/profile 指纹和阶段可见性审计。
+- 新增 7 项策略、隔离、预算、越权、模型误接入和报告测试；完整默认回归 171 项通过（4 项真实浏览器类跳过）。
+- 本批没有调用真实模型、网络、浏览器或上传媒体；详细设计见 `Plan/Plan18.md`。
+
+批次 11D 验收记录：
+
+- 新增供应商无关 `ModelAblationWorker`，将 Planner、Implementer、Tester 和 Fixer 注册为 `model-eval` Worker；Role 仍是第一路由键，四个 principal 相互独立。
+- 新增 Plan/Patch/Diagnosis 1.0 JSON Schema 和本地严格解析。未知字段、非法版本、未授权/受保护路径会被拒绝；Diagnosis 没有模型可写的通过字段。
+- `prepare()` 在零网络状态生成确定性请求：只投影 Stage 可见 Artifact，按文件裁剪源码，拒绝 `.env`、隐藏测试、参考答案和 Runtime 私有路径，并记录无正文的 SHA-256/字符数/截断披露清单与请求哈希。
+- 真正调用客户端前检查 text/structured_output/tool_calling 能力；响应 Artifact 记录协议/Prompt 版本、provider/model、Token、延迟和披露审计。Runner 原有调用前预算与真实模型显式开关保持有效。
+- Fake Model 完整链路先产生失败候选，再经独立 Tester/Fixer 修复，最终由真实本地隐藏测试裁决通过；另覆盖能力缺失、Patch 越权、秘密路径披露和伪造 `passed=true`。
+- 新增 7 项 Model Worker 测试；完整默认回归 178 项通过（4 项真实浏览器类跳过），差异检查与 Python 编译通过。
+- 本批没有读取 `.env`、调用真实模型、访问网络、上传源码/图片或运行浏览器；详细设计见 `Plan/Plan19.md`。
+
+批次 11E 预检记录（真实运行前）：
+
+- 新增 Core `ModelCallBudget` 与 `BudgetedModelClient`。四个 Role 共享调用/Token 预算，HTTP/解析失败和缺少 usage 都按整笔预留计费，下一次调用必须先有足够 Token 余额。
+- 新增零环境变量 `ModelClientFactory.config_for_provider()`，固定 provider/model/base URL、temperature、结构化输出、输出上限和重试；真实消融强制 `max_retries=0` 和供应商 `max_tokens`。
+- 新增版本化实验配置、调用估算和源码披露 preflight。3 个任务的三方案最少 15 次、最坏 21 次请求；披露 starter/公开测试，不披露 `.env`、隐藏验收或参考答案。
+- 新增真实 CLI，默认不读取 `.env`；只有 `--confirm-real-calls` 与匹配的 preflight SHA-256 同时存在才加载凭据并执行。
+- 当前冻结 DashScope `qwen3.7-plus`、temperature 0、最多 21 次请求、300,000 accounted Token、单次输出 4,000 Token；preflight SHA-256 为 `a645b66f56a000f642b9447372d2fb4248792260f19f53675a97c0079cc87524`。
+- 新增 7 项测试；完整默认回归 185 项通过（4 项真实浏览器类跳过），编译和差异检查通过。
+- 本阶段没有读取 `.env`、访问网络或调用真实模型；用户随后要求进入下一批，`CORE-ABLATION-001` 已暂缓。详细设计见 `Plan/Plan20.md`。
 
 ### 批次 12：逐步接通多模态输入
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
-| CORE-IMAGE-001 | P1 | 待开始 | 图片中的规格、架构图或错误证据进入 Coding Requirement | 与对应文本任务共用同一隐藏测试；记录需求提取准确性 |
-| CORE-AUDIO-001 | P1 | 待开始 | 音频需求转成受控文本和 Requirement Artifact | 原音频、转录、结构化需求和代码结果可追踪；最终仍由代码测试判定 |
+| CORE-IMAGE-001 | P1 | 已完成 | 图片中的规格、架构图或错误证据进入 Coding Requirement | 与对应文本任务共用同一隐藏测试；记录需求提取准确性 |
+| CORE-AUDIO-001 | P1 | 进行中 | 音频需求转成受控文本和 Requirement Artifact | 原音频、转录、结构化需求和代码结果可追踪；最终仍由代码测试判定 |
 | CORE-VIDEO-001 | P1 | 待开始 | 录屏提取操作步骤和 Bug 证据 | 时间点、操作、预期/实际结果可追踪；回归测试复现并验证修复 |
+
+批次 12A 验收记录：
+
+- 新增 Core `ImagePerceptionWorker`，图片只在受控感知节点进入 ModelClient；下游普通 Planner 只读取 `core:image_observation`，不重复传图。
+- 视觉感知和文本规划继续共用 `planner` Role，但分别通过 `vision_understanding`/`task_planning`、输入输出协议和 `multimodal`/`text` 策略选择不同 Worker。
+- 图片必须同时满足 RequirementEvidence、Task/Role/Artifact 绑定的 `read + vision:inspect` EvidenceGrant、字节数、SHA-256 和 PNG/JPEG 签名，任何错误都在模型调用前拒绝。
+- 感知协议只允许 observations、带 uncertainty 的 inferences 和 unreadable regions；Runtime 转为已有 Claim，拒绝模型添加 `passed`、验收标准、命令或权限字段，输出 Artifact 保持 unverified。
+- 新增确定性感知 precision/recall/F1，固定事实漏报降低 recall，额外幻觉降低 precision，不使用抽象视觉审美评分。
+- text/image 两条路径复用同一个 `python-tax-rounding` 隐藏 Validator，应用相同候选后 Validator 集合和结果完全一致。
+- 新增 7 项图片证据、Role-first 路由、授权、能力、完整性、幻觉和同验收测试；完整默认回归 192 项通过（4 项真实浏览器类跳过）。
+- 本批没有读取 `.env`、访问网络、调用真实模型或上传媒体；详细设计见 `Plan/Plan21.md`。
 
 ## 暂缓的通用优化
 
@@ -247,8 +401,8 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 
 ## 当前基线
 
-- 基线提交：`7c7c525 chore: archive daily progress 2026-08-15`
-- 当前测试：`python3 -m unittest discover -s tests -q`，115 个测试通过（4 个真实浏览器类默认跳过）。
+- 基线提交：`4a357ef chore: archive daily progress 2026-08-19`
+- 当前测试：`python3 -m unittest discover -s tests -q`，192 个测试通过（4 个真实浏览器类默认跳过）。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。
 - 当前环境 PATH 未提供 Node/npm；已使用 Codex 工作区 Node 24.19.0 与 pnpm 11.19.0 完成锁文件和构建验证。

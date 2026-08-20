@@ -14,6 +14,8 @@ from coding_workflow.artifacts import ArtifactStore
 from coding_workflow.harness import LifecycleController
 from coding_workflow.harness.lifecycle import TaskCancelledError
 from coding_workflow.visionforge import (
+    ACTUAL_SCREENSHOT,
+    BROWSER_RUN,
     BrowserProcessRunner,
     BrowserProjectConfig,
     BrowserRunResult,
@@ -189,8 +191,8 @@ class BrowserRuntimeIntegrationTests(unittest.TestCase):
             screenshot = artifacts.get(result.screenshot_artifact_ref)
             browser_run = artifacts.get(result.browser_run_artifact_ref)
             build = artifacts.get(result.build_artifact_ref)
-            self.assertEqual(screenshot.kind, "actual_screenshot")
-            self.assertEqual(browser_run.kind, "browser_run")
+            self.assertEqual(screenshot.kind, ACTUAL_SCREENSHOT)
+            self.assertEqual(browser_run.kind, BROWSER_RUN)
             self.assertEqual(build.kind, "build_result")
             self.assertEqual(
                 browser_run.content["screenshot_artifact_ref"],

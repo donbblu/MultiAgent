@@ -1,0 +1,209 @@
+{
+  "schema_version": "1.0",
+  "suite_id": "core-coding-eval-v1",
+  "tasks": [
+    {
+      "task_id": "python-tax-rounding",
+      "objective": "修复税额计算，使所有金额按十进制 ROUND_HALF_UP 保留两位小数。",
+      "path": "tasks/python-tax-rounding",
+      "starter_files": [
+        {
+          "path": "tax.py",
+          "sha256": "047b7d03ac847c111f7a05a8416af4c646b0e5759c189610c3f26c9df6fc65b7"
+        },
+        {
+          "path": "tests/test_tax_public.py",
+          "sha256": "33cb9fef576bbabe4ba5ae3206e1358c9cf03d44e03f03b6fb4f4fbf88fa274f"
+        }
+      ],
+      "hidden_files": [
+        {
+          "path": "validate.py",
+          "sha256": "8c00777237202d7c904c1ebee04498c0b4d33040e3e8a7bd4dad69601ded5112"
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "tax.py",
+          "sha256": "b8eef7d0273f8c7f4356f8fd7f1367569f5b246667db1f9dd35fe45330de537e"
+        }
+      ],
+      "allowed_write_paths": [
+        "tax.py"
+      ],
+      "validators": [
+        {
+          "kind": "core:build",
+          "timeout_seconds": 5,
+          "commands": [
+            {
+              "argv": ["python3", "-m", "py_compile", "tax.py"],
+              "expected_exit_code": 0
+            }
+          ]
+        },
+        {
+          "kind": "core:test",
+          "timeout_seconds": 5,
+          "commands": [
+            {
+              "argv": ["python3", "-m", "unittest", "discover", "-s", "tests", "-q"],
+              "expected_exit_code": 0,
+              "reject_zero_tests": true
+            },
+            {
+              "argv": ["python3", ".harness-hidden-tests/validate.py"],
+              "expected_exit_code": 0,
+              "stdout_contains": ["hidden checks passed"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "python-user-payload",
+      "objective": "完善 create-user 输入校验：payload 必须是对象；email 必须是非空字符串；age 可选但必须是 0 到 120 的整数且 bool 无效；只允许 email 和 age 字段。",
+      "path": "tasks/python-user-payload",
+      "starter_files": [
+        {
+          "path": "user_api.py",
+          "sha256": "f8ec10eedeb38fff74ca44d594a087b9b55ca22850c0008c5b49a9588827f9e5"
+        },
+        {
+          "path": "tests/test_user_api_public.py",
+          "sha256": "dd0d033382f23f0ffe0eb5c589c5daf80490450fc2d8e66fc69f4b08170d8499"
+        }
+      ],
+      "hidden_files": [
+        {
+          "path": "validate.py",
+          "sha256": "091cfcab8a2134784f2a1b21ceedd65403620dc537d447b73a9891f14913aab6"
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "user_api.py",
+          "sha256": "fa8ffb8590f08102afbde2a891d052f3d88c749e1ad47386d8bb75091ae3971e"
+        }
+      ],
+      "allowed_write_paths": [
+        "user_api.py"
+      ],
+      "validators": [
+        {
+          "kind": "core:build",
+          "timeout_seconds": 5,
+          "commands": [
+            {
+              "argv": ["python3", "-m", "py_compile", "user_api.py"],
+              "expected_exit_code": 0
+            }
+          ]
+        },
+        {
+          "kind": "core:test",
+          "timeout_seconds": 5,
+          "commands": [
+            {
+              "argv": ["python3", "-m", "unittest", "discover", "-s", "tests", "-q"],
+              "expected_exit_code": 0,
+              "reject_zero_tests": true
+            },
+            {
+              "argv": ["python3", ".harness-hidden-tests/validate.py"],
+              "expected_exit_code": 0,
+              "stdout_contains": ["hidden checks passed"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "task_id": "python-inventory-cli",
+      "objective": "修复跨文件库存 CLI：total 应应用 0 到 1 的 discount 并按 ROUND_HALF_UP 保留两位；price 不得为负、quantity 必须为正整数，非法输入退出码为 2 并输出 invalid input。",
+      "path": "tasks/python-inventory-cli",
+      "starter_files": [
+        {
+          "path": "inventory/__init__.py",
+          "sha256": "466b53a40860ec9e7da5e88cd07f156649e5769c12fc597781abd0c8d7a29297"
+        },
+        {
+          "path": "inventory/pricing.py",
+          "sha256": "52a4c872272b6c74a4588ef1d23c2513bb753526aeafd6c18f879a2edded60d3"
+        },
+        {
+          "path": "inventory/cli.py",
+          "sha256": "a9c3618e1b2ffa27414da2cffc85d27e1e9ab498a19d564098038e5be6c5440b"
+        },
+        {
+          "path": "tests/test_pricing_public.py",
+          "sha256": "a9206a016ea67484fa6e6e76e49b0efda730b9d899587200e00f69695408f91e"
+        }
+      ],
+      "hidden_files": [
+        {
+          "path": "validate.py",
+          "sha256": "29dc3b9d32219f4c19974c661128d424de57dffe036478fef8ae1cb58cb8961e"
+        }
+      ],
+      "solution_files": [
+        {
+          "path": "inventory/pricing.py",
+          "sha256": "e76f4d4a0c6c9bddc1c639c95a0a2db1deabff4346c990f33f2202cec45197ca"
+        },
+        {
+          "path": "inventory/cli.py",
+          "sha256": "23e7df7d6c13984ad5f7cc14284faa298f8452fceed6517ab00efd94a922afeb"
+        }
+      ],
+      "allowed_write_paths": [
+        "inventory/pricing.py",
+        "inventory/cli.py"
+      ],
+      "validators": [
+        {
+          "kind": "core:build",
+          "timeout_seconds": 5,
+          "commands": [
+            {
+              "argv": ["python3", "-m", "py_compile", "inventory/pricing.py", "inventory/cli.py"],
+              "expected_exit_code": 0
+            }
+          ]
+        },
+        {
+          "kind": "core:test",
+          "timeout_seconds": 5,
+          "commands": [
+            {
+              "argv": ["python3", "-m", "unittest", "discover", "-s", "tests", "-q"],
+              "expected_exit_code": 0,
+              "reject_zero_tests": true
+            },
+            {
+              "argv": ["python3", ".harness-hidden-tests/validate.py"],
+              "expected_exit_code": 0,
+              "stdout_contains": ["hidden checks passed"]
+            }
+          ]
+        },
+        {
+          "kind": "core:cli",
+          "timeout_seconds": 5,
+          "commands": [
+            {
+              "argv": ["python3", "-m", "inventory.cli", "--price", "19.99", "--quantity", "3", "--discount", "0.10"],
+              "expected_exit_code": 0,
+              "stdout_contains": ["total=53.97"]
+            },
+            {
+              "argv": ["python3", "-m", "inventory.cli", "--price", "-1", "--quantity", "2"],
+              "expected_exit_code": 2,
+              "stderr_contains": ["invalid input"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
