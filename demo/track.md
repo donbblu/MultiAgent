@@ -233,6 +233,24 @@
 
 - 无新增。
 
+## 2026-08-19
+
+### 已优化
+
+- 统一使用 ScenarioRuntime、ScenarioProfile 和 ConvergenceDecision 控制多轮 DAG、收敛与终态。
+- WebVisualScenario 接入通用 TaskGraphExecutor，并使用 SQLiteScenarioRunStore 持久化轮次、Artifact 和恢复状态。
+- Web 与评测入口切换至统一场景 Runner，移除旧 Coordinator、WorkflowSpec 及重复通信、录制和审查路径。
+
+### 已解决
+
+- 解决通用 Coding 流程与 VisionForge 各自维护 Runner、恢复和 Artifact 接纳逻辑造成的重复与状态分叉。
+- 解决 Worker 可直接接纳共享 Artifact 的边界问题，改由 Runtime 统一接纳 ArtifactDraft。
+
+### 待优化
+
+- 实现 RequirementEvidence、通用 CodingRequirement 和 Runtime 拥有的 Validator Profile。
+- 建立固定本地 Coding 任务、隐藏验收和单 Agent/多 Agent 对照评测。
+
 ### 已解决
 
 - 无新增。
