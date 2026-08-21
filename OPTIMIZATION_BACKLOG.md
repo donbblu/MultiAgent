@@ -3,8 +3,8 @@
 本文是项目方向和优化工作的单一待办清单。`HANDOFF.md` 负责恢复上下文；具体批次、状态和验收条件以本文为准。
 
 - 最后核对：2026-08-21
-- 当前批次：批次 12B 进行中
-- 当前项：`CORE-AUDIO-001`
+- 当前批次：批次 13A 已完成；当前规划的 Core 多模态 MVP 批次全部完成
+- 下一步：里程碑验收，等待用户决定提交/推送或另行规划后续方向
 
 ## 维护规则
 
@@ -364,8 +364,8 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
 | CORE-IMAGE-001 | P1 | 已完成 | 图片中的规格、架构图或错误证据进入 Coding Requirement | 与对应文本任务共用同一隐藏测试；记录需求提取准确性 |
-| CORE-AUDIO-001 | P1 | 进行中 | 音频需求转成受控文本和 Requirement Artifact | 原音频、转录、结构化需求和代码结果可追踪；最终仍由代码测试判定 |
-| CORE-VIDEO-001 | P1 | 待开始 | 录屏提取操作步骤和 Bug 证据 | 时间点、操作、预期/实际结果可追踪；回归测试复现并验证修复 |
+| CORE-AUDIO-001 | P1 | 已完成 | 音频需求转成受控文本和 Requirement Artifact | 原音频、转录、结构化需求和代码结果可追踪；最终仍由代码测试判定 |
+| CORE-VIDEO-001 | P1 | 已完成 | 录屏提取操作步骤和 Bug 证据 | 时间点、操作、预期/实际结果可追踪；回归测试复现并验证修复 |
 
 批次 12A 验收记录：
 
@@ -377,6 +377,46 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 - text/image 两条路径复用同一个 `python-tax-rounding` 隐藏 Validator，应用相同候选后 Validator 集合和结果完全一致。
 - 新增 7 项图片证据、Role-first 路由、授权、能力、完整性、幻觉和同验收测试；完整默认回归 192 项通过（4 项真实浏览器类跳过）。
 - 本批没有读取 `.env`、访问网络、调用真实模型或上传媒体；详细设计见 `Plan/Plan21.md`。
+
+批次 12B 验收记录：
+
+- 新增供应商无关 `TranscriptionClient`，与 LLM/VLM 的 ModelClient 解耦；客户端明确声明 transcription、timestamps 和可选 language detection 能力。
+- 音频通过 RequirementEvidence、Task/Role/Artifact 绑定的 `read + audio:transcribe` EvidenceGrant、字节数、SHA-256 和 WAV/MP3 签名检查后才允许转录。
+- `core:audio_transcript` 保留原音频引用、语言、总时长、按毫秒排序的片段、无法转录区间和不确定项；每个片段一一转换为引用原音频的 observation Claim。
+- 重叠/越界时间线、重复片段、无原因的不确定片段、额外 `passed` 字段或错误响应类型都会被拒绝；输出 Artifact 保持 unverified。
+- 转录和文本规划继续共用 `planner` Role，但分别通过 `audio_transcription`/`task_planning`、输入输出协议和 `multimodal`/`text` 策略选择不同 Worker；下游只接收 Transcript。
+- 新增确定性转录 precision/recall/F1；text/audio 两条路径复用同一个 `python-tax-rounding` 隐藏 Validator。
+- 新增 7 项音频证据、Role-first 路由、授权、能力、完整性、时间线、防伪字段和同验收测试；完整默认回归 199 项通过（4 项真实浏览器类跳过）。
+- 本批没有读取 `.env`、访问网络、调用真实转录服务、上传音频或请求录屏权限；详细设计见 `Plan/Plan22.md`。
+
+批次 12C 验收记录：
+
+- 新增供应商无关 `VideoPerceptionClient`，声明 video understanding、timestamps 和可选 audio track 能力；Core 不绑定具体视频模型、解码器或供应商 SDK。
+- 视频通过 RequirementEvidence、Task/Role/Artifact 绑定的 `read + video:inspect` EvidenceGrant、字节数、SHA-256 和 MP4/WebM 签名检查后才允许进入客户端。
+- `core:video_bug_evidence` 保存原视频引用、总时长、带时间点的用户操作/系统响应/可见状态/错误/旁白事件、未审查区间、候选复现步骤和预期/实际差异。
+- 可见/可听事件转换为 observation，差异转换为 inference，候选复现步骤转换为 proposal；推测预期不能伪造视频事件来源且必须说明 uncertainty。
+- 视频感知和文本规划继续共用 `planner` Role，但通过 `video_temporal_understanding`/`task_planning`、输入输出协议和 `multimodal`/`text` 策略选择不同 Worker；下游只接收结构化视频证据。
+- 新增确定性事件 precision/recall/F1；text/video 两条路径复用同一个 `python-tax-rounding` 隐藏 Validator。
+- 新增 7 项视频证据、Role-first 路由、授权、能力、完整性、时间线/引用、防伪字段和同验收测试；完整默认回归 206 项通过（4 项真实浏览器类跳过）。
+- 本批没有读取 `.env`、访问网络、调用真实视频服务、上传视频或请求 macOS 录屏权限；详细设计见 `Plan/Plan23.md`。
+
+### 批次 13：统一多模态接入
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| CORE-MULTIMODAL-INTAKE-001 | P1 | 已完成 | 将同一需求中的 text/image/audio/video Evidence 路由、并行转换并汇总为通用 Evidence Bundle | 每个原始媒体最多处理一次；Bundle 保留来源、协议、Claim 和缺失/失败状态；普通 Planner 不直接读取原始媒体；最终 Validator 不随模态改变 |
+
+批次 13A 验收记录：
+
+- 新增 `MultimodalIntakePlan`，同一个 CodingRequirement 可以绑定 text/image/audio/video Evidence；Plan 必须完整覆盖需求引用，拒绝遗漏、额外或重复处理同一原始 Artifact。
+- Runtime 先逐条检查 Task 归属、Artifact kind、RequirementEvidence、Payload 哈希和对应操作授权；文本直接转换为引用原证据的用户陈述 Claim，媒体进入各自受控 Worker。
+- 图片、音频和视频感知任务无相互依赖，由 TaskGraphExecutor 并行执行；线程屏障测试证明三个客户端同时进入调用，每个客户端恰好调用一次。
+- 新增 `core:evidence_bundle` 1.0，逐条保存 source、modality、ready/blocked/failed、派生协议、Artifact 引用、Claim 和失败摘要；整体 ready 只能由条目状态确定。
+- 某个媒体 Worker 缺失、能力不足、授权/完整性错误或执行失败时，其他独立媒体仍可完成并进入 Bundle，但普通 Planner 保持零调用，不能丢弃失败输入后继续。
+- 全部条目 ready 后，Runtime 只授权文本 Planner 读取 Bundle；Planner 的 request.inputs 不包含原始图片、音频或视频。Bundle 和 Planner 输出继续保持 unverified。
+- text/multimodal 两条路径复用同一个 `python-tax-rounding` 隐藏 Validator，输入模态没有改变代码完成标准。
+- 新增 7 项混合输入、并行/单次处理、失败关闭、状态防伪、纯文本、覆盖约束和同验收测试；完整默认回归 213 项通过（4 项真实浏览器类跳过）。
+- 本批没有读取 `.env`、访问网络、调用真实媒体服务、上传媒体或请求系统录屏权限；详细设计见 `Plan/Plan24.md`。
 
 ## 暂缓的通用优化
 
@@ -401,8 +441,8 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 
 ## 当前基线
 
-- 基线提交：`4a357ef chore: archive daily progress 2026-08-19`
-- 当前测试：`python3 -m unittest discover -s tests -q`，192 个测试通过（4 个真实浏览器类默认跳过）。
+- 基线提交：`a7c465d chore: archive daily progress 2026-08-20`
+- 当前测试：`PYTHONPATH=demo python3 -m unittest discover -s demo/tests -q`，213 个测试通过（4 个真实浏览器类默认跳过）。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。
 - 当前环境 PATH 未提供 Node/npm；已使用 Codex 工作区 Node 24.19.0 与 pnpm 11.19.0 完成锁文件和构建验证。

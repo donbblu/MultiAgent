@@ -350,7 +350,12 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.send_json(200, snapshot)
             return
-        assets = {"/": "index.html", "/app.js": "app.js", "/styles.css": "styles.css"}
+        assets = {
+            "/": "index.html",
+            "/app.js": "app.js",
+            "/styles.css": "styles.css",
+            "/favicon.svg": "favicon.svg",
+        }
         filename = assets.get(path)
         if not filename:
             self.send_error(404)
@@ -479,7 +484,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     host, port = "127.0.0.1", 8765
-    print(f"VisionForge UI: http://{host}:{port}")
+    print(f"Coding Multi-Agent UI: http://{host}:{port}")
     ThreadingHTTPServer((host, port), Handler).serve_forever()
 
 

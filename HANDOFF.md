@@ -78,7 +78,7 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - 建立三方案统一评测协议与 JSON 报告，记录构建、功能、视觉、首次通过、自动修复、轮数、Token、耗时和人工介入。
 - 建立 DeepSeek 文本模型与 DashScope Qwen 视觉模型的独立配置和按角色路由；客户端适配供应商级结构化输出模式与请求选项。
 - 已用 `deepseek-v4-pro` 和 `qwen3.7-plus` 各完成一次经授权的最小真实能力烟测，图片输入、JSON 解析及 Token/耗时元数据均验证通过。
-- 当前共有 192 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
+- 当前共有 213 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
 - 建立 Core `Claim`、三态 `VerificationOutcome` 和不可变 `VerificationRecord`；模型观察、推断和建议不会自动成为已验证事实，验证记录随 SQLite Runtime Snapshot 恢复。
 - Worker Artifact metadata 会拒绝伪造的验证字段，正文中的同名业务数据不会改变外层状态；TaskGraph 节点全部成功不再自动验证产物、晋升长期记忆或宣布 completed，`GraphExecutionResult.acceptance_outcome` 默认是 unknown。
 - VisionForge 质量门禁不再循环自证：build/browser/review 验证 quality gate，quality gate 再验证其他周期产物；场景流程和视觉规则未改变。
@@ -131,9 +131,11 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - 第一版固定任务集只有 3 个页面，适合 MVP 烟测，不足以产生统计上稳定的普遍结论。
 - Core 已有 build/test/CLI Validator 实现，但通用 CLI/Web 产品入口尚未装配固定任务 Profile；API/browser Validator 仍由后续 Core 实现或场景插件提供，VisionForge 继续使用已有场景门禁。
 - EvidenceGrant 当前由 Composition Root 注入且不作为可跨进程复用的授权凭据持久化；恢复时必须重新提供，否则结构化需求会安全拒绝。
-- text/image/audio/video 已有统一 Evidence 描述协议，但音频、视频的存储、转录和内容提取尚未接入。
+- text/image/audio/video 已有统一 Evidence 描述协议；图片感知、音频转录和视频 Bug 时间线的 Core 协议与 Fake Client 链路已接入。真实媒体持久化及真实图片、语音和视频供应商适配尚未接入。
 - 确定性 Coding 评测已有 3 个小型任务，能够覆盖函数、API 输入和跨文件 CLI，但样本仍不足以代表普遍 Coding 能力；三方案已接入通用 ModelClient Worker 并用 Fake Model 验证，尚未形成真实模型效果对照。
 - VisionForge 仍位于 `coding_workflow/visionforge`，但已作为显式插件装配；本批未做包目录大迁移或删除 Legacy Runner。
+- Core 图片、音频和视频输入已分别通过受控 Worker 转成 `core:image_observation`、`core:audio_transcript` 和 `core:video_bug_evidence`。三条链路都保留原 Evidence 引用，下游文本 Agent 不重复读取原媒体，最终仍使用原固定 Validator。
+- Core 已建立统一 `MultimodalIntakeRunner + core:evidence_bundle`：同一需求的媒体感知可并行执行，每个原始 Artifact 最多处理一次；Bundle 保存每条来源和 ready/blocked/failed，任一必需证据未就绪时普通 Planner 不会被调用。
 
 ## 下一步
 
@@ -149,7 +151,13 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 
 批次 12A 已完成 Core 图片需求证据链，见 `Plan/Plan21.md`。图片通过 RequirementEvidence 和 `vision:inspect` 授权进入 `planner` Role 下的视觉感知 Worker，输出通用 Claim Artifact；UI Spec 继续只属于 VisionForge，代码最终仍由同一固定 Validator 验收。
 
-下一批是 12B：实现音频 Evidence → 受控 Transcript/Claim Artifact。保留原音频引用、片段时间范围、说话内容和不确定项；下游 Coding DAG 不重复读取音频，最终继续使用文本任务相同的确定性代码验收。默认只使用 Fake 转录客户端和本地字节测试，不读取 `.env` 或访问网络。
+批次 12B 已完成 Core 音频需求证据链，见 `Plan/Plan22.md`。音频通过 RequirementEvidence 和 `audio:transcribe` 授权进入同一 `planner` Role 下的专用转录 Worker，输出带时间戳、不确定项和原音频引用的 Transcript/Claim Artifact；下游普通 Planner 只读取结构化转录。专项 7 项和完整 199 项测试通过，全程只使用 Fake Client 与本地字节。
+
+批次 12C 已完成 Core 视频 Bug 证据链，见 `Plan/Plan23.md`。视频通过 RequirementEvidence 和 `video:inspect` 授权进入同一 `planner` Role 下的视频感知 Worker，输出事件时间线、候选复现步骤、预期/实际差异及 observation/inference/proposal Claim；下游普通 Planner 只读取结构化 Artifact。专项 7 项和完整 206 项测试通过，全程只使用 Fake Client 与本地 MP4 字节。
+
+批次 13A 已完成统一多模态 Intake，见 `Plan/Plan24.md`。同一个 CodingRequirement 可以同时引用 text/image/audio/video Evidence；Runtime 先做授权和完整性预检，再并行执行媒体 Worker，生成带逐条状态和 Claim 来源的 `core:evidence_bundle`。只有 Bundle 全部 ready 时普通文本 Planner 才会被调用。专项 7 项和完整 213 项测试通过，全程只使用 Fake Client 与本地字节。
+
+当前已规划的 Core 多模态 MVP 批次全部完成。下一步先做里程碑验收，不自动扩展功能；由用户决定是否提交/推送当前 12B、12C、13A 修改，或另行规划真实供应商适配、产品入口和固定多模态评测。`CORE-ABLATION-001` 仍暂缓，任何真实调用都需要新的明确授权。
 
 ## 关键文件
 
@@ -170,6 +178,9 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - `demo/coding_workflow/coding_model_workers.py`：四类 ModelClient Worker、Plan/Patch/Diagnosis Schema、严格解析、源码披露审计与请求哈希。
 - `demo/coding_workflow/coding_ablation_execution.py`：真实实验配置、21 次调用估算、源码 preflight、真实 Runner 装配与报告 Bundle。
 - `demo/coding_workflow/image_perception.py`：通用图片 Evidence、视觉 Claim 协议、感知 Worker、Role-first 注册与客观准确率。
+- `demo/coding_workflow/audio_transcription.py`：供应商无关转录协议、时间戳 Transcript/Claim、音频授权与完整性检查、Role-first 注册和客观准确率。
+- `demo/coding_workflow/video_perception.py`：供应商无关视频时间理解、事件/差异/候选复现协议、视频授权与完整性检查和 Role-first 注册。
+- `demo/coding_workflow/multimodal_intake.py`：统一 Intake Plan、逐模态预检、并行媒体 DAG、状态化 Evidence Bundle、失败关闭和文本 Planner 交接。
 - `demo/coding_workflow/model/budget.py`：Core 共享模型调用/Token 预留预算和受控客户端包装。
 - `demo/coding_eval/v1/`：版本化 Core Coding starter、隐藏验收、参考答案和哈希清单。
 - `demo/core_coding_eval_run.py`：默认零外部调用的离线题目校准 CLI。
@@ -242,6 +253,9 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - `Plan/Plan19.md`：Core 模型 Worker、结构化输出、调用前披露、请求审计和真实运行前置条件。
 - `Plan/Plan20.md`：真实消融冻结配置、源码外发范围、预算硬边界和授权摘要。
 - `Plan/Plan21.md`：Core 图片需求证据链、视觉感知/文本规划拆分和确定性评测边界。
+- `Plan/Plan22.md`：Core 音频需求证据链、独立转录客户端、时间线/不确定性和同一代码验收边界。
+- `Plan/Plan23.md`：Core 视频 Bug 证据链、观察/推测/建议分离、时间线引用和同一回归验收边界。
+- `Plan/Plan24.md`：统一多模态 Intake、并行/单次处理、状态化 Bundle、失败关闭和下游隔离。
 - `OPTIMIZATION_BACKLOG.md`：优化批次、优先级、状态和验收标准。
 
 ## 验证命令
@@ -267,7 +281,7 @@ git status --short
 - 仓库：`/Users/donbblu/codex/multiAgent`
 - 分支：`codex/multimodal-coding-mvp`
 - 远端：`git@github.com:donbblu/MultiAgent.git`
-- 当前基线提交：`4a357ef chore: archive daily progress 2026-08-19`
+- 当前基线提交：`a7c465d chore: archive daily progress 2026-08-20`
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒

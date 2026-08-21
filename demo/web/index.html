@@ -3,92 +3,129 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VisionForge · 从参考图到可运行页面</title>
-  <meta name="description" content="上传 UI 参考图，通过真实浏览器和视觉审查生成、验证并修复 Vue 页面。">
+  <title>Coding Multi-Agent Harness · 修复工作台</title>
+  <meta name="description" content="把问题描述和多模态证据交给多个 Coding Agent，由 Runtime 编排、验证并交付代码修改。">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="VisionForge 首页">
-      <span class="brand-mark">VF</span>
-      <span><strong>VisionForge</strong><small>Multimodal Delivery Runtime</small></span>
+    <a class="brand" href="/" aria-label="Coding Multi-Agent Harness 首页">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span><strong>Coding Harness</strong><small>MULTI-AGENT RUNTIME</small></span>
     </a>
-    <div class="runtime-pill"><i></i> 本地确定性 Runtime</div>
+    <div class="runtime-pill"><i></i> Runtime 正在本机运行</div>
   </header>
 
   <main>
     <section class="hero">
-      <p class="eyebrow">REFERENCE → CODE → BROWSER → REVIEW → FIX</p>
-      <h1>把一张参考图，<br>变成<span>验收过</span>的页面。</h1>
-      <p class="intro">模型负责理解、生成和修复；Runtime 负责权限、真实浏览器、证据与最终门禁。</p>
+      <div>
+        <p class="eyebrow">ISSUE → EVIDENCE → PLAN → PATCH → VERIFY</p>
+        <h1>把问题证据，<br>变成<span>通过回归</span>的代码。</h1>
+      </div>
+      <div class="hero-copy">
+        <p>LLM 负责理解、编码和修复，视觉/音频模型只在原始媒体无法被工具替代时参与感知。</p>
+        <p>最终是否完成，由 Runtime 根据代码、测试和结构化证据判断。</p>
+      </div>
     </section>
 
-    <section class="studio">
-      <aside class="brief-card card">
-        <div class="section-title"><span>01</span><div><h2>页面任务</h2><p>当前固定目标：预置 Vue 3 项目</p></div></div>
-        <form id="visionforge-form">
-          <label for="reference-file">UI 参考图</label>
-          <label id="upload-zone" class="upload-zone" for="reference-file">
-            <input id="reference-file" type="file" accept="image/png,image/jpeg" required>
-            <img id="reference-preview" alt="参考图预览" hidden>
-            <span id="upload-placeholder"><b>＋</b><strong>选择 PNG 或 JPEG</strong><small>最大 10 MiB，上传后使用 asset ID</small></span>
-          </label>
-          <p id="upload-status" class="field-note">尚未选择图片</p>
+    <section class="workspace">
+      <aside class="composer card">
+        <div class="section-heading">
+          <span>01</span>
+          <div><h2>提交 Coding 任务</h2><p>先描述可复现的问题与验收结果</p></div>
+        </div>
 
-          <label for="requirement">页面需求</label>
-          <textarea id="requirement" minlength="3" maxlength="4000" required placeholder="例如：根据参考图实现邮箱注册落地页，提交后显示成功提示；保持清晰的视觉层级和响应式布局。"></textarea>
+        <form id="task-form">
+          <label for="task-name">任务名称 <small>可选</small></label>
+          <input id="task-name" name="name" maxlength="80" placeholder="例如：修复结算页金额错误">
 
-          <button id="submit-task" type="submit"><span>启动视觉交付</span><b>→</b></button>
-          <p class="security-note">不会上传项目路径、密钥或 Base64 图片；模型不能自行宣告通过。</p>
+          <label for="requirement">问题与目标</label>
+          <textarea id="requirement" name="requirement" minlength="3" maxlength="4000" required placeholder="例如：结算页切换优惠券后总价没有更新。请定位原因并修复；原价 100 元、优惠 20 元时，应显示 80 元，并确保现有测试通过。"></textarea>
+
+          <div class="field-label"><span>证据输入</span><small>按需感知，不让 VLM 接管整个任务</small></div>
+          <div class="evidence-inputs" id="evidence-inputs">
+            <button class="evidence-option ready" type="button" aria-pressed="true"><b>TXT</b><span><strong>文字</strong><small>Web 已接通</small></span><em>READY</em></button>
+            <button class="evidence-option" type="button" disabled title="Core 协议已具备，Web 上传适配待接入"><b>IMG</b><span><strong>图片</strong><small>上传待接入</small></span><em>CORE</em></button>
+            <button class="evidence-option" type="button" disabled title="Core 协议已具备，Web 上传适配待接入"><b>AUD</b><span><strong>音频</strong><small>上传待接入</small></span><em>CORE</em></button>
+            <button class="evidence-option" type="button" disabled title="Core 协议已具备，Web 上传适配待接入"><b>VID</b><span><strong>视频</strong><small>上传待接入</small></span><em>CORE</em></button>
+          </div>
+          <p class="adapter-note">当前首页只提交文本任务。图片、音频和视频已具备 Core Artifact/Intake 协议，但还不能从这个页面上传。</p>
+
+          <button id="submit-task" class="primary-action" type="submit"><span>启动 Coding 任务</span><b>→</b></button>
+          <p id="form-message" class="form-message" role="status">模型输出按不可信输入处理；所有修改都要经过 Runtime 校验。</p>
         </form>
       </aside>
 
-      <section class="run-card card">
-        <div class="section-title"><span>02</span><div><h2>交付链路</h2><p id="task-caption">等待任务</p></div><em id="run-status" class="status-pill idle">IDLE</em></div>
-        <div id="pipeline" class="pipeline" aria-label="VisionForge 执行阶段">
-          <div data-stage="reference"><i>1</i><strong>参考图</strong><small>Asset</small></div>
-          <span>→</span>
-          <div data-stage="ui_spec"><i>2</i><strong>UI Spec</strong><small>VLM</small></div>
-          <span>→</span>
-          <div data-stage="implementation_plan"><i>3</i><strong>页面代码</strong><small>LLM</small></div>
-          <span>→</span>
-          <div data-stage="browser_run"><i>4</i><strong>真实浏览器</strong><small>Playwright</small></div>
-          <span>→</span>
-          <div data-stage="visual_review"><i>5</i><strong>视觉审查</strong><small>VLM</small></div>
-          <span>→</span>
-          <div data-stage="quality_gate"><i>6</i><strong>质量门禁</strong><small>Runtime</small></div>
+      <section class="run-panel card">
+        <div class="section-heading run-heading">
+          <span>02</span>
+          <div><h2>协作与验证</h2><p id="task-caption">尚未启动任务</p></div>
+          <em id="run-status" class="status-pill idle">IDLE</em>
         </div>
 
-        <div id="waiting-state" class="waiting-state">
-          <div class="forge-orbit"><i></i><i></i><i></i></div>
-          <h3>完整证据会出现在这里</h3>
-          <p>UI Spec、Patch、浏览器截图、视觉问题与修复轮次都通过 Artifact 引用连接。</p>
+        <div class="flow" id="workflow" aria-label="Coding Multi-Agent 执行流程">
+          <article class="system-node ready" data-system="intake"><i>IN</i><strong>Intake</strong><small>需求协议</small></article>
+          <span class="arrow">→</span>
+          <article data-node="planner"><i>01</i><strong>Planner</strong><small>边界与任务图</small></article>
+          <span class="arrow">→</span>
+          <article data-node="implementer"><i>02</i><strong>Developer</strong><small>代码 Patch</small></article>
+          <span class="arrow fork-arrow">→</span>
+          <div class="parallel-nodes">
+            <article data-node="tester"><i>03A</i><strong>Tester</strong><small>确定性测试</small></article>
+            <article data-node="reviewer"><i>03B</i><strong>Reviewer</strong><small>独立审查</small></article>
+          </div>
+          <span class="arrow">→</span>
+          <article data-node="fixer"><i>04</i><strong>Fixer</strong><small>按需返工</small></article>
+          <span class="arrow">→</span>
+          <article class="system-node" data-system="gate"><i>OK</i><strong>Runtime Gate</strong><small>唯一完成判定</small></article>
         </div>
 
-        <section id="evidence" class="evidence" hidden>
+        <div class="run-toolbar">
           <div class="metrics">
-            <article><small>最终状态</small><strong id="metric-status">—</strong></article>
-            <article><small>视觉评分</small><strong id="metric-score">—</strong></article>
-            <article><small>修复轮数</small><strong id="metric-fixes">—</strong></article>
-            <article><small>Artifacts</small><strong id="metric-artifacts">0</strong></article>
+            <article><small>任务状态</small><strong id="metric-status">待命</strong></article>
+            <article><small>正在执行</small><strong id="metric-active">0</strong></article>
+            <article><small>尝试轮数</small><strong id="metric-attempts">—</strong></article>
+            <article><small>交付文件</small><strong id="metric-files">—</strong></article>
           </div>
-
-          <div class="comparison">
-            <figure><figcaption>参考图</figcaption><div><img id="final-reference" alt="任务参考图"></div></figure>
-            <figure><figcaption>实际页面截图</figcaption><div id="actual-frame"><p>等待浏览器截图</p><img id="final-actual" alt="实际页面截图" hidden></div></figure>
+          <div class="task-controls" aria-label="任务生命周期控制">
+            <button id="pause-task" type="button" disabled>暂停</button>
+            <button id="resume-task" type="button" disabled>恢复</button>
+            <button id="cancel-task" type="button" disabled>取消</button>
           </div>
+        </div>
 
-          <div class="subsection-heading"><div><p class="eyebrow">REWORK HISTORY</p><h3>验证与修复轮次</h3></div><span id="round-count">0 轮</span></div>
-          <div id="rounds" class="rounds"></div>
+        <div id="empty-state" class="empty-state">
+          <div class="signal-map" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          <h3>一次任务，一条可追溯的证据链</h3>
+          <p>角色先确定职责，再按能力和策略选择 Worker。Agent 之间通过结构化结果交接，Runtime 保存状态并决定能否进入下一步。</p>
+        </div>
 
-          <div class="subsection-heading"><div><p class="eyebrow">ARTIFACT CHAIN</p><h3>可审计产物</h3></div><span>点击展开结构化内容</span></div>
-          <div id="artifacts" class="artifacts"></div>
+        <section id="task-details" class="task-details" hidden>
+          <div class="subheading"><div><p class="eyebrow">WORKER EXECUTION</p><h3>角色与 Worker 状态</h3></div><span>Role-first routing</span></div>
+          <div id="agent-grid" class="agent-grid"></div>
+          <div class="detail-columns">
+            <div>
+              <div class="subheading"><div><p class="eyebrow">RUNTIME EVENTS</p><h3>运行记录</h3></div><span id="event-count">0 条</span></div>
+              <div id="event-list" class="event-list"></div>
+            </div>
+            <div>
+              <div class="subheading"><div><p class="eyebrow">DELIVERABLES</p><h3>交付文件与结果</h3></div><span>只展示相对路径</span></div>
+              <div id="deliverables" class="deliverables"></div>
+            </div>
+          </div>
         </section>
       </section>
     </section>
+
+    <section class="principles">
+      <article><span>01</span><h3>Role 决定职责</h3><p>同一角色可有多个 Worker，再按能力、输入协议和运行策略选择实现。</p></article>
+      <article><span>02</span><h3>Artifact 传递事实</h3><p>媒体先转成结构化证据；推测必须带不确定性，不能被升级为已验证事实。</p></article>
+      <article><span>03</span><h3>Runtime 掌握门禁</h3><p>模型不能自行宣告通过。文件权限、Patch、测试和完成条件均由程序执行。</p></article>
+    </section>
   </main>
 
-  <footer><span>VisionForge / Local MVP</span><span>模型输出是不可信输入，最终状态由 Runtime 决定</span></footer>
+  <footer><span>Coding Multi-Agent Harness / Local Console</span><span>VisionForge 是可插拔场景，不是 Core 的永久组成</span></footer>
   <script src="/app.js" defer></script>
 </body>
 </html>

@@ -268,14 +268,16 @@ class VisionForgeWebRuntimeTests(unittest.TestCase):
                 "project_root": "/tmp/untrusted",
             })
 
-    def test_web_page_is_visionforge_entry_not_old_generic_form(self) -> None:
+    def test_web_page_is_generic_coding_harness_entry(self) -> None:
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
-        self.assertIn("VisionForge", html)
-        self.assertIn('id="reference-file"', html)
-        self.assertIn("/api/visionforge/assets", script)
-        self.assertIn("/api/visionforge/tasks", script)
-        self.assertNotIn("reference_image_base64", script)
+        self.assertIn("Coding Multi-Agent Harness", html)
+        self.assertIn('id="task-form"', html)
+        self.assertIn('id="evidence-inputs"', html)
+        self.assertIn("图片、音频和视频已具备 Core Artifact/Intake 协议", html)
+        self.assertIn("/api/tasks", script)
+        self.assertNotIn("/api/visionforge", script)
+        self.assertNotIn('type="file"', html)
 
 
 if __name__ == "__main__":

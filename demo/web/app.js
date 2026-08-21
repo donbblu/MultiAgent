@@ -1,205 +1,224 @@
 const $ = (id) => document.getElementById(id)
-const stageKinds = ['reference_image', 'ui_spec', 'implementation_plan', 'browser_run', 'visual_review', 'quality_gate']
-const kindLabels = {
-  reference_image: '参考图', ui_spec: 'UI Spec', implementation_plan: '初始 Patch',
-  fix_plan: '修复 Patch', integration_result: 'Patch 应用结果', build_result: '构建结果',
-  actual_screenshot: '实际截图', browser_run: 'Browser Run', visual_review: 'Visual Review',
-  quality_gate: '质量门禁', visionforge_run: '最终 Run'
-}
-let selectedFile = null
-let uploadedAsset = null
 let currentTask = null
 let pollTimer = null
-let previewUrl = null
 
-function formatBytes(value) {
-  if (!Number.isFinite(value)) return '—'
-  if (value < 1024) return `${value} B`
-  return `${(value / 1024 / 1024).toFixed(2)} MiB`
+const statusLabels = {
+  idle: 'IDLE', queued: 'QUEUED', running: 'RUNNING', paused: 'PAUSED',
+  completed: 'PASSED', failed: 'FAILED', cancelled: 'CANCELLED', skipped: 'SKIPPED',
+  pending: 'PENDING', success: 'PASSED'
 }
 
-function artifactMap(artifacts) {
-  return new Map((artifacts || []).map((artifact) => [artifact.ref, artifact]))
+function safeStatus(status) {
+  return String(status || 'idle').toLowerCase().replace(/[^a-z_-]/g, '') || 'idle'
 }
 
-function latestByKind(artifacts, kind) {
-  return [...(artifacts || [])].reverse().find((artifact) => artifact.kind === kind)
+function setRunStatus(status) {
+  const value = safeStatus(status)
+  $('run-status').textContent = statusLabels[value] || value.toUpperCase()
+  $('run-status').className = `status-pill ${value}`
 }
 
-function setStatus(status) {
-  const pill = $('run-status')
-  const text = {queued: 'QUEUED', preparing: 'PREPARING', running: 'RUNNING', completed: 'PASSED', failed: 'FAILED'}[status] || 'IDLE'
-  pill.textContent = text
-  pill.className = `status-pill ${status || 'idle'}`
+function formatTime(value) {
+  if (!value) return '刚刚'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', second: '2-digit'})
 }
 
-function updatePipeline(data) {
-  const kinds = new Set((data.artifacts || []).map((artifact) => artifact.kind))
-  document.querySelectorAll('#pipeline [data-stage]').forEach((node) => {
-    const stage = node.dataset.stage
-    const index = stageKinds.indexOf(stage)
-    const reached = stage === 'reference' || kinds.has(stage)
-    const previousReached = index <= 0 || stageKinds.slice(0, index).every((kind) => kinds.has(kind) || kind === 'reference_image')
-    node.classList.toggle('done', reached)
-    node.classList.toggle('active', !reached && previousReached && ['queued', 'preparing', 'running'].includes(data.status))
+function renderWorkflow(data) {
+  const nodes = data.nodes || {}
+  document.querySelectorAll('[data-node]').forEach((element) => {
+    const node = nodes[element.dataset.node] || {status: 'pending'}
+    element.className = safeStatus(node.status)
+    element.querySelector('small').textContent = node.last_summary || node.summary || '等待调度'
   })
+  const gate = document.querySelector('[data-system="gate"]')
+  gate.className = `system-node ${data.status === 'completed' ? 'success' : data.status === 'failed' ? 'failed' : ''}`
 }
 
-function renderRounds(data, artifactsByRef) {
-  const cycles = data.result?.cycles || []
-  $('round-count').textContent = `${cycles.length} 轮`
-  const container = $('rounds')
+function renderAgents(data) {
+  const container = $('agent-grid')
   container.replaceChildren()
-  cycles.forEach((cycle) => {
-    const review = artifactsByRef.get(cycle.visual_review_artifact_ref)?.content || {}
-    const gate = artifactsByRef.get(cycle.quality_gate_artifact_ref)?.content || {}
+  Object.values(data.nodes || {}).forEach((node) => {
     const article = document.createElement('article')
-    article.className = `round ${cycle.passed ? 'passed' : 'failed'}`
+    article.className = `agent-card ${safeStatus(node.status)}`
     const head = document.createElement('div')
     const title = document.createElement('strong')
-    title.textContent = cycle.round_index === 0 ? '首次生成' : `自动修复 ${cycle.round_index}`
-    const badge = document.createElement('span')
-    badge.textContent = cycle.passed ? '门禁通过' : '需要修复'
+    title.textContent = node.label || node.id
+    const badge = document.createElement('em')
+    badge.textContent = statusLabels[safeStatus(node.status)] || String(node.status).toUpperCase()
     head.append(title, badge)
-    const score = document.createElement('p')
-    score.textContent = `视觉评分 ${review.score ?? '—'} · ${(review.issues || []).length} 个视觉问题`
-    const failures = document.createElement('small')
-    failures.textContent = (gate.failures || []).join('；') || '构建、交互与视觉门禁全部满足'
-    article.append(head, score, failures)
+    const summary = document.createElement('p')
+    summary.textContent = node.last_summary || node.summary || '等待 Harness 调度'
+    const meta = document.createElement('small')
+    const duration = Number.isFinite(node.duration_ms) ? ` · ${node.duration_ms} ms` : ''
+    meta.textContent = `尝试 ${node.attempt || 0}${duration}`
+    const permissions = document.createElement('div')
+    permissions.className = 'permission-list'
+    ;(node.permissions || []).forEach((permission) => {
+      const item = document.createElement('span')
+      item.textContent = permission
+      permissions.append(item)
+    })
+    article.append(head, summary, meta, permissions)
     container.append(article)
   })
-  if (!cycles.length) {
+}
+
+function renderEvents(data) {
+  const events = [...(data.events || [])].reverse()
+  $('event-count').textContent = `${events.length} 条`
+  const container = $('event-list')
+  container.replaceChildren()
+  if (!events.length) {
     const empty = document.createElement('p')
     empty.className = 'inline-empty'
-    empty.textContent = '浏览器验证尚未产生轮次。'
+    empty.textContent = '等待 Runtime 记录第一个可观察事件。'
+    container.append(empty)
+    return
+  }
+  events.slice(0, 20).forEach((event) => {
+    const article = document.createElement('article')
+    const marker = document.createElement('i')
+    marker.className = event.type || 'status'
+    const body = document.createElement('div')
+    const title = document.createElement('strong')
+    title.textContent = event.title || event.event || '运行事件'
+    const meta = document.createElement('small')
+    meta.textContent = `${event.node_id || 'runtime'} · ${formatTime(event.timestamp)}`
+    body.append(title, meta)
+    article.append(marker, body)
+    container.append(article)
+  })
+}
+
+function renderDeliverables(data) {
+  const container = $('deliverables')
+  container.replaceChildren()
+  if (data.error) {
+    const error = document.createElement('div')
+    error.className = 'result-message error'
+    error.textContent = data.error
+    container.append(error)
+  }
+  if (data.result?.summary) {
+    const summary = document.createElement('div')
+    summary.className = 'result-message'
+    const label = document.createElement('small')
+    label.textContent = 'RUNTIME SUMMARY'
+    const text = document.createElement('p')
+    text.textContent = data.result.summary
+    summary.append(label, text)
+    container.append(summary)
+  }
+  const files = data.result?.files || []
+  files.forEach((file) => {
+    const row = document.createElement('div')
+    row.className = 'file-row'
+    const icon = document.createElement('i')
+    icon.textContent = '↳'
+    const path = document.createElement('code')
+    path.textContent = file
+    row.append(icon, path)
+    container.append(row)
+  })
+  if (!data.error && !data.result && !files.length) {
+    const empty = document.createElement('p')
+    empty.className = 'inline-empty'
+    empty.textContent = '任务结束后，这里会显示 Runtime 摘要和交付文件。'
     container.append(empty)
   }
 }
 
-function renderArtifacts(data) {
-  const container = $('artifacts')
-  container.replaceChildren()
-  ;(data.artifacts || []).forEach((artifact) => {
-    const details = document.createElement('details')
-    details.className = 'artifact'
-    const summary = document.createElement('summary')
-    const label = document.createElement('span')
-    label.textContent = kindLabels[artifact.kind] || artifact.kind
-    const meta = document.createElement('small')
-    meta.textContent = `${artifact.validation_state} · ${artifact.ref.slice(-8)}`
-    summary.append(label, meta)
-    const pre = document.createElement('pre')
-    pre.textContent = JSON.stringify(artifact.content, null, 2)
-    details.append(summary, pre)
-    container.append(details)
-  })
+function updateControls(data) {
+  const state = safeStatus(data.lifecycle?.state || data.status)
+  const active = ['queued', 'running', 'paused'].includes(state)
+  $('pause-task').disabled = !['queued', 'running'].includes(state)
+  $('resume-task').disabled = state !== 'paused'
+  $('cancel-task').disabled = !active
+  $('submit-task').disabled = active
+  $('submit-task').querySelector('span').textContent = active ? '任务运行中' : '启动 Coding 任务'
 }
 
-function renderEvidence(data) {
-  const artifacts = data.artifacts || []
-  const byRef = artifactMap(artifacts)
-  $('waiting-state').hidden = true
-  $('evidence').hidden = false
-  $('metric-status').textContent = data.status === 'completed' ? '通过' : data.status === 'failed' ? '失败' : '运行中'
-  $('metric-score').textContent = data.result?.visual_score ?? '—'
-  $('metric-fixes').textContent = data.result?.fix_attempts ?? '—'
-  $('metric-artifacts').textContent = artifacts.length
-  $('final-reference').src = data.reference_image.url
-  const finalCycle = data.result?.cycles?.at(-1)
-  const screenshot = finalCycle ? byRef.get(finalCycle.actual_screenshot_artifact_ref) : latestByKind(artifacts, 'actual_screenshot')
-  if (screenshot?.content?.url) {
-    $('final-actual').src = screenshot.content.url
-    $('final-actual').hidden = false
-    $('actual-frame').querySelector('p').hidden = true
-  }
-  renderRounds(data, byRef)
-  renderArtifacts(data)
-}
-
-async function uploadReference() {
-  if (uploadedAsset) return uploadedAsset
-  if (!selectedFile) throw new Error('请先选择参考图')
-  if (!['image/png', 'image/jpeg'].includes(selectedFile.type)) throw new Error('只支持 PNG 或 JPEG')
-  if (selectedFile.size <= 0 || selectedFile.size > 10 * 1024 * 1024) throw new Error('图片必须小于 10 MiB')
-  $('upload-status').textContent = '正在写入本地内容寻址存储…'
-  const response = await fetch('/api/visionforge/assets', {
-    method: 'POST', headers: {'Content-Type': selectedFile.type}, body: selectedFile
-  })
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.error || '图片上传失败')
-  uploadedAsset = data
-  $('upload-status').textContent = `已保存 ${data.width}×${data.height} · ${formatBytes(data.size_bytes)} · ${data.asset_id.slice(0, 10)}…`
-  return data
+function renderTask(data) {
+  $('empty-state').hidden = true
+  $('task-details').hidden = false
+  setRunStatus(data.status)
+  $('task-caption').textContent = `${data.id} · ${statusLabels[safeStatus(data.status)] || data.status}`
+  $('metric-status').textContent = statusLabels[safeStatus(data.status)] || data.status
+  $('metric-active').textContent = (data.active_roles || []).length
+  $('metric-attempts').textContent = data.result?.attempts ?? '—'
+  $('metric-files').textContent = data.result?.files?.length ?? '—'
+  renderWorkflow(data)
+  renderAgents(data)
+  renderEvents(data)
+  renderDeliverables(data)
+  updateControls(data)
 }
 
 async function pollTask() {
   if (!currentTask) return
   try {
-    const response = await fetch(`/api/visionforge/tasks/${currentTask}`)
+    const response = await fetch(`/api/tasks/${currentTask}`)
     const data = await response.json()
     if (!response.ok) throw new Error(data.error || '读取任务失败')
-    setStatus(data.status)
-    updatePipeline(data)
-    $('task-caption').textContent = `${data.id} · ${data.status}`
-    if ((data.artifacts || []).length) renderEvidence(data)
-    if (['completed', 'failed'].includes(data.status)) {
+    renderTask(data)
+    if (['completed', 'failed', 'cancelled'].includes(safeStatus(data.status))) {
       clearInterval(pollTimer)
       pollTimer = null
-      $('submit-task').disabled = false
-      $('submit-task').querySelector('span').textContent = '启动新任务'
-      renderEvidence(data)
-      if (data.error) $('task-caption').textContent = `执行失败：${data.error}`
     }
   } catch (error) {
     clearInterval(pollTimer)
     pollTimer = null
-    setStatus('failed')
-    $('task-caption').textContent = error.message
+    setRunStatus('failed')
+    $('form-message').textContent = error.message
+    $('form-message').className = 'form-message error'
     $('submit-task').disabled = false
   }
 }
 
-$('reference-file').addEventListener('change', (event) => {
-  selectedFile = event.target.files?.[0] || null
-  uploadedAsset = null
-  if (previewUrl) URL.revokeObjectURL(previewUrl)
-  if (!selectedFile) {
-    $('reference-preview').hidden = true
-    $('upload-placeholder').hidden = false
-    $('upload-status').textContent = '尚未选择图片'
-    return
+async function controlTask(action) {
+  if (!currentTask) return
+  const button = $(`${action}-task`)
+  button.disabled = true
+  try {
+    const response = await fetch(`/api/tasks/${currentTask}/${action}`, {method: 'POST'})
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || data.reason || '操作未被接受')
+    await pollTask()
+  } catch (error) {
+    $('form-message').textContent = error.message
+    $('form-message').className = 'form-message error'
   }
-  previewUrl = URL.createObjectURL(selectedFile)
-  $('reference-preview').src = previewUrl
-  $('reference-preview').hidden = false
-  $('upload-placeholder').hidden = true
-  $('upload-status').textContent = `${selectedFile.name} · ${formatBytes(selectedFile.size)}`
-})
+}
 
-$('visionforge-form').addEventListener('submit', async (event) => {
+$('task-form').addEventListener('submit', async (event) => {
   event.preventDefault()
   clearInterval(pollTimer)
   $('submit-task').disabled = true
-  $('submit-task').querySelector('span').textContent = '准备任务中'
-  $('waiting-state').hidden = false
-  $('evidence').hidden = true
+  $('submit-task').querySelector('span').textContent = '正在创建任务'
+  $('form-message').textContent = 'Runtime 正在建立任务状态与生命周期控制器…'
+  $('form-message').className = 'form-message'
   try {
-    const asset = await uploadReference()
-    const response = await fetch('/api/visionforge/tasks', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({requirement: $('requirement').value, asset_id: asset.asset_id})
+    const response = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: $('task-name').value.trim(), requirement: $('requirement').value.trim()})
     })
     const data = await response.json()
     if (!response.ok) throw new Error(data.error || '无法启动任务')
     currentTask = data.id
-    setStatus('queued')
-    $('submit-task').querySelector('span').textContent = '视觉交付进行中'
+    setRunStatus('queued')
     await pollTask()
     pollTimer = setInterval(pollTask, 900)
   } catch (error) {
-    setStatus('failed')
-    $('task-caption').textContent = error.message
+    setRunStatus('failed')
+    $('form-message').textContent = error.message
+    $('form-message').className = 'form-message error'
     $('submit-task').disabled = false
     $('submit-task').querySelector('span').textContent = '重新尝试'
   }
 })
+
+$('pause-task').addEventListener('click', () => controlTask('pause'))
+$('resume-task').addEventListener('click', () => controlTask('resume'))
+$('cancel-task').addEventListener('click', () => controlTask('cancel'))
