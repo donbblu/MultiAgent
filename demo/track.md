@@ -295,3 +295,21 @@
 ### 待优化
 
 - 无新增。
+
+## 2026-08-22
+
+### 已优化
+
+- 将项目方向明确为生产导向的 Multi-Model Coding Agent Harness，并建立 PROD 主线与 INC 事故学习双轨联动规则。
+- 规划事故学习闭环的一等领域模型，覆盖 Runtime Event、Detector、Incident Ledger、Evidence、Replay、Guardrail 与 SLI/SLO。
+- 补充闭环覆盖率、漏检概率、故障注入和统计置信口径，避免用已知测试通过率代替生产风险结论。
+
+### 已解决
+
+- 澄清 Core 多模态 MVP 完成不等于生产 Runtime 就绪，事故闭环也不能退化为 Agent 反思 Prompt 或直接写入 Memory。
+- 明确 Agent、Runtime、Artifact、Verification、Memory 与人工审批的事实权和权限边界。
+
+### 待优化
+
+- 完成 PROD-00 对 Backlog、Learning Path、Runtime Charter、事故目录和验收口径的统一冻结。
+- 按 PROD/INC 双轨顺序实现 Event Journal、Incident Ledger、Detector、Evidence、Replay 和 Guardrail；当前仍为规划，未改变 Runtime 行为。
