@@ -1,12 +1,16 @@
 # Plan25：事故学习闭环一等子系统
 
-日期：2026-08-22
+日期：2026-08-22；2026-08-23 随产品中心纠偏完成 Core/Plugin 泛化
 
 ## 当前状态
 
-本计划是 `PROD-00` Runtime Charter 的专项设计产物，状态为 **已规划、未开始实现**。它定义事故学习闭环的领域模型、控制边界、持久化语义、分批实施、故障演练和验收口径，不修改当前 Runtime 行为，也不把 `PROD-00` 标记为完成。
+本计划是 `PROD-00` Runtime Charter 的专项设计产物，状态为 **INC-00 文档冻结完成，PROD-01A 协议地基已实现，持久事故链尚未开始**。它定义事故学习闭环的领域模型、控制边界、持久化语义、分批实施、故障演练和验收口径；当前新增代码只提供 RuntimeEvent/Acceptance/Invocation 协议和同步不变量，尚未修改旧 Runtime 执行行为。
 
-事故学习系统是 Harness 的横向生产能力，不是某个 Agent 的“反思 Prompt”，也不是失败后自动写入 Memory 的快捷路径。它必须覆盖直接模型 API、Full Agent Backend、工具、Workspace、Validator、Context、Memory、调度、预算和人工审批，并能够在后续生产批次中持续接入新的事故类型。
+事故学习系统是 Runtime 的横向生产能力，不是某个 Agent 的“反思 Prompt”，也不是失败后自动写入 Memory 的快捷路径。它必须覆盖 Thread、Message、AgentSession、Route、用户介入、媒体绑定、直接模型 API、Full Agent Backend、工具、Context、Memory、调度、预算和人工审批。Workspace、Patch 和 Coding Validator 属 Coding Plugin 的事故子目录，不再定义 Core 的完成语义。
+
+本次泛化遵循 `Plan/Plan26.md`：保留 `RuntimeEvent → Detector/Invariant → IncidentLedger → EvidenceBundle → Replay/FaultInjection → ChangeSet → Shadow/Canary → LearningItem → GuardrailEvaluation` 主链，只纠正 Coding 特有的事实源、事故样例和完成门禁。
+
+本文的“Coding Plugin”表示目标责任边界；当前代码尚无 `CodingPlugin`，Coding 仍是 Composition Root/包内纵向切片，VisionForge 仍是独立 Scenario Plugin。
 
 ## 目标与非目标
 
@@ -29,7 +33,7 @@ Runtime Event
 
 闭环必须使系统能够回答：
 
-1. 何时、由谁、在哪个 Thread/Run/Invocation/Attempt 触发了问题；
+1. 何时、由谁、在哪个 Thread/Turn/Task/AgentSession/Invocation/Attempt 触发了问题；
 2. 当时使用了哪个 Harness、Adapter、Model、Prompt、Policy、Schema、Plugin 和 Memory 版本；
 3. 哪些上下文、工具调用、Artifact、验证和副作用参与了事故；
 4. 哪个不变量、SLO、权限或完成门禁本应阻止或发现问题；
@@ -56,16 +60,17 @@ Runtime Event
 - 原始信号不是根因；模型可以提出 `Claim`，不能把 inference 直接登记为事实。
 - 教训不是规则；只有批准、验证并显式注册的实现才能进入 Shadow 或 Active。
 - Agent 可以整理证据、提出假设、生成测试和修复草案，不能修改事故事实、扩大权限、批准 Guardrail 或宣布事故结束。
-- Runtime、ArtifactStore、VerificationRecord、Workspace 和 Validator 继续是执行与验收事实源；Incident 只保存定位引用，不复制或改写事实。
+- Runtime、Message/Artifact Store、工具回执和场景 Acceptance Evidence 是执行与验收事实源；Incident 只保存定位引用，不复制或改写事实。Coding Plugin 继续使用 VerificationRecord、Workspace 和 Validator 作为它自己的证据源。
 
 ### 永不放宽的不变量
 
 ```text
-unknown != passed
-无独立、新鲜、匹配的执行证据不得 completed
+unknown != accepted
+AgentClaim != RuntimeAcceptance
+缺少 AcceptancePolicy 要求的新鲜、匹配证据不得 accepted
 无 capability / grant / approval 不得产生副作用
 恢复、重试、取消和迟到结果不得产生重复副作用
-跨 Project / Thread / Session / Workspace 的上下文污染必须为 0
+跨 Scope / Thread / AgentSession / Artifact / ExecutionEnvironment 的污染必须为 0
 预算未预留不得调用模型或高成本工具
 ```
 
@@ -82,14 +87,14 @@ unknown != passed
 | `dag_runner.event_listener` | 当前临时事件出口；后续兼容迁移为 `EventSink` |
 | `ArtifactStore` | 保存不可变执行、失败、日志、截图和报告证据 |
 | `Claim` | 保存 observation、inference 和 proposal，防止调查假设变成事实 |
-| `VerificationRecord` | 保存独立执行证据和三态验证结论 |
+| `VerificationRecord` | 保存确定性验证证据和三态结论；作为通用 Evidence 类型被场景 AcceptancePolicy 按需引用 |
 | `MemoryManager` | 只接收已批准、已验证并 active 的 Context Lesson |
 | `ValidatorRegistry` / `CommandPolicy` / `PatchIntegrator` | 已批准确定性 Guardrail 的现有落点 |
 | `WorkerRegistry.principal_id` | 调查职责和 Reviewer/Producer 隔离依据 |
 
 新增 Incident/Learning 域不能建立平行的 Task、Artifact、Verification 或 Memory 真相源。它只保存事故状态、发生次数、审批历史、证据定位、修复与发布状态。
 
-第一阶段保留 Snapshot 作为状态投影，同时建立 append-only Audit Journal；不要求从事件重新计算所有业务状态。达到 `PROD-01` 强制审计阶段后，关键状态变更、Audit Event 和 Outbox 必须进入同一个 `RuntimeUnitOfWork`。
+第一阶段采用状态表为当前业务真相源、append-only Journal 为不可变审计记录、Snapshot 为兼容恢复检查点；不要求从事件重新计算所有业务状态。达到 `PROD-01B` 强制审计阶段后，关键状态变更、Audit Event 和 Outbox 必须进入同一个 `RuntimeUnitOfWork` 和 SQLite 事务。
 
 ## 系统结构
 
@@ -131,8 +136,11 @@ schema_version
 event_type
 aggregate_type / aggregate_id / aggregate_version / sequence_no
 trace_id / correlation_id / causation_id / parent_event_id
-project_id / thread_id / task_id / run_id
-invocation_id / attempt_id / parent_invocation_id
+scope_id / project_id / thread_id / turn_id / message_id / task_id / run_id
+agent_instance_id / agent_session_id / session_binding_id
+invocation_id / attempt_id / parent_invocation_id / route_edge_id
+context_bundle_id / acceptance_policy_id / acceptance_policy_version / acceptance_policy_hash
+acceptance_record_id / resource_snapshot_ref
 actor_type / actor_id / principal_id
 harness_version / adapter_version / model_ref
 prompt_version / policy_version / protocol_version / plugin_version
@@ -155,20 +163,58 @@ occurred_at / recorded_at
 首批事件目录：
 
 ```text
+thread.created / archived
+turn.opened / closed
+message.committed / delivered / rejected
+user.intervened / clarification_provided / cancel_requested
+agent_session.created / checkpointed / reset
+session_binding.bound / rejected / cleared
+route.requested / accepted / rejected
+handoff.proposed / accepted / rejected
+media.ingested / linked / rejected
 task.created
 lifecycle.transitioned
 invocation.queued / claimed / started / completed / failed / cancelled
 context.compiled
 model.requested / completed / failed
 tool.requested / approved / rejected / completed
-artifact.accepted / rejected
+artifact.committed / rejected
 verification.recorded
+acceptance.evaluated
+outcome.accepted / rejected / needs_input
 budget.reserved / settled / exceeded
-workspace.changed / drift_detected
+resource_snapshot.changed / stale_detected
+coding:workspace.changed / coding:workspace.drift_detected
 incident.detected
 containment.applied / reverted
 human.decision_recorded
 ```
+
+### `AcceptancePolicy` 与 `AcceptanceRecord`
+
+Core 必须冻结 Acceptance 的聚合边界，不能只在事件里保存一个 Policy ID：
+
+```text
+AcceptancePolicy
+  policy_id / version / hash
+  subject_type: turn / task / scenario_run / external_action
+  required_evidence
+  freshness_and_binding_rules
+  independent_evaluator_required
+  allowed_outcomes
+
+AcceptanceRecord
+  record_id
+  subject_type / subject_id / subject_version
+  policy_id / policy_version / policy_hash
+  outcome: accepted / rejected / needs_input / unknown
+  evidence_refs
+  issued_by: runtime
+  evaluator_principal_ids
+  evaluated_at
+```
+
+Evaluator/Agent 只能提供 Evidence，不能签发 AcceptanceRecord。`continue` 表示 Outcome 保持 unknown 且 Runtime 调度下一 Invocation，不是第五种 Outcome；`blocked/cancelled` 属生命周期状态。长期 Thread 没有通用 accepted 状态；它只能保持 open、paused 或由用户/明确生命周期策略 archived。`Invocation.completed`、`Outcome.accepted` 和 `Thread.archived` 必须分别产生事件，不能互相推导。
 
 ### `IncidentSignal`
 
@@ -177,7 +223,8 @@ Detector 或中央 Runtime 边界产生的原始信号：
 ```text
 signal_id
 idempotency_key
-project_id / task_id / run_id / invocation_id / attempt_id
+scope_id / thread_id / turn_id / message_id / task_id / run_id
+agent_session_id / session_binding_id / invocation_id / attempt_id / route_edge_id
 category / component
 summary
 violated_invariant / slo_ref
@@ -191,19 +238,36 @@ metadata
 
 首批稳定类别：
 
-- `verification_failed`
-- `verification_unknown`
-- `false_completed_attempt`
-- `integration_rejected`
+- `acceptance_policy_missing`
+- `false_acceptance_attempt`
+- `message_delivery_state_mismatch`
+- `message_duplicate_effect`
+- `message_order_violation`
+- `wrong_thread_or_session_binding`
+- `cross_scope_artifact_access`
+- `route_loop_or_no_progress`
+- `handoff_contract_violation`
+- `user_control_not_honored`
+- `media_binding_mismatch`
+- `stale_or_unauthorized_context`
+- `memory_promotion_violation`
+- `capability_route_mismatch`
+- `unauthorized_side_effect`
 - `worker_unavailable`
 - `model_protocol_error`
-- `command_timeout`
-- `workspace_drift`
+- `tool_timeout`
 - `stuck_cancelling`
 - `expired_lease`
 - `duplicate_side_effect`
 - `budget_overrun`
+- `late_attempt_result`
 - `security_boundary_rejected`
+
+证据不足可以是正常的 `needs_input/unknown`，不进入 IncidentSignal 稳定类别；`false_acceptance_attempt` 专指 Runtime 在证据不足时仍试图登记 accepted，`acceptance_policy_missing` 则是需要验收的对象没有冻结 Policy 的配置事故。
+
+`message_delivery_state_mismatch` 专指没有 DeliveryAck 却登记 delivered，或 committed Message 永久缺失；客户端暂时离线、等待重试是正常运行状态，只计入投递失败率、重试次数和送达延迟。
+
+Coding Plugin 另外注册 `coding:verification_failed`、`coding:verification_unknown`、`coding:integration_rejected`、`coding:validator_timeout` 和 `coding:workspace_drift`。Core 只理解类别注册、严重级别和证据引用，不解释代码协议。
 
 ### `EvidenceLocator` 与 `EvidenceBundle`
 
@@ -220,17 +284,17 @@ redaction_state
 裸 `artifact://...` 不足以跨 Snapshot 和 Run 定位证据。`EvidenceBundle` 至少包含：
 
 - 事故时间窗内的 Runtime Event 引用；
-- 事故前后 Runtime Snapshot 和 Workspace hash；
+- 事故前后 Runtime Snapshot 与资源/输入快照；Coding 子事故可额外引用 Workspace hash；
 - Model/Adapter/Prompt/Schema/Policy/Plugin/Memory 版本；
 - Context Manifest、选择理由和来源 hash；
 - Tool Call、审批、退出码、副作用 ID 和幂等键；
-- Artifact、Claim、Verification、Validator Profile；
+- Message、Artifact、Claim、Acceptance/Verification Evidence 和场景 Policy；
 - Token、费用、重试、延迟和预算状态；
 - 自动止损和人工动作；
 - 脱敏后的 Provider/进程错误；
 - 影响范围和用户可见现象。
 
-Evidence Bundle 是敏感资产，需要访问控制、retention、加密和访问审计。不得把 secret 或完整用户敏感数据复制进普通事故报告。
+Evidence Bundle 是敏感资产，需要访问控制、retention、删除后的引用 tombstone、加密和访问审计。默认只保存 Message/Artifact ID、hash、时间窗、媒体区域/时间片和脱敏摘要；不得复制完整对话、原始媒体、Agent 私有 Session、原始思维链、secret 或完整用户敏感数据。调查者临时访问原始内容必须经过权限检查并产生审计事件。
 
 ### `IncidentRecord` 与 `IncidentOccurrence`
 
@@ -238,7 +302,7 @@ Evidence Bundle 是敏感资产，需要访问控制、retention、加密和访�
 
 ```text
 incident_id
-project_id
+scope_id / scope_type
 fingerprint / fingerprint_version
 category / severity
 response_status / investigation_status
@@ -254,12 +318,12 @@ residual_risk
 version
 ```
 
-`IncidentOccurrence` 保存每次真实发生的 task/run/node/attempt、证据引用、时间和幂等键。
+`IncidentOccurrence` 保存每次真实发生的 thread/turn/message/task/run/session/invocation/attempt、证据引用、时间和幂等键。
 
 - `idempotency_key` 防止同一恢复或重放重复记账；
 - `fingerprint` 聚合不同任务中相同机制；
 - `fingerprint_version` 允许后续修正归一化算法；
-- 不同 Project 默认不能聚合；跨项目模式只能形成组织级只读分析，不改变项目事故状态。
+- 不同 Scope 默认不能聚合；跨 Scope 模式只能形成组织级只读分析，不改变原 Scope 事故状态。
 
 ### `DetectionRule`
 
@@ -343,7 +407,10 @@ LearningItem
 
 GuardrailEvaluation
   learning_item_id / guardrail_id / version
-  project_id / task_id / run_id
+  scope_id / thread_id
+  turn_id / task_id / scenario_run_id
+  agent_session_id / invocation_id
+  acceptance_policy_id / acceptance_policy_version
   mode: shadow / active
   decision: allowed / would_block / blocked / error
   outcome: prevented / missed / false_positive / unknown
@@ -401,7 +468,7 @@ PROPOSED
 
 | 等级 | 定义与示例 | 自动处置 | 人工要求 |
 |---|---|---|---|
-| `SEV0` | 信任边界、secret 泄漏、未授权写入、false completed、验证伪造、不可逆数据损坏 | fail-closed、隔离 Run、撤销短期权限、冻结相关发布 | Incident Commander 批准恢复写操作、确认 RCA、残余风险和关闭 |
+| `SEV0` | 信任边界、secret 泄漏、未授权高风险副作用、造成高风险错误交付的 false acceptance、证据伪造、不可逆数据损坏 | fail-closed、隔离 Scope/Run、撤销短期权限、冻结相关发布 | Incident Commander 批准恢复写操作、确认 RCA、残余风险和关闭 |
 | `SEV1` | 已确认事件丢失、重复副作用、Session 串线、孤儿任务、预算硬限制突破、无法恢复 | 隔离 Worker/Provider、暂停相同任务、回滚已批准版本 | 人工确认全面恢复和长期修复 |
 | `SEV2` | 局部工作流或 Provider 故障、上下文错误、路由循环、显著成本/延迟回归 | 按预批准 Runbook 降级、熔断或转人工 | 事后人工复核和行动 owner |
 | `SEV3` | 单次 Run 失败、低效调用、非关键观测缺失且已安全失败 | 自动恢复、聚合趋势 | 纳入正常 backlog |
@@ -415,14 +482,20 @@ PROPOSED
 
 首批同步规则：
 
-1. `false_completed`：completed 前必须存在独立、新鲜、Workspace 匹配的 passed Verification；
-2. `stale_verification`：Artifact 或 Workspace hash 变化后旧证明失效；
-3. `self_review_or_verify`：Producer principal 不能验证自己的产物；
+1. `false_acceptance`：Acceptance Gate 必须找到当前 Policy 要求的新鲜、匹配 Evidence；没有 Policy 或证据不足只能保持 unknown/needs_input/rejected；
+2. `independent_evaluator_required`：只有 Policy 声明需要独立评估时，Producer 与 Evaluator principal 才必须分离；
+3. `scope_binding`：Message、Session、Artifact、Context 和媒体必须绑定正确 Scope/Thread/Agent；
 4. `budget_unreserved`：无预留不得调用模型或高成本工具；
 5. `unauthorized_side_effect`：无 Capability/Grant/Approval 不执行；
-6. `parent_cancelled`：父任务取消后子任务不能产生新副作用；
+6. `parent_cancelled`：父任务或用户取消后子 Invocation 不能产生新副作用；
 7. `late_attempt_result`：fencing token 过期的 Attempt 结果不能接纳；
-8. `workspace_drift`：恢复和验证前 Workspace 漂移必须安全拒绝。
+8. `resource_snapshot_stale`：输入或资源版本变化后旧结果和旧证明不得接纳；
+9. `invocation_close_requires_reaped`：执行状态虽已终止，但活动 Grant、Lease、ChildInvocation、SessionBinding 或执行资源仍存在时不能标记 closed；
+10. `non_terminal_descendant_on_close`：Parent 关闭前必须确认所有 ChildInvocation 已终止并完成回收，取消后旧 Attempt 的 Artifact、事件和副作用由 fencing 确定性拒绝。
+
+Coding Plugin 将 `stale_verification`、`self_review_or_verify` 和 `workspace_drift` 注册为上述通用规则的场景化实现；普通对话不要求 Workspace 或独立 Reviewer。
+
+Detector 必须区分 `Invocation.completed`、`Outcome.accepted` 和 `Thread.archived`。技术调用结束不是业务接受证据，Outcome 被接受也不能触发 Thread 自动归档。
 
 ### 异步 Detector
 
@@ -432,11 +505,22 @@ PROPOSED
 - `stuck_cancelling`
 - `expired_lease`
 - `orphan_process`
+- `orphan_invocation`
+- `termination_failed`
+- `session_binding_leak`
+- `resource_lease_leak`
+- `non_terminal_descendant_on_close`
 - `duplicate_side_effect`
 - `event_projection_gap`
 - `provider_error_spike`
 - `cost_or_token_anomaly`
 - `handoff_loop_or_no_progress`
+- `message_delivery_state_mismatch`
+- `message_delivery_slo_breach`
+- `message_order_violation`
+- `wrong_thread_or_session_binding`
+- `user_control_not_honored`
+- `media_binding_mismatch`
 - `stale_or_unauthorized_context`
 - `guardrail_recurrence`
 
@@ -525,6 +609,8 @@ demo/coding_workflow/operations/
   runbooks.py
 ```
 
+上述路径沿用当前 `coding_workflow` 包名只是兼容迁移落点，不表示事故 Core 归 Coding Plugin 所有；包级重命名应在依赖边界和迁移测试稳定后另批处理。
+
 Core Protocol：
 
 ```text
@@ -561,7 +647,7 @@ fault_injection_runs
 
 - `UNIQUE(aggregate_type, aggregate_id, sequence_no)`；
 - `UNIQUE(idempotency_key)`，按事件/occurrence/副作用各自命名空间管理；
-- `UNIQUE(project_id, fingerprint_version, fingerprint)` 聚合事故；
+- `UNIQUE(scope_id, fingerprint_version, fingerprint)` 聚合事故；
 - occurrence 插入与 incident count 更新同事务；
 - aggregate 更新使用 `WHERE version = ?` 乐观并发；
 - `PRAGMA foreign_keys=ON`，本地模式启用 WAL；
@@ -574,14 +660,14 @@ fault_injection_runs
 
 ### INC-00：契约、事故目录与 SLO（本计划）
 
-状态：已规划，作为 `PROD-00` 设计产物；尚未实现。
+状态：**文档冻结完成**，作为 `PROD-00` 设计产物；Detector、Store 和运营能力尚未实现。
 
 范围：
 
 - 冻结 Event、Signal、Incident、Evidence、Replay、Learning 和 Guardrail 协议；
 - 冻结事故等级、人工责任、状态机、关闭条件和知识晋升顺序；
 - 建立首批 Fault Catalog、SLO 和测试矩阵；
-- 明确与现有 Snapshot、Artifact、Claim、Verification、Memory 和 Validator 的增量关系。
+- 明确与现有 Thread 目标模型、Snapshot、Message、Artifact、Claim、Acceptance/Verification、Memory、Plugin 和 Validator 的增量关系。
 
 验收：
 
@@ -592,26 +678,30 @@ fault_injection_runs
 
 ### INC-01：Event Journal 与 Incident Ledger，只观察
 
-状态：待 `PROD-00` 完成后开始；作为 `PROD-01` 的第一纵向能力。
+状态：待开始；`PROD-01A` 已完成 RuntimeEvent envelope、Scope 引用、Acceptance/Invocation 同步不变量和确定性负向测试，尚无持久 Journal、Ledger 或 Detector。`PROD-01B` 冻结事务基础，在 `PROD-01E` 完成 Observe-only 纵向能力。
+
+PROD-01A 的事故增量只是一层可验证协议地基：Event payload 深冻结、限长并禁止正文/Prompt/Completion/原始媒体；跨 Scope、错误 Acceptance subject、非法执行/清理组合、过期 lease/fence、取消后迟到结果和幂等冲突在进入持久边界前 fail-closed。因为本批没有 SQLite Journal、进程或副作用，`kill -9`、事务中断、重复投递和恢复回放不适用，必须由 PROD-01B/01C 实测；已注册 Detector 数仍为 0，不能提前声称 INC-01 进入 Observe-only。
+
+`PROD-01` 完成 INC-01 后，额外为 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败建立四组 Observe/Shadow 信号；这只把 INC-02 标为“部分 Shadow”，不满足 INC-02 完成门禁。
 
 范围：
 
 - 实现 `RuntimeEvent`、SQLite WAL Journal、Outbox 和事件查询；
 - 实现 IncidentSignal、IncidentRecord、Occurrence、fingerprint 和幂等；
-- 先接入 `dag_runner`、`ScenarioRuntime`、Artifact 接纳和 Verification 等中央边界；
-- 只记录终态 failure/unknown、Integration 拒绝、Workspace drift 和安全拒绝；
+- 先接入 Thread/Message、Invocation、Artifact 接纳、用户控制、Acceptance 和现有 `dag_runner` / `ScenarioRuntime` 等中央边界；
+- 只记录 Message 状态不一致或送达 SLO 超限、违反 AcceptancePolicy 的异常终态、异常长期停留在 unknown、错误绑定、取消/迟到结果、孤儿 Invocation、清理失败、资源泄漏和安全拒绝；正常 `needs_input/unknown` 不产生 Incident；Coding Plugin 另记录 Integration、Verification 和 Workspace 事故；
 - 使用 Null Sink 保持旧入口兼容；不自动生成教训、不写 Memory、不改变任务结论。
 
 验收：
 
 1. 重启后事件和事故完整；
 2. 同一事件恢复重放不会重复 occurrence；
-3. 不同任务的同 fingerprint 增加 occurrence count；
-4. 不同 Project 不合并；
+3. 同一 Scope 下不同 Turn/Task/Invocation 的同 fingerprint 增加 occurrence count；
+4. 不同 Scope 不合并；
 5. 事件序号和 aggregate version 冲突被确定性拒绝；
 6. Secret/PII 不落普通事件与 Incident 表；
 7. Journal/Ledger 故障产生显式错误，不能静默吞掉；
-8. 原任务的 Artifact、Verification 和完成语义不被观察旁路改变。
+8. 原交互或插件任务的 Message、Artifact、Acceptance/Verification 和终态语义不被观察旁路改变。
 
 ### INC-02：Detector、Evidence 与自动止损，Shadow 优先
 
@@ -621,9 +711,11 @@ fault_injection_runs
 
 - 实现 DetectorRegistry、同步 Invariant 和异步扫描；
 - 实现 Evidence Bundle、Incident dedup、分级建议和 Runbook 引用；
-- 首批启用 `false_completed`、`stale_verification`、`workspace_drift`、`stuck_cancelling`、`budget_overrun`、`duplicate_side_effect`；
+- 首批 Core 规则候选为 `false_acceptance`、`message_delivery_state_mismatch`、`message_delivery_slo_breach`、`wrong_thread_or_session_binding`、`stuck_cancelling`、`budget_overrun`、`duplicate_side_effect` 和 `stale_or_unauthorized_context`；前者是硬错误，SLO breach 只在超过冻结时间窗时触发；精确数量以 INC-02 注册表和覆盖台账为准；
+- Coding Plugin 另接入 `stale_verification`、`workspace_drift`、`integration_rejected` 等场景 Detector，不将其检测率外推为 Core 覆盖率；
 - 确定性、可逆、范围小的止损允许使用预批准 Runbook；
-- 所有规则先 Shadow，记录 `would_block`、误报和漏报，经过回放和人工批准后才 Active。
+- Runtime 硬不变量一经实现即强制阻断；Incident Detector 只旁路观察这些阻断事件，不拥有放行权。
+- 新增异步 Detector、自动 Mitigation 和非硬不变量 Guardrail 先进入 Shadow，记录 `would_detect/would_mitigate`、误报和漏报，经过回放和人工批准后才 Active。
 
 验收：
 
@@ -633,7 +725,7 @@ fault_injection_runs
 4. 自动止损自身产生 Audit Event、证据和回滚引用；
 5. 概率性 Detector 不能自动执行不可逆动作；
 6. Active 安全规则记录失败时 fail-closed；
-7. Shadow 不改变任务结果和副作用。
+7. Shadow Detector 不改变任务结果和副作用，但现有 Runtime 硬不变量仍照常 fail-closed，不能因 Shadow 被放宽。
 
 ### INC-03：Replay、Fault Injection 与修复发布
 
@@ -682,7 +774,7 @@ fault_injection_runs
 
 ### INC-05：Incident Operations 与 Game Day
 
-状态：待 `INC-04` 完成；与 `PROD-07` 事故运营汇合。
+状态：待 `INC-04` 完成；由 `PROD-06` 先接入容量、背压、配额和运营指标，在 `PROD-07` 完成 Game Day 与事故运营。
 
 范围：
 
@@ -693,7 +785,7 @@ fault_injection_runs
 
 验收：
 
-- 任一 S0/S1 在 10 分钟内可定位到具体 Run/Invocation/Model/Tool 或明确的证据缺口；
+- 任一 SEV0/SEV1 在冻结的响应目标内可定位到具体 Thread/Invocation/AgentSession/Model/Tool 或明确的证据缺口；具体时间 SLO 在 PROD-01 通过演练冻结；
 - Game Day 产生事件时间线、检测/止损/恢复/审计结果、ReplaySpec 和新增行动；
 - 超出 error budget 时冻结相关功能扩展；
 - SEV0/SEV1 必须由人工批准恢复和关闭；
@@ -701,15 +793,17 @@ fault_injection_runs
 
 ## 故障演练目录
 
-### 生命周期与持久化
+本目录按 Core 与 Plugin 分层；列表是风险假设，不代表 Detector 已实现，也不以固定条目数声称覆盖率。
 
-- Patch 已应用、完成事件未写入时 `kill -9`；
+### Thread、Message 与持久化
+
+- Message 或副作用已提交、完成事件未写入时 `kill -9`；Coding 的 Patch 是一个子用例；
 - Event 重复、乱序、事务中断和 Outbox 未发布；
+- 已 committed Message 永久丢失、无 Ack 却标记 delivered、重复可见回复或因果顺序错误；
 - SQLite 锁竞争、磁盘满和 WAL 恢复；
 - Worker 持有 lease 时崩溃，旧结果迟到；
-- Parent 取消与 Child 写 Artifact 竞态；
-- 恢复时 Workspace hash 漂移；
-- 验证子进程创建孙进程后超时。
+- 用户取消、改向或补充信息未被运行中的 Invocation 正确处理；
+- Parent 取消与 Child 提交 Message/Artifact 或副作用竞态。
 
 ### Model / Adapter
 
@@ -723,34 +817,52 @@ fault_injection_runs
 
 ### 多 Agent 协作
 
-- Developer 与 Reviewer 无限互相 handoff；
-- Planner 不断扩大任务图；
-- 两个 Fixer 同时修改同一文件；
-- Reviewer 与 Developer 路由到同一 principal；
+- 两个 Agent 在没有新增证据时无限互相 handoff；
+- Agent 不断扩大动态图或路由链；
+- 并行 Agent 对同一资源提交冲突副作用；
+- Policy 要求独立评估时 Producer 与 Evaluator 路由到同一 principal；
 - Handoff 丢失必需证据或权限；
-- Child 完成时 Parent 已取消；
+- 澄清请求或人工接管信号被忽略；
+- Discussion 在预算耗尽或无进展时未停止；
 - 高优先级任务被长任务饿死。
 
 ### Context / Memory
 
-- 旧代码事实覆盖新版本事实；
+- 旧资源快照的事实覆盖当前版本事实；
 - 高相似文本给出相反结论；
 - 恶意 README/图片/音频污染长期记忆；
-- 长 Thread 压缩后关键验收条件丢失；
+- 长 Thread 压缩后用户约束或未解决问题丢失；
 - Memory Store 不可用、索引落后或部分损坏；
-- Role 读取其他 Project/Role 的记忆；
+- Agent 私有 Session、其他 Thread/Scope 或 Role 记忆泄漏；
 - Context 裁剪删除强制权限或验收字段；
 - 检索命中已经 superseded 的 Artifact。
+
+### 多模态绑定
+
+- 错误图片、音频或视频绑定到另一个 Thread/Message；
+- 感知结论引用错误区域、时间片、hash 或媒体版本；
+- 未审查区间被静默当作已观察事实；
+- 媒体超限、解析失败或能力缺失后丢弃该输入继续推理；
+- OCR/DOM/元数据已经足够时仍重复外发原始媒体，或 VLM 结果未保留不确定性。
 
 ### 安全与隔离
 
 - Prompt Injection 请求读取 `.env`、密钥或外部凭据；
 - 路径穿越、绝对路径、符号链接逃逸；
 - shell expansion、危险子进程和网络 egress；
-- 模型伪造 VerificationRecord 或审批；
+- 模型伪造 Acceptance/Verification Evidence、Capability 或审批；
 - Plugin 版本漂移后恢复旧 Run；
 - 超大媒体、压缩炸弹、日志炸弹和磁盘耗尽；
 - 日志裁剪隐藏根因或恰好保留 secret。
+
+### Coding Plugin 子目录
+
+- 恢复时 Workspace hash 漂移，旧代码事实覆盖新代码；
+- 两个 Fixer 同时修改同一文件；
+- Patch 路径越权、集成冲突或只应用部分文件；
+- Producer、Reviewer 与 Validator principal 违反冻结的职责隔离；
+- 构建/测试子进程创建孙进程后超时或残留；
+- 模型声称测试通过但缺少新鲜、Workspace 匹配的 VerificationRecord。
 
 ## 测试矩阵
 
@@ -772,10 +884,13 @@ fault_injection_runs
 
 ## SLI / SLO
 
-### Harness 硬目标
+### Runtime 硬目标
 
-- `false completed = 0`；
-- 跨 Project/Thread/Session/Workspace 污染 = 0；
+- `false accepted = 0`；
+- 跨 Scope/Thread/AgentSession/Artifact/ExecutionEnvironment 污染 = 0；
+- 已 committed 的 Message 永久丢失 = 0；
+- 未收到 DeliveryAck 却记录为 delivered = 0；
+- 重试产生的重复可见副作用 = 0；
 - 未授权副作用 = 0；
 - 已确认 Audit Event 丢失 = 0；
 - 重试、恢复或取消产生的重复不可逆副作用 = 0；
@@ -783,6 +898,8 @@ fault_injection_runs
 - 未批准 Learning/Guardrail 激活 = 0；
 - Secret 出现在普通 Incident/Event/Trace = 0；
 - SEV0/SEV1 IncidentRecord 与 Evidence Bundle 覆盖率 = 100%。
+
+临时投递失败、重试次数和送达延迟是运行指标，不是硬零目标。
 
 ### 闭环运营指标
 
@@ -803,21 +920,23 @@ fault_injection_runs
 
 ## 第一条纵向闭环
 
-首条用例选择：**模型或 Worker 在正文中声称 `passed=true`，但没有独立 VerificationRecord。**
+首条用例选择：**Worker 声称结果已经成功交付，但 Runtime 找不到当前 AcceptancePolicy 所要求的证据。**
 
 预期链路：
 
-1. Fake Worker 返回带 `passed=true` 的普通业务结果；
-2. Runtime 只把它作为不可信内容或 Claim，不改变 Artifact 验证状态；
-3. 故障注入尝试触发 completed；
-4. Completion Gate 检查不到独立、新鲜、Workspace 匹配的 passed Verification；
-5. Runtime 阻止完成并记录 `NEAR_MISS / false_completed_attempt`；
+1. Fake Worker 返回带成功声明的普通业务结果；
+2. Runtime 只把它作为不可信 Message、Artifact 内容或 Claim，不改变 Acceptance 状态；
+3. 故障注入尝试触发 accepted；
+4. Acceptance Gate 检查不到该 Policy 要求的新鲜、匹配 Evidence；
+5. Runtime 阻止接受并记录 `NEAR_MISS / false_acceptance_attempt`；
 6. 自动建立 IncidentOccurrence 和 Evidence Bundle；
 7. 导出固定响应 ReplaySpec；
-8. 回放稳定证明 Harness 拒绝伪造完成；
-9. LearningItem 绑定现有 Verification Authority 实现；
-10. Shadow 与合法通过任务对照后再 Active；
+8. 回放稳定证明 Runtime 拒绝伪造接受；
+9. LearningItem 绑定 Acceptance Gate 的已注册实现；
+10. Acceptance Gate 从实现之日起始终 fail-closed；只有 Incident Detector、LearningItem 或新增非硬 Guardrail 与合法交互对照后才从 Shadow 进入 Active；
 11. 后续统计该 Guardrail 的 prevented、missed 和 false-positive。
+
+合法对照至少覆盖三种场景：普通交互使用 `MessageCommitted + DeliveryAck` 且没有未处理的 `human_required`；多模态分析使用正确媒体绑定与感知来源；目标 Coding Plugin 使用 Patch、新鲜测试证据和 Policy 要求的独立 Review。这样同一个 Core 不会把 build/test 强加给普通 Thread。
 
 这条用例没有真实破坏，却能打通 Event、Incident、Evidence、Replay、Learning 和 Guardrail 全链路。第二条纵向用例选择“取消与模型完成竞态”，开始覆盖并发、硬取消、fencing 和迟到结果。
 
@@ -848,15 +967,15 @@ fault_injection_runs
 
 ## 当前计划结论与下一步
 
-事故学习闭环应作为 Runtime 2.0 的一等横向子系统，并跨 `PROD-01`～`PROD-07` 渐进落地：
+事故学习闭环作为 Runtime 的一等横向子系统，按 `Plan/Plan26.md` 跨 `PROD-01`～`PROD-07` 渐进落地：
 
-- `PROD-00`：冻结本计划、事故等级、SLO、领域与责任边界；
-- `PROD-01`：完成 Event Journal、Incident Ledger、幂等、Outbox、证据和生命周期故障链；
-- `PROD-02`：接入 Provider/Model/Adapter 事故分类、Canary 和回滚；
+- `PROD-00`：已冻结通用事故等级、Acceptance 语义、SLO、Core/Plugin 目录与责任边界；
+- `PROD-01`：完成 Thread/Message/Invocation Event Journal、Incident Ledger、幂等、Outbox、证据和持久交互故障链；
+- `PROD-02`：接入 Session、Provider/Model/Adapter 事故分类、Canary 和回滚；
 - `PROD-03`：接入 Tool Gateway、Capability、Sandbox、Secret 和副作用事故；
-- `PROD-04`：接入 Thread/Session/Handoff/动态图和跨模型 Review 事故；
-- `PROD-05`：完成 Context Lesson、Memory 投影和 Guardrail 晋升；
-- `PROD-06`：接入容量、背压、成本和长期运行事故；
+- `PROD-04`：接入 Mailbox/Handoff/动态图、跨模型 Review、收敛和用户介入事故；
+- `PROD-05`：接入媒体绑定 Detector、Context Lesson、共享 Memory 投影和 Guardrail 晋升；
+- `PROD-06`：按交互/协作/多模态/插件分层统计，接入容量、背压、成本和长期运行事故，并启动 INC-05；
 - `PROD-07`：完成 Incident Operations、Game Day、升级、迁移和事故运营。
 
-在任何实现开始前，仍需完成 `PROD-00` 对 `OPTIMIZATION_BACKLOG.md` 和 `LEARNING_PATH.md` 的统一更新。本计划没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。
+`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量；下一步随 `PROD-01B` 建立持久 Journal/Outbox/事务地基，并在 `PROD-01E` 完成 INC-01 Observe-only。本文没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。

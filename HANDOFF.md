@@ -1,4 +1,4 @@
-# 生产导向 Multi-Model Coding Agent Harness 项目交接
+# 交互式多模态 Multi-Agent Runtime 项目交接
 
 ## 使用方式
 
@@ -17,17 +17,17 @@
 
 ## 项目目标与定位
 
-项目核心是一个面向真实代码仓库、可长期运行、单机优先并可演进到分布式的 **Multi-Model Coding Agent Harness Runtime**。Harness 是项目本体；Agent、模型、Prompt、工具和场景插件都是可替换负载。系统接受文本、图片、音频和视频形式的需求或问题证据，由多个可组合 Agent 完成需求发现、独立判断、任务拆分、代码修改、测试、审查和修复；最终结果仍由 Runtime 的权限、执行和验证证据裁决。
+项目核心是一个可交互、可长期运行、单机优先并可演进到分布式的 **多模态 Multi-Agent Runtime**。用户在持久 Thread 中持续发送文本、图片、音频和视频；多个独立 Agent 可以并行判断、按依赖交接、使用受控工具并接受人工介入。Harness 是项目本体；Agent、模型、Prompt、工具和场景插件都是可替换负载。目标架构把 Coding 封装为插件式专业能力，不再用代码 Bug 修复代表整个产品。当前代码尚无 `CodingPlugin`，Coding 仍是 Composition Root 和包内纵向切片。
 
 项目不再定位为单纯的多 Agent 实验台，也不以接入模型数量或 Agent 数量作为成果。目标系统包含三层：
 
-1. **Harness Runtime**：持久状态、协作协议、上下文装配、模型与 Worker 路由、工具执行、权限隔离、预算、恢复、审计和最终收敛。
-2. **AI Team Workspace**：参考 Cat Café 的 Thread、Invocation、Session、A2A Handoff 和跨模型 Review，为 Harness 提供长期真实使用入口。
-3. **验证与运营系统**：真实仓库 dogfood、固定任务、故障注入、压力测试、单/多 Agent 对照和事故复盘，用于证明 Runtime 可靠性及智能收益。
+1. **Harness Runtime**：Thread、Message、Invocation、Session、Artifact、上下文装配、模型与 Worker 路由、工具执行、权限隔离、预算、恢复、审计和场景化收敛。
+2. **交互式 Agent Workspace**：参考 Cat Café 的 Agent 泳道、Mailbox、结构化 Handoff、跨模型 Review 和用户介入，为长期协作提供真实入口。
+3. **插件与验证运营系统**：Coding、VisionForge 及后续专业能力按插件接入；持续交互、协作、多模态和插件/工具任务分层评测，Coding 是首个代表，并通过故障注入、压力测试和事故复盘证明 Runtime 可靠性。
 
-推荐的第一阶段生产边界是：自托管、单组织/单信任域、多个项目和并发 Run、单机多进程或单集群部署。状态必须持久化，每个 Invocation 必须绑定隔离 Workspace、明确权限和预算。敌对多租户、多区域高可用和大规模远程 Worker 属于后续演进目标，不应在没有容量或隔离证据时提前承诺。
+推荐的第一阶段生产边界是：自托管、单组织/单信任域、多个 Thread 和并发 Invocation、单机多进程或单集群部署。状态必须持久化，每个 Invocation 必须绑定输入快照、明确权限和预算；只有需要资源副作用的场景才绑定隔离 Workspace。敌对多租户、多区域高可用和大规模远程 Worker 属于后续演进目标，不应在没有容量或隔离证据时提前承诺。
 
-VisionForge 的“参考图 → Vue 页面 → 浏览器功能验收 → VLM 视觉审查 → 自动修复”完整保留为 `web_visual` 场景，不再代表整个产品。多模态描述输入方式，不限定输出只能是网页。
+VisionForge 的“参考图 → Vue 页面 → 浏览器功能验收 → VLM 视觉审查 → 自动修复”完整保留为 `visionforge:web_visual` 场景，不再代表整个产品。当前它是直接注册到 Core Registry 的独立 Scenario Plugin，并复用现有 Coding 能力；Plugin SPI 尚不支持插件嵌套。目标归属待 Coding 插件化时再按显式依赖协议迁移。
 
 ### Cat Café 的吸收方式
 
@@ -37,7 +37,9 @@ VisionForge 的“参考图 → Vue 页面 → 浏览器功能验收 → VLM 视
 - Agent 只能提出 `HandoffProposal` 或图变更建议；Harness 校验目标、权限、链深、预算、循环和资源冲突后，才能创建 `RouteEdge`、Invocation 或 Task。
 - “无 Boss Agent”只表示内容判断可以对等，不表示没有中央控制面。Harness 始终独占状态权、副作用权和最终完成判定。
 
-## 当前已实现的默认 Workflow
+## 当前已实现的 Coding 纵向切片（目标迁移为 Plugin）
+
+下面是现有实现事实，不是未来产品默认入口。通用目标主链是 `Thread → Message/Artifact → AgentSession/Invocation → Message/Artifact/Handoff → 用户介入或协作收敛 → 场景 AcceptancePolicy`；普通交互不必创建 Patch、测试或 Fixer。
 
 ```text
 用户需求
@@ -59,6 +61,8 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 
 ## 已完成
 
+- 完成 `Plan/Plan26.md` 的产品中心纠偏与 Runtime Charter：交互式多模态 Multi-Agent Runtime 是产品本体，Coding 被确定为待插件化的专业纵向切片，VisionForge 保持独立 Scenario Plugin；本次只冻结文档边界，尚未实现持久 Thread、Agent 会话或 CodingPlugin。
+- 完成 `PROD-01A` 通用领域协议与迁移骨架：新增独立 `runtime_domain`，冻结 Scope/Thread/Turn/Message、Agent Role/Profile/Instance/Session、Invocation/Attempt、Outcome/Acceptance 和 RuntimeEvent；Coding 只通过单向兼容适配器映射，尚未接入 Store、队列、旧 Executor 或 Web。
 - 建立确定性的 TaskState 与 LifecycleState 双层状态机。
 - 建立 `TaskSpec`、`TaskGraph`、循环依赖和 Artifact 关系校验。
 - 根据依赖、输入 Artifact 和资源冲突选择可并发子任务。
@@ -90,8 +94,8 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - Runtime 质量门禁组合构建、DOM/交互、控制台、页面/网络错误、视觉分数和 P1/P2，模型不能自行宣告 completed。
 - Fixer 根据结构化反馈生成局部 Patch，最多修复两轮；旧 Patch、失败证据和最终验证状态通过 ArtifactStore 追踪。
 - 旧 Runner 的 SQLite 返工 Checkpoint 仍保留兼容测试；产品路径改由 `SQLiteScenarioRunStore + SQLiteRuntimeStore` 统一恢复。
-- Web 提供受控 PNG/JPEG 内容寻址上传和 VisionForge 任务 API；任务只接收 asset ID 与需求，固定使用 Runtime 创建的 Vue 项目目录。
-- Web 可查看参考图、实际截图、评分、修复轮次和结构化 Artifact 调用链，不展示模型原始推理或内部项目路径。
+- 后端仍保留受控 PNG/JPEG 内容寻址上传和 VisionForge 任务 API；任务只接收 asset ID 与需求，固定使用 Runtime 创建的 Vue 项目目录。
+- 历史 VisionForge 首页曾展示参考图、实际截图、评分、修复轮次和 Artifact 调用链；当前默认首页已替换为 Coding 工作台，不再提供该展示，但对应后端 API 与回归仍保留。
 - 建立 3 个版本化固定页面任务、Runtime 拥有的 DOM/交互断言和受控 HTML→PNG 参考图渲染器。
 - 建立三方案统一评测协议与 JSON 报告，记录构建、功能、视觉、首次通过、自动修复、轮数、Token、耗时和人工介入。
 - 建立 DeepSeek 文本模型与 DashScope Qwen 视觉模型的独立配置和按角色路由；客户端适配供应商级结构化输出模式与请求选项。
@@ -118,43 +122,49 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 ## 关键设计决策
 
 - 生产化阶段采用 **production-shaped modular monolith**：先在一个可部署系统内保持清晰模块边界和持久失败语义，再由真实锁竞争、吞吐、可用性或隔离需求推动 PostgreSQL、外部队列和远程 Worker；不以微服务数量代表生产成熟度。
-- 目标控制面显式区分 `Thread`、`Task/ScenarioRun`、`Invocation`、`Attempt`、`SessionBinding`、`RouteEdge` 和 `RuntimeEvent`。其中 Thread 是长期协作空间，Task 是可验收工作，Invocation 是一次 Agent/模型/工具执行，Session 只是供应商上下文绑定，彼此不能混用。
+- 目标控制面显式区分 `Scope`、`Thread`、`Turn/Outcome`、`Message`、`Task/ScenarioRun`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`SessionBinding`、`RouteEdge`、`AcceptanceRecord` 和 `RuntimeEvent`。AgentSession 是 Runtime 自有连续性，SessionBinding 只是到供应商 Session 的可替换映射，彼此不能混用。
 - Discovery 使用受控的对等判断与跨模型校准；Delivery 使用确定性 DAG。自由文本 mention 不是可信控制协议，动态转交必须转成结构化 Handoff 并由 Runtime 接纳。
 - Agent Backend 分为两类：直接模型 API 的 `RawModelBackend`，以及 Codex、Claude Code、Gemini CLI 等自带工具循环的 `FullAgentBackend`。两者统一到可流式、可取消、可恢复的 Invocation Event 协议，但通过能力协商和供应商扩展保留差异。
 - Agent Profile 由 Role、Backend/Model Policy、Tool Capability、Context Policy、Output Contract 和预算组成；Role 不永久绑定 GPT、Claude、Gemini、DeepSeek、Qwen 或其他具体模型。
 - 模型路由必须记录 provider、model/version、Prompt/协议版本、能力、策略和选择理由。Fallback 不能静默降低隐私、工具、结构化输出或验证要求。
-- Workflow/Task DAG 决定何时执行，Role 决定执行能力，Agent 和模型是可替换 Worker。
+- Thread/Task/Scenario 决定何时需要工作，Role 是 Worker 路由第一键，能力、输入协议、运行策略和可用性完成同 Role 内选择；Agent 和模型是可替换 Worker。
 - Harness 独占任务状态、权限、安全策略、Artifact 接纳和最终收敛判断。
 - Agent 只能读取裁剪后的 `RoleMemoryView`，不能访问密钥或扩大权限。
 - Agent 不能直接修改共享目录或直接改变 TaskGraphRuntime 状态。
 - 节点之间通过 Artifact 引用交接，不通过共享可变对象隐式通信。
+- 在新交互域中，Message Store/Journal 独占消息正文、顺序、sender、parent 和投递状态；Artifact 只保存附件、大正文、证据和消息产出的结构化对象，不能成为第二套消息状态。
+- 每个持久实体必须直接携带 `scope_id`，或通过不可变外键唯一归属一个 Scope；父子关系、Artifact/Acceptance Evidence 和因果引用必须同 Scope。Context、Memory 和检索先按 Scope fail-closed，再做 Thread、Project、Role 和相关性过滤。
 - 未经验证的推测不能晋升长期记忆。
 - 当前实现仍使用线程池和 SQLite。Runtime 2.0 先补齐持久 Invocation、Event Journal、幂等、lease/heartbeat、fencing、硬取消和故障恢复；是否引入外部工作流平台、消息队列或 PostgreSQL 由多进程正确性和容量证据决定。向量数据库或图数据库仍必须由检索评测证明必要性。
+- PROD-01 采用状态表为当前业务真相源、Journal 为不可变审计记录、Snapshot 为兼容恢复检查点；关键状态、Event 与 Outbox 必须同一 SQLite 事务提交，不实施平行状态或完整 Event Sourcing。
 - 输入模态与验证场景解耦：图片、音频或视频可以描述后端、CLI、库或前端任务；Visual Reviewer 只在显式 `web_visual` 场景启用。
 - 通用 Coding 任务的 completed 只依赖构建、固定/隐藏测试、行为断言、权限和回归；不使用抽象视觉评分。
 - Core 通过显式 `PluginRegistry` 接纳可信场景插件；Core 不依赖具体插件，场景使用 `plugin_id:scenario` 命名空间并按 Core API 版本校验；场景快照同时保存插件 ID/版本并在恢复时拒绝漂移。
-- 模型只有提交观察、推断、建议和候选产物的权力；只有 Runtime 根据 Validator 产生的执行证据，才能登记验证结果和决定最终完成。Worker 的正常返回不等于验收通过，证据不足必须保持 `unknown/unverified`，不能解释为通过。
-- Core 只定义通用 Requirement、Evidence、Claim、Verification 和 Validator 协议。`UI Spec`、视觉评分和视觉问题分类属于 VisionForge 插件，Core 只按带命名空间的 Artifact 类型保存、授权和传递。
+- 模型只有提交观察、推断、建议和候选产物的权力；只有 Runtime 能签发 `AcceptanceRecord`。Evaluator principal 只能提供证据。Outcome 固定为 `unknown/needs_input/accepted/rejected`；continue 表示保持 unknown 并调度下一 Invocation，blocked/cancelled 属生命周期状态。Worker 正常返回不等于验收通过。目标 Coding Plugin 才把 build/test/Review 等 `VerificationRecord` 作为主要接受证据。
+- `Invocation.completed`、`Outcome.accepted` 与 `Thread.archived` 是三种不同状态：一次模型调用结束不能证明本轮结果被接受，本轮结果被接受也不能自动关闭长期 Thread。
+- 内部 Specialist 委派默认留在同一 `Scope/Thread`，由 `HandoffProposal → RouteEdge → ChildInvocation` 表达，不能为了一个内部子任务偷偷创建新的长期 Thread。`Thread`、`AgentInstance` 和 `AgentSession` 是可持久恢复的协作身份与连续性，不等于常驻模型进程；每个实际执行的 `Attempt` 都必须进入技术终态，并由 Runtime 回收或隔离其进程、SessionBinding、Capability、Lease、端口和临时环境。
+- 当前 Core 已有通用 Evidence、Claim、Verification 和 Validator 基础，以及明显绑定仓库的 `CodingRequirement/RepositoryScope`。PROD-01A 没有新增重叠的 `InteractionRequest`：新 `Message + Turn` 表达通用交互请求，现有 `TaskSpec` 继续承载可选 Task；`UI Spec`、视觉评分和视觉问题分类仍属于 VisionForge。
 - Role 始终是 Worker 路由的第一键，承载职责、权限、记忆视图和职责隔离；同一 Role 后续允许注册多个 Worker，再由能力、输入/输出协议、运行策略和可用性进行确定性筛选，不能因为缺少 Worker 而降低要求或改派其他 Role。
 
 ## 生产可靠性与智能效果边界
 
 Harness 的确定性不变量与模型智能指标必须分开报告，不能用模型答错掩盖 Runtime 事故，也不能把模型答错全部归因于 Harness。
 
-目标 Harness 不变量：
+目标 Runtime 不变量：
 
-- `false completed = 0`；completed 必须具有新鲜、匹配且独立的验证证据。
-- 跨 Thread、Session、Workspace 或项目的上下文污染为 0。
+- `false accepted = 0`；每种交互或插件场景必须显式声明 `AcceptancePolicy`，accepted 必须具有该策略要求的新鲜、匹配证据。只有策略要求独立评估时，Producer 与 Evaluator 才必须 principal 分离。
+- 跨 Scope、Thread、AgentSession、Artifact 或 ExecutionEnvironment 的污染为 0；供应商 SessionBinding 也不得串线。
 - 未授权文件、命令、网络、凭据和外部消息副作用为 0。
-- 已确认 Runtime Event 丢失为 0，重试产生的重复不可逆副作用为 0。
+- 已 committed 的 Message 和已确认 RuntimeEvent 永久丢失为 0；未收到 DeliveryAck 却记录为 delivered 为 0；重试产生的重复可见或不可逆副作用为 0。临时投递失败、重试次数和送达延迟作为运行指标，不伪装成“永不失败”。
 - Token、费用、调用次数和资源硬预算突破为 0。
-- 所有副作用都能追溯到 user、thread、task、invocation、attempt、principal、tool 和证据。
+- 所有副作用都能追溯到 user、scope、thread、turn、可选 task/scenario、invocation、attempt、principal、tool 和证据。
 
-模型与协作效果使用统计指标：accepted task rate、first-pass rate、Fixer recovery rate、human intervention rate、handoff 有效率、结果方差，以及每个 accepted task 的 Token、费用和端到端延迟。多 Agent 必须与强单 Agent 基线比较，额外 Agent 需要证明边际收益。
+模型与协作效果使用分场景统计指标：消息送达与首响应延迟、accepted interaction/task rate、handoff 有效率、未解决问题显式率、Artifact 来源完整率、human intervention rate、结果方差，以及每次 accepted 交互的 Token、费用和端到端延迟。Fixer recovery rate 只属于 Coding 场景。多 Agent 必须与强单 Agent 基线比较，额外 Agent 需要证明边际收益。
 
 ## 当前限制
 
-- 尚未把 Thread、Invocation、Attempt、SessionBinding、RouteEdge 和 RuntimeEvent 建模为统一、持久的一等实体。
+- 尚未把 Scope、Thread、Turn、Message、AgentInstance、AgentSession、Invocation、Attempt、Outcome/Acceptance、SessionBinding、RouteEdge 和 RuntimeEvent 建模为统一、持久的一等实体。
+- 旧 Role/Capability 仍以 Planner、Implementer、Tester、Reviewer、Fixer 和代码读写/验证为主；PROD-01A 已新增不依赖 Coding 的通用 AgentProfile/Role 协议，并通过单向兼容适配器保留旧 Role 映射。真正的 Worker 注册迁移和执行接入仍在 PROD-01D。
 - 当前 `TaskDispatcher` 和 `TaskGraphExecutor` 使用进程内线程池，没有生产意义上的 durable enqueue、claim/lease/heartbeat、fencing token、幂等键、inbox/outbox、dead-letter 和孤儿任务回收。
 - 当前 DAG Snapshot 解决安全边界上的重放问题，但不是追加式 Runtime Event Journal；事件缺少统一的 trace_id、invocation_id、attempt_id、causation_id 和 correlation_id。
 - ModelClient 当前是同步、非流式请求，主要只有 OpenAI Chat Completions 兼容实现；尚无统一的流式 AgentEvent、provider request/session 引用、工具调用事件、finish reason、硬取消和 Full Agent CLI Adapter。
@@ -169,25 +179,25 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - 当前 Browser Tester 只支持固定 Vue 模板、单一本地 HTTP origin 和 Chromium；浏览器二进制由 Playwright 安装或由 Runtime 显式指定。
 - 当前已完成一次保留失败记录和一次校准后真实基线，但 9 个试验的交付通过率仍为 0；结构化输出可靠性、构建错误证据保真和视觉修复稳定性尚未达到可用于产品结论的水平。
 - 场景恢复不会重复已完成 DAG 节点；如果 Workspace 在快照后被外部修改，会拒绝自动恢复并要求人工处理。
-- Web 和评测入口已经切换到 `VisionForgeScenarioRunner`；旧 `VisionForgeRunner` 与文件内 Legacy DAG Runner 只作兼容对照，不再由产品入口调用。
+- 当前 Web 已从 VisionForge 专用页调整为 Coding Harness 兼容工作台，但仍以单次 Coding Run 为中心；它尚不是目标中的持久 Thread、Agent 泳道、讨论因果链和用户介入工作台。VisionForge 的 Scenario Runner 继续作为插件 API 和回归资产保留。
 - Web 上传资产目录会跨进程保存，但 Web 任务索引和运行句柄目前只保存在内存中，服务重启后不能可靠查询、取消或恢复旧任务。
 - 固定 Vue 模板当前共享单一浏览器端口，因此 Web Runtime 串行执行页面任务；尚未支持取消正在运行的任务。
 - 固定评测框架的第二次真实运行只有 SaaS 任务形成完整三方案结果；其余任务受模型空内容、非法/截断 JSON 和不存在的图片引用影响。该报告可以作为可靠性诊断基线，但尚不能证明业务效果提升。
 - 第一版固定任务集只有 3 个页面，适合 MVP 烟测，不足以产生统计上稳定的普遍结论。
-- Core 已有 build/test/CLI Validator 实现，但通用 CLI/Web 产品入口尚未装配固定任务 Profile；API/browser Validator 仍由后续 Core 实现或场景插件提供，VisionForge 继续使用已有场景门禁。
+- 当前代码库已有 build/test/CLI Validator，目标归属 Coding Plugin；通用 CLI/Web 产品入口尚未装配通用 Interaction Profile，API/browser Validator 由后续工具能力或场景插件提供，VisionForge 继续使用已有场景门禁。
 - EvidenceGrant 当前由 Composition Root 注入且不作为可跨进程复用的授权凭据持久化；恢复时必须重新提供，否则结构化需求会安全拒绝。
-- text/image/audio/video 已有统一 Evidence 描述协议；图片感知、音频转录和视频 Bug 时间线的 Core 协议与 Fake Client 链路已接入。真实媒体持久化及真实图片、语音和视频供应商适配尚未接入。
+- text/image/audio/video 已有统一 Evidence 描述协议；图片感知、音频转录和当前偏 Coding 的视频 Bug 时间线协议与 Fake Client 链路已接入。通用视频观察协议、真实媒体持久化及真实图片、语音和视频供应商适配尚未接入。
 - 确定性 Coding 评测已有 3 个小型任务，能够覆盖函数、API 输入和跨文件 CLI，但样本仍不足以代表普遍 Coding 能力；三方案已接入通用 ModelClient Worker 并用 Fake Model 验证，尚未形成真实模型效果对照。
 - VisionForge 仍位于 `coding_workflow/visionforge`，但已作为显式插件装配；本批未做包目录大迁移或删除 Legacy Runner。
-- Core 图片、音频和视频输入已分别通过受控 Worker 转成 `core:image_observation`、`core:audio_transcript` 和 `core:video_bug_evidence`。三条链路都保留原 Evidence 引用，下游文本 Agent 不重复读取原媒体，最终仍使用原固定 Validator。
-- Core 已建立统一 `MultimodalIntakeRunner + core:evidence_bundle`：同一需求的媒体感知可并行执行，每个原始 Artifact 最多处理一次；Bundle 保存每条来源和 ready/blocked/failed，任一必需证据未就绪时普通 Planner 不会被调用。
+- 图片、音频和视频已分别通过受控 Worker 转成结构化感知 Artifact；现有视频类型仍名为 `core:video_bug_evidence`，这是待迁移的 Coding 泄漏，不是新的 Core 术语。三条链路都保留原 Evidence 引用，下游文本 Agent 不重复读取原媒体。
+- 已建立统一 `MultimodalIntakeRunner + core:evidence_bundle`：同一需求的媒体感知可并行执行，每个原始 Artifact 最多处理一次；Bundle 保存每条来源和 ready/blocked/failed。当前 Composition Root 仍把就绪 Bundle 交给 Coding Planner，PROD-05 才接入通用 Thread/Context 产品链路。
 
 ## 学习与生产实践规则
 
 - 每个批次必须由一个真实工作负载、历史事故或可复现的故障假设驱动，不能只因为某项技术流行而接入。
 - 每项生产能力必须同时说明：领域契约、持久状态、失败语义、恢复/补偿方式、审计证据和验收 SLI/SLO。
-- 每批至少包含一个主动故障演练，例如 `kill -9`、重复投递、取消/完成竞态、供应商 429/半截响应、Session 串线、Workspace 冲突、秘密泄漏或磁盘/预算耗尽。
-- Fake Model 和单元测试证明 Harness 按设计工作；真实模型和真实仓库 dogfood 才能评价智能效果与可落地性，两类证据不得混为一谈。
+- 从 PROD-01 起，每批至少包含一个与范围匹配的主动故障演练或确定性故障注入，例如 `kill -9`、重复投递、取消/完成竞态、供应商 429/半截响应、Session 串线、资源冲突、秘密泄漏或磁盘/预算耗尽。纯协议的 PROD-01A 用非法状态、跨 Scope、伪造 Acceptance、过期 lease/fence 和迟到结果负向构造验收；只有持久化或进程边界落地后才能执行对应的 `kill -9`，不得为未实现资源伪造演练证据。
+- Fake Model 和单元测试证明 Runtime 按设计工作；真实交互、多模态输入和分场景 Workload 才能评价智能效果与可落地性，真实代码仓库只验证 Coding 能力，两类证据不得混为一谈。
 - 每次真实事故必须形成：事件证据、影响与根因、修复、回归测试、预防规则/Skill 或自动门禁，以及 SLO 影响记录。
 - 每个 `PROD-*` 批次必须同时规划、实现和验收对应的 `INC-*` 增量；后续新增或完善 Plan、Backlog、Learning Path 和 HANDOFF 内容时，必须包含事故检测、证据、止损、回放、回归和覆盖指标，不能把事故闭环推迟到功能全部完成之后补做。
 - 允许实验得出“某个 Agent、Memory 策略、并发或反思机制没有收益”的结论；无法证明边际价值的复杂度应删除、降级为可选策略或继续暂缓。
@@ -197,19 +207,17 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 ### 方向决议
 
-2026-08-22，用户确认项目不应停留在扁平、简单的多 Agent Demo 或纯评测平台，而应尽可能接近可落地的生产系统：参考 Cat Café 的长期协作形态，以 Harness 为主要工作，接入多个异构模型或 Agent Runtime，并通过真实运行和事故学习生产知识。
+2026-08-23，用户确认产品中心必须回到“可交互、可长期运行、支持多个独立 Agent 协作的多模态 Runtime”。目标上 Coding 是可加载的专业能力；当前 VisionForge 是独立的 `visionforge:web_visual` Scenario Plugin 并复用 Coding 能力。任何一个 Bug、仓库或网页测试都不能代表 Core。
 
-批次 10A～13A 已完成 Core 插件、事实与验证、通用需求、Role-first 路由、受控 Validator、固定 Coding 评测、模型 Worker 和统一多模态 Intake；详细事实与验证记录继续以 `Plan/Plan11.md`～`Plan/Plan24.md`、代码和测试为准。此前“Core 多模态 MVP 已完成”的结论只代表该协议和测试范围完成，不代表生产 Runtime 已就绪。
+`Plan/Plan26.md` 已完成 `PROD-00` 产品 Charter，冻结 Scope、Thread、Turn/Outcome、Message、AgentInstance/AgentSession、Invocation、SessionBinding、RouteEdge、Artifact/Context、Capability 和场景化 Acceptance 的边界。批次 10A～13A 的代码和测试继续作为 Coding、多模态 Intake 与插件机制的已实现资产保留，不因产品纠偏删除，也不得再被描述成默认产品流程。
 
-`OPTIMIZATION_BACKLOG.md` 仍保存此前批次历史。开始下一批实现时，必须先在 PROD-00 中同步新的产品方向、生产批次、状态和验收口径；在此之前，本节是新的方向与顺序来源。
-
-后续严格一次推进一个生产批次。不得跳过当前 PROD-00 直接增加更多媒体、模型、自由 A2A、向量数据库、外部队列、微服务或分布式 Worker。
+后续严格一次推进一个小批次。`PROD-01A` 已完成；当前下一批固定为 `PROD-01B`，不得跳过它直接增加更多供应商、自由 A2A、向量数据库、微服务或分布式 Worker。
 
 ### PROD / INC 双轨联动规则（后续任务强制执行）
 
 事故学习闭环是一等子系统，主计划见 `Plan/Plan25.md`，覆盖范围与漏检计算见 `Plan/闭环覆盖范围.md`。它不是 `PROD-07` 才补做的复盘模块，而是从 `PROD-00` 开始伴随每项生产能力演进的横切控制面。
 
-当前事实：`INC-00` 已完成专项规划，但尚未通过 PROD-00 的文档同步与协议冻结验收；`INC-01`～`INC-05` 尚未实现。不得把“Plan25 已写完”解释为事故子系统已经完成。
+当前事实：`INC-00` 的专项计划及产品泛化已随 `PROD-00` 完成文档冻结；`PROD-01A` 只完成 RuntimeEvent 值协议和同步不变量的地基，Detector、持久 Journal/Ledger、Replay 和自动学习仍未实现，`INC-01`～`INC-05` 状态不因此提前完成。
 
 后续任何任务只要新增、修改、拆分、实现或收口一个 `PROD-*` 批次，就必须在同一份 Plan、Backlog 更新和交接摘要中增加 `INC 联动` 小节，至少写明：
 
@@ -228,12 +236,12 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 | 生产主线 | 必须同步完成的事故学习增量 |
 |---|---|
-| `PROD-00` | 完成 `INC-00`：统一主计划、Backlog、Learning Path、事故目录、领域契约、SLO 和验收口径。 |
-| `PROD-01` | 完成 `INC-01`：Event Journal、Outbox、Incident Ledger、幂等、Evidence 定位和 Observe-only；同时建立 `false_completed` 与取消/迟到结果两个 `INC-02` Shadow 纵向切片。 |
-| `PROD-02` | 扩展 `INC-02` 的 Model/Provider/Adapter Detector、协议错误证据、熔断/fallback 事故、模型版本漂移和 Canary 指标。 |
+| `PROD-00` | 完成 `INC-00`：统一 Charter、Backlog、Learning Path、Core/Plugin 事故目录、领域契约、SLO 和验收口径。 |
+| `PROD-01` | 完成 `INC-01`；Journal 可用后额外建立四组 Observe/Shadow 信号：false acceptance、消息完整性（状态不一致硬错误与送达 SLO 超限分开）、Thread/Session 错绑、取消/迟到结果。它们只把 `INC-02` 标为“部分 Shadow”，不宣称 INC-02 完成。 |
+| `PROD-02` | 扩展 `INC-02` 的 Session、Model/Provider/Adapter Detector、协议错误证据、熔断/fallback 事故、模型版本漂移和 Canary 指标。 |
 | `PROD-03` | 扩展 Tool/权限/隔离/副作用 Detector 和止损，累计完成首批 `INC-02` 的 Detector、Evidence 与预批准 Runbook 验收。 |
 | `PROD-04` | 完成 `INC-03`：协作与并发事故的确定性 Replay、Fault Injection、ChangeSet、Shadow/Canary/Rollback 和正常路径对照。 |
-| `PROD-05` | 完成 `INC-04`：LearningItem、人工审批、知识晋升、Guardrail Evaluation、Memory 投影、退役和复发重开。 |
+| `PROD-05` | 完成 `INC-04`：LearningItem、人工审批、知识晋升、Guardrail Evaluation、Memory 投影、退役和复发重开；通用媒体链路同步扩展 `media_binding_mismatch` Detector。 |
 | `PROD-06` | 启动 `INC-05`：接入容量、背压、配额、压力/soak、告警、error budget 和事故运营指标。 |
 | `PROD-07` | 完成 `INC-05`：Incident Operations、Game Day、Runbook、人工接管、关闭门禁、备份恢复和长期复发评估。 |
 
@@ -257,52 +265,111 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - 需要同步的文档：
 ```
 
-### PROD-00：Runtime Charter、真实 Workload 与 SLI/SLO（当前下一批）
+### 任务专用子 Agent 与 Invocation 回收规则（后续实现强制）
 
-状态：待开始。
+用户可见、可长期协作的是 `Thread`；为某个任务临时创建的 Specialist 执行单元是 `ChildInvocation/Attempt`。内部委派必须优先复用当前 Thread，通过 `parent_invocation_id`、`RouteEdge` 和因果事件建立关系。只有用户明确要求新的长期协作空间，或产品策略确实需要独立保留、权限和参与者边界时，才能创建新 Thread；Thread 结束时使用 close/archive，不使用进程意义上的 kill。
 
-目标：冻结 Runtime 2.0 的产品、领域、部署、信任、数据和验收边界，形成可指导迁移而不是重写现有 Core 的实施计划。
+需要终止的是 Invocation 的执行域。Runtime 必须把“业务/交互结果”和“资源是否已经清理”拆成两条状态：
 
-范围：
+```text
+执行状态：CREATED → QUEUED → CLAIMED → RUNNING
+          → SUCCEEDED / FAILED / CANCELLED / TIMED_OUT
 
-- 定义 `Thread / Task / ScenarioRun / Invocation / Attempt / SessionBinding / RouteEdge / RuntimeEvent / ToolExecution / Approval / BudgetLedger` 的职责、不变量、ID、版本和关系。
-- 明确 modular monolith 的模块依赖、事务边界、Worker 进程边界、存储 Port，以及 SQLite 本地模式与后续 PostgreSQL/外部队列触发条件。
-- 选择本项目自身和至少一个真实代码仓库作为 dogfood，整理 Bug、跨文件功能、重构、测试补全、多模态证据和高风险变更等版本化 Workload。
-- 分别冻结 Harness 硬不变量与模型/协作统计指标，定义事故等级、RPO/RTO、取消、恢复、审计、预算和 accepted task 口径。
-- 给出从现有 TaskGraph、ScenarioRuntime、Artifact、Verification、WorkerRegistry 和 SQLite Snapshot 到 Runtime 2.0 的增量迁移图；禁止另起一套平行真相源。
-- 同步 `OPTIMIZATION_BACKLOG.md`、`LEARNING_PATH.md` 和新的 `Plan/Plan25.md`，消除“L1→L2”与当前代码成熟度、以及旧下一步之间的冲突。
+清理状态：ALLOCATED → ACTIVE → DRAINING → TERMINATING
+          → REAPED / TERMINATION_FAILED
+```
 
-本批不接真实供应商、不改 Runtime 行为、不访问网络；验收物是经过代码核对的 Charter、领域模型、生产批次、故障矩阵和可执行验收标准。
+`SUCCEEDED` 只表示候选结果和终态意图已经可靠持久化；只有 `cleanup_state=REAPED`，Invocation 才能 `CLOSED`。如果清理失败，结果证据可以保留，但执行域必须进入 `TERMINATION_FAILED/RECOVERY_REQUIRED` 并创建 Incident，不能静默宣称已经完全结束。`Outcome.accepted` 仍由 AcceptancePolicy 决定，Thread 仍由用户或生命周期策略归档，三者不能互相推导。
 
-### PROD-01：Runtime Journal 与 Durable Invocation
+所有成功、失败、取消和超时路径必须进入同一个幂等 Finalizer，顺序至少包括：
 
-状态：待 PROD-00 完成后开始。
+1. 使用乐观版本或 CAS 把 Invocation 转为 finalizing，停止接受新的 ToolCall、Handoff 和副作用请求；
+2. 先吊销本次 CapabilityGrant、短期凭据和写权限，并级联请求取消所有非终态 ChildInvocation；
+3. 封存候选 Artifact、Usage、终态意图和 Evidence，关键状态、RuntimeEvent 与 Outbox 同事务提交；
+4. 请求 Backend、工具和子进程协作退出，在冻结的 grace period 后终止 Runtime 拥有的进程组；仍不退出时强制 kill 整个进程组、容器或等价隔离单元；
+5. 释放 SessionBinding、Workspace/ExecutionEnvironment Lease、端口、预算预留和临时目录；保留 Thread、Message、Artifact、Acceptance、RuntimeEvent 和 Incident 等审计事实；
+6. 持久化 `reaped`，由 Watchdog/Reaper 重试未完成清理；旧执行单元的所有迟到事件、Artifact 和副作用请求必须被 fencing token 确定性拒绝。
 
-目标：建立第一版真正可恢复的长期运行控制面。
+推荐的终态不变量：
 
-预定范围：持久 Invocation/Attempt、append-only Runtime Event、durable queue、claim/lease/heartbeat、fencing token、幂等键、inbox/outbox 或等价原子发布、Workspace lease、watchdog、孤儿任务回收、Web 任务持久查询，以及模型/验证/浏览器进程的端到端取消。
+```text
+Invocation.closed
+⇒ execution_state is terminal
+∧ cleanup_state = REAPED
+∧ active_capability_grants = 0
+∧ active_resource_leases = 0
+∧ active_child_invocations = 0
+∧ late_results_cannot_mutate_state
+```
 
-必做故障演练：Patch 已应用但完成事件未写入时 `kill -9`、重复投递、模型响应已产生但连接中断、取消与完成竞态、SQLite 锁竞争/磁盘异常、恢复时 Workspace 漂移。验收要求不得丢失已确认事件、不得重复不可逆副作用、不得产生无法回收的 Invocation。
+当前 `ThreadPoolExecutor/Future.cancel()` 不能安全终止已经运行的 Python 线程，当前同步 ModelClient 的超时也不能证明供应商已经停止推理。因此必须如实分层实现：
 
-### PROD-02：Invocation Backend v2 与真实多模型 Canary
+- `PROD-01A` 冻结 parent/child、执行状态、清理状态、终止原因、deadline、lease、fencing 和资源引用协议；
+- `PROD-01C` 实现取消意图持久化、级联取消、claim/lease/heartbeat、fencing、Watchdog、孤儿识别和幂等 Reaper；在仍使用进程内线程的路径上，只能保证逻辑失权和拒绝迟到结果，不能伪称已经物理 kill；
+- `PROD-02` 为 Raw Model/Full Agent Backend 实现流式取消、连接关闭、CLI 进程组终止和 SessionBinding revoke/expire；远程 Provider 无法保证停止时，必须记录潜在费用并依靠 fencing 阻止其结果生效；
+- `PROD-03` 对高风险工具增加独立进程、容器/cgroup 或等价隔离、孙进程回收、短期凭据和 Workspace/端口资源回收；
+- `PROD-04` 只有在上述父子生命周期和回收语义可用后，才能开放动态 Specialist 委派和多级 Handoff。
 
-状态：待 PROD-01 完成后开始。
+建议由 `InvocationSupervisor` 统一组合 CancellationController、Lease/Fencing、Backend/Process Supervisor、CapabilityBroker、SessionRegistry、Workspace/Environment Manager、Watchdog 和 ResourceReaper；不能让每个 Agent 自己决定是否已经退出。
 
-目标：把当前同步 ModelClient 演进为可流式、可取消、可恢复、可观测的 Backend 协议，并用真实异构供应商证明能力契约而不是兼容接口假象。
+事故联动至少覆盖 `orphan_invocation`、`stuck_cancelling`、`termination_failed`、`process_leak`、`session_binding_leak`、`resource_lease_leak`、`late_result_after_cancel`、`side_effect_after_parent_cancel` 和 `non_terminal_descendant_on_close`。`PROD-01E/INC-01` 先记录并 Shadow 取消、迟到、孤儿与清理失败信号；`PROD-04/INC-03` 再完成多级委派、Parent/Child 竞态和资源冲突的确定性 Replay 与 Fault Injection。
 
-预定范围：统一 AgentEvent 和错误分类、Raw Model/Full Agent 两类 Backend、能力与供应商扩展、Session 外部引用、usage/finish reason、限流、熔断、重试预算、健康度、版本化 Model/Prompt/Protocol、shadow/canary/回滚和受策略约束的 fallback。
+必做故障演练包括：Worker 忽略取消、Agent/工具创建孙进程、Provider 在取消后迟到返回、Artifact 已保存但终态事件未提交时进程退出、Reaper 重启、Parent 取消与 Child 完成竞态、旧 Worker 在 lease 失效后继续提交，以及 Workspace/端口/SessionBinding 回收失败。每个演练都必须同时检查技术终态、资源回收、迟到结果拒绝、证据和合法正常路径。
 
-第一组真实接入应选择协议形态不同的代表，而不是一次接完所有模型：一个 GPT 或 Claude 原生 Backend、一个 Gemini 多模态 Backend、一个 DeepSeek 或 Qwen 的 OpenAI-compatible Backend；随后再选择 Codex、Claude Code 或 Gemini CLI 中的一个作为 Full Agent Backend。具体供应商、源码外发、调用次数和预算必须在执行当次重新授权。
+### PROD-00：产品中心纠偏与 Runtime Charter
+
+状态：**已完成（仅文档和协议冻结，Runtime 行为未修改）**。
+
+验收物是 `Plan/Plan26.md` 及本次同步的 HANDOFF、Backlog、Learning Path 和事故计划。第二个真实代码仓库已移到目标 Coding Plugin Canary/dogfood，不再是 Core Charter 的完成条件。PROD-00 是唯一的 Charter 例外：以代码事实核对、跨文档一致性、`git diff --check` 和现有回归验收；主动故障演练从 PROD-01 开始。
+
+### PROD-01：Durable Thread、Message、Invocation 与 Event Journal
+
+状态：**01A 已完成，当前等待 01B**；继续严格按 01B～01E 逐批推进。
+
+目标：建立第一版真正可恢复的交互控制面，并复用现有 Artifact、SQLite Snapshot、TaskGraph 与 ScenarioRuntime，不另起平行真相源。
+
+执行顺序：
+
+1. **PROD-01A 领域协议与迁移骨架（已完成）**：实现最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent`；冻结 Message/Artifact 边界与 Coding 兼容映射。Invocation 只包含 `input_refs + input_digest + policy_snapshot_ref + budget_reservation`，完整 Grant 和 ContextManifest 分别留给 PROD-03/05。
+2. **PROD-01B 状态 Store、Journal 与 Outbox（当前下一批）**：SQLite 状态表是当前业务真相源，Journal 是不可变审计记录，Snapshot 是兼容恢复检查点；状态更新、Event、Outbox 与最小 BudgetLedger 预留/结算同事务提交。
+3. **PROD-01C Durable Invocation**：durable enqueue、幂等、claim/lease/heartbeat、fencing、watchdog、孤儿回收、重启恢复和取消意图持久化；模型请求硬取消留给 PROD-02。
+4. **PROD-01D 兼容接入与 Web 查询**：把 TaskGraph、ScenarioRuntime 和当前 Coding 纵向切片接入 Thread 的可选工作，保留回归；Web 先支持持久查询，不实现完整 Agent 泳道。
+5. **PROD-01E INC-01 与首批 Shadow**：完成 `INC-01`；建立 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到结果四组 Observe/Shadow 信号，只将 `INC-02` 标为“部分 Shadow”。
+
+PROD-01B 的 Store 门禁已固定：在同一 `RuntimeUnitOfWork` 中用权威索引解析并校验同 Thread/Turn/AgentSession 关系，只允许 Runtime 依据已持久且 `validate_against(policy)` 通过的 Record 生成 Outcome，对 `event_id` 和序号实施唯一/append-only 约束，并将状态、Event、Outbox 和预算预留/结算原子提交。Invocation 的 `closed` 还必须用 Store 中的 Attempt/Child/Lease/Grant/Resource 权威索引二次核对，不能只信单个 DTO 上的活动引用。
+
+PROD-01A 只做领域协议、状态不变量、序列化和兼容映射测试。Backend、Capability、Context、Mailbox 只保存可选或不透明版本引用；本批不实现 Mailbox 投递、SessionBinding、模型调用、Gateway、Context Compiler、SQLite Store/Journal、调度、Web 或现有 Runtime 执行接入。
+
+PROD-01A 实现事实：
+
+- 通用 Core 协议不依赖 Coding；每个实体直接携带 Scope，父子、因果、Artifact、Acceptance 和执行引用跨 Scope 时 fail-closed，所有值采用严格 schema version、不可变结构和 JSON 往返。
+- Invocation 输入用 `ScopedRef + content_hash` 固定，Attempt 持有真实 worker/principal、lease 和 Runtime 单调签发的 fence；执行与清理分轴，终态必须有 TerminalRecord，`TERMINATION_FAILED` 保留独立清理证据，`closed` 不等于 succeeded 或 accepted。
+- late result admission 是纯函数，不写 Store：旧/未来 fence、取消后、终态后、过 deadline/lease、错误 Thread/Attempt/输入/策略一律拒绝；相同 mutation 是幂等 no-op，同 ID 不同 payload 是冲突。
+- AcceptancePolicy/Record/Outcome 固定为 `unknown/needs_input/accepted/rejected`；accepted 必须满足匹配、新鲜证据和策略要求的独立 evaluator。数据类只能校验协议形状，真正“只有 Runtime 可签发”的写权限必须由 PROD-01B Store 在同一事务中强制。
+- RuntimeEvent 只保存小型、脱敏、深冻结 JSON 元数据和引用；append-only、唯一序号、授权写入和 Outbox 还未实现。Coding 的 Role/Worker/Task/Artifact/Verification 通过单向适配器映射，旧 passed/verified/completed 都不会直接生成 accepted。
+
+### PROD-01A / INC 联动与验收
+
+- 对应阶段：`INC-01` 的协议前置；状态仍为待开始，只有 RuntimeEvent envelope 与同步不变量已具备。
+- 风险与不变量：覆盖跨 Scope、错误 subject、伪造 Runtime Acceptance、非法执行/清理状态、过期 lease、stale/future fence、取消后迟到结果、幂等冲突和 Artifact 内容漂移；合法普通交互与 Coding 兼容映射同时作为正常对照。
+- Evidence / 审计：证据是严格协议对象、内容哈希和 64 项定向测试；没有持久 Journal/Ledger，因此不能声称事件已经 append-only 或事故可以重启恢复。Event 值协议禁止正文、私密推理、凭据、未校验 `*_ref`、Prompt、Completion、原始媒体和 bytes；同一 Event 的更正必须使用新 event ID。
+- 止损 / 恢复：本批仅在对象构造和 mutation admission 时 fail-closed，不产生外部副作用；事务补偿、重启恢复、Watchdog/Reaper 和人工事故权限分别由 PROD-01B/01C/01E 实现。
+- Replay / Fault Injection：本批以确定性负向协议构造覆盖；SQLite 中断、重复投递、`kill -9`、锁竞争和孤儿恢复不适用，因为尚未实现 Store/进程边界，固定由 PROD-01B/01C 补齐。
+- SLI/SLO：新增协议测试 64 项全部通过，默认全量 277 项通过、4 项真实浏览器测试按设计跳过；已注册 Detector 数仍为 0，不能报告 detected/missed/MTTD/MTTR。
+- 完成门禁：Python compileall、`git diff --check` 和全部默认回归通过；无需手动检验，没有模型、网络、媒体、外部仓库或数据库写入。
+
+必做故障演练：消息或副作用已提交但完成事件未写入时 `kill -9`、重复投递、错误 Thread/Session 绑定、取消与完成竞态、SQLite 锁竞争/磁盘异常和孤儿 Invocation 恢复。合法普通对话与当前 Coding 纵向切片都必须有对照，避免把 build/test 误设为所有 Thread 的完成条件。
 
 ### 后续生产顺序
 
-1. **PROD-03 Tool Gateway 与执行隔离**：每 Invocation Capability、Secret Broker、隔离 Workspace/容器、默认断网、资源配额、高风险审批和副作用审计。
-2. **PROD-04 协作控制面**：持久 Thread/Session、Discovery/Delivery 双环、结构化 Handoff、受控动态图、跨模型独立 Review、人工接管和循环终止。
-3. **PROD-05 Context 与知识工程**：Context Compiler、来源/版本/TTL/ACL、Session 压缩、检索评测、事故→知识→规则/Skill→自动门禁。
-4. **PROD-06 并发、运营与容量**：Trace/Metric、关键路径、背压、公平性、Provider/Role/Tool 配额、压力与 soak test，再用证据决定 PostgreSQL、外部队列或远程 Worker。
-5. **PROD-07 演进与事故运营**：Schema/Prompt/Plugin/Model 迁移、N-1 读取、golden trace replay、canary、回滚、备份恢复、Game Day 和运行手册。
+1. **PROD-02 Backend v2、Session 与 Streaming**：Raw Model/Full Agent Backend、流式事件、硬取消、SessionBinding、usage/finish reason、错误分类、fallback 和 Canary。
+2. **PROD-03 Capability、Tool Gateway 与执行隔离**：每 Invocation Grant、Secret Broker、隔离环境、默认断网、资源配额、高风险 Approval 和副作用审计。
+3. **PROD-04 交互式协作控制面**：Mailbox、结构化 Handoff、并行/顺序协作、独立 Review、用户介入、循环终止，以及 Thread/Agent 泳道和讨论因果链。
+4. **PROD-05 Context、共享记忆与多模态工作区**：Context Compiler/Manifest、版本/TTL/ACL、Session 压缩、共享记忆治理、检索评测和通用媒体附件链路。
+5. **PROD-06 插件产品化与效果/容量验证**：Coding/VisionForge 插件入口、四类业务模式分层评测、背压、公平性、配额、压力与 soak。
+6. **PROD-07 迁移与事故运营**：Schema/Prompt/Plugin/Model 迁移、golden trace replay、canary、回滚、备份恢复、Game Day 和运行手册。
 
-`CORE-ABLATION-001` 继续暂缓，可作为 PROD-00 Workload 与指标系统的一部分重新审视。任何真实模型、媒体、外部仓库或网络调用都需要新的明确授权，不能沿用 `Plan/Plan20.md` 的旧摘要。
+任何真实模型、媒体、外部仓库或网络调用都需要执行当次的新授权，不能沿用历史授权摘要。
 
 ## 关键文件
 
@@ -311,6 +378,12 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - `demo/coding_workflow/harness/executor.py`：并发调度、局部重试和节点结果接纳。
 - `demo/coding_workflow/harness/dispatcher.py`：当前进程内 TaskHandle、线程池提交、暂停、取消与 shutdown；PROD-01 durable queue 的替换/兼容边界。
 - `demo/coding_workflow/harness/lifecycle.py`：当前生命周期状态机与 checkpoint 取消语义；PROD-01 端到端硬取消和恢复的基础。
+- `demo/coding_workflow/runtime_domain/common.py`：PROD-01A 严格版本、Scope 引用、JSON 冻结和内容摘要基础。
+- `demo/coding_workflow/runtime_domain/interaction.py`：通用 Scope、Thread、Turn、Message 与 Agent Role/Profile/Instance/Session 协议。
+- `demo/coding_workflow/runtime_domain/invocation.py`：Invocation/Attempt、执行/清理双状态轴、输入快照、终止、lease、fencing 和迟到结果 admission。
+- `demo/coding_workflow/runtime_domain/acceptance.py`：场景化 AcceptancePolicy/Evidence/Record 与 Outcome 协议。
+- `demo/coding_workflow/runtime_domain/events.py`：小型、不可变、Scope 绑定的 RuntimeEvent envelope；持久 Journal 留给 PROD-01B。
+- `demo/coding_workflow/coding_runtime_compat.py`：Coding Role/Worker/Task/Artifact/Verification 到通用协议的单向兼容映射。
 - `demo/coding_workflow/planning.py`：结构化 Planner 和非法图修复。
 - `demo/coding_workflow/dag_runner.py`：真实 DAG 端到端执行入口。
 - `demo/coding_workflow/graph_workers.py`：DAG Worker 契约实现。
@@ -374,10 +447,12 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - `demo/visionforge_eval/render-reference.mjs`：无外部网络、固定环境的 HTML→PNG 渲染器。
 - `demo/visionforge_eval/README.md`：三方案反馈边界、统一评分口径和指标说明。
 - `demo/coding_agent_cli.py`：通用 Coding DAG 的 CLI 入口。
-- `demo/web_server.py`：通用 Harness 兼容入口与 VisionForge 上传、任务、图片读取 API。
-- `demo/web/index.html`、`demo/web/app.js`、`demo/web/styles.css`：VisionForge 上传、进度、截图、轮次和 Artifact 调用链界面。
+- `demo/web_server.py`：当前 Coding Harness 兼容入口，并保留 VisionForge 上传、任务和图片读取 API；尚未实现持久 Thread API。
+- `demo/web/index.html`、`demo/web/app.js`、`demo/web/styles.css`：当前 Coding 工作台兼容页面；不是目标中的 Thread/Agent 泳道产品页。
 - `demo/tests/test_web_server.py`：Web Runtime、上传目录、受控请求字段和前端入口测试。
 - `demo/tests/test_workflow.py`：Harness、DAG、记忆和端到端测试。
+- `demo/tests/test_runtime_interaction_protocol.py`、`test_runtime_invocation_protocol.py`、`test_runtime_acceptance_protocol.py`、`test_runtime_event_protocol.py`：PROD-01A 通用协议、状态不变量、跨 Scope、late result 和 Outcome 防伪测试。
+- `demo/tests/test_runtime_coding_compat.py`：Coding 单向映射、完整 TaskSpec 快照、Artifact 内容绑定和旧通过状态不越权测试。
 - `demo/tests/test_plugins.py`：Core 插件注册、兼容、原子性、缺失语义和反向依赖禁令测试。
 - `demo/tests/test_truth.py`：事实分类、验证权、伪造字段、unknown、执行/验收分离和 SQLite 往返测试。
 - `demo/tests/test_requirements.py`：需求协议、范围冻结、EvidenceGrant、Profile Runner、验证新鲜度和恢复测试。
@@ -391,7 +466,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - `demo/docs/task-graph-and-memory.md`：设计边界说明。
 - `catCafe/cat-cafe-tutorials-study-notes.md`：Cat Café 的对等判断/结构化执行、生产事故、Session、A2A、Review 和知识晋升参考。
 - `catCafe/cat-cafe-runtime-framework.md`：Thread、Invocation、Session、AgentEvent、Queue、Adapter 和安全层的 Runtime 参考；只吸收机制，不取代现有 DAG/Artifact 真相源。
-- `LEARNING_PATH.md`：旧的一周学习路线和成熟度定义；需在 PROD-00 中改为生产演进与事故驱动路线。
+- `LEARNING_PATH.md`：交互式多模态 Runtime 的生产演进与事故驱动学习路线。
 - `Plan/Plan06.md`：任务拆分和记忆机制的策略归档。
 - `Plan/Plan09.md`：多模态 Coding Multi-Agent MVP、客观验收和实施顺序。
 - `Plan/Plan11.md`：Core 插件边界、信任模型和 VisionForge 后续迁移顺序。
@@ -409,6 +484,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - `Plan/Plan23.md`：Core 视频 Bug 证据链、观察/推测/建议分离、时间线引用和同一回归验收边界。
 - `Plan/Plan24.md`：统一多模态 Intake、并行/单次处理、状态化 Bundle、失败关闭和下游隔离。
 - `Plan/Plan25.md`：事故学习闭环一等子系统的领域模型、状态机、分批实施、Fault Catalog、SLI/SLO 和关闭门禁。
+- `Plan/Plan26.md`：产品中心纠偏、通用领域模型、Core/Plugin 边界、场景化 Acceptance 和 PROD-00～07 路线。
 - `Plan/闭环覆盖范围.md`：事故闭环的已知覆盖范围、漏检概率模型、统计口径、主要盲区和阶段性目标。
 - `OPTIMIZATION_BACKLOG.md`：优化批次、优先级、状态和验收标准。
 
@@ -435,7 +511,7 @@ git status --short
 - 仓库：`/Users/donbblu/codex/multiAgent`
 - 分支：`codex/multimodal-coding-mvp`
 - 远端：`git@github.com:donbblu/MultiAgent.git`
-- 当前基线提交：`6e8ca85 chore: archive daily progress 2026-08-21`
+- 当前基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒

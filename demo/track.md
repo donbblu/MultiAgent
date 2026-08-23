@@ -313,3 +313,22 @@
 
 - 完成 PROD-00 对 Backlog、Learning Path、Runtime Charter、事故目录和验收口径的统一冻结。
 - 按 PROD/INC 双轨顺序实现 Event Journal、Incident Ledger、Detector、Evidence、Replay 和 Guardrail；当前仍为规划，未改变 Runtime 行为。
+
+## 2026-08-23
+
+### 已优化
+
+- 将 Core 从 Coding 修复流程纠偏为可长期交互、支持多 Agent 协作的多模态 Runtime，Coding 与 VisionForge 保留为专业场景能力。
+- 新增 Scope、Thread、Turn、Message、Agent Profile/Session、Invocation/Attempt、Acceptance 和 RuntimeEvent 的严格领域协议。
+- 建立 Coding 单向兼容适配器，并以 lease、fencing、双状态轴和幂等 mutation 约束取消、迟到结果与资源清理。
+
+### 已解决
+
+- 解决 Coding 语义反向定义 Core，以及 Invocation 成功、Outcome accepted 和 Thread archived 相互混淆的问题。
+- 解决跨 Scope/Thread 引用、伪造 Acceptance、输入漂移和旧 Attempt 迟到写入缺少确定性拒绝协议的问题。
+- 64 项定向协议测试和 277 项默认单元测试通过，4 项真实浏览器测试按设计跳过。
+
+### 待优化
+
+- 实现 PROD-01B 的 SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 和持久查询。
+- 继续 PROD-01C 的 durable enqueue、claim/lease/heartbeat、Finalizer/Reaper、重启恢复和级联取消。

@@ -1,40 +1,55 @@
-# 多模态 Coding Multi-Agent 优化待办
+# 交互式多模态 Multi-Agent Runtime 优化待办
 
 本文是项目方向和优化工作的单一待办清单。`HANDOFF.md` 负责恢复上下文；具体批次、状态和验收条件以本文为准。
 
-- 最后核对：2026-08-21
-- 当前批次：批次 13A 已完成；当前规划的 Core 多模态 MVP 批次全部完成
-- 下一步：里程碑验收，等待用户决定提交/推送或另行规划后续方向
+- 最后核对：2026-08-23
+- 当前批次：`PROD-01A` 领域协议与迁移骨架已完成（纯协议，不代表已接入执行路径）
+- 下一步：`PROD-01B` 状态 Store、Journal 与 Outbox
 
 ## 维护规则
 
 - 状态只使用：`待开始`、`进行中`、`已完成`、`暂缓`。
 - 一次只推进一个批次；用户确认“下一批”后才开始后一批。
 - 开始时改为 `进行中`；实现、自动化测试和运行证据齐全后才能改为 `已完成`。
+- `PROD-00` 是唯一的 Charter 例外，以代码事实核对、文档一致性、`git diff --check` 和现有回归验收；主动故障演练从 `PROD-01` 开始。
 - 每批结束必须记录修改文件、自动化测试、无法自动完成的手动检验和下一批内容。
 - 模型输出始终是不可信输入。文件写入、命令、浏览器、状态和最终质量门禁由 Runtime 控制。
-- 现有 Coding Harness 测试必须尽可能保持通过。
+- 现有 Coding、VisionForge 和多模态 Intake 测试是兼容回归资产，必须尽可能保持通过。
 
 ## 产品方向
 
-项目核心是一个支持文本、图片、音频和视频需求证据的 **Coding Multi-Agent Harness**。多模态负责表达需求和问题证据，不限定生成网页；系统可以修改前端、后端、CLI、库或其他现有代码仓库。
+项目核心是一个支持持续交互、多个独立 Agent 协作和文本/图片/音频/视频输入的 **多模态 Multi-Agent Runtime**。长期存在的是 Thread、Agent 身份、Mailbox、Runtime 自有 AgentSession 和可恢复状态；供应商 SessionBinding 只是可替换映射，模型调用是短生命周期 Invocation。用户可以随时补充信息、改向、暂停、取消或批准高风险动作。
 
-核心 MVP 聚焦一条可客观验收的 Coding 链路：
+目标架构把 Coding 封装为按需加载的专业插件；当前代码尚无 `CodingPlugin`，Coding 仍是 Composition Root/包内纵向切片。VisionForge 当前是独立的 `visionforge:web_visual` Scenario Plugin，并复用 Coding 能力；现有 Plugin SPI 不支持插件嵌套。TaskGraph、WorkerRegistry、ArtifactStore、SQLite Runtime、生命周期、权限、Checkpoint、PatchIntegrator、ProjectWorkspace 和 Web/API 都是迁移基础；其中 Patch、Workspace、build/test 和 Fixer 属于 Coding 场景，不是每个交互的必经路径。
 
-```text
-多模态输入 Artifact
-  → Requirement Analyst 生成结构化 Coding Requirement
-  → Planner 生成 TaskGraph
-  → Developer 生成受限 Patch
-  → Runtime 安全应用 Patch
-  → Validator 运行编译、固定测试和隐藏测试
-  → 失败证据触发 Fixer
-  → 完整回归与权限门禁决定 completed
-```
+Core 只接受受控 Message、Artifact、Handoff 和工具请求。模型不能扩大权限、把推测登记成事实，或自行声明交互已被接受；Runtime 按交互或插件声明的 `AcceptancePolicy` 检查证据。
 
-TaskGraph、WorkerRegistry、ArtifactStore、PatchIntegrator、ProjectWorkspace、SQLite Runtime、生命周期、权限、Checkpoint 和 Web/API 是通用确定性基础设施。浏览器、Visual Reviewer、API 测试器和语言测试器是按任务选择的验证场景；模型不能自行声明通过。
+完整 Charter 见 `Plan/Plan26.md`。
 
-VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再代表整个产品，也不使用抽象视觉分数评价通用 Coding MVP。
+## 生产主线
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| PROD-00-CHARTER | P0 | 已完成 | 产品中心纠偏、领域模型、Core/Plugin 边界和场景化 Acceptance | `Plan26`、HANDOFF、Backlog、Learning Path 和事故计划一致；不改 Runtime 行为 |
+| PROD-01A | P0 | 已完成 | 最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent` 协议 | 版本化往返、ID/因果/状态不变量、跨 Scope 引用拒绝、Message/Artifact 单一事实源和 Coding 协议映射测试齐全；Invocation 同步冻结 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 与资源引用；不实现 Store、调度、Mailbox、Backend、Gateway、Context、Web 或执行接入 |
+| PROD-01B | P0 | 待开始 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | 状态表为当前真相源，Journal 为审计，Snapshot 为兼容检查点；状态/Event/Outbox/预算预留结算原子提交 |
+| PROD-01C | P0 | 待开始 | durable enqueue、幂等、claim/lease/heartbeat、fencing、级联取消、Finalizer/Reaper 与恢复 | kill/retry/cancel 竞态不重复副作用，孤儿 Invocation 和残留 Lease 可幂等回收；进程内路径只承诺逻辑失权，Backend/进程硬取消不越界到本批 |
+| PROD-01D | P0 | 待开始 | 将现有 Task/Scenario/Coding 执行适配到 Thread，并提供 Web 持久查询 | 现有回归尽可能全通过；普通 Thread 不被要求 build/test；Web 不假装已有完整 Agent 泳道 |
+| PROD-01E | P0 | 待开始 | 完成 `INC-01`，并启动四组 `INC-02` Observe/Shadow 事故链 | 覆盖 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败及合法对照；INC-02 仅标为部分 Shadow |
+| PROD-02 | P0 | 待开始 | Backend v2、Session 与 Streaming | 流式、硬取消、错误分类、受控 fallback 和 Canary |
+| PROD-03 | P0 | 待开始 | Capability、Tool Gateway 与执行隔离 | 每 Invocation Grant、高风险 Approval、资源与副作用审计 |
+| PROD-04 | P0 | 待开始 | 交互式多 Agent 协作控制面与 Thread Web | Mailbox、Handoff、并行/依赖、收敛、用户介入和 Agent 泳道可追踪 |
+| PROD-05 | P1 | 待开始 | Context、共享记忆与多模态工作区 | ContextManifest、ACL/版本/TTL、媒体附件和检索评测 |
+| PROD-06 | P1 | 待开始 | 插件产品化与效果/容量验证 | 持续交互、协作、多模态和插件/工具任务分层评测；Coding/VisionForge 不污染 Core 指标 |
+| PROD-07 | P1 | 待开始 | 迁移与事故运营 | Replay、Canary、回滚、备份恢复、Game Day 和 Runbook |
+
+统一生命周期门禁：任务专用 Specialist 默认是同一 Scope/Thread 下的 ChildInvocation，而不是新 Thread；`execution_state` 进入技术终态不代表已经清理。只有执行终态、`cleanup_state=REAPED`、活动 Grant/Lease/ChildInvocation 为零且旧 Attempt 已被 fencing 时才能关闭 Invocation。任何 `TERMINATION_FAILED`、残留资源或取消后副作用都必须保留证据并进入恢复/事故链。
+
+PROD-00 验收：仅修改方向与计划文档；`git diff --check`、213 项默认单元回归和 Python compileall 通过，4 项真实浏览器测试按设计跳过；无手动检验。
+
+PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器；64 项定向协议测试和 277 项默认全量测试通过，4 项真实浏览器测试按设计跳过；Python compileall 与 `git diff --check` 通过。负向用例覆盖跨 Scope/Thread、伪造 Acceptance、非法状态/清理组合、过期或错误 lease/fence、取消后扩权、迟到结果、重复 mutation、秘密 Event payload 和内容漂移。未接 SQLite、队列、模型、Mailbox、Web 或旧 Executor；无手动检验。
+
+以下批次 1～13A 是已完成的历史纵向切片与兼容资产，不是新的产品推进顺序。各批“验收记录”保留的是当时事实，可能已被后续批次替换；当前产品和代码状态以本文顶部、`HANDOFF.md`、代码与测试为准。
 
 ## 已完成的 VisionForge 场景批次
 
@@ -181,9 +196,11 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 - 开放式网页设计存在多种合理实现，单一 VLM 视觉分数缺少确定标注，不适合作为第一个 MVP 的主要通过标准。
 - `VF-CALIBRATE-001` 暂缓；只有后续明确需要衡量参考图还原能力时，才使用独立视觉缺陷集和人工标注重新启动。
 
-## 核心 Coding MVP 批次
+## 已完成的 Coding 与多模态纵向切片历史
 
 ### 批次 9：产品重新定位与客观评测设计
+
+> 历史说明：本批将产品收窄为 Coding Harness 的定位已被 2026-08-23 的 `PROD-00 / Plan26` 纠偏取代；已实现协议、测试和插件资产继续保留。
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
@@ -418,15 +435,12 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 - 新增 7 项混合输入、并行/单次处理、失败关闭、状态防伪、纯文本、覆盖约束和同验收测试；完整默认回归 213 项通过（4 项真实浏览器类跳过）。
 - 本批没有读取 `.env`、访问网络、调用真实媒体服务、上传媒体或请求系统录屏权限；详细设计见 `Plan/Plan24.md`。
 
-## 暂缓的通用优化
+## 暂缓或重新归位的优化
 
-以下工作保留，但在核心 Coding MVP 跑通前不推进：
-
-- 通用记忆测评、检索权重调优、向量或混合检索。
-- 符号级调度冲突分析和更复杂的通用 DAG。
-- 自由 Agent 聊天、多租户和复杂长期记忆。
-- Spring Boot 等后端业务自动生成。
-- 与核心 Coding 闭环无关的通用工具调用平台。
+- 受 Runtime 控制的 Thread、Message、AgentSession、Handoff、用户介入和 Tool Capability 已进入 `PROD-01`～`PROD-05` 主线，不再以“自由 Agent 聊天”名义暂缓。
+- 通用记忆测评与 ContextManifest 属 `PROD-05`；向量或混合检索仍须由评测证明必要性。
+- 符号级调度冲突、Spring Boot 自动生成和其他领域实现归对应插件，不进入 Core 默认路径。
+- 敌对多租户、无限制 A2A、开放网络、微服务拆分、复杂分布式调度和任意远程 Worker 继续暂缓。
 
 ## 已完成的 Harness 基线
 
@@ -441,7 +455,7 @@ VisionForge 的 Vue/Playwright/VLM 闭环保留为 `web_visual` 场景，不再�
 
 ## 当前基线
 
-- 基线提交：`a7c465d chore: archive daily progress 2026-08-20`
+- 基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`
 - 当前测试：`PYTHONPATH=demo python3 -m unittest discover -s demo/tests -q`，213 个测试通过（4 个真实浏览器类默认跳过）。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。
