@@ -15,7 +15,8 @@
 | PROD-01A Runtime 领域对象、不变量和 Coding 单向适配 | 已实现并有测试 | 已有持久队列、Journal 或恢复运行时 |
 | VisionForge `visionforge:web_visual` | 已是独立 Scenario Plugin | 已嵌套在 CodingPlugin 中，或代表 Core |
 | Coding 纵向切片 | 已实现，目标迁为插件 | `CodingPlugin` 已完成 |
-| SQLite 权威 Store、Journal、Outbox、BudgetLedger | 当前下一批 PROD-01B | 已有 Runtime-only 持久写入边界 |
+| SQLite 事务底座 | PROD-01B-1 已完成组件 Schema/Migration/UoW | 权威 State Store、Journal、Outbox、BudgetLedger 或 Runtime-only Acceptance 已完成 |
+| SQLite 权威 Store、Journal、Outbox、BudgetLedger | PROD-01B 继续进行中；下一动作冻结 01B-2 | 01B-1 事务底座已等于完整持久事实链 |
 | Durable claim/lease/heartbeat、Watchdog/Reaper | 待 PROD-01C | PROD-01A 的值协议已等于实际回收机制 |
 | Backend v2 / SessionBinding / 客户端缓存 | 待 PROD-02 | 现有同步 ModelClient 已满足生产语义 |
 | Mailbox、持久 Handoff、Agent 泳道 | 待 PROD-04 | 当前 Coding DAG 页面已是目标协作控制面 |
@@ -325,9 +326,9 @@ Coding 插件应同时包含新功能、Bug 修复和行为保持重构。Core �
 
 ### 当前回答
 
-事故学习闭环仍然必要，但必须从“Coding 修复回顾”泛化为 Runtime 横向能力：`RuntimeEvent → Detector/Invariant → IncidentLedger → EvidenceBundle → Replay/FaultInjection → ChangeSet → Shadow/Canary → LearningItem → GuardrailEvaluation`。事故事实、根因假设、修复提案和已激活规则必须分开。Agent 可以整理证据和提案，不能篡改事故事实、自己批准 Guardrail 或宣布事故关闭。
+事故学习闭环仍然必要，但必须从“Coding 修复回顾”泛化为 Harness 横向能力，并以 Runtime 的事件与持久状态作为执行事实底座：`RuntimeEvent → Detector/Invariant → IncidentLedger → EvidenceBundle → Replay/FaultInjection → ChangeSet → Shadow/Canary → LearningItem → GuardrailEvaluation`。事故事实、根因假设、修复提案和已激活规则必须分开。Agent 可以整理证据和提案，不能篡改事故事实、自己批准 Guardrail 或宣布事故关闭。
 
-排查顺序应先冻结 Scope/Thread/Invocation/Attempt/Artifact/版本和时间窗，再沿 correlation/causation 追踪事件，区分业务失败、权限拒绝、超时、迟到结果、上下文污染和清理失败。只在可回放证据重现后修复，并在 Shadow/Canary 阶段同时测量漏检和误报。当前只完成 INC-00 文档与 PROD-01A 的部分协议地基；持久 Journal、Detector、Ledger、Replay 和运营指标仍未实现。
+排查顺序应先冻结 Scope/Thread/Invocation/Attempt/Artifact/版本和时间窗，再沿 correlation/causation 追踪事件，区分业务失败、权限拒绝、超时、迟到结果、上下文污染和清理失败。只在可回放证据重现后修复，并在 Shadow/Canary 阶段同时测量漏检和误报。当前已完成 INC-00 文档冻结、PROD-01A 协议地基与 PROD-01B-1 SQLite 事务底座；持久 Journal、Detector、Ledger、Replay 和运营指标仍未实现。
 
 ## 19. Core 应该立即分布式、微服务化或引入向量数据库吗？
 
@@ -359,7 +360,7 @@ PROD-01B 选用 SQLite 建立本地权威 Thread/Message/Invocation Store；当�
 
 当前顺序已冻结为：
 
-1. `PROD-01B`：SQLite 权威状态 Store、append-only Journal、Outbox、最小 BudgetLedger 和持久查询，状态/Event/Outbox/预算同事务提交。
+1. `PROD-01B`：01B-1 事务底座已完成；下一动作冻结 01B-2，再逐片实现 SQLite 权威状态 Store、append-only Journal、Outbox、最小 BudgetLedger 和持久查询，最终保证状态/Event/Outbox/预算同事务提交。
 2. `PROD-01C`：durable enqueue、claim/lease/heartbeat、fencing、Watchdog/Reaper、级联取消和重启恢复。
 3. `PROD-01D/01E`：将当前 TaskGraph/Scenario/Coding 纵向切片接入 Thread，提供持久 Web 查询，并建立第一批 Observe/Shadow 事故信号。
 4. `PROD-02`：Backend v2、SessionBinding、Streaming、usage 和硬取消。

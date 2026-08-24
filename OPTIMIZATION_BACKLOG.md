@@ -2,9 +2,9 @@
 
 本文是项目方向和优化工作的单一待办清单。`HANDOFF.md` 负责恢复上下文；具体批次、状态和验收条件以本文为准。
 
-- 最后核对：2026-08-24
-- 当前批次：`PROD-01A` 领域协议与迁移骨架已完成（纯协议，不代表已接入执行路径）
-- 下一步：`PROD-01B` 状态 Store、Journal 与 Outbox
+- 最后核对：2026-08-25
+- 当前批次：`PROD-01B` 进行中；`PROD-01B-1` SQLite Schema、Migration 与 RuntimeUnitOfWork 已完成
+- 下一步：先冻结 `PROD-01B-2` 的 InvariantCard，再实现状态变更与 append-only RuntimeEvent 的原子提交
 
 ## 维护规则
 
@@ -15,7 +15,7 @@
 - 每批结束必须记录修改文件、自动化测试、无法自动完成的手动检验和下一批内容。
 - 模型输出始终是不可信输入。文件写入、命令、浏览器、状态和最终质量门禁由 Runtime 控制。
 - 现有 Coding、VisionForge 和多模态 Intake 测试是兼容回归资产，必须尽可能保持通过。
-- Harness Evolution Protocol 是项目内部跨批次实验门禁，不是新的生产批次；它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。当前下一步继续固定为 `PROD-01B`。
+- Harness Evolution Protocol 是项目内部跨批次实验门禁，不是新的生产批次；它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。当前仍在 `PROD-01B`，下一动作固定为冻结 `PROD-01B-2`。
 - 影响 Agent 行为的 Harness 修改必须附版本化 Harness Evolution 实验记录：Baseline、失败证据、单一 Hypothesis/候选变更、固定控制项、Validation、隔离 Held-out、代价、回归和保留/回滚决定。无可定位 Run/Trial/Evidence 的数字必须标注“示例（非实测）”，脚本/Fake Model 结果不得冒充真实模型收益。
 - 当前只采用 `L1 人工评测驱动演进`；`L2 Agent 辅助评测驱动演进` 是后续受限候选能力，`L3 生产自主 Harness 演进` 当前非目标。未严格复现官方协议时只能称内部 Harness Evolution Experiment/Pilot，不得宣称 Evo-Bench 成绩。
 
@@ -35,7 +35,7 @@ Core 只接受受控 Message、Artifact、Handoff 和工具请求。模型不能
 |---|---|---|---|---|
 | PROD-00-CHARTER | P0 | 已完成 | Harness 产品定位、Runtime 领域模型、Core/Plugin 边界和场景化 Acceptance | `Plan26`、HANDOFF、Backlog、Learning Path 和事故计划一致；不改 Runtime 行为 |
 | PROD-01A | P0 | 已完成 | 最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent` 协议 | 版本化往返、ID/因果/状态不变量、跨 Scope 引用拒绝、Message/Artifact 单一事实源和 Coding 协议映射测试齐全；Invocation 同步冻结 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 与资源引用；不实现 Store、调度、Mailbox、Backend、Gateway、Context、Web 或执行接入 |
-| PROD-01B | P0 | 待开始 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | 状态表为当前真相源，Journal 为审计，Snapshot 为兼容检查点；状态/Event/Outbox/预算预留结算原子提交 |
+| PROD-01B | P0 | 进行中 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | `PROD-01B-1` 组件级 Schema/Migration/RuntimeUnitOfWork 已完成；下一动作是冻结 `PROD-01B-2` 的状态变更 + append-only RuntimeEvent 原子提交口径。终局仍要求状态表为当前真相源，Journal 为审计，Snapshot 为兼容检查点，状态/Event/Outbox/预算预留结算原子提交 |
 | PROD-01C | P0 | 待开始 | durable enqueue、幂等、claim/lease/heartbeat、fencing、级联取消、Finalizer/Reaper 与恢复 | kill/retry/cancel 竞态不重复副作用，孤儿 Invocation 和残留 Lease 可幂等回收；进程内路径只承诺逻辑失权，Backend/进程硬取消不越界到本批 |
 | PROD-01D | P0 | 待开始 | 将现有 Task/Scenario/Coding 执行适配到 Thread，并提供 Web 持久查询 | 现有回归尽可能全通过；普通 Thread 不被要求 build/test；Web 不假装已有完整 Agent 泳道 |
 | PROD-01E | P0 | 待开始 | 完成 `INC-01`，并启动四组 `INC-02` Observe/Shadow 事故链 | 覆盖 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败及合法对照；INC-02 仅标为部分 Shadow |
@@ -459,8 +459,8 @@ PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器
 
 ## 当前基线
 
-- 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`；当前代码 `HEAD=1f4dc13afb348d36b6e89ac09f1d85eccc960488` 且工作区为 dirty，正式可复现基线仍需绑定后续 clean checkpoint。
-- 当前测试（2026-08-24）：`PYTHONPATH=demo python3 -m unittest discover -s demo/tests -q` 共执行 277 项，其中 273 项通过、4 项真实浏览器类默认跳过、0 failure、0 error；Python compileall 与 `git diff --check` 同步通过。
+- 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`；当前代码 `HEAD=12f315e103bb3fd4d8879feb9331bb605ea51a64` 且工作区为 dirty，01B-1 新文件尚未提交，正式可复现基线仍需绑定后续 clean checkpoint。
+- 当前测试（2026-08-25）：01B-1 专项 32/32、Runtime 96/96；`PYTHONPATH=demo python3 -m unittest discover -s demo/tests -q` 共执行 309 项，其中 305 项通过、4 项真实浏览器类默认跳过、0 failure、0 error；Python compileall 与 `git diff HEAD --check` 同步通过。实现/测试 hash 与非声明见 `HANDOFF.md` 的 01B-1 VerificationReport。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。
 - 当前环境 PATH 未提供 Node/npm；已使用 Codex 工作区 Node 24.19.0 与 pnpm 11.19.0 完成锁文件和构建验证。

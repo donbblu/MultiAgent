@@ -64,7 +64,7 @@ Runtime 将一次工作拆成 Invocation 和 Attempt，并把**执行状态**与
 
 ### 策略影响与现状
 
-这套协议已经在 `runtime_domain` 中实现，并通过非法状态、跨 Scope、过期 lease、旧 fence、重复 mutation 和迟到结果等负向测试。现在完成的是 PROD-01A 协议地基，还没有 durable queue、SQLite Invocation Store、真正的 heartbeat/Reaper 或 Backend 硬取消。当前下一批 PROD-01B/01C 正是把协议变成持久运行行为。
+这套协议已经在 `runtime_domain` 中实现，并通过非法状态、跨 Scope、过期 lease、旧 fence、重复 mutation 和迟到结果等负向测试。PROD-01B-1 又完成了组件级 SQLite Migration/UnitOfWork 事务底座，但还没有 durable queue、权威 SQLite Invocation Store、Journal、真正的 heartbeat/Reaper 或 Backend 硬取消。完整 PROD-01B 仍在进行中，下一动作是先冻结 01B-2；01C 再把 claim/lease/heartbeat 与回收协议接成持久运行行为。
 
 ## 5. 谁可以宣布结果完成，Multi-Agent 何时停止
 
@@ -200,7 +200,7 @@ Mock/Fake 证明协议和 Harness 按设计工作；真实模型 Canary 评价�
 
 项目现在最需要的不是继续增加 Agent、模型或页面，而是把已经冻结的协议变成可恢复的运行事实。下一阶段顺序是：
 
-1. PROD-01B：实现 SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 和持久查询，并保证同事务提交。
+1. PROD-01B：01B-1 事务底座已完成；下一动作冻结 01B-2，再逐片实现 SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 和持久查询，并保证同事务提交。
 2. PROD-01C：实现 durable enqueue、claim/lease/heartbeat、fencing、Finalizer/Reaper、级联取消和重启恢复。
 3. PROD-01D/01E：把现有 Coding/Scenario 路径接入 Thread，并建立首批事故 Observe/Shadow 链。
 

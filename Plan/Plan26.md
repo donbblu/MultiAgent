@@ -307,7 +307,7 @@ Agent 行为、智能效果和可泛化收益声明必须使用隔离 Held-out�
 演进分为三层：
 
 1. `L1 人工评测驱动演进` 是当前默认开发方法；人分析失败、提出 Hypothesis 和受限候选变更，由独立验证边界评测。当前尚无通用独立 Eval Runtime，现阶段只能生成 Verification Evidence，不能冒充 Runtime `AcceptanceRecord`。
-2. `L2 Agent 辅助评测驱动演进` 只允许 Agent 生成 ChangeProposal/候选 Patch。外部 Codex/Claude 等离线辅助可以先使用版本化文件 Bundle，并由人负责隔离与评测；作为 Runtime 一等能力时，持久实验索引依赖 PROD-01B，Full/Raw Backend 依赖 PROD-02，受控执行与权限隔离依赖 PROD-03，ChildInvocation/Handoff 依赖 PROD-04。候选发布验证还依赖 INC-03，且仍须经过 Offline Eval、独立 Review、Shadow、人工批准和可回滚 Canary。
+2. `L2 Agent 辅助评测驱动演进` 只允许 Agent 生成 ChangeProposal/候选 Patch。外部 Codex/Claude 等离线辅助可以先使用版本化文件 Bundle，并由人负责隔离与评测；作为 Harness 一等能力时，持久实验索引依赖 PROD-01B，Full/Raw Backend 依赖 PROD-02，受控执行与权限隔离依赖 PROD-03，ChildInvocation/Handoff 依赖 PROD-04。候选发布验证还依赖 INC-03，且仍须经过 Offline Eval、独立 Review、Shadow、人工批准和可回滚 Canary。
 3. `L3 生产自主 Harness 演进` 当前不实施，也不因 Agent 能生成 Patch 而视为具备。依赖顺序固定为：INC-03 提供 ChangeSet、VerificationRun、Shadow/Canary/Rollback；INC-04 提供 Learning/Guardrail 的审批、替代与退役；INC-05 提供运营、Game Day 和长期复发评价。三阶段成熟后仍需重新立项，不能自动解锁。
 
 当前已有固定 Coding 任务、对 Policy Agent 隐藏的 Runtime 私有 Validator、任务校准和三方案消融管线，但没有对人工 Evolver 密封的 held-out，固定 Coding 三方案的真实模型效果对照也尚未完成，3 个任务不足以形成泛化结论。脚本/Fake Model 结果只能验证控制流；示例指标必须标为“示例（非实测）”。只有绑定版本化 Run、Trial、manifest 和 Evidence 的结果才能进入验收、Handoff 或简历结论。
@@ -379,12 +379,40 @@ RPO/RTO 的数值目标将在 PROD-01 结合 Journal 和故障注入冻结；当
 为满足“一次只实施一小批”，PROD-01 固定拆为：
 
 1. **PROD-01A 领域协议与迁移骨架（已完成）**：实现最小 Scope、Thread、Turn、Message、通用 AgentProfile/Role、AgentInstance、AgentSession、Invocation/Attempt、Outcome、AcceptancePolicy/Record 和 RuntimeEvent 协议；明确 Message/Artifact 唯一真相源与 Coding 兼容映射。Invocation 本批冻结 `input_refs + input_digest + policy_snapshot_ref + budget_reservation`，以及 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 和资源引用协议；不假装已经有 PROD-03 的完整 Grant 或 PROD-05 的 ContextManifest。
-2. **PROD-01B 状态 Store、Journal 与 Outbox（当前下一批）**：SQLite 状态表是当前业务真相源，Journal 是不可变审计，Snapshot 是兼容检查点；状态、Event、Outbox 和最小 BudgetLedger 预留/结算同事务提交，并增加持久查询。Provider/Tool 细分策略分别在 PROD-02/03 扩展，容量分析归 PROD-06。
+2. **PROD-01B 状态 Store、Journal 与 Outbox（进行中）**：`PROD-01B-1` 已完成组件级 SQLite Schema、Migration 与 RuntimeUnitOfWork；下一动作是冻结 `PROD-01B-2` 的状态变更与 append-only RuntimeEvent 原子提交口径。完整 01B 仍要求状态表作为当前业务真相源、Journal 作为不可变审计、Snapshot 作为兼容检查点，并将状态、Event、Outbox 和最小 BudgetLedger 预留/结算同事务提交。Provider/Tool 细分策略分别在 PROD-02/03 扩展，容量分析归 PROD-06。
 3. **PROD-01C Durable Invocation**：durable enqueue、幂等、claim/lease/heartbeat、fencing、watchdog、孤儿识别、级联取消、幂等 Finalizer/Reaper、重启恢复和取消意图持久化；进程内执行路径只能承诺逻辑失权和拒绝迟到结果，Backend 请求与进程的物理硬取消归 PROD-02。
 4. **PROD-01D 兼容接入与 Web 查询**：把现有 TaskGraph/ScenarioRuntime/Coding 纵向切片作为 Thread 中可选工作接入，保留回归；Web 先支持持久 Thread/Invocation 查询，不在本批实现完整 Agent 泳道。
 5. **PROD-01E INC-01 与首批 Shadow**：完成 INC-01 Observe-only；再建立 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败四组 Observe/Shadow 信号。消息状态不一致是硬错误，正常离线重试不算事故，只有超过冻结时间窗才是 delivery SLO breach。此时 INC-02 只标记为“部分 Shadow”。
 
 PROD-01B 的权威 Store 必须在同一事务中校验同 Thread/Turn/AgentSession 绑定、Runtime-only Acceptance 签发、Event ID/序号唯一与 append-only，并以 Attempt/Child/Lease/Grant/Resource 索引二次核对 `Invocation.closed`。状态、Event、Outbox 和最小 BudgetLedger 必须原子提交；这些都不能由 01A 的单个 DTO 伪装为已完成。
+
+#### PROD-01B-1：SQLite Schema、Migration 与 RuntimeUnitOfWork
+
+状态：**已完成（2026-08-25）**。本切片只建立 Store 的事务底座；完整 `PROD-01B` 仍为进行中，不得宣称 State Store、Journal、Outbox、BudgetLedger 或 Runtime-only Acceptance 已完成。
+
+`InvariantCard INV-PROD-01B-1-UOW-ATOMICITY-v1`：
+
+- **scope**：本地文件型 SQLite；组件名固定为 `runtime_kernel`，使用组件级 schema metadata/migration ledger，与旧 `runtime_snapshots`、Memory 和 Scenario 表共存，不占用 DB-global `PRAGMA user_version/application_id`；
+- **schema**：未安装组件 schema 的空库或只含未纳管兼容表的数据库可原子初始化到 v1；重复初始化为只读 no-op；未来版本、metadata/ledger 缺口或 checksum 漂移在修改前 fail-closed；
+- **transaction**：只有显式 `commit()` 成功才可持久化；显式 rollback、正常退出但未 commit、异常退出和 commit 前故障均必须在重开后不可见；commit 成功后全部写入在重开后可见，禁止部分可见；
+- **connection**：每个 UoW 连接都启用 foreign keys、固定 busy timeout 和 `synchronous=FULL`，文件数据库必须使用 WAL；
+- **lifecycle**：UoW 不可嵌套、跨线程或复用；commit/rollback/close 后不能形成隐式第二事务；异常不得被吞掉；
+- **fault points**：只提供可回滚线性化点 `migration_before_commit`、`uow_after_begin`、`uow_before_commit`；不提供可抛异常的 after-commit hook，以免制造“调用方收到失败但数据已提交”的歧义；
+- **evidence**：fresh/reinitialize/future/corruption、migration fault、显式 commit/rollback、无 commit、异常、FK、WAL、busy timeout、非法状态、commit 前/后进程退出、重开与 integrity check；
+- **nonclaims**：本切片不实现领域 Repository、真实 state+event mutation、Journal append/query、Outbox 投递/Ack、Budget、权威关系/Acceptance、Web、锁竞争容量、掉电保证、lease/fencing/cancel/Reaper、Detector/Incident Store 或 PostgreSQL；
+- **INC**：只生成记录在 VerificationReport 中的合成 fault-injection 测试证据，作为 `INC-01` 的事务前置；本切片没有生产故障证据对象、RuntimeEvent emission、Journal、Replay 或 Incident Store。Detector 数仍为 0，`INC-01` 保持待开始，不报告 detected/missed/MTTD/MTTR。
+
+实现与 `VerificationReport`（开发 Verification，不是 `AcceptanceRecord`）：
+
+- 新增 `runtime_persistence` 包，仅纳管 `runtime_schema_metadata` 与 `runtime_schema_migrations` 两张表；旧 `SQLiteRuntimeStore` 仍只是兼容 Snapshot Store。UoW 采用显式 commit、WAL、foreign keys、`synchronous=FULL`、固定 busy timeout、线程归属和 fail-closed 状态机；业务 UoW 禁止事务控制 SQL、Schema DDL、ATTACH/DETACH、可变 PRAGMA 与受管 metadata DML。
+- 预切片 Baseline 为 Runtime 64/64、全量 277 项执行（273 通过、4 跳过）。本切片冻结单一 mutation：引入组件级 v1 Migration 与显式 RuntimeUnitOfWork，不增加领域 Repository、Event Journal 或 Incident 能力。
+- 开发中先后由负向测试与独立 Review 暴露并关闭：原始 connection/SQL commit 绕过、ALTER/DDL authorizer 参数绕过、结果迭代器泄漏 cursor、`INSERT OR ROLLBACK` 终止外层事务、rollback failure 被隐藏、WAL/Schema 检查时序与 REAL `1.5` 版本被整数强转等缺陷；每条均形成回归或故障注入用例。
+- 冻结证据绑定 `HEAD=12f315e103bb3fd4d8879feb9331bb605ea51a64` 的 dirty 工作区，以及实现 hash `52aaad07318ed17415bde9686ada2a6fd9b5effe29938beb271f199e7679ba59`、测试 hash `f1ef68b22517bca828f0a5063e297dfad545de345ef1a4db68682afc8416e13e`。Python 3.9.6、SQLite 3.51.0；01B-1 专项 32/32、Runtime 96/96；默认全量执行 309 项，305 通过、4 个真实浏览器 E2E 按设计跳过、0 failure/error；compileall 与 `git diff HEAD --check` 通过。两个独立 Review 结论分别为 `APPROVE` 与 `APPROVE WITH NOTES`。
+- 合成故障矩阵覆盖 migration/commit 前回滚、进程在 commit 前/后退出、重开 all-or-none、future/corrupt schema、锁忙、跨线程、事务边界逃逸与双异常链；正常对照覆盖 fresh/reinitialize、旧 Snapshot 共存、显式 commit、全量回归和 integrity check。无需用户手动测试。
+
+确定性 Harness Evolution 轻量记录：`lifecycle_status=COMPLETED`，`decision=KEEP`。Baseline、单一 mutation、固定故障矩阵、正常对照、独立 Review 与回归均已绑定上述证据；Evolver、真实模型、Validation/Held-out、query budget、样本量和统计效果全部为 `N/A`。该决定只保留 01B-1 事务底座，不构成 Runtime Acceptance，也不支持智能效果或生产可靠性外推。
+
+下一动作：先为 `PROD-01B-2` 单独冻结 InvariantCard，再实现最小状态变更与 append-only RuntimeEvent 的同事务提交；Outbox、Budget、权威关系/Acceptance 和并发恢复继续分后续切片，不在 01B-1 收口时偷跑。
 
 PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context、Mailbox 等对象的可选或不透明版本引用，明确不实现 Mailbox 队列/投递、SessionBinding、模型调用、CapabilityGrant/Gateway、Context Compiler/Manifest、SQLite Store/Journal、调度、Web 或现有 Runtime 执行接入。Coding 兼容只做协议映射和往返测试，运行接入留给 PROD-01D。
 
@@ -434,7 +462,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 
 验收证据：`git diff --check` 通过；默认单元回归 213 项通过、4 项真实浏览器测试按设计跳过；Python compileall 通过。无需用户手动检验。
 
-当前下一批固定为 **PROD-01B：状态 Store、Journal 与 Outbox**。
+当前仍处于 **PROD-01B：状态 Store、Journal 与 Outbox**；`PROD-01B-1` 已完成，下一动作固定为先冻结 `PROD-01B-2` InvariantCard。
 
 ## 待验证事项
 
@@ -444,7 +472,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 
 ## 待办事项
 
-- 实施 PROD-01B 的持久 Store、Journal、Outbox、BudgetLedger 和查询协议。
+- 先冻结并实施 PROD-01B-2，再逐片完成 PROD-01B 剩余的持久 Store、Journal、Outbox、BudgetLedger 和查询协议；01B-1 不重复开发。
 - 随后实施 PROD-01C 的 durable Invocation、Finalizer/Reaper、fencing、取消与恢复。
 - 按 PROD/INC 双轨补齐对应事故事件、负向用例、正常对照和覆盖指标。
 - 对每个适用的行为修改同步填写 Harness Evolution 实验模板；PROD-01B 使用确定性轻量轨，只填写 Baseline、单一变更、故障矩阵、正常对照、固定门禁、回归和决策，Evolver/principal、样本量、Validation/Held-out cohort、query budget、统计效果等字段统一标为 `N/A`，不得因此阻塞基础设施开发，也不得把该证据外推为模型智能或 Held-out 效果结论。

@@ -3,9 +3,9 @@
 > Scope：本目录是根项目多模态 Multi-Agent Harness 的当前 Coding/VisionForge 纵向切片与兼容入口，目标迁移为专业 Plugin；它不是整个产品，也不代表 `CodingPlugin` 已经实现。根项目以通用 Multi-Agent Runtime 为执行内核，权威定位见仓库根 `README.md`、`HANDOFF.md` 与 `Plan/Plan26.md`。
 
 这是一个供应商无关、可审计的 Coding Multi-Agent Harness。系统接收文本及多模态
-需求证据，由 Runtime 负责任务拆分、Worker 调度、文件变更、真实验证、局部修复和
-最终收敛。模型只能提出结构化计划或 Patch，不能自行修改任务状态、扩大权限或宣告
-任务完成。
+需求证据；Harness 负责任务拆分、角色/模型策略、工具与局部修复编排，Runtime Kernel
+负责 Worker 调度、状态/权限/预算、Artifact 接纳、真实 Validator 执行和最终门禁。
+模型只能提出结构化计划或 Patch，不能自行修改任务状态、扩大权限或宣告任务完成。
 
 ## 当前执行路线
 

@@ -691,9 +691,9 @@ fault_injection_runs
 
 ### INC-01：Event Journal 与 Incident Ledger，只观察
 
-状态：待开始；`PROD-01A` 已完成 RuntimeEvent envelope、Scope 引用、Acceptance/Invocation 同步不变量和确定性负向测试，尚无持久 Journal、Ledger 或 Detector。`PROD-01B` 冻结事务基础，在 `PROD-01E` 完成 Observe-only 纵向能力。
+状态：待开始；`PROD-01A` 已完成 RuntimeEvent envelope、Scope 引用、Acceptance/Invocation 同步不变量和确定性负向测试，`PROD-01B-1` 已完成组件级 SQLite Migration 与 RuntimeUnitOfWork 事务底座，尚无持久 Journal、Ledger、RuntimeEvent emission 或 Detector。后续 01B 切片继续建立持久事实链，在 `PROD-01E` 完成 Observe-only 纵向能力。
 
-PROD-01A 的事故增量只是一层可验证协议地基：Event payload 深冻结、限长并禁止正文/Prompt/Completion/原始媒体；跨 Scope、错误 Acceptance subject、非法执行/清理组合、过期 lease/fence、取消后迟到结果和幂等冲突在进入持久边界前 fail-closed。因为本批没有 SQLite Journal、进程或副作用，`kill -9`、事务中断、重复投递和恢复回放不适用，必须由 PROD-01B/01C 实测；已注册 Detector 数仍为 0，不能提前声称 INC-01 进入 Observe-only。
+PROD-01A 的事故增量只是一层可验证协议地基：Event payload 深冻结、限长并禁止正文/Prompt/Completion/原始媒体；跨 Scope、错误 Acceptance subject、非法执行/清理组合、过期 lease/fence、取消后迟到结果和幂等冲突在进入持久边界前 fail-closed。PROD-01B-1 新增的是可重开的 SQLite 事务前置：合成故障测试已验证 migration/commit 前回滚、commit 前/后进程退出的 none/all、Schema 漂移拒绝及事务边界逃逸；这些只记录在 VerificationReport，不是生产事故事件、Detector 或 Replay。重复投递、真实 state+event+outbox bundle、孤儿恢复和 Incident 持久链仍未实现；已注册 Detector 数仍为 0，不能提前声称 INC-01 进入 Observe-only。
 
 `PROD-01` 完成 INC-01 后，额外为 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败建立四组 Observe/Shadow 信号；这只把 INC-02 标为“部分 Shadow”，不满足 INC-02 完成门禁。
 
@@ -980,7 +980,7 @@ PROD-01A 的事故增量只是一层可验证协议地基：Event payload 深冻
 
 ## 当前计划结论与下一步
 
-事故学习闭环作为 Runtime 的一等横向子系统，按 `Plan/Plan26.md` 跨 `PROD-01`～`PROD-07` 渐进落地：
+事故学习闭环作为 Harness 的一等横向子系统，以 RuntimeEvent、Journal、Acceptance 和运行状态为执行事实底座，按 `Plan/Plan26.md` 跨 `PROD-01`～`PROD-07` 渐进落地：
 
 - `PROD-00`：已冻结通用事故等级、Acceptance 语义、SLO、Core/Plugin 目录与责任边界；
 - `PROD-01`：完成 Thread/Message/Invocation Event Journal、Incident Ledger、幂等、Outbox、证据和持久交互故障链；
@@ -991,4 +991,4 @@ PROD-01A 的事故增量只是一层可验证协议地基：Event payload 深冻
 - `PROD-06`：按交互/协作/多模态/插件分层统计，接入容量、背压、成本和长期运行事故，并启动 INC-05；
 - `PROD-07`：完成 Incident Operations、Game Day、升级、迁移和事故运营。
 
-`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量；下一步随 `PROD-01B` 建立持久 Journal/Outbox/事务地基，并在 `PROD-01E` 完成 INC-01 Observe-only。本文没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。
+`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量，`PROD-01B-1` 已完成经合成中断/重开验证的事务地基；下一动作是冻结 `PROD-01B-2` 的状态变更与 append-only RuntimeEvent 原子提交口径，后续继续建立 Journal/Outbox，并在 `PROD-01E` 完成 INC-01 Observe-only。本文没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。

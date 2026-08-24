@@ -19,7 +19,7 @@ Multi-Agent Harness
 
 ## 当前状态
 
-项目目前是 **production-shaped、尚未达到生产级的原型**。现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；通用 Runtime 已完成 `PROD-01A` 领域协议，下一批是 `PROD-01B` 的 SQLite 状态 Store、append-only Journal、Outbox 和最小 BudgetLedger。当前尚不能声称已经具备完整持久队列、崩溃恢复、多租户隔离或生产自主演进。
+项目目前是 **production-shaped、尚未达到生产级的原型**。现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；Runtime Kernel 已完成 `PROD-01A` 领域协议与 `PROD-01B-1` 的组件级 SQLite Schema/Migration/UnitOfWork 事务底座，完整 `PROD-01B` 仍在进行中。下一动作是先冻结 `PROD-01B-2` 的状态变更与 append-only RuntimeEvent 原子提交口径；当前尚不能声称 State Store、Journal、Outbox、BudgetLedger、持久队列、崩溃恢复、多租户隔离或生产自主演进已经完成。
 
 ## 验证
 
