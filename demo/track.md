@@ -332,3 +332,24 @@
 
 - 实现 PROD-01B 的 SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 和持久查询。
 - 继续 PROD-01C 的 durable enqueue、claim/lease/heartbeat、Finalizer/Reaper、重启恢复和级联取消。
+
+## 2026-08-24
+
+### 已优化
+
+- 建立 Harness Evolution Protocol，以冻结 Baseline、可证伪假设、单一 Mutation、Validation/Held-out 和保留或回滚决定约束行为优化。
+- 冻结 `local_trusted_execution/v1` 的本地可信执行边界、Profile、清理屏障和 A～H 验收口径，并明确它不是生产 Sandbox。
+- 整理影响项目策略的关键问题与当前回答，并将 Skill 自动沉淀收敛为延后的、只读可审计候选箱。
+- 复核默认回归口径为 277 项执行、273 项通过、4 项真实浏览器测试跳过。
+
+### 已解决
+
+- 解决脚本、Fake Model 或小样本结果可能被误述为真实模型、Held-out 或生产收益的问题。
+- 解决三个子进程入口安全语义不一致却可能被笼统描述为沙箱的问题，并区分 Incident Replay 与 Harness 泛化评测。
+- 明确自动发现的重复经验不能直接激活为 Skill，必须先分类正确落点并经过人工批准、独立评测和 Shadow。
+
+### 待优化
+
+- 继续 PROD-01B 的 SQLite Store、Journal、Outbox 与 BudgetLedger，不让评测协议或 Skill 候选箱改变当前优先级。
+- 获得明确授权后实现并验收 `local_trusted_execution/v1`；当前仅完成契约冻结。
+- 扩充任务家族和密封 Held-out 后再运行真实 Harness Evolution Pilot；Skill 候选箱等待 PROD-05/INC-04。

@@ -1,4 +1,4 @@
-# 交互式多模态 Multi-Agent Runtime 项目交接
+# 交互式多模态 Multi-Agent Harness 项目交接
 
 ## 使用方式
 
@@ -13,17 +13,20 @@
 从 HANDOFF.md 的“下一步”继续推进。
 规划、实现或收口任何 PROD-* 批次时，严格执行“PROD / INC 双轨联动规则”，
 同步写明并更新对应的 INC-* 事故学习增量，不得只推进功能主线。
+凡修改会影响 Agent 行为的 Harness 机制，严格执行“Harness Evolution Protocol / 评测驱动演进规则”，
+记录 Baseline、失败证据、单一可证伪假设、Validation/Held-out 和保留/回滚结论；
+示例数字、脚本/Fake Model 结果不得写成真实模型或生产实测。
 ```
 
 ## 项目目标与定位
 
-项目核心是一个可交互、可长期运行、单机优先并可演进到分布式的 **多模态 Multi-Agent Runtime**。用户在持久 Thread 中持续发送文本、图片、音频和视频；多个独立 Agent 可以并行判断、按依赖交接、使用受控工具并接受人工介入。Harness 是项目本体；Agent、模型、Prompt、工具和场景插件都是可替换负载。目标架构把 Coding 封装为插件式专业能力，不再用代码 Bug 修复代表整个产品。当前代码尚无 `CodingPlugin`，Coding 仍是 Composition Root 和包内纵向切片。
+项目本体是一个可交互、可长期运行、单机优先并可演进到分布式的 **多模态 Multi-Agent Harness**。它以通用、可持久化的 **Multi-Agent Runtime** 为核心执行内核：Runtime 持有 Thread、Invocation、AgentSession、状态、生命周期、权限、预算、Event、恢复和 Acceptance 的权威控制；Harness 在其上组合角色与模型策略、任务拆分与路由、Context/Memory、工具、协作、评测、事故学习和 Skill。用户可以持续发送文本、图片、音频和视频，多个独立 Agent 可以并行判断、按依赖交接、使用受控工具并接受人工介入。Agent、模型、Prompt 和场景能力均可替换；Coding 与 VisionForge 是专业插件或纵向切片，不代表整个产品。当前代码尚无 `CodingPlugin`，Coding 仍是 Composition Root 和包内纵向切片。
 
-项目不再定位为单纯的多 Agent 实验台，也不以接入模型数量或 Agent 数量作为成果。目标系统包含三层：
+项目不再定位为单纯的多 Agent 实验台，也不以接入模型数量或 Agent 数量作为成果。固定术语为“**Harness 是项目本体，Runtime 是执行内核，Plugin 是专业能力，Model 是可替换负载**”。目标系统包含三层：
 
-1. **Harness Runtime**：Thread、Message、Invocation、Session、Artifact、上下文装配、模型与 Worker 路由、工具执行、权限隔离、预算、恢复、审计和场景化收敛。
-2. **交互式 Agent Workspace**：参考 Cat Café 的 Agent 泳道、Mailbox、结构化 Handoff、跨模型 Review 和用户介入，为长期协作提供真实入口。
-3. **插件与验证运营系统**：Coding、VisionForge 及后续专业能力按插件接入；持续交互、协作、多模态和插件/工具任务分层评测，Coding 是首个代表，并通过故障注入、压力测试和事故复盘证明 Runtime 可靠性。
+1. **Durable Runtime Kernel**：Thread、Message、Invocation、AgentSession、Artifact/Event 真相源、生命周期、并发、权限、预算、恢复、审计和场景化 Acceptance。
+2. **Harness 协作与控制层**：角色/模型策略、任务拆分与路由、Context/Memory、工具接入、DiscussionPolicy、Mailbox、结构化 Handoff、跨模型 Review、评测演进、事故学习和用户介入。
+3. **插件与验证运营层**：Coding、VisionForge 及后续专业能力按插件接入；持续交互、协作、多模态和插件/工具任务分层评测，Coding 是首个代表，并通过故障注入、压力测试和事故复盘证明 Harness 及其 Runtime 内核的可靠性。
 
 推荐的第一阶段生产边界是：自托管、单组织/单信任域、多个 Thread 和并发 Invocation、单机多进程或单集群部署。状态必须持久化，每个 Invocation 必须绑定输入快照、明确权限和预算；只有需要资源副作用的场景才绑定隔离 Workspace。敌对多租户、多区域高可用和大规模远程 Worker 属于后续演进目标，不应在没有容量或隔离证据时提前承诺。
 
@@ -34,8 +37,8 @@ VisionForge 的“参考图 → Vue 页面 → 浏览器功能验收 → VLM 视
 - 吸收 `Thread / Invocation / Session` 分离、持久 Invocation Queue、父子调用链、Session 隔离、统一事件、人工暂停点、独立 Review 和事故知识晋升。
 - 不把聊天记录、自由 `@mention` 或长期模型 Session 作为任务状态和事实的真相源。
 - Discovery 阶段允许不同模型先独立判断、再对等质疑；Delivery 阶段继续使用强类型 DAG、Artifact、Validator 和 Fix 闭环。
-- Agent 只能提出 `HandoffProposal` 或图变更建议；Harness 校验目标、权限、链深、预算、循环和资源冲突后，才能创建 `RouteEdge`、Invocation 或 Task。
-- “无 Boss Agent”只表示内容判断可以对等，不表示没有中央控制面。Harness 始终独占状态权、副作用权和最终完成判定。
+- Agent 只能提出 `HandoffProposal` 或图变更建议；Harness Policy 定义允许范围，由 Runtime Kernel 校验目标、权限、链深、预算、循环和资源冲突后，才能创建 `RouteEdge`、Invocation 或 Task。
+- “无 Boss Agent”只表示内容判断可以对等，不表示没有中央控制面。Harness 是状态、权限、副作用和完成语义的逻辑所有者，Runtime Kernel 是这些规则唯一的强制执行与持久化边界。
 
 ## 当前已实现的 Coding 纵向切片（目标迁移为 Plugin）
 
@@ -61,7 +64,7 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 
 ## 已完成
 
-- 完成 `Plan/Plan26.md` 的产品中心纠偏与 Runtime Charter：交互式多模态 Multi-Agent Runtime 是产品本体，Coding 被确定为待插件化的专业纵向切片，VisionForge 保持独立 Scenario Plugin；本次只冻结文档边界，尚未实现持久 Thread、Agent 会话或 CodingPlugin。
+- 完成 `Plan/Plan26.md` 的 Harness 产品定位与 Runtime Charter：交互式多模态 Multi-Agent Harness 是项目本体，通用 Multi-Agent Runtime 是执行内核；Coding 被确定为待插件化的专业纵向切片，VisionForge 保持独立 Scenario Plugin。本批只冻结文档边界，尚未实现持久 Thread、Agent 会话或 CodingPlugin。
 - 完成 `PROD-01A` 通用领域协议与迁移骨架：新增独立 `runtime_domain`，冻结 Scope/Thread/Turn/Message、Agent Role/Profile/Instance/Session、Invocation/Attempt、Outcome/Acceptance 和 RuntimeEvent；Coding 只通过单向兼容适配器映射，尚未接入 Store、队列、旧 Executor 或 Web。
 - 建立确定性的 TaskState 与 LifecycleState 双层状态机。
 - 建立 `TaskSpec`、`TaskGraph`、循环依赖和 Artifact 关系校验。
@@ -100,7 +103,7 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - 建立三方案统一评测协议与 JSON 报告，记录构建、功能、视觉、首次通过、自动修复、轮数、Token、耗时和人工介入。
 - 建立 DeepSeek 文本模型与 DashScope Qwen 视觉模型的独立配置和按角色路由；客户端适配供应商级结构化输出模式与请求选项。
 - 已用 `deepseek-v4-pro` 和 `qwen3.7-plus` 各完成一次经授权的最小真实能力烟测，图片输入、JSON 解析及 Token/耗时元数据均验证通过。
-- 当前共有 213 个测试通过；其中 4 个真实浏览器类默认跳过，需要显式开启。
+- 该历史里程碑当时有 213 个测试通过，另有 4 个真实浏览器类默认跳过；这不是当前测试总数，当前基线见后文 `pre-PROD-01B` 复跑记录。
 - 建立 Core `Claim`、三态 `VerificationOutcome` 和不可变 `VerificationRecord`；模型观察、推断和建议不会自动成为已验证事实，验证记录随 SQLite Runtime Snapshot 恢复。
 - Worker Artifact metadata 会拒绝伪造的验证字段，正文中的同名业务数据不会改变外层状态；TaskGraph 节点全部成功不再自动验证产物、晋升长期记忆或宣布 completed，`GraphExecutionResult.acceptance_outcome` 默认是 unknown。
 - VisionForge 质量门禁不再循环自证：build/browser/review 验证 quality gate，quality gate 再验证其他周期产物；场景流程和视觉规则未改变。
@@ -128,7 +131,7 @@ CLI 和 Web 只使用 DAG Runtime，不再提供旧式顺序执行或引擎回�
 - Agent Profile 由 Role、Backend/Model Policy、Tool Capability、Context Policy、Output Contract 和预算组成；Role 不永久绑定 GPT、Claude、Gemini、DeepSeek、Qwen 或其他具体模型。
 - 模型路由必须记录 provider、model/version、Prompt/协议版本、能力、策略和选择理由。Fallback 不能静默降低隐私、工具、结构化输出或验证要求。
 - Thread/Task/Scenario 决定何时需要工作，Role 是 Worker 路由第一键，能力、输入协议、运行策略和可用性完成同 Role 内选择；Agent 和模型是可替换 Worker。
-- Harness 独占任务状态、权限、安全策略、Artifact 接纳和最终收敛判断。
+- Harness 在逻辑上独占任务状态、权限、安全策略、Artifact 接纳和最终收敛规则；Runtime Kernel 负责强制执行、持久化和审计，Agent/Model/Plugin 均不能绕过。
 - Agent 只能读取裁剪后的 `RoleMemoryView`，不能访问密钥或扩大权限。
 - Agent 不能直接修改共享目录或直接改变 TaskGraphRuntime 状态。
 - 节点之间通过 Artifact 引用交接，不通过共享可变对象隐式通信。
@@ -170,7 +173,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - ModelClient 当前是同步、非流式请求，主要只有 OpenAI Chat Completions 兼容实现；尚无统一的流式 AgentEvent、provider request/session 引用、工具调用事件、finish reason、硬取消和 Full Agent CLI Adapter。
 - `timeout_seconds` 主要是策略元数据，不能强制终止运行中的模型线程。
 - 暂停和取消只在 Worker 边界生效，不能立即中断 HTTP 请求或验证子进程。
-- 受控命令已有 argv 白名单、清理环境、超时和进程组终止，但仍作为宿主机普通进程运行；尚无每 Invocation 文件系统/容器、默认断网、CPU/内存/进程/磁盘限制、短期凭据和高风险人工审批。
+- 当前子进程入口存在安全语义分裂：`ControlledCommandRunner` 已有显式最小环境、精确 argv、超时和进程组终止；`BrowserProcessRunner` 仍复制完整 `os.environ`；Legacy `ProjectWorkspace.run` 仍继承宿主环境且只有直接进程 timeout。三者都以宿主当前 UID/GID 运行，`cwd=Workspace` 也不构成文件系统沙箱；尚无每 Invocation 低权限身份、容器/cgroup 或等价隔离、默认断网、CPU/内存/PID/磁盘/输出限制、短期凭据和高风险人工审批。
 - Workspace 批量变更依靠逐文件原子替换和失败补偿；其他读者仍可能观察到批次中间态，不具备真正跨文件事务语义。
 - 不同顶层 Run 之间尚无统一 Workspace lease、基线版本和 compare-and-swap；图内资源冲突也主要依赖精确 scope 字符串，尚无可靠的路径包含、glob 交集和符号级分析。
 - Reviewer 和 Safety 尚未成为 DAG 最终收敛门禁。
@@ -192,6 +195,53 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - 图片、音频和视频已分别通过受控 Worker 转成结构化感知 Artifact；现有视频类型仍名为 `core:video_bug_evidence`，这是待迁移的 Coding 泄漏，不是新的 Core 术语。三条链路都保留原 Evidence 引用，下游文本 Agent 不重复读取原媒体。
 - 已建立统一 `MultimodalIntakeRunner + core:evidence_bundle`：同一需求的媒体感知可并行执行，每个原始 Artifact 最多处理一次；Bundle 保存每条来源和 ready/blocked/failed。当前 Composition Root 仍把就绪 Bundle 交给 Coding Planner，PROD-05 才接入通用 Thread/Context 产品链路。
 
+### 当前版本安全边界与验收口径（`local_trusted_execution/v1`，已冻结）
+
+状态：**边界与验收口径已冻结，代码尚未达到该口径，不能宣称安全基线已经实现或验收通过。** 本节只定义当前个人本地版本；生产级隔离统一放在后文“后续展望”。
+
+- **objective**：在不建设敌对代码沙箱的前提下，统一当前所有受控子进程的秘密最小化、命令门禁、Harness 路径门禁、deadline 和同一进程组生命周期语义，防止后续实现按不同 Runner 漂移。
+- **target_role**：后续获得用户明确授权的本地执行安全 Implementer；本文不创建 RouteEdge、Invocation、CapabilityGrant、Approval、任务完成或 Runtime Acceptance。
+- **public_rationale**：当前版本面向个人简历演示和可信本地任务。它必须如实降低已知风险，但不能用普通宿主子进程冒充低权限、文件系统或多租户沙箱。
+- **completed_work**：已完成当前工作树的只读审计和一次独立 Handoff 审查，确认 `ControlledCommandRunner`、`BrowserProcessRunner` 和 Legacy `ProjectWorkspace.run` 的环境与回收语义不一致；本次只冻结契约并重排文档，不修改 Runtime 行为，不读取 `.env`，不运行攻击 PoC。
+- **evidence_refs**：`demo/coding_workflow/command_validators.py:93-194`、`demo/coding_workflow/visionforge/browser.py:139-273`、`demo/coding_workflow/workspace.py:24-31,91-118`、`demo/coding_workflow/policy.py:8-31`、`demo/tests/test_command_validators.py:78-107`、`demo/tests/test_visionforge_browser.py:43-75` 与本文件“当前限制”。
+- **decisions_and_constraints**：
+  - **适用信任域**：单用户、本人控制的本机；仓库、依赖、锁文件及 build/test/dev/browser 脚本均已人工确认可信；使用可丢弃 Workspace；Browser 只访问 loopback；执行进程不需要真实秘密、外部账号、非 loopback 网络或真实外部副作用。每次启动前由 Composition Root 记录不可由模型生成的 `trusted_local` 确认，并绑定 Workspace/输入摘要与 Profile digest；缺失、过期或摘要不匹配都不执行。
+  - **覆盖入口**：Core build/test/CLI Validator、VisionForge build/dev/browser 的前台与后台进程、Legacy `ProjectWorkspace.run`，以及不主动 `setsid`、double-fork 或 daemonize、始终留在同一受管进程组的子孙进程。仓库内不得保留绕过统一监督语义的其他 `subprocess.Popen/run` 执行入口。
+  - **当前承诺**：独立宿主进程/进程组；从空映射构造的显式环境；受信任绝对 executable 和完整 argv 精确门禁；`shell=False`、`stdin=DEVNULL` 和非授权 FD 不继承；Harness 文件 API 的绝对路径、`..`、保留路径和 symlink 越界拒绝；版本化 deadline、TERM grace、输出上限；同组进程和受管端口/句柄的同步清理。
+  - **环境 Profile**：公共环境名固定为 `PATH/LANG/LC_ALL/HOME/TMPDIR`，其中 `PATH` 来自 Runtime 冻结路径，`HOME/TMPDIR` 是本次运行私有目录；Python Profile 只额外允许 `PYTHONDONTWRITEBYTECODE/PYTHONUNBUFFERED`。模型/云密钥、proxy、`SSH_AUTH_SOCK`、`PYTHONPATH`、`NODE_OPTIONS`、`LD_*/DYLD_*` 和其他父环境变量一律不继承。工具确需新增非秘密变量时必须新建 Profile 版本并同步正常/负向测试，不能直接读取 `os.environ`。
+  - **命令 Profile**：每个入口必须绑定版本化 Profile，包含受信任绝对 executable、完整 argv、Workspace cwd、单调 deadline、TERM grace 和输出上限；调用方只能收紧，不能放宽。任一字段缺失、Profile 漂移或 argv 不完全匹配，必须在 spawn 前 fail-closed。
+  - **清理屏障**：success、failure、timeout、cancel、readiness failure、后台 stop 和异常全部进入同一 Finalizer：`TERM process group → 等待 Profile grace → KILL process group → wait/reap 直接子进程 → 核对 owned PID/PGID/port/handle`。Supervisor API 只有在核对完成后才能返回；无法证明清理完成时返回固定 `CLEANUP_FAILED`，不得返回业务成功，该 Workspace 在人工确认前不得启动新进程。
+  - **明确不承诺**：独立低权限 UID/GID、容器/VM、OS 文件系统 containment、默认断网、CPU/内存/PID/磁盘硬配额、真实 Secret Broker、持久 fence/Reaper、Supervisor 崩溃恢复、恶意依赖防护，以及脱离进程组的 `setsid`/double-fork/daemon 或敌对 symlink/TOCTOU/hardlink 攻击。`cwd=Workspace` 和 Harness 路径测试不得被描述成 OS 沙箱。
+  - **越界停止规则**：遇到陌生或可能恶意的仓库/依赖/脚本、多用户、真实秘密进入执行进程、非 loopback 网络、真实外部副作用或上述“不承诺”能力成为必需条件时，固定返回 `SANDBOX_REQUIRED` 并拒绝启动；不得回退为普通宿主执行。
+- **frozen_profile_manifest**：以下是当前版本的权威默认值；每次实际运行还要把解析后的绝对 executable、完整 argv、cwd、环境 name/value-source、限制与输入摘要组成 canonical JSON 并记录 `profile_digest`。调用方可以缩短 deadline 或降低输出上限，其他改变都必须升级 `local_trusted_execution` 版本。
+
+  | Profile | executable / argv 约束 | wall deadline | TERM grace | cleanup barrier 上限 | 持久化输出上限 |
+  |---|---|---:|---:|---:|---:|
+  | `core_validator` | Runtime 注册的绝对 executable + 完整冻结 argv；默认 Coding 命令为 `python3 -m unittest discover -s tests -v` | 30s | 1s | 5s | stdout/stderr 各 10,000 chars |
+  | `legacy_workspace_verify` | 用户确认并绑定 Task/Input digest 的完整 argv；不得由模型修改 | 60s | 1s | 5s | stdout/stderr 各 10,000 chars |
+  | `visionforge_build` | 绝对 `pnpm` + `run build` | 60s | 1s | 5s | stdout/stderr 各 10,000 chars |
+  | `visionforge_dev` | 绝对 `pnpm` + `run dev --port 4173`；仅 loopback，readiness 15s，受管 lifetime 60s | 60s | 1s | 5s | server log 10,000 chars |
+  | `visionforge_browser` | 绝对 `node` + 固定 runner；动态 URL/路径必须通过 loopback 与 Workspace/Runtime 路径校验 | 45s | 1s | 5s | stdout/stderr 各 10,000 chars |
+
+  Runtime 冻结 PATH 为 `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`，但只允许先在受信任 Composition Root 解析并写入 Profile 的绝对 executable；Workspace 内同名文件不能参与解析。`HOME/TMPDIR` 每次运行唯一创建为 `0700`，子进程使用 `umask 077`，并在清理屏障内回收。`close_fds=True`，除 stdin/stdout/stderr 和 Profile 显式登记句柄外不得传递 FD。持久化文本超过上限时固定保留前后各一半，插入截断字符数标记，并同时保存原长度与原文 SHA-256，随后通过统一脱敏边界；本地可信版本不承诺对无限原始输出提供 OS 级内存配额。
+- **assumptions_and_uncertainty**：当前支持口径固定为 macOS/POSIX 本地可信执行；模型/Provider Client 位于受信任控制面且不属于子进程 Profile。对模型远端取消和费用停止不作当前版本承诺。
+- **open_questions**：当前版本无会改变上述产品边界的开放问题。任何新增环境变量、命令入口、平台、网络、秘密或副作用都是显式版本变更，必须先修订 Profile、风险说明和验收，不得在实现中静默决定。
+- **next_action**：保持 `PROD-01B` 当前顺序。用户明确启动本地安全 Patch 后，统一三类执行入口和输出脱敏边界，并按下列 A～H 验收；在全部通过前继续标记“契约已冻结、实现未验收”。
+- **expected_output**：版本化 Command/Environment Profile、单一监督语义、迁移后的全部前台/后台入口、冻结的正常路径 manifest、结构化拒绝/清理结果、负向和正常路径测试证据；不包含生产 Sandbox、真实密钥、真实外部副作用或未经授权的宿主配置修改。
+- **acceptance_criteria**：
+  - **A / 信任域 admission**：缺失 `trusted_local`、确认由模型产生、Workspace/输入摘要变化，或请求真实秘密、非 loopback 网络/副作用、陌生依赖时，必须在 spawn 前返回 `SANDBOX_REQUIRED`；spawn/PID/副作用计数均为 0。合法确认绑定 Profile digest 后有正常执行对照。
+  - **B / 环境、FD 与秘密**：对每个前台/后台入口在父环境注入唯一 sentinel，以及 fake provider key、proxy、SSH 和语言注入变量；子进程枚举环境与可用 FD。未列入 Profile 的 name/value 在 child、stdout/stderr、server log、Artifact、Event、SQLite 和下一轮模型输入 fixture 中命中数必须为 0；已列入变量与 `profile_digest` 完全一致；除登记句柄外可继承 FD 为 0。每次 `HOME/TMPDIR` 路径唯一、权限符合 Profile，清理屏障返回后均不存在。
+  - **C / 命令与 Profile**：表中每个精确登记 argv 可执行；相同 executable 下任一参数变化、空 registry、字段缺失、digest 漂移、超出上限、shell 元字符和 Workspace 内同名伪 executable 均在 spawn 前拒绝，spawn counter 与 Workspace 外 canary 不变。
+  - **D / Workspace API**：Harness 文件 API 对绝对路径、`..`、保留路径和 symlink escape 全部拒绝，Workspace 外 canary 内容与哈希不变；Browser 的 cwd、log、spec、result 和 screenshot 路径也必须解析到获准 Workspace/Runtime 目录。对子进程只验证 cwd 正确，测试名、报告和 UI 不得宣称 OS containment。
+  - **E / 生命周期与失败隔离**：可信 fixture 记录 PID、PGID、port、handle 和 marker，启动同组 child/grandchild 并忽略 TERM；分别触发 success、普通 nonzero failure、timeout、cancel、异常、background stop 和 readiness failure。Supervisor 必须在 Profile 的 5s cleanup barrier 内返回；返回时记录的 PID/PGID 不存在、端口关闭、marker 不再变化、直接子进程已 wait/reap。注入核对失败时必须返回 `CLEANUP_FAILED`，同一 Workspace 的下一次启动在 spawn 前被拒绝，人工解除隔离后才恢复正常对照。
+  - **F / 输出边界**：分别产生低于和超过上限的 stdout、stderr 与 server log；低于上限内容保持一致，超限内容只保留规定裁剪结果、原长度和摘要，secret sentinel 经统一脱敏后在所有下游 sink 明文命中为 0；不得把“持久化已限长”外推为 OS 内存配额。
+  - **G / 正常对照**：上述 frozen manifest 就是正常路径基线；Core 默认验证、显式 Task 命令以及 VisionForge build/dev/browser 全部通过，结构化 Result/Artifact、timeout 和 error code 契约不变，不再使用无对象或依赖历史测试总数的“回归不退化”。
+  - **H / 无旁路**：静态扫描与调用图审查证明受控范围不存在绕过统一监督语义的 `subprocess.Popen/run`；保留的非执行型例外必须在 manifest 逐项说明，不能静默豁免。新增进程入口但未注册 Profile 时，此门禁必须失败。
+- **required_capabilities**：仓库读、受控 Patch、Python/浏览器本地测试和无秘密故障注入；本文不授予真实模型、生产秘密、外部网络、副作用或宿主提权权限。
+- **resource_scope**：`demo/coding_workflow/command_validators.py`、`workspace.py`、`policy.py`、`agents.py`、`dag_runner.py`、`visionforge/browser.py`、`visionforge/web_runtime.py`、`demo/coding_agent_cli.py` 及其直接 Composition Root 和对应测试；范围外出现新的进程入口必须先变更本契约。
+- **budget_or_deadline**：无自动开始时间和外部调用预算；不插队 `PROD-01B`，除非用户明确改变顺序。
+- **risks**：环境 allowlist 可能暴露工具兼容性问题；同宿主 UID、无 OS containment、无网络/资源硬隔离和进程组逃逸仍是已接受的当前残余风险，因此本版本只能运行可信任务并必须展示 `local_trusted_execution/v1`，不能对外表述为生产安全沙箱。
+
 ## 学习与生产实践规则
 
 - 每个批次必须由一个真实工作负载、历史事故或可复现的故障假设驱动，不能只因为某项技术流行而接入。
@@ -203,11 +253,52 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - 允许实验得出“某个 Agent、Memory 策略、并发或反思机制没有收益”的结论；无法证明边际价值的复杂度应删除、降级为可选策略或继续暂缓。
 - 开始生产批次前先冻结范围、信任边界、外发数据、模型/Prompt/协议版本、预算和停止条件；真实外部调用仍需要当次明确授权。
 
+### Harness Evolution Protocol / 评测驱动演进规则（后续任务强制执行）
+
+状态：**开发纪律与文档协议已冻结；尚无正式 Harness Evolution Experiment、自动 Evolver 或 Held-out 泛化结论。** 权威方法写入 `Plan/Plan26.md` 的 “Harness Evolution Protocol”，本节只保存接续所需的状态、硬门禁和下一动作；与事故闭环的边界写入 `Plan/Plan25.md`。该协议是跨批次开发与证据门禁，不是插队的新生产子系统；当前下一批仍为 `PROD-01B`。
+
+固定术语边界：
+
+- **Harness Evolution Protocol / 评测驱动演进协议**：本项目自定义的内部开发纪律，借鉴 Evo-Bench 的固定 Policy、隔离 Validation/Evaluation 和冻结候选思想；它不是外部产品，也不代表已经运行正式 Benchmark。
+- **Evo-Bench**：RUCAIBox 发布的外部正式 Benchmark（<https://github.com/RUCAIBox/Evo-Bench>）。当前项目没有运行其 160-task Validation、448-task Evaluation、固定角色、20 iterations / 1,000 steps / 48h 等正式协议，不得宣称复现或取得其成绩。
+- **`evo-hq/evo`**：独立的外部 autoresearch 编排工具（<https://github.com/evo-hq/evo>），提供 benchmark discovery、worktree 实验树、并行 subagent、Gate 和 dashboard。当前仓库未安装、未集成、未授权使用；未来若采用，只能作为外部候选实验执行器，不能拥有本项目的 Runtime 状态、权限、Acceptance、Incident、Memory 或 Skill 真相源。
+
+- **objective**：把 Harness 开发从“想到功能就增加”改为 `Baseline → 失败证据 → 可证伪假设 → 单一 Mutation → Validation → Held-out → KEEP/ROLLBACK/INCONCLUSIVE`，使每项复杂度都能说明解决了什么真实问题、改善多少、付出什么代价。
+- **target_role**：所有后续 Planner、Implementer、Reviewer 和 Eval Runtime；本文不创建 Evolver Invocation，不授予模型修改生产、读取保留集或签发 Acceptance 的权力。
+- **public_rationale**：模型行为具有随机性，Harness 的 Prompt、路由、Context、Memory、协作、重试、停止、工具和验收机制又会相互影响；没有固定控制项、强 Baseline 和隔离保留集，就无法区分真实 Harness 收益、模型差异、题目过拟合和偶然成功。
+- **completed_work**：已有 3 个版本化固定 Coding 任务、对 Policy Agent 隐藏的 Runtime 私有 Validator、任务校准、三种协作策略、统一预算与脚本/Fake Model 报告；这些只证明评测管线和控制流存在。当前没有对人工 Evolver 密封的 held-out，固定 Coding 三策略的真实模型效果对照仍未完成，3 个任务也不足以支持泛化结论。
+- **evidence_refs**：`demo/coding_eval/v1/suite.json`、`demo/coding_workflow/coding_evaluation.py`、`coding_evaluation_runtime.py`、`coding_ablation.py`、`coding_model_workers.py`、`Plan/Plan16.md`～`Plan/Plan20.md` 及本文件“当前限制”。
+- **decisions_and_constraints**：
+  - 所有改变 Agent 行为、路由、协作拓扑、Prompt、Context、Memory、重试、停止、工具选择或 Acceptance 行为的修改，都必须绑定版本化实验记录；纯协议/文档批次可以写“不适用”，但必须说明没有可运行行为和由哪个后续批次验证。
+  - 实验开始前冻结 workload/manifest hash、Policy Model/版本或预注册 assignment、Prompt/协议/策略版本、环境、权限、预算、工具、最终 EvalOracle/EvalAcceptancePolicy/HiddenValidator、随机种子、重复次数、主次指标、停止条件、排除规则、最小效果阈值、成本/延迟上限、不确定性方法、最小样本量、promotion rule 和 heldout query budget。运行后不得为改善结果更换分母、阈值、样本或删除失败 Trial；配置漂移必须产生新 experiment/version。
+  - 每次实验预注册 `mutation_axis`，一次只检验一个主要机制。纯 Harness 因果实验固定 per-role Backend/Model manifest；模型或路由实验预注册 baseline/candidate assignment，不能表述为“模型不变的 Harness 收益”。同时改变模型、Prompt、拓扑、Context、预算或内部反馈 Validator 时必须拆分或做消融。
+  - 被测 Harness 的内部 Prompt、路由、Context、协作、重试、停止、internal acceptance/gating、反馈策略或内部 Validator 可以作为白名单 Mutation，但不能兼任最终 Oracle。最终 EvalOracle/EvalAcceptancePolicy/HiddenValidator、安全/权限硬边界、预算、计分与完整分母由独立 Eval Runtime 冻结，不可演化。
+  - 数据固定分为 development/calibration、validation 和 sealed held-out。默认每个内部 Harness Evolution Experiment 只允许对一个最终冻结候选查询一次 held-out；任何逐题或聚合结果暴露后，该 cohort 对后续调参即退役。Policy Agent、Evolver 与 Eval 使用分离 principal，涉及 Agent 连续性时还要使用不同 AgentSession，并审计 suite/version、访问者、查询次数和退役原因；泄漏、反复窥视或按 held-out 调参会使本轮结论 `INVALID`。
+  - Agent 行为、智能效果和可泛化收益声明必须有隔离 Held-out。事务、状态机、权限等确定性正确性变更若不主张统计泛化，可以把 Held-out 标为“不适用”，但必须使用独立冻结的故障矩阵、正常对照和回归证明声明范围，且不能外推为模型或产品效果提升。
+  - 独立 Eval Runtime 独占报告生成/冻结与验收结论权；当前没有加密签名机制。Evolver、Policy Agent、Worker 和被测 Harness 只能提交 ChangeProposal、Artifact 与 Evidence；`unknown != accepted`，超时、解析失败、缺失 usage 和异常退出按预注册规则进入完整分母，不能静默丢弃。
+  - 安全硬门禁采用字典序，不与效果指标加权抵消：`false accepted=0`、跨 Scope/Thread/Session 污染=0、未授权或重复副作用=0、cancel/fence 后迟到结果接纳=0、预算硬限制突破=0、评测泄漏/篡改=0。通过后再按预注册 promotion rule 比较 safe acceptance、恢复率、Token/费用、延迟、人工介入和 Generalization Gap；未达到最小样本量时展示逐 Trial 分布，不报告 p95。
+  - 报告保留全部已启动 Trial、失败与缺失数据、重试、配置 hash 和原始 Evidence 引用，并区分绝对值、相对 Baseline 差值及不确定性。只展示最佳 Run、用 pass@k 掩盖不稳定、把脚本/Fake Model 当真实收益或把 Plugin 指标外推 Core 都属于无效结论。
+  - 只改善单一 fixture 的规则留在对应 Scenario/Plugin。新复杂度若没有 held-out 边际收益，或收益不足以覆盖 Token、延迟、误拦截和维护成本，结论必须是回滚、删除、降为可选策略或继续调查，不能用 Agent 数、模型数、代码量或测试数代替效果证据。
+  - 未严格复现官方 Evo-Bench 的任务、角色、轮次、预算、隔离与计分协议时，只能称为“内部 Harness Evolution Experiment/Pilot”或“评测驱动演进实验”，不能使用 `Evo-style`、`Evo Pilot` 等容易混淆的简称，也不能宣称完成官方 Evo-Bench 或取得其榜单成绩。
+- **演进层级**：
+  - `L1 人工评测驱动演进`：当前默认方法；人分析失败、提出假设和修改候选，独立验证边界执行评测。当前尚无通用独立 Eval Runtime，现阶段证据只能标为 Verification，不能冒充 Runtime `AcceptanceRecord`。
+  - `L2 Agent 辅助评测驱动演进`：外部 Agent 的离线候选可先用版本化 Bundle 和人工隔离；作为 Runtime 一等能力还依赖 PROD-01B～04 与 INC-03。Agent 只能提交 ChangeProposal/候选 Patch，不能修改最终 Scorer、权限或生产配置；候选依次经过静态/单元门禁、Offline Eval、独立 Review、Shadow、人工批准和可回滚 Canary。
+  - `L3 生产自主 Harness 演进`：自动修改并晋升生产 Harness；当前非目标。INC-03 提供发布验证和 Shadow/Canary/Rollback，INC-04 提供 Learning/Guardrail 审批与退役，INC-05 提供运营和长期复发评价；全部成熟后仍需重新立项。
+- **assumptions_and_uncertainty**：当前离线资产可以支持 L1 的管线 smoke 与小规模实验，但样本量、真实模型重复运行和跨任务 Held-out 尚未冻结；没有这些证据前，不能声称 Multi-Agent、Memory、Reviewer 或任何 Harness 版本更优。
+- **open_questions**：第一次真实 Harness Evolution Pilot 的任务数量、模型、调用预算、重复次数和 Held-out cohort 必须在用户明确授权真实调用时单独预注册；不得从历史示例数字反推。
+- **next_action**：继续 `PROD-01B`，并为其新增行为使用确定性轻量轨：只要求当前缺口/负向 Baseline、单一实验变更、事务中断故障矩阵、正常对照、固定门禁、回归证据和 KEEP/ROLLBACK/INCONCLUSIVE 结论；Evolver/Policy/Eval principal、样本量、Validation/Held-out cohort、query budget、统计效果等不适用字段统一标为 `N/A`，不得反向阻塞基础设施开发。`PROD-01B` 不运行真实模型、不复现官方 Evo-Bench，也不调用外部 `evo-hq/evo`；真实模型 Harness Evolution Pilot 不插队，仍复用暂缓的 `CORE-ABLATION-001` 与后续分层评测计划。
+- **expected_output**：每个适用批次包含一个版本化 Harness Evolution 实验小节或报告，引用可定位 Run/Trial/Evidence，明确示例、离线确定性结果、真实模型实测和生产观察；分别给出 `lifecycle_status=PROPOSED/RUNNING/FROZEN/COMPLETED/INVALID` 与 `decision=KEEP/ROLLBACK/INCONCLUSIVE`。
+- **acceptance_criteria**：后续适用 Plan 至少包含失败/工作负载、Baseline、强对照、可证伪假设、单一 Mutation、固定 manifest、Validation/Held-out 隔离或确定性“不适用”依据、硬门禁、效果与代价、Incident/Regression 落点和决策/回滚；没有真实行为变化时显式写不适用及原因。
+- **required_capabilities**：仓库读、受控候选 Patch、独立评测、版本化报告和与实验范围匹配的故障注入；真实模型、网络、媒体、外部仓库、秘密或副作用仍需当次授权。
+- **resource_scope**：本规则约束所有 Harness/Runtime/Plugin 行为修改；实验记录只能引用已经实现或按 PROD/INC 路线建设的 RuntimeEvent、Incident、Artifact、Verification 和 Acceptance 权威对象，不新建平行事实库。某类真相源尚未落地时只能标注计划引用或 `N/A`，不得伪造对应记录或声称已由 Runtime 验收。
+- **budget_or_deadline**：本文不授权模型调用或新增预算，不改变 `PROD-01B` 顺序。
+- **risks**：小样本、验证集泄漏、只挑最佳 Run、同时改变多个变量、脚本结果冒充真实收益和 Evolver 越权都会制造虚假改进；命中任一项时实验必须标为 `INVALID`，而不是修饰报告。
+
 ## 下一步
 
 ### 方向决议
 
-2026-08-23，用户确认产品中心必须回到“可交互、可长期运行、支持多个独立 Agent 协作的多模态 Runtime”。目标上 Coding 是可加载的专业能力；当前 VisionForge 是独立的 `visionforge:web_visual` Scenario Plugin 并复用 Coding 能力。任何一个 Bug、仓库或网页测试都不能代表 Core。
+2026-08-23 的实质决议是把产品从 Coding 专用链路泛化到长期、多场景 Multi-Agent 系统；当时文档曾简称为“多模态 Runtime”。2026-08-25 只做术语澄清，不改变领域模型与 PROD 顺序：统一表述为“构建一个可交互、可长期运行、支持多个独立 Agent 协作的多模态 Multi-Agent Harness，并以通用 Multi-Agent Runtime 作为执行内核。”Coding 是可加载的专业能力；当前 VisionForge 是独立的 `visionforge:web_visual` Scenario Plugin 并复用 Coding 能力。任何一个 Bug、仓库或网页测试都不能代表 Harness Core。
 
 `Plan/Plan26.md` 已完成 `PROD-00` 产品 Charter，冻结 Scope、Thread、Turn/Outcome、Message、AgentInstance/AgentSession、Invocation、SessionBinding、RouteEdge、Artifact/Context、Capability 和场景化 Acceptance 的边界。批次 10A～13A 的代码和测试继续作为 Coding、多模态 Intake 与插件机制的已实现资产保留，不因产品纠偏删除，也不得再被描述成默认产品流程。
 
@@ -265,7 +356,9 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - 需要同步的文档：
 ```
 
-### 任务专用子 Agent 与 Invocation 回收规则（后续实现强制）
+### 后续展望：任务专用子 Agent 与生产级 Invocation 回收规则
+
+本节描述 `PROD-01C/02/03/04` 的目标边界，不属于 `local_trusted_execution/v1` 的实现或验收声明。
 
 用户可见、可长期协作的是 `Thread`；为某个任务临时创建的 Specialist 执行单元是 `ChildInvocation/Attempt`。内部委派必须优先复用当前 Thread，通过 `parent_invocation_id`、`RouteEdge` 和因果事件建立关系。只有用户明确要求新的长期协作空间，或产品策略确实需要独立保留、权限和参与者边界时，才能创建新 Thread；Thread 结束时使用 close/archive，不使用进程意义上的 kill。
 
@@ -316,11 +409,11 @@ Invocation.closed
 
 必做故障演练包括：Worker 忽略取消、Agent/工具创建孙进程、Provider 在取消后迟到返回、Artifact 已保存但终态事件未提交时进程退出、Reaper 重启、Parent 取消与 Child 完成竞态、旧 Worker 在 lease 失效后继续提交，以及 Workspace/端口/SessionBinding 回收失败。每个演练都必须同时检查技术终态、资源回收、迟到结果拒绝、证据和合法正常路径。
 
-### PROD-00：产品中心纠偏与 Runtime Charter
+### PROD-00：Harness 产品定位与 Runtime Charter
 
 状态：**已完成（仅文档和协议冻结，Runtime 行为未修改）**。
 
-验收物是 `Plan/Plan26.md` 及本次同步的 HANDOFF、Backlog、Learning Path 和事故计划。第二个真实代码仓库已移到目标 Coding Plugin Canary/dogfood，不再是 Core Charter 的完成条件。PROD-00 是唯一的 Charter 例外：以代码事实核对、跨文档一致性、`git diff --check` 和现有回归验收；主动故障演练从 PROD-01 开始。
+验收物是 `Plan/Plan26.md` 及本次同步的 HANDOFF、Backlog、Learning Path 和事故计划。第二个真实代码仓库已移到目标 Coding Plugin Canary/dogfood，不再是 Harness Charter 的完成条件。PROD-00 是唯一的 Charter 例外：以代码事实核对、跨文档一致性、`git diff --check` 和现有回归验收；主动故障演练从 PROD-01 开始。
 
 ### PROD-01：Durable Thread、Message、Invocation 与 Event Journal
 
@@ -355,12 +448,13 @@ PROD-01A 实现事实：
 - Evidence / 审计：证据是严格协议对象、内容哈希和 64 项定向测试；没有持久 Journal/Ledger，因此不能声称事件已经 append-only 或事故可以重启恢复。Event 值协议禁止正文、私密推理、凭据、未校验 `*_ref`、Prompt、Completion、原始媒体和 bytes；同一 Event 的更正必须使用新 event ID。
 - 止损 / 恢复：本批仅在对象构造和 mutation admission 时 fail-closed，不产生外部副作用；事务补偿、重启恢复、Watchdog/Reaper 和人工事故权限分别由 PROD-01B/01C/01E 实现。
 - Replay / Fault Injection：本批以确定性负向协议构造覆盖；SQLite 中断、重复投递、`kill -9`、锁竞争和孤儿恢复不适用，因为尚未实现 Store/进程边界，固定由 PROD-01B/01C 补齐。
-- SLI/SLO：新增协议测试 64 项全部通过，默认全量 277 项通过、4 项真实浏览器测试按设计跳过；已注册 Detector 数仍为 0，不能报告 detected/missed/MTTD/MTTR。
+- SLI/SLO：新增协议测试 64 项全部通过；默认全量共执行 277 项，其中 273 项通过、4 项真实浏览器测试按设计跳过、0 failure、0 error；已注册 Detector 数仍为 0，不能报告 detected/missed/MTTD/MTTR。
+- `pre-PROD-01B` 开发基线复跑（2026-08-24）：这是 `VerificationReport`，不是 `AcceptanceRecord`。证据绑定 `HEAD=1f4dc13afb348d36b6e89ac09f1d85eccc960488`、Python 3.9.6；运行时工作区为 dirty，存在未提交文档/Backlog 修改，因此不能仅靠该 commit 精确复现全部工作区内容。从 `demo/` 执行 `python3 -m unittest discover -s tests -q`，结果为 277 项执行、273 项通过、4 项真实浏览器 E2E 按设计跳过、0 failure、0 error，耗时 20.590 秒；`PYTHONPYCACHEPREFIX=/private/tmp/multiagent-pycache python3 -m compileall -q coding_workflow tests` 与仓库根目录 `git diff --check` 均以退出码 0 通过且无输出。该记录只证明 PROD-01B 开发前的既有回归基线为绿，不证明 Store、Journal、Outbox、BudgetLedger、SQLite 原子性、并发或崩溃恢复已经实现或验收。
 - 完成门禁：Python compileall、`git diff --check` 和全部默认回归通过；无需手动检验，没有模型、网络、媒体、外部仓库或数据库写入。
 
 必做故障演练：消息或副作用已提交但完成事件未写入时 `kill -9`、重复投递、错误 Thread/Session 绑定、取消与完成竞态、SQLite 锁竞争/磁盘异常和孤儿 Invocation 恢复。合法普通对话与当前 Coding 纵向切片都必须有对照，避免把 build/test 误设为所有 Thread 的完成条件。
 
-### 后续生产顺序
+### 后续展望：生产级演进顺序
 
 1. **PROD-02 Backend v2、Session 与 Streaming**：Raw Model/Full Agent Backend、流式事件、硬取消、SessionBinding、usage/finish reason、错误分类、fallback 和 Canary。
 2. **PROD-03 Capability、Tool Gateway 与执行隔离**：每 Invocation Grant、Secret Broker、隔离环境、默认断网、资源配额、高风险 Approval 和副作用审计。
@@ -368,6 +462,29 @@ PROD-01A 实现事实：
 4. **PROD-05 Context、共享记忆与多模态工作区**：Context Compiler/Manifest、版本/TTL/ACL、Session 压缩、共享记忆治理、检索评测和通用媒体附件链路。
 5. **PROD-06 插件产品化与效果/容量验证**：Coding/VisionForge 插件入口、四类业务模式分层评测、背压、公平性、配额、压力与 soak。
 6. **PROD-07 迁移与事故运营**：Schema/Prompt/Plugin/Model 迁移、golden trace replay、canary、回滚、备份恢复、Game Day 和运行手册。
+
+#### 生产级执行隔离（不属于当前版本验收）
+
+当系统开始接收陌生或可能恶意的仓库/依赖/脚本、处理真实秘密、访问非 loopback 网络或真实外部系统、操作重要 Workspace、支持多用户/多租户或对外暴露 Web 时，`local_trusted_execution/v1` 自动失效，必须先完成新的版本化生产 Sandbox 契约。
+
+生产目标由 `PROD-01C/02/03` 分批实现：持久 TerminationIntent、Lease/Fencing、Watchdog、幂等 Finalizer/Reaper 和恢复；Backend/CLI/工具的流式或物理硬取消；每 Invocation 独立低权限 UID/GID 或 rootless 容器/等价隔离、只读输入与独立可写输出、OS 文件系统 containment、默认断网与受控 Egress、CPU/内存/PID/磁盘/输出配额、Secret Broker、短期 CapabilityGrant、高风险 Approval 和副作用审计。Linux OCI/cgroup v2、macOS/Windows Backend 以及路径隔离原语仍是后续 Plan 的实现决策，当前不预先宣称选型完成。
+
+生产验收至少要求：执行身份不能读取 Runtime Store、Secret Store、其他 Workspace 或宿主保护 canary；无网络 Grant 时外部连接为 0；double-fork、`setsid`、忽略 SIGTERM 和 Supervisor 崩溃恢复演练后进程、端口、挂载、Lease 与临时资源残留为 0；cancel/fence 线性化点后的 Artifact、Event 和副作用接纳为 0；必需隔离原语不可用时 fail-closed。具体平台、时限、故障矩阵和证据格式必须在对应 PROD Plan 开始前冻结，不得引用当前本地测试作为生产验收证据。
+
+### 后续提醒：Skill 候选箱
+
+状态：**待开始，不纳入当前周或 PROD-01B 完成范围**。未来讨论“后续展望”、“优化项”、Skill/Learning/Memory 治理、PROD-05 或 INC-04 时，必须提醒用户重新评估 PROD-05-SKILL-CANDIDATE-INBOX；未经用户确认不得让它插队当前生产主线。
+
+已确认的产品边界：
+
+- Harness 从已持久的 RuntimeEvent、Acceptance/Verification、IncidentOccurrence 和人工纠正投影结构化观察，用稳定字段而非原始需求文本生成版本化指纹；现有 ScenarioRuntime._request_fingerprint 只用于恢复身份校验，不能用于相似需求聚类。
+- 同一 Scope 内同类模式至少出现于 3 个独立真实任务或事故，且至少有 1 个带可验证成功证据的案例，才能生成 Skill 候选；同任务重试、Replay、Shadow 和故障注入不得重复计数。
+- 系统只能自动产生 LearningItem(kind=skill, status=PROPOSED) 或其只读候选投影；模型和 Worker 不能自动批准、写入 Active Skill 注册表或改变 Runtime 行为。
+- 候选必须先判断正确落点：硬禁止、权限、secret、预算、验收和终止循环归 Runtime/Policy/Validator；可确定重现缺陷归 Regression；Provider 差异归 Adapter；人工处置归 Runbook；只有重复出现且依赖判断的认知流程才归 Skill。
+- 主入口是 API + Web 工作台的 Learning → Skill Candidates；CLI 只是可选运维/批处理适配器，不是用户使用该能力的前置条件。Web 至少展示指纹组成、独立任务计数、正反例与证据、人工纠正、建议落点、输入/输出/停止条件、评测计划、owner/版本/过期和完整决策历史。
+- 人工“批准”只允许进入草案与 Offline Eval，之后仍须经过独立 Review、正反例、Shadow 和可退役的版本治理，不得从候选箱直接跳到 Active。
+
+前置顺序不变：PROD-01B 先提供跨任务 Journal 与持久查询，PROD-01E/INC-01 提供 Observe-only 事故指纹和证据，PROD-05/INC-04 再实现 LearningStore、候选箱、人工审批、Offline/Shadow 评测、替代与退役。若为演示提前做只读统计，必须标记 Observe-only v0，不得宣称 INC-04 完成。
 
 任何真实模型、媒体、外部仓库或网络调用都需要执行当次的新授权，不能沿用历史授权摘要。
 
@@ -483,8 +600,8 @@ PROD-01A 实现事实：
 - `Plan/Plan22.md`：Core 音频需求证据链、独立转录客户端、时间线/不确定性和同一代码验收边界。
 - `Plan/Plan23.md`：Core 视频 Bug 证据链、观察/推测/建议分离、时间线引用和同一回归验收边界。
 - `Plan/Plan24.md`：统一多模态 Intake、并行/单次处理、状态化 Bundle、失败关闭和下游隔离。
-- `Plan/Plan25.md`：事故学习闭环一等子系统的领域模型、状态机、分批实施、Fault Catalog、SLI/SLO 和关闭门禁。
-- `Plan/Plan26.md`：产品中心纠偏、通用领域模型、Core/Plugin 边界、场景化 Acceptance 和 PROD-00～07 路线。
+- `Plan/Plan25.md`：事故学习闭环一等子系统的领域模型、状态机、分批实施、Fault Catalog、SLI/SLO、关闭门禁，以及与 Harness Evolution Protocol 的单一真相源边界。
+- `Plan/Plan26.md`：Harness 产品定位、Runtime 通用领域模型、Core/Plugin 边界、场景化 Acceptance、Harness Evolution Protocol 和 PROD-00～07 路线。
 - `Plan/闭环覆盖范围.md`：事故闭环的已知覆盖范围、漏检概率模型、统计口径、主要盲区和阶段性目标。
 - `OPTIMIZATION_BACKLOG.md`：优化批次、优先级、状态和验收标准。
 
@@ -511,7 +628,8 @@ git status --short
 - 仓库：`/Users/donbblu/codex/multiAgent`
 - 分支：`codex/multimodal-coding-mvp`
 - 远端：`git@github.com:donbblu/MultiAgent.git`
-- 当前基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`
+- 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`
+- 当前开发快照：`HEAD=1f4dc13afb348d36b6e89ac09f1d85eccc960488`，工作区为 dirty；它与 `pre-PROD-01B` VerificationReport 对应，但不是可由单一 commit 精确重现的 clean release baseline。
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒

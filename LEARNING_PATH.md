@@ -1,8 +1,8 @@
-# 交互式多模态 Multi-Agent Runtime：生产演进与事故驱动学习路线
+# 交互式多模态 Multi-Agent Harness：生产演进与事故驱动学习路线
 
 ## 1. 学习目标
 
-本项目要学习和验证的不是“如何让多个 Agent 修一个 Bug”，而是如何构建一个可长期交互、可恢复、可审计的多模态 Multi-Agent Runtime，使多个独立 Agent 能安全地并行、交接、使用工具和接受用户介入，并让 Coding 等专业能力以插件形式接入。
+本项目要学习和验证的不是“如何让多个 Agent 修一个 Bug”，而是如何构建一个以通用 Multi-Agent Runtime 为执行内核、可长期交互、可恢复、可审计的多模态 Multi-Agent Harness，使多个独立 Agent 能安全地并行、交接、使用工具和接受用户介入，并让 Coding 等专业能力以插件形式接入。
 
 学习与开发同步进行。每一批只解决一个可复现问题，留下协议、自动化测试、运行证据、失败语义、事故用例和已知限制。不能用 Demo 成功、模型自评或测试数量代替生产结论。
 
@@ -70,7 +70,7 @@
 
 状态：已完成文档冻结，见 Plan/Plan26.md。
 
-需要能解释：为什么 Thread 不等于 Task，AgentSession 不等于供应商 Session，Invocation 不等于 Worker；为什么 Coding 的目标归属是插件而当前尚未实现 CodingPlugin；为什么 AcceptancePolicy 必须按场景声明；为什么第二个代码仓库不是 Core Charter 的前置条件。
+需要能解释：为什么 Thread 不等于 Task，AgentSession 不等于供应商 Session，Invocation 不等于 Worker；为什么 Coding 的目标归属是插件而当前尚未实现 CodingPlugin；为什么 AcceptancePolicy 必须按场景声明；为什么第二个代码仓库不是 Harness Charter 的前置条件。
 
 ### PROD-01：持久交互与可恢复执行
 

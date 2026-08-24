@@ -1,18 +1,27 @@
-# Plan26：交互式多模态 Multi-Agent Runtime 产品中心纠偏与 Charter
+# Plan26：交互式多模态 Multi-Agent Harness 产品定位与 Runtime Charter
 
 日期：2026-08-23
 
-讨论主题：纠正 Coding 场景对 Core 产品边界的过拟合，冻结通用 Multi-Agent Runtime 的领域、验收与增量迁移路线。
+讨论主题：纠正 Coding 场景对产品边界的过拟合，冻结“Multi-Agent Harness 是项目本体、通用 Multi-Agent Runtime 是执行内核、专业能力以 Plugin 接入”的领域、验收与增量迁移路线。
 
 ## 当前状态
 
 状态：**PROD-00 文档冻结完成，Runtime 行为未修改**。
 
-2026-08-23，项目产品中心由“Multi-Model Coding Agent Harness”纠偏为：
+2026-08-23，项目产品中心由“面向 Coding 的专用 Multi-Model Agent Harness”纠偏为：
 
-> 一个可交互、可长期运行、支持多个独立 Agent 协作的多模态 Agent Runtime。用户可以在 Thread 中持续发送文本、图片、音频和视频；Agent 可以独立判断、并行工作、按依赖交接、使用受控工具并接受人工介入。Coding 是可插拔的专业能力，不是 Core 的默认目的。
+> 一个以通用、可持久化 Multi-Agent Runtime 为执行内核的多模态 Multi-Agent Harness。用户可以在 Thread 中持续发送文本、图片、音频和视频；Agent 可以独立判断、并行工作、按依赖交接、使用受控工具并接受人工介入。Coding 和 VisionForge 是可插拔的专业能力，不是 Harness Core 的默认目的。
 
-本计划用于冻结新的产品边界、领域语言、增量迁移路线、验收口径和事故联动。它不删除现有 Coding/VisionForge 能力，不修改当前 Runtime，不调用模型，不访问网络，也不读取外部仓库。
+2026-08-25 术语澄清：2026-08-23 的实质决议是从 Coding 专用链路泛化到长期、多场景 Multi-Agent 系统；“Runtime 是产品本体”的旧简称被本节取代，但既有领域模型、实现状态和 PROD 顺序不变。
+
+本计划用于冻结新的 Harness 产品边界、Runtime 内核领域语言、增量迁移路线、验收口径和事故联动。它不删除现有 Coding/VisionForge 能力，不修改当前 Runtime，不调用模型，不访问网络，也不读取外部仓库。
+
+固定术语契约：
+
+- **Multi-Agent Harness** 是项目与产品本体，组合并治理 Runtime、Agent 编排、Context/Memory、Model/Tool Adapter、Eval、Incident/Security 和 Plugin；
+- **Runtime Kernel** 是 Harness 内的执行与控制内核，负责持久状态、生命周期、并发、取消/恢复、运行时验权、事件和 Acceptance 的强制执行，不代表整个产品；
+- **Plugin** 是受 SPI、Grant 和 AcceptancePolicy 约束的专业能力，不能拥有或放宽 Runtime Kernel/Harness Core 的真相、权限与验收；Coding/VisionForge 是当前例子；
+- **Model/Backend** 是经 Adapter 调用的可替换执行负载，只能产出候选 Artifact/Evidence，不拥有状态、权限或验收权。`AgentInstance` 也不等于某个具体 Model。
 
 ## 为什么需要纠偏
 
@@ -32,14 +41,14 @@
 
 | 方案 | 核心思路 | 优点 | 缺点、成本与风险 | 适用条件 |
 |---|---|---|---|---|
-| 继续以 Coding Harness 为 Core | Thread、Agent、验收和 Web 继续围绕代码修改与测试组织 | 现有纵向链路成熟，短期改动最小 | 普通交互、多模态分析和其他工具场景被迫套用 Coding 语义，Core 持续过拟合 | 产品只服务代码任务时 |
-| 交互式多模态 Multi-Agent Runtime，Coding 场景插件化 | Core 负责长期 Thread、Agent 协作、Invocation、Artifact、权限和场景化 Acceptance | 可复用到非 Coding 场景，并保留现有 Coding/VisionForge 资产 | 需要新增通用领域协议、兼容层和渐进迁移；过早重写或插件化可能造成双真相源 | 目标是长期、多场景 Agent Runtime 时 |
+| 继续以 Coding 专用 Harness 为 Core | Thread、Agent、验收和 Web 继续围绕代码修改与测试组织 | 现有纵向链路成熟，短期改动最小 | 普通交互、多模态分析和其他工具场景被迫套用 Coding 语义，Core 持续过拟合 | 产品只服务代码任务时 |
+| 通用多模态 Multi-Agent Harness，以 Runtime 为执行内核，Coding 场景插件化 | Runtime Kernel 负责 Thread、Agent 协作、Invocation、Artifact、权限和场景化 Acceptance；Harness 组合路由、Context/Memory、工具、评测和事故学习 | 可复用到非 Coding 场景，并保留现有 Coding/VisionForge 资产 | 需要新增通用领域协议、兼容层和渐进迁移；过早重写或插件化可能造成双真相源 | 目标是长期、多场景 Agent Harness 时 |
 
-最终选择第二种方案。原因是当前目标已经超出代码修复，而 Scope、Thread、Invocation、Artifact、权限、事故和 Acceptance 等机制具有跨场景复用价值；通过单向兼容和分批迁移，可以避免删除已验证资产或一次性重写 Runtime。第一种方案被放弃为 Core 定位，但继续作为目标 Coding Plugin 的专业能力保留。
+最终选择第二种方案。原因是当前目标已经超出代码修复：Scope、Thread、Invocation、Artifact、权限和 Acceptance 属于可复用的 Runtime Kernel，角色/模型策略、Context/Memory、工具、评测和事故学习共同构成更完整的 Harness。通过单向兼容和分批迁移，可以避免删除已验证资产或一次性重写 Runtime。第一种 Coding 专用方案被放弃为产品定位，但继续作为目标 Coding Plugin 的专业能力保留。
 
 ## 产品边界
 
-### Core 产品能力
+### Harness Core 产品能力
 
 Core 首先提供长期交互和协作运行能力：
 
@@ -211,9 +220,9 @@ Acceptance 的对象是某次 Turn、Task、ScenarioRun 或外部动作的 `Outc
 
 任何场景都必须遵守 `unknown != accepted`。`VerificationOutcome.passed` 只是 AcceptancePolicy 可以引用的一种证据。`Invocation.completed` 只表示一次执行技术上结束；`Outcome.accepted` 表示 AcceptancePolicy 的证据已经满足；`Thread.archived` 是另一个生命周期动作。三者不能互相推导，Agent 的成功声明也不能改变它们。
 
-## Core 与插件迁移边界
+## Harness Core 与插件迁移边界
 
-### 直接保留为 Core
+### 直接保留为 Harness Core 通用能力
 
 - Lifecycle、TaskGraph 的通用 DAG 与并发基础；
 - WorkerRegistry、Role-first 路由和 principal provenance；
@@ -269,6 +278,65 @@ VisionForge 当前保持独立 `visionforge:web_visual` Scenario Plugin，并复
 
 每个场景分别报告可靠性、事实错误、人工介入、成本和延迟，不汇总成掩盖差异的单一分数。固定样例与隐藏保留样例分离；只改善一个 fixture 的规则进入场景策略或插件，不能进入 Core。第二个真实仓库延后到 Coding 插件化后的 Canary/dogfood，不再是 PROD-00 完成条件。
 
+### Harness Evolution Protocol（Evo-Bench-inspired）
+
+Harness 的实现与优化采用评测驱动演进，而不是凭直觉累加 Agent、模型、Memory、Prompt 或协作机制。本文的 Harness Evolution Protocol 指 `Baseline → 失败证据 → 可证伪假设 → 单一实验变更 → Validation → Held-out → KEEP/ROLLBACK/INCONCLUSIVE` 的项目内部开发与证据协议，不是当前插队的新生产子系统，也不等于允许 Agent 自主修改生产。它借鉴 Evo-Bench（<https://github.com/RUCAIBox/Evo-Bench>），但当前没有运行或复现其正式 Benchmark；它也不等于、依赖或授权安装外部 `evo-hq/evo`（<https://github.com/evo-hq/evo>）。后者若未来采用，只能作为外部候选实验执行器。当前生产顺序仍为 `PROD-01B → 01C → 01D → 01E`。
+
+每个会改变 Agent 行为、路由、协作拓扑、Prompt、Context、Memory、重试、停止、工具或 Acceptance 行为的修改，必须建立版本化实验记录并在运行前冻结：
+
+- 可复现失败、真实工作负载或确定性故障假设及 Evidence 引用；
+- Baseline、强单 Agent/当前 Harness 对照和一个可证伪的 Harness 机制假设；
+- `mutation_axis` 与本轮唯一主要 Mutation；`harness_only` 实验固定每个 Role 的 Backend/Model manifest，模型或路由实验则预注册 baseline/candidate assignment，不能表述为“模型不变的 Harness 收益”。若同时改变模型、Prompt、拓扑、Context、预算或内部反馈 Validator，必须拆分或做消融；
+- workload/manifest hash、Policy Model/版本或预注册 assignment、Prompt/协议/策略版本、环境、权限、预算、工具、最终 EvalOracle/EvalAcceptancePolicy/HiddenValidator、随机种子、重复次数、主次指标、停止条件和排除规则；
+- `promotion_rule`、最小效果阈值、允许成本/延迟上限、不确定性或重复判定方法、最小样本量和 `heldout_query_budget`；这些都必须在看结果前冻结；
+- development/calibration、validation 与 sealed held-out 的任务家族隔离；同源或近重复变体不得跨集合泄漏；
+- 全部已启动 Trial、失败和缺失数据、重试、Token/费用、延迟、人工介入、配置 hash 与原始 Evidence 引用；
+- Validation、Held-out、正常路径、事故/故障负向路径和回归结果；
+- `lifecycle_status=PROPOSED/RUNNING/FROZEN/COMPLETED/INVALID`、`decision=KEEP/ROLLBACK/INCONCLUSIVE`、回滚条件与批准者，以及 Regression、Detector、Policy、Validator、Adapter、Runbook、Skill 或后续实验的正确落点。
+
+必须明确区分“被测 Harness 层”和“不可变 Eval 层”。候选 Harness 的内部 Prompt、路由、Context、协作、重试、停止、工具选择、内部 acceptance/gating、反馈策略或内部 Validator 可以在白名单 `mutation_axis` 中演化，但不能兼任最终 Oracle。最终 `EvalOracle/EvalAcceptancePolicy/HiddenValidator`、Runtime 验收权、权限/沙箱硬边界、实验 BudgetLedger、计分与完整分母永远由独立 Eval Runtime 冻结；Evolver、Policy Agent 和候选 Harness 都不能修改或放宽它们。
+
+验证集迭代结束后选择历史最佳候选并冻结，而不是默认采用最后一轮；随后由独立 Eval Runtime 执行 held-out。`heldout_query_budget` 默认是每个内部 Harness Evolution Experiment 对一个最终冻结候选查询一次；逐题反馈、聚合分数和派生诊断均不得返回本轮 Evolver。任何 held-out 结果一旦暴露给人工或 Agent Evolver，该 cohort 对后续调参即退役，只能在新版本、从未暴露的 cohort 上重新开始。Suite/version、访问 principal、查询次数和退役原因必须审计；任何泄漏、按保留集调参、运行后改阈值/样本、删除失败 Trial 或配置漂移都会使本轮结论 `INVALID`。
+
+Policy Agent 只接收完成当前任务所需的公共输入；Evolver 只接收获准的 validation 轨迹与汇总；Eval principal 独占 sealed cohort 和最终 Oracle。三者使用不同 principal，涉及 Agent 连续性时还必须使用不同 AgentSession。当前 `coding_eval/v1` 的 Runtime 私有隐藏 Validator 只对 Policy Agent 隐藏，仓库开发者和人工 Evolver 可以读取，因此只能用于管线校准和 Agent-side hidden checks，不能充当对人工 Evolver 密封的 held-out。
+
+Agent 行为、智能效果和可泛化收益声明必须使用隔离 Held-out。事务、状态机、权限等确定性正确性变更若不主张统计泛化，可以把 Held-out 标为“不适用”，但必须使用独立冻结的故障矩阵、正常路径对照和回归证明声明范围，且不得外推为模型或产品效果提升。
+
+安全正确性使用字典序硬门禁，不与平均效果加权抵消：`false accepted=0`、跨 Scope/Thread/Session 污染=0、未授权或重复副作用=0、cancel/fence 后迟到结果接纳=0、预算硬限制突破=0、评测泄漏/篡改=0。只有通过硬门禁的候选才能按预注册 promotion rule 比较 safe acceptance、恢复率、每次 safe accepted 的成本、Token、延迟、人工介入、Generalization Gap 和相对强 Baseline 的边际收益；只有达到预注册最小样本量才报告 p95，否则展示逐 Trial/原始分布。未达到最小效果阈值、超过成本上限或不确定性不足时，决策只能是 `ROLLBACK` 或 `INCONCLUSIVE`，不能看完结果再调整标准。
+
+演进分为三层：
+
+1. `L1 人工评测驱动演进` 是当前默认开发方法；人分析失败、提出 Hypothesis 和受限候选变更，由独立验证边界评测。当前尚无通用独立 Eval Runtime，现阶段只能生成 Verification Evidence，不能冒充 Runtime `AcceptanceRecord`。
+2. `L2 Agent 辅助评测驱动演进` 只允许 Agent 生成 ChangeProposal/候选 Patch。外部 Codex/Claude 等离线辅助可以先使用版本化文件 Bundle，并由人负责隔离与评测；作为 Runtime 一等能力时，持久实验索引依赖 PROD-01B，Full/Raw Backend 依赖 PROD-02，受控执行与权限隔离依赖 PROD-03，ChildInvocation/Handoff 依赖 PROD-04。候选发布验证还依赖 INC-03，且仍须经过 Offline Eval、独立 Review、Shadow、人工批准和可回滚 Canary。
+3. `L3 生产自主 Harness 演进` 当前不实施，也不因 Agent 能生成 Patch 而视为具备。依赖顺序固定为：INC-03 提供 ChangeSet、VerificationRun、Shadow/Canary/Rollback；INC-04 提供 Learning/Guardrail 的审批、替代与退役；INC-05 提供运营、Game Day 和长期复发评价。三阶段成熟后仍需重新立项，不能自动解锁。
+
+当前已有固定 Coding 任务、对 Policy Agent 隐藏的 Runtime 私有 Validator、任务校准和三方案消融管线，但没有对人工 Evolver 密封的 held-out，固定 Coding 三方案的真实模型效果对照也尚未完成，3 个任务不足以形成泛化结论。脚本/Fake Model 结果只能验证控制流；示例指标必须标为“示例（非实测）”。只有绑定版本化 Run、Trial、manifest 和 Evidence 的结果才能进入验收、Handoff 或简历结论。
+
+后续适用的 PROD/INC Plan 固定追加：
+
+```text
+### Harness Evolution 实验
+- scope_id / experiment_id / version：
+- lifecycle_status：PROPOSED | RUNNING | FROZEN | COMPLETED | INVALID
+- decision：KEEP | ROLLBACK | INCONCLUSIVE
+- Evolver / Policy / Eval principal：
+- 失败/工作负载与证据引用：
+- suite/split manifest、完整分母与 run/trial refs：
+- Baseline / candidate ChangeSet hash 与强对照：
+- 可证伪假设：
+- mutation_axis / 单一 Mutation / 白名单范围：
+- 固定项与 manifest/hash：
+- Validation / Held-out 隔离、访问审计与 query budget：
+- promotion rule / 最小效果 / 成本上限 / 不确定性方法：
+- 安全硬门禁：
+- 效果、成本、延迟、人工介入：
+- Generalization Gap / 回归：
+- Incident / Regression 落点：
+- invalidation_reason / 决策批准者与时间 / 回滚 / next_action：
+```
+
+纯协议/文档批次可以将 Harness Evolution 实验标为“不适用”，但必须说明当前没有可运行行为、已有的负向与正常对照，以及由哪个后续批次完成真实行为验证。未严格复现官方 Evo-Bench 的完整任务、角色、轮次、预算、隔离和计分协议时，本项目只能称为“内部 Harness Evolution Experiment/Pilot”或“评测驱动演进实验”，不宣称完成官方 Evo-Bench 或取得其榜单成绩。
+
 ## 生产边界与模块形态
 
 第一阶段保持 self-hosted、单组织/单信任域、单机优先的 production-shaped modular monolith。模块边界按 Thread/Message、Invocation/Session、Event/Incident、Artifact/Context、Capability/Tool、Scenario/Plugin 和 Web/API 划分；SQLite 继续作为本地模式。
@@ -300,7 +368,7 @@ RPO/RTO 的数值目标将在 PROD-01 结合 Journal 和故障注入冻结；当
 
 ## 生产批次
 
-### PROD-00：产品中心纠偏与 Runtime Charter
+### PROD-00：Harness 产品定位与 Runtime Charter
 
 本计划及同步文档即为验收物。只冻结边界，不修改 Runtime 行为。
 
@@ -329,7 +397,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 - RuntimeEvent 只允许小型、深冻结 JSON 元数据和受控引用，不保存 Message 正文、Prompt、Completion、原始媒体或 bytes；append-only、序号唯一和持久授权仍属于 PROD-01B。
 - Coding 通过单向兼容适配器映射 Role、Worker binding、完整 TaskSpec 快照、Artifact 内容哈希和 Verification Evidence；Core 不反向依赖 Coding，旧执行器行为未改变。
 
-验收证据：64 项 PROD-01A 定向协议测试和 277 项默认全量测试通过，4 项需要真实浏览器的测试按设计跳过；Python compileall 与 `git diff --check` 通过。纯协议批次没有进程、SQLite 事务或副作用可供 `kill -9`，因此本批故障证据是跨 Scope/Thread、伪造 Acceptance、错误状态迁移、取消后扩权、过期 lease/fence、迟到结果、Event 敏感载荷和内容漂移的确定性负向用例；事务中断、重复投递和进程恢复演练由 PROD-01B/01C 承接。无需用户手动检验。
+验收证据：64 项 PROD-01A 定向协议测试通过；默认全量共执行 277 项，其中 273 项通过、4 项需要真实浏览器的测试按设计跳过、0 failure、0 error；Python compileall 与 `git diff --check` 通过。纯协议批次没有进程、SQLite 事务或副作用可供 `kill -9`，因此本批故障证据是跨 Scope/Thread、伪造 Acceptance、错误状态迁移、取消后扩权、过期 lease/fence、迟到结果、Event 敏感载荷和内容漂移的确定性负向用例；事务中断、重复投递和进程恢复演练由 PROD-01B/01C 承接。无需用户手动检验。
 
 ### PROD-02：Agent Backend v2、Session 与 Streaming
 
@@ -357,7 +425,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 
 ## PROD-00 验收结论
 
-- 产品中心已从 Coding 修复纠偏为交互式多模态 Multi-Agent Runtime；
+- 产品中心已从 Coding 专用 Harness 纠偏为以通用 Multi-Agent Runtime 为执行内核的交互式多模态 Multi-Agent Harness；
 - Coding 纵向切片和独立 VisionForge Scenario Plugin 保留，但不再定义 Core；CodingPlugin 尚未实现；
 - Scope、Thread、Turn、Message、AgentInstance、AgentSession、SessionBinding、Invocation、Route、Context、Capability 和 Acceptance 的边界已冻结；
 - 共享记忆、权限、并行和事故闭环已纳入通用领域；
@@ -379,3 +447,4 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 - 实施 PROD-01B 的持久 Store、Journal、Outbox、BudgetLedger 和查询协议。
 - 随后实施 PROD-01C 的 durable Invocation、Finalizer/Reaper、fencing、取消与恢复。
 - 按 PROD/INC 双轨补齐对应事故事件、负向用例、正常对照和覆盖指标。
+- 对每个适用的行为修改同步填写 Harness Evolution 实验模板；PROD-01B 使用确定性轻量轨，只填写 Baseline、单一变更、故障矩阵、正常对照、固定门禁、回归和决策，Evolver/principal、样本量、Validation/Held-out cohort、query budget、统计效果等字段统一标为 `N/A`，不得因此阻塞基础设施开发，也不得把该证据外推为模型智能或 Held-out 效果结论。

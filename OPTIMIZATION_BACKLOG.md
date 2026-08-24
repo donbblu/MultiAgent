@@ -1,8 +1,8 @@
-# 交互式多模态 Multi-Agent Runtime 优化待办
+# 交互式多模态 Multi-Agent Harness 优化待办
 
 本文是项目方向和优化工作的单一待办清单。`HANDOFF.md` 负责恢复上下文；具体批次、状态和验收条件以本文为准。
 
-- 最后核对：2026-08-23
+- 最后核对：2026-08-24
 - 当前批次：`PROD-01A` 领域协议与迁移骨架已完成（纯协议，不代表已接入执行路径）
 - 下一步：`PROD-01B` 状态 Store、Journal 与 Outbox
 
@@ -15,10 +15,13 @@
 - 每批结束必须记录修改文件、自动化测试、无法自动完成的手动检验和下一批内容。
 - 模型输出始终是不可信输入。文件写入、命令、浏览器、状态和最终质量门禁由 Runtime 控制。
 - 现有 Coding、VisionForge 和多模态 Intake 测试是兼容回归资产，必须尽可能保持通过。
+- Harness Evolution Protocol 是项目内部跨批次实验门禁，不是新的生产批次；它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。当前下一步继续固定为 `PROD-01B`。
+- 影响 Agent 行为的 Harness 修改必须附版本化 Harness Evolution 实验记录：Baseline、失败证据、单一 Hypothesis/候选变更、固定控制项、Validation、隔离 Held-out、代价、回归和保留/回滚决定。无可定位 Run/Trial/Evidence 的数字必须标注“示例（非实测）”，脚本/Fake Model 结果不得冒充真实模型收益。
+- 当前只采用 `L1 人工评测驱动演进`；`L2 Agent 辅助评测驱动演进` 是后续受限候选能力，`L3 生产自主 Harness 演进` 当前非目标。未严格复现官方协议时只能称内部 Harness Evolution Experiment/Pilot，不得宣称 Evo-Bench 成绩。
 
 ## 产品方向
 
-项目核心是一个支持持续交互、多个独立 Agent 协作和文本/图片/音频/视频输入的 **多模态 Multi-Agent Runtime**。长期存在的是 Thread、Agent 身份、Mailbox、Runtime 自有 AgentSession 和可恢复状态；供应商 SessionBinding 只是可替换映射，模型调用是短生命周期 Invocation。用户可以随时补充信息、改向、暂停、取消或批准高风险动作。
+项目本体是一个支持持续交互、多个独立 Agent 协作和文本/图片/音频/视频输入的 **多模态 Multi-Agent Harness**。通用 Multi-Agent Runtime 是其核心执行内核，持有 Thread、Agent 身份、Mailbox、Runtime 自有 AgentSession、Invocation 生命周期和可恢复状态；Harness 在其上组合角色/模型策略、路由、Context/Memory、工具、评测、事故学习和 Skill。供应商 SessionBinding 只是可替换映射，模型调用是短生命周期 Invocation。用户可以随时补充信息、改向、暂停、取消或批准高风险动作。
 
 目标架构把 Coding 封装为按需加载的专业插件；当前代码尚无 `CodingPlugin`，Coding 仍是 Composition Root/包内纵向切片。VisionForge 当前是独立的 `visionforge:web_visual` Scenario Plugin，并复用 Coding 能力；现有 Plugin SPI 不支持插件嵌套。TaskGraph、WorkerRegistry、ArtifactStore、SQLite Runtime、生命周期、权限、Checkpoint、PatchIntegrator、ProjectWorkspace 和 Web/API 都是迁移基础；其中 Patch、Workspace、build/test 和 Fixer 属于 Coding 场景，不是每个交互的必经路径。
 
@@ -30,7 +33,7 @@ Core 只接受受控 Message、Artifact、Handoff 和工具请求。模型不能
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
-| PROD-00-CHARTER | P0 | 已完成 | 产品中心纠偏、领域模型、Core/Plugin 边界和场景化 Acceptance | `Plan26`、HANDOFF、Backlog、Learning Path 和事故计划一致；不改 Runtime 行为 |
+| PROD-00-CHARTER | P0 | 已完成 | Harness 产品定位、Runtime 领域模型、Core/Plugin 边界和场景化 Acceptance | `Plan26`、HANDOFF、Backlog、Learning Path 和事故计划一致；不改 Runtime 行为 |
 | PROD-01A | P0 | 已完成 | 最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent` 协议 | 版本化往返、ID/因果/状态不变量、跨 Scope 引用拒绝、Message/Artifact 单一事实源和 Coding 协议映射测试齐全；Invocation 同步冻结 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 与资源引用；不实现 Store、调度、Mailbox、Backend、Gateway、Context、Web 或执行接入 |
 | PROD-01B | P0 | 待开始 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | 状态表为当前真相源，Journal 为审计，Snapshot 为兼容检查点；状态/Event/Outbox/预算预留结算原子提交 |
 | PROD-01C | P0 | 待开始 | durable enqueue、幂等、claim/lease/heartbeat、fencing、级联取消、Finalizer/Reaper 与恢复 | kill/retry/cancel 竞态不重复副作用，孤儿 Invocation 和残留 Lease 可幂等回收；进程内路径只承诺逻辑失权，Backend/进程硬取消不越界到本批 |
@@ -40,14 +43,15 @@ Core 只接受受控 Message、Artifact、Handoff 和工具请求。模型不能
 | PROD-03 | P0 | 待开始 | Capability、Tool Gateway 与执行隔离 | 每 Invocation Grant、高风险 Approval、资源与副作用审计 |
 | PROD-04 | P0 | 待开始 | 交互式多 Agent 协作控制面与 Thread Web | Mailbox、Handoff、并行/依赖、收敛、用户介入和 Agent 泳道可追踪 |
 | PROD-05 | P1 | 待开始 | Context、共享记忆与多模态工作区 | ContextManifest、ACL/版本/TTL、媒体附件和检索评测 |
-| PROD-06 | P1 | 待开始 | 插件产品化与效果/容量验证 | 持续交互、协作、多模态和插件/工具任务分层评测；Coding/VisionForge 不污染 Core 指标 |
+| PROD-05-SKILL-CANDIDATE-INBOX | P1 | 待开始 | Harness 自动发现重复认知流程，在 API + Web 的 Learning → Skill Candidates 中提供可审计的 Skill 候选箱；CLI 可选 | 不纳入当前周或 PROD-01B；依赖持久 Journal、Incident/LearningStore 和 INC-04；同 Scope 至少 3 个独立真实任务/事故且有验证成功证据才生成 PROPOSED；重试/Replay/Shadow 不重复计数；非 Skill 落点会被路由到 Regression/Invariant/Policy/Validator/Adapter/Runbook；人工批准、Offline Eval、独立 Review 和 Shadow 通过前不得 Active |
+| PROD-06 | P1 | 待开始 | 插件产品化与效果/容量验证 | 持续交互、协作、多模态和插件/工具任务分层评测；形成版本化 Harness Evolution 评测资产与跨场景 Held-out 报告；Coding/VisionForge 不污染 Core 指标 |
 | PROD-07 | P1 | 待开始 | 迁移与事故运营 | Replay、Canary、回滚、备份恢复、Game Day 和 Runbook |
 
 统一生命周期门禁：任务专用 Specialist 默认是同一 Scope/Thread 下的 ChildInvocation，而不是新 Thread；`execution_state` 进入技术终态不代表已经清理。只有执行终态、`cleanup_state=REAPED`、活动 Grant/Lease/ChildInvocation 为零且旧 Attempt 已被 fencing 时才能关闭 Invocation。任何 `TERMINATION_FAILED`、残留资源或取消后副作用都必须保留证据并进入恢复/事故链。
 
 PROD-00 验收：仅修改方向与计划文档；`git diff --check`、213 项默认单元回归和 Python compileall 通过，4 项真实浏览器测试按设计跳过；无手动检验。
 
-PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器；64 项定向协议测试和 277 项默认全量测试通过，4 项真实浏览器测试按设计跳过；Python compileall 与 `git diff --check` 通过。负向用例覆盖跨 Scope/Thread、伪造 Acceptance、非法状态/清理组合、过期或错误 lease/fence、取消后扩权、迟到结果、重复 mutation、秘密 Event payload 和内容漂移。未接 SQLite、队列、模型、Mailbox、Web 或旧 Executor；无手动检验。
+PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器；64 项定向协议测试通过；默认全量共执行 277 项，其中 273 项通过、4 项真实浏览器测试按设计跳过、0 failure、0 error；Python compileall 与 `git diff --check` 通过。负向用例覆盖跨 Scope/Thread、伪造 Acceptance、非法状态/清理组合、过期或错误 lease/fence、取消后扩权、迟到结果、重复 mutation、秘密 Event payload 和内容漂移。未接 SQLite、队列、模型、Mailbox、Web 或旧 Executor；无手动检验。
 
 以下批次 1～13A 是已完成的历史纵向切片与兼容资产，不是新的产品推进顺序。各批“验收记录”保留的是当时事实，可能已被后续批次替换；当前产品和代码状态以本文顶部、`HANDOFF.md`、代码与测试为准。
 
@@ -200,7 +204,7 @@ PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器
 
 ### 批次 9：产品重新定位与客观评测设计
 
-> 历史说明：本批将产品收窄为 Coding Harness 的定位已被 2026-08-23 的 `PROD-00 / Plan26` 纠偏取代；已实现协议、测试和插件资产继续保留。
+> 历史说明：本批将产品收窄为 Coding 专用 Harness 的定位已被 2026-08-23 的 `PROD-00 / Plan26` 纠偏取代；当前定位是以通用 Multi-Agent Runtime 为执行内核的多模态 Multi-Agent Harness，已实现协议、测试和插件资产继续保留。
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
@@ -455,8 +459,8 @@ PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器
 
 ## 当前基线
 
-- 基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`
-- 当前测试：`PYTHONPATH=demo python3 -m unittest discover -s demo/tests -q`，213 个测试通过（4 个真实浏览器类默认跳过）。
+- 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`；当前代码 `HEAD=1f4dc13afb348d36b6e89ac09f1d85eccc960488` 且工作区为 dirty，正式可复现基线仍需绑定后续 clean checkpoint。
+- 当前测试（2026-08-24）：`PYTHONPATH=demo python3 -m unittest discover -s demo/tests -q` 共执行 277 项，其中 273 项通过、4 项真实浏览器类默认跳过、0 failure、0 error；Python compileall 与 `git diff --check` 同步通过。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。
 - 当前环境 PATH 未提供 Node/npm；已使用 Codex 工作区 Node 24.19.0 与 pnpm 11.19.0 完成锁文件和构建验证。

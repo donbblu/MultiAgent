@@ -4,9 +4,9 @@
 
 ## 当前状态
 
-本计划是 `PROD-00` Runtime Charter 的专项设计产物，状态为 **INC-00 文档冻结完成，PROD-01A 协议地基已实现，持久事故链尚未开始**。它定义事故学习闭环的领域模型、控制边界、持久化语义、分批实施、故障演练和验收口径；当前新增代码只提供 RuntimeEvent/Acceptance/Invocation 协议和同步不变量，尚未修改旧 Runtime 执行行为。
+本计划是 `PROD-00` Harness 产品定位与 Runtime Charter 的专项设计产物，状态为 **INC-00 文档冻结完成，PROD-01A 协议地基已实现，持久事故链尚未开始**。它定义事故学习闭环的领域模型、控制边界、持久化语义、分批实施、故障演练和验收口径；当前新增代码只提供 RuntimeEvent/Acceptance/Invocation 协议和同步不变量，尚未修改旧 Runtime 执行行为。
 
-事故学习系统是 Runtime 的横向生产能力，不是某个 Agent 的“反思 Prompt”，也不是失败后自动写入 Memory 的快捷路径。它必须覆盖 Thread、Message、AgentSession、Route、用户介入、媒体绑定、直接模型 API、Full Agent Backend、工具、Context、Memory、调度、预算和人工审批。Workspace、Patch 和 Coding Validator 属 Coding Plugin 的事故子目录，不再定义 Core 的完成语义。
+事故学习系统是 Harness 的横向一等子系统，不是某个 Agent 的“反思 Prompt”，也不是失败后自动写入 Memory 的快捷路径。RuntimeEvent、Journal、Acceptance 与运行状态为它提供执行事实底座；它还必须覆盖用户介入、媒体绑定、直接模型 API、Full Agent Backend、工具、Context、Memory、调度、预算和人工审批。Workspace、Patch 和 Coding Validator 属 Coding Plugin 的事故子目录，不再定义 Harness Core 的完成语义。
 
 本次泛化遵循 `Plan/Plan26.md`：保留 `RuntimeEvent → Detector/Invariant → IncidentLedger → EvidenceBundle → Replay/FaultInjection → ChangeSet → Shadow/Canary → LearningItem → GuardrailEvaluation` 主链，只纠正 Coding 特有的事实源、事故样例和完成门禁。
 
@@ -386,6 +386,19 @@ memory_schema_version
 ```
 
 `VerificationRun` 记录 offline、shadow、canary、rollout 和 rollback 的环境、cohort、版本、指标、证据和结论。
+
+### 与 Harness Evolution Protocol 的边界
+
+事故闭环提供失败事实、EvidenceBundle、ReplaySpec、根因假设和 ChangeSet 候选；项目内部 Harness Evolution Protocol 负责判断某个 Harness 修改是否在固定控制项和未见任务上产生可泛化收益。它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。两者相关但不能互相替代：
+
+- 单个 Incident Replay 通过，只证明已知事故被修复，不证明 Held-out 泛化；Held-out 指标提升，也不自动满足事故止损、恢复、审计和关闭条件。
+- Harness Evolution Experiment 开始后，任务集、最终 EvalOracle/EvalAcceptancePolicy/HiddenValidator、Policy Model 或预注册 assignment、预算、promotion rule 和 sealed held-out 必须冻结。候选 Harness 的内部策略或反馈 Validator 只有在白名单 mutation axis 中才可变化，且不能兼任最终 Oracle。Evolver 不能读取 held-out 正文、隐藏测试、参考答案、逐题或聚合反馈，也不能修改安全、权限、预算和实验分母；heldout query budget 默认是一个最终候选一次，结果暴露后 cohort 对后续调参退役。
+- Run 中发现的新失败先进入 Quarantine，保留原始证据、正常对照、任务家族、去重指纹和可重放种子；经校准、去重与人工审核后只能进入下一版 Eval Suite，不能回写当前 Run、覆盖旧报告或重复计算为新的独立事故。
+- HarnessEvolutionExperiment 只保存实验版本、manifest/config hash、ChangeSet、指标快照和既有 RuntimeEvent、IncidentOccurrence、EvidenceBundle、VerificationRun、Artifact 与 AcceptanceRecord 引用；不得建立平行 Incident、Artifact、Verification、Memory 或 Runtime 真相源。
+- Agent 可以整理证据、提出 Hypothesis、ChangeProposal 和候选 Patch，不能批准 ChangeSet、Guardrail、Canary、事故关闭或生产晋升，也不能把总结直接写入 Active Memory/Skill/Policy。
+- 事故自动触发生产 Harness 自主修改和晋升属于 `L3 生产自主 Harness 演进`，当前非目标。依赖边界是：INC-03 提供 ChangeSet、VerificationRun、Shadow/Canary/Rollback，INC-04 提供 Learning/Guardrail 审批、替代与退役，INC-05 提供事故运营和长期复发评价；全部成熟后仍需重新立项。
+
+因此每个事故修复既要有针对已知 Incident 的 Replay/Regression，也要在行为或效果声明适用时执行 `Plan/Plan26.md` 的 Harness Evolution Validation/Held-out 门禁；任一结果不能替代另一个。
 
 ### `LearningItem` 与 `GuardrailEvaluation`
 

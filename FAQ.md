@@ -1,4 +1,4 @@
-# Multi-Agent / VisionForge 项目 FAQ
+# Multi-Agent Harness / VisionForge 项目 FAQ
 
 本文整理当前项目架构图中容易混淆的概念，并区分：
 
@@ -645,9 +645,9 @@ Runtime 会在独立 Workspace 中用 `shell=False` 执行白名单 argv。命�
 
 能力不足也不会自动换成错误的 Role。Planner/Tester 至少要求 text + structured output，Implementer/Fixer 还要求 tool calling；检查发生在模型客户端调用之前。缺少能力时保持明确失败，由调用方配置合适 Worker 或请求人工处理。
 
-目前这些边界已用 Fake Model 和真实本地隐藏测试验证，但还没有运行新的真实 Core 消融。下一批需要先建立全局调用/Token 硬上限、冻结模型参数并展示源码外发摘要，获得用户明确授权后才访问供应商 API。
+目前这些边界已用 Fake Model 和真实本地隐藏测试验证，但还没有运行新的真实 Coding Harness 纵向切片消融。下一批需要先建立全局调用/Token 硬上限、冻结模型参数并展示源码外发摘要，获得用户明确授权后才访问供应商 API。
 
-## 21. 为什么真实 Core 消融是 15—21 次调用，如何确保不会超限？
+## 21. 为什么真实 Coding Harness 纵向切片消融是 15—21 次调用，如何确保不会超限？
 
 每个任务的单 Agent 需要 1 次调用，Planner + Developer 需要 2 次，完整方案首次实现通过时需要 2 次；如果失败，再调用 Tester 和 Fixer，共 4 次。因此每题最少 `1 + 2 + 2 = 5` 次，最多 `1 + 2 + 4 = 7` 次；3 题就是 15—21 次。
 
@@ -655,9 +655,9 @@ Runtime 会在独立 Workspace 中用 `shell=False` 执行白名单 argv。命�
 
 CLI 默认只做 preflight，不读取 `.env`。真实执行必须同时提供显式真实调用开关和当前 preflight SHA-256；模型、源码范围或预算有任何变化，摘要都会改变，旧授权就不能继续使用。
 
-## 22. 通用 Coding Harness 接受图片后，会不会又变成网页 Agent？
+## 22. 当前 Coding 纵向切片接受图片后，会不会又变成网页 Agent？
 
-不会。Core 图片节点不输出 UI Spec，也不判断页面好不好看。它处理的是任何 Coding 相关图片证据，例如错误截图、接口规格截图、架构图或流程图，并统一输出 `core:image_observation`。
+不会。当前 Coding 图片感知节点不输出 UI Spec，也不判断页面好不好看。它处理的是任何 Coding 相关图片证据，例如错误截图、接口规格截图、架构图或流程图，并统一输出历史兼容类型 `core:image_observation`；这里的 `core` 是既有协议命名，不表示 Coding 是项目本体。
 
 图片只交给具备 VISION 能力且获得 `vision:inspect` 授权的感知 Worker。它把直接可见内容写成 observation，把需要推测的内容写成带 uncertainty 的 inference；之后普通 Planner 和 Coding Agent 只读取这些结构化 Claim。UI Spec 仍只存在于 VisionForge 插件。
 
