@@ -8,9 +8,11 @@ import tempfile
 import textwrap
 import threading
 import unittest
+from hashlib import sha256
 from pathlib import Path
 
 from coding_workflow.runtime_persistence import (
+    OutboxPolicy,
     RUNTIME_DB_COMPONENT,
     RUNTIME_DB_SCHEMA_VERSION,
     RuntimeCommitError,
@@ -33,6 +35,12 @@ class InjectedFault(RuntimeError):
     pass
 
 
+RELEASED_V1_CHECKSUM = "f193d040abb599c178002fe51180e9a7fc59966e8ef4a32cb7338c296154b7d4"
+RELEASED_V1_SCHEMA_SQL_SHA256 = (
+    "e0bd2f701681d6e51ba5636205f1c44108c0d0260b384862f5c0dd992895e3ce"
+)
+
+
 class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
     def setUp(self) -> None:
         self._temporary = tempfile.TemporaryDirectory()
@@ -51,6 +59,14 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
     ) -> SQLiteRuntimeDatabase:
         return SQLiteRuntimeDatabase(
             RuntimeSQLiteConfig(path or self.path, busy_timeout_ms=busy_timeout_ms),
+            outbox_policy=OutboxPolicy(
+                policy_version="outbox-policy/test-v1",
+                destination="core:runtime_events",
+                expected_sink_id="core:test-sink",
+                claim_ttl_ms=60_000,
+                batch_limit=10,
+                retry_delays_ms=(1_000, 5_000, 30_000),
+            ),
             fault_hook=fault_hook,
         )
 
@@ -112,6 +128,52 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 )"""
             )
 
+    def convert_current_fixture_to_released_v1(self) -> None:
+        """Build the exact component objects/ledger that existed at v1."""
+
+        with sqlite3.connect(str(self.path)) as connection:
+            connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute("DROP TABLE runtime_outbox_receipts")
+            connection.execute("DROP TABLE runtime_outbox")
+            connection.execute("DROP TABLE runtime_outbox_policy")
+            connection.execute("DROP TABLE runtime_threads")
+            connection.execute("DROP TABLE runtime_events")
+            connection.execute(
+                """DELETE FROM runtime_schema_migrations
+                   WHERE component = ? AND schema_version >= 2""",
+                (RUNTIME_DB_COMPONENT,),
+            )
+            connection.execute(
+                """UPDATE runtime_schema_metadata
+                   SET schema_version = 1 WHERE component = ?""",
+                (RUNTIME_DB_COMPONENT,),
+            )
+
+    def assert_released_v1_fixture(self) -> None:
+        rows = self.raw_rows(
+            self.path,
+            """SELECT type, name, sql FROM sqlite_schema
+               WHERE name IN ('runtime_schema_metadata',
+                              'runtime_schema_migrations')
+               ORDER BY type, name""",
+        )
+        payload = "\n".join(
+            "|".join((object_type, name, " ".join(sql.split())))
+            for object_type, name, sql in rows
+        )
+        self.assertEqual(
+            sha256(payload.encode("utf-8")).hexdigest(),
+            RELEASED_V1_SCHEMA_SQL_SHA256,
+        )
+        self.assertEqual(
+            self.raw_rows(
+                self.path,
+                """SELECT migration_name, migration_checksum
+                   FROM runtime_schema_migrations WHERE schema_version = 1""",
+            ),
+            [("runtime_kernel_base_v1", RELEASED_V1_CHECKSUM)],
+        )
+
     def insert_probe_pair(self, uow, suffix: str = "1") -> None:
         uow.execute(
             "INSERT INTO probe_parent(id, value) VALUES (?, ?)",
@@ -137,7 +199,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         database.initialize()
 
         self.assertEqual(database.schema_version(), RUNTIME_DB_SCHEMA_VERSION)
-        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 1)
+        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 3)
         self.assertEqual(RUNTIME_DB_COMPONENT, "runtime_kernel")
         objects = self.raw_rows(
             self.path,
@@ -148,8 +210,28 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         self.assertEqual(
             objects,
             [
+                ("index", "runtime_events_event_scope_uq"),
+                ("index", "runtime_events_recorded_idx"),
+                ("index", "runtime_outbox_scope_state_idx"),
+                ("table", "runtime_events"),
+                ("table", "runtime_outbox"),
+                ("table", "runtime_outbox_policy"),
+                ("table", "runtime_outbox_receipts"),
                 ("table", "runtime_schema_metadata"),
                 ("table", "runtime_schema_migrations"),
+                ("table", "runtime_threads"),
+                ("trigger", "runtime_events_deny_delete"),
+                ("trigger", "runtime_events_deny_replace"),
+                ("trigger", "runtime_events_deny_update"),
+                ("trigger", "runtime_outbox_deny_delete"),
+                ("trigger", "runtime_outbox_deny_identity_update"),
+                ("trigger", "runtime_outbox_deny_replace"),
+                ("trigger", "runtime_outbox_policy_deny_delete"),
+                ("trigger", "runtime_outbox_policy_deny_replace"),
+                ("trigger", "runtime_outbox_policy_deny_update"),
+                ("trigger", "runtime_outbox_receipts_deny_delete"),
+                ("trigger", "runtime_outbox_receipts_deny_replace"),
+                ("trigger", "runtime_outbox_receipts_deny_update"),
             ],
         )
         ledger = self.raw_rows(
@@ -160,7 +242,11 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         )
         self.assertEqual(
             ledger,
-            [("runtime_kernel", 1, "runtime_kernel_base_v1", 64)],
+            [
+                ("runtime_kernel", 1, "runtime_kernel_base_v1", 64),
+                ("runtime_kernel", 2, "runtime_thread_event_v2", 64),
+                ("runtime_kernel", 3, "runtime_event_outbox_v3", 64),
+            ],
         )
         database.verify_integrity()
 
@@ -176,6 +262,74 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.database().initialize()
         self.database().initialize()
+
+        self.assertEqual(self.schema_snapshot(self.path), before)
+
+    def test_released_v1_upgrades_to_current_preserving_ledger_and_unmanaged_data(self) -> None:
+        database = self.database()
+        self.initialize_probe_schema(database)
+        with sqlite3.connect(str(self.path)) as connection:
+            connection.execute(
+                "INSERT INTO probe_parent(id, value) VALUES ('v1', 'stable')"
+            )
+        self.convert_current_fixture_to_released_v1()
+        self.assert_released_v1_fixture()
+
+        self.database().initialize()
+
+        self.assertEqual(self.database().schema_version(), 3)
+        self.assertEqual(
+            self.raw_rows(self.path, "SELECT id, value FROM probe_parent"),
+            [("v1", "stable")],
+        )
+        self.assertEqual(
+            self.raw_rows(
+                self.path,
+                """SELECT schema_version, migration_name,
+                          length(migration_checksum)
+                   FROM runtime_schema_migrations ORDER BY schema_version""",
+            ),
+            [
+                (1, "runtime_kernel_base_v1", 64),
+                (2, "runtime_thread_event_v2", 64),
+                (3, "runtime_event_outbox_v3", 64),
+            ],
+        )
+        self.assertEqual(
+            self.raw_rows(
+                self.path,
+                """SELECT migration_checksum FROM runtime_schema_migrations
+                   WHERE schema_version = 1""",
+            ),
+            [(RELEASED_V1_CHECKSUM,)],
+        )
+        self.database().verify_integrity()
+
+    def test_current_migration_fault_leaves_released_v1_exactly_unchanged(self) -> None:
+        self.database().initialize()
+        self.convert_current_fixture_to_released_v1()
+        self.assert_released_v1_fixture()
+        before = self.schema_snapshot(self.path)
+
+        def fail(point):
+            if point is RuntimePersistenceFaultPoint.MIGRATION_BEFORE_COMMIT:
+                raise InjectedFault("v2-migration-stop")
+
+        with self.assertRaisesRegex(InjectedFault, "v2-migration-stop"):
+            self.database(fault_hook=fail).initialize()
+
+        self.assertEqual(self.schema_snapshot(self.path), before)
+        self.database().initialize()
+        self.assertEqual(self.database().schema_version(), 3)
+
+    def test_required_v2_trigger_drift_fails_closed(self) -> None:
+        self.database().initialize()
+        with sqlite3.connect(str(self.path)) as connection:
+            connection.execute("DROP TRIGGER runtime_events_deny_delete")
+        before = self.schema_snapshot(self.path)
+
+        with self.assertRaisesRegex(RuntimeSchemaCorruptionError, "缺失"):
+            self.database().initialize()
 
         self.assertEqual(self.schema_snapshot(self.path), before)
 
@@ -206,7 +360,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 connection.execute("PRAGMA table_info(runtime_snapshots)").fetchall(),
                 before_columns,
             )
-        self.assertEqual(self.database().schema_version(), 1)
+        self.assertEqual(self.database().schema_version(), 3)
 
     def test_initialization_preserves_database_global_version_pragmas(self) -> None:
         self.path.parent.mkdir(parents=True)
@@ -242,7 +396,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         with self.assertRaisesRegex(
             RuntimeSchemaTooNewError,
-            "found=2.*supported=1",
+            "found=4.*supported=3",
         ):
             self.database().initialize()
 
@@ -325,7 +479,8 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
             connection.execute("PRAGMA ignore_check_constraints = ON")
             connection.execute(
                 """UPDATE runtime_schema_migrations
-                   SET schema_version = 1.5 WHERE component = ?""",
+                   SET schema_version = 1.5
+                   WHERE component = ? AND schema_version = 1""",
                 (RUNTIME_DB_COMPONENT,),
             )
         before = self.raw_rows(
@@ -333,7 +488,10 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
             """SELECT schema_version, typeof(schema_version)
                FROM runtime_schema_migrations""",
         )
-        self.assertEqual(before, [(1.5, "real")])
+        self.assertEqual(
+            before,
+            [(1.5, "real"), (2, "integer"), (3, "integer")],
+        )
 
         with self.assertRaisesRegex(RuntimeSchemaCorruptionError, "必须是整数"):
             database.initialize()
@@ -395,7 +553,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
             )
 
         self.database().initialize()
-        self.assertEqual(self.database().schema_version(), 1)
+        self.assertEqual(self.database().schema_version(), 3)
         self.assertEqual(
             self.raw_rows(self.path, "SELECT id, value FROM legacy_canary"),
             [("one", "stable")],
@@ -789,6 +947,9 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 "migration_before_commit",
                 "uow_after_begin",
                 "uow_before_commit",
+                "state_event_after_state_write",
+                "state_event_after_event_append",
+                "state_event_after_outbox_enqueue",
             },
         )
 
@@ -819,11 +980,22 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
             import sys
             from pathlib import Path
             from coding_workflow.runtime_persistence import (
+                OutboxPolicy,
                 RuntimeSQLiteConfig,
                 SQLiteRuntimeDatabase,
             )
 
-            database = SQLiteRuntimeDatabase(RuntimeSQLiteConfig(Path(sys.argv[1])))
+            database = SQLiteRuntimeDatabase(
+                RuntimeSQLiteConfig(Path(sys.argv[1])),
+                outbox_policy=OutboxPolicy(
+                    policy_version='outbox-policy/test-v1',
+                    destination='core:runtime_events',
+                    expected_sink_id='core:test-sink',
+                    claim_ttl_ms=60000,
+                    batch_limit=10,
+                    retry_delays_ms=(1000, 5000, 30000),
+                ),
+            )
             with database.unit_of_work() as uow:
                 uow.execute(
                     "INSERT INTO probe_parent(id, value) VALUES ('parent-1', 'value')"

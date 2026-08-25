@@ -7,11 +7,13 @@ continues to store compatibility snapshots and is not an authoritative Store.
 """
 
 from .sqlite import (
+    OutboxPolicy,
     RUNTIME_DB_COMPONENT,
     RUNTIME_DB_SCHEMA_VERSION,
     RuntimeCommitError,
     RuntimeDatabaseBusyError,
     RuntimeDatabaseIntegrityError,
+    RuntimeOutboxConfigurationError,
     RuntimePersistenceError,
     RuntimePersistenceFaultPoint,
     RuntimeRollbackError,
@@ -27,8 +29,22 @@ from .sqlite import (
     RuntimeUnitOfWorkStateError,
     SQLiteRuntimeDatabase,
 )
+from .state_event import (
+    RuntimeEventConflictError,
+    RuntimeEventSequenceConflictError,
+    RuntimeIdempotencyConflictError,
+    RuntimeStateConflictError,
+    RuntimeStateEventConflictError,
+    RuntimeStateEventError,
+    RuntimeStateEventValidationError,
+    RuntimeStoredDataCorruptionError,
+    SQLiteThreadEventStore,
+    ThreadEventApplyResult,
+    ThreadEventMutation,
+)
 
 __all__ = [
+    "OutboxPolicy",
     "RUNTIME_DB_COMPONENT",
     "RUNTIME_DB_SCHEMA_VERSION",
     "RuntimePersistenceError",
@@ -37,6 +53,7 @@ __all__ = [
     "RuntimeSchemaTooNewError",
     "RuntimeSchemaCorruptionError",
     "RuntimeDatabaseIntegrityError",
+    "RuntimeOutboxConfigurationError",
     "RuntimeTransactionError",
     "RuntimeDatabaseBusyError",
     "RuntimeUnitOfWorkStateError",
@@ -48,4 +65,15 @@ __all__ = [
     "RuntimeSQLResult",
     "SQLiteRuntimeDatabase",
     "RuntimeUnitOfWork",
+    "RuntimeStateEventError",
+    "RuntimeStateEventValidationError",
+    "RuntimeStateEventConflictError",
+    "RuntimeStateConflictError",
+    "RuntimeEventConflictError",
+    "RuntimeIdempotencyConflictError",
+    "RuntimeEventSequenceConflictError",
+    "RuntimeStoredDataCorruptionError",
+    "ThreadEventApplyResult",
+    "ThreadEventMutation",
+    "SQLiteThreadEventStore",
 ]

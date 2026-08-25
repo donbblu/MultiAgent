@@ -36,7 +36,7 @@
 
 当前代码已经有可复用基础：TaskGraph、ScenarioRuntime、WorkerRegistry、Role-first 多 Worker 路由、ArtifactStore、Claim/Verification、SQLite Snapshot、插件注册、受控命令、Patch/Workspace、分层 Memory、多模态 Evidence 和固定 Coding/VisionForge 回归。PROD-01A 还新增了独立的通用 Runtime 领域协议：Scope/Thread/Turn/Message、Agent Role/Profile/Instance/Session、Invocation/Attempt、Outcome/Acceptance 和 RuntimeEvent，并用单向适配器兼容现有 Coding 对象。
 
-当前这些领域对象仍主要是经过测试的协议值；`PROD-01B-1` 只补上组件级 SQLite Schema/Migration/RuntimeUnitOfWork 事务底座。它们尚未接入生产产品所需的权威持久 Thread/Message、长期 AgentInstance、独立 AgentSession、append-only Event Journal、durable queue、真实 Agent 讨论与收敛因果链、ContextManifest、硬取消和操作系统级隔离。协议或事务底座存在，不等于完整运行能力已经存在。
+当前这些领域对象仍有大量只停留在协议层；`PROD-01B-1` 已补上组件级 SQLite Schema/Migration/RuntimeUnitOfWork，`PROD-01B-2` 已实现 concrete Thread current-state + append-only RuntimeEvent 的首个持久原子纵切，`PROD-01B-3A` 已实现显式 Policy、Schema v3、真实迁移与 durable Outbox intent 原子三写。项目仍没有权威持久 Message、长期 AgentInstance、独立 AgentSession、完整跨领域 Journal/Outbox 发布生命周期、durable Invocation queue、真实 Agent 讨论与收敛因果链、ContextManifest、硬取消和操作系统级隔离。一个纵切存在，不等于完整运行能力已经存在。
 
 因此不再使用“L1 完成、向 L2 过渡”这种单轴结论。成熟度按领域分别报告：交互持久性、协作协议、上下文正确性、权限隔离、多模态来源、插件兼容、事故恢复和智能效果。
 
@@ -74,11 +74,13 @@
 
 ### PROD-01：持久交互与可恢复执行
 
-严格按 01A～01E 学习：01A 已实现 Scope/Thread/Turn/Message、通用 AgentProfile/Role、AgentSession、Invocation、Outcome/Acceptance 和 Event 协议；01B 正在实施，其中 01B-1 已完成 SQLite Migration/UoW，下一动作先冻结 01B-2 的状态变更与 append-only RuntimeEvent 原子提交；01C 实现 durable Invocation；01D 接入现有 Task/Scenario/Coding 和 Web 查询；01E 完成 INC-01 并启动四组 INC-02 Shadow。
+严格按 01A～01E 学习：01A 已实现 Scope/Thread/Turn/Message、通用 AgentProfile/Role、AgentSession、Invocation、Outcome/Acceptance 和 Event 协议；01B 正在实施，其中 01B-1 已完成 SQLite Migration/UoW，01B-2 已完成 Thread+RuntimeEvent 原子提交，01B-3A 已完成 Policy/Schema v3/durable intent 原子三写，下一步冻结并实现 01B-3B claim/publish/NACK/ACK/Receipt；01C 实现 durable Invocation；01D 接入现有 Task/Scenario/Coding 和 Web 查询；01E 完成 INC-01 并启动四组 INC-02 Shadow。
+
+本阶段不再从 Plan 与 HANDOFF 拼接测试证据：`PROD-01B` 的测试设计、运行结果、真实缺陷、修复、回归、Review 与决策统一学习和维护在 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。
 
 01A 是已完成的纯契约批次：Backend、Capability、Context、Mailbox 只保存不透明引用，没有实现投递、SessionBinding、模型调用、Gateway、Context Compiler、SQLite Store、调度、Web 或 Runtime 执行接入。验收证据为 64 项定向协议测试、277 项默认全量回归、compileall 和差异格式检查；4 项真实浏览器测试按设计跳过。
 
-终局口径仍是状态表作为当前业务真相源、Journal 作为不可变审计、Snapshot 作为兼容恢复检查点，并让关键状态、Event 与 Outbox 同事务提交；01B-1 只证明这类提交所需的底层 UoW，不代表上述表或链路已经存在。PROD-01 的 Invocation 只冻结输入引用与摘要、策略快照引用和预算预留，不提前假装实现完整 ContextManifest 或 Tool Grant。
+终局口径仍是状态表作为当前业务真相源、Journal 作为不可变审计、Snapshot 作为兼容恢复检查点，并让关键状态、Event 与 Outbox 同事务提交。01B-2 只证明 Thread+Event 纵切，01B-3A 只证明 durable intent、历史 suppress 与原子入箱；at-least-once publication、ACK/fencing 仍是 3B 的冻结目标。它们都不代表完整跨领域 Journal、Message DeliveryAck 或 exactly-once 已存在。PROD-01 的 Invocation 只冻结输入引用与摘要、策略快照引用和预算预留，不提前假装实现完整 ContextManifest 或 Tool Grant。
 
 还要学会把“协作身份”“一次执行”和“机器资源”分开：用户长期看到的是 Thread，AgentInstance/AgentSession 保存可恢复身份与连续性；任务专用 Specialist 是同一 Thread 下的 ChildInvocation/Attempt，不是偷偷创建的新 Thread，也不是常驻模型进程。Invocation 同时有执行状态和清理状态；`SUCCEEDED` 只说明候选结果已经可靠保存，只有执行进入终态、清理达到 `REAPED`、活动 Grant/Lease/ChildInvocation 归零并拒绝旧 fencing token 后，执行域才真正 closed。
 

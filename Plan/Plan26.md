@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-状态：**PROD-00 文档冻结完成，Runtime 行为未修改**。
+状态：**PROD-00 文档冻结已完成；实现已推进至 PROD-01B，其中 01B-3A 已完成/KEEP，完整 01B-3 仍进行中**。
 
 2026-08-23，项目产品中心由“面向 Coding 的专用 Multi-Model Agent Harness”纠偏为：
 
@@ -14,7 +14,7 @@
 
 2026-08-25 术语澄清：2026-08-23 的实质决议是从 Coding 专用链路泛化到长期、多场景 Multi-Agent 系统；“Runtime 是产品本体”的旧简称被本节取代，但既有领域模型、实现状态和 PROD 顺序不变。
 
-本计划用于冻结新的 Harness 产品边界、Runtime 内核领域语言、增量迁移路线、验收口径和事故联动。它不删除现有 Coding/VisionForge 能力，不修改当前 Runtime，不调用模型，不访问网络，也不读取外部仓库。
+本计划最初用于冻结新的 Harness 产品边界、Runtime 内核领域语言、增量迁移路线、验收口径和事故联动；`PROD-00` 文档批次本身当时不修改 Runtime、不调用模型、不访问网络，也不读取外部仓库。后续实现状态以本文生产批次与 VerificationReport 为准。
 
 固定术语契约：
 
@@ -353,13 +353,13 @@ RPO/RTO 的数值目标将在 PROD-01 结合 Journal 和故障注入冻结；当
 
 ## INC 联动
 
-- 对应阶段：`INC-00` 已完成；`PROD-01A` 开始提供 `INC-01` 协议前置。
-- 当前状态：`INC-00` 文档冻结完成；RuntimeEvent/Acceptance/Invocation 值协议与同步不变量已实现，Detector、持久 Journal、Ledger、Replay 和运营能力尚未实现。
+- 对应阶段：`INC-00` 已完成；`PROD-01A` 提供 `INC-01` 值协议前置，`PROD-01B-2` 已提供首个持久 Thread Event 原子纵切。
+- 当前状态：`INC-00` 文档冻结完成；RuntimeEvent/Acceptance/Invocation 值协议、同步不变量、concrete Thread+RuntimeEvent 持久化，以及 01B-3A durable Outbox intent 已实现。完整跨领域 Journal、claim/publish/ACK 生命周期、Detector、Incident Ledger、Replay 和运营能力尚未实现，`INC-01` 仍待开始。
 - 新增风险与事故目录：Thread/Session 串线、Message 丢失/重复/乱序、Route 循环、用户介入丢失、Context 污染、媒体绑定错误、错误 Acceptance、权限和预算越界。
 - RuntimeEvent / Detector / Invariant：定义通用 `false_acceptance`；现有 Coding `false_completed` 仅作为历史名称映射到 Coding Plugin 的 acceptance 子类，不进入 Core 新协议；后续补 Thread/Message/Session/Route 事件。
 - Evidence / 脱敏 / 审计：对话和媒体只保存受控引用、hash、时间/区域和脱敏摘要；不复制私有 Session 或原始思维。
 - 止损 / 恢复 / 人工权限：跨边界、权限、重复副作用和 false acceptance 必须 fail-closed；开放域语义冲突转人工。
-- Replay / Fault Injection：本批只冻结目录，实际 Event Journal 和 Replay 分别由 PROD-01 与后续 INC 阶段实现。
+- Replay / Fault Injection：01B-1/01B-2 已增加 SQLite 事务、旁路、进程退出、并发和腐败注入的开发 Verification；生产 Event emission、Incident Replay 与运营演练仍由后续 PROD-01/INC 阶段实现。
 - 事故用例与正常对照：每条通用规则必须同时覆盖交互或插件合法路径，避免 Coding 规则误伤普通 Thread。
 - SLI/SLO 与覆盖率：沿用 detected/prevented/missed/escaped/false-positive/recurrence、MTTD/MTTC/MTTR，并按 Core/Plugin 分层报告。
 - 本批完成门禁：Plan25 与覆盖说明完成泛化；Backlog、Learning Path、HANDOFF 与本 Charter 一致。
@@ -379,7 +379,7 @@ RPO/RTO 的数值目标将在 PROD-01 结合 Journal 和故障注入冻结；当
 为满足“一次只实施一小批”，PROD-01 固定拆为：
 
 1. **PROD-01A 领域协议与迁移骨架（已完成）**：实现最小 Scope、Thread、Turn、Message、通用 AgentProfile/Role、AgentInstance、AgentSession、Invocation/Attempt、Outcome、AcceptancePolicy/Record 和 RuntimeEvent 协议；明确 Message/Artifact 唯一真相源与 Coding 兼容映射。Invocation 本批冻结 `input_refs + input_digest + policy_snapshot_ref + budget_reservation`，以及 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 和资源引用协议；不假装已经有 PROD-03 的完整 Grant 或 PROD-05 的 ContextManifest。
-2. **PROD-01B 状态 Store、Journal 与 Outbox（进行中）**：`PROD-01B-1` 已完成组件级 SQLite Schema、Migration 与 RuntimeUnitOfWork；下一动作是冻结 `PROD-01B-2` 的状态变更与 append-only RuntimeEvent 原子提交口径。完整 01B 仍要求状态表作为当前业务真相源、Journal 作为不可变审计、Snapshot 作为兼容检查点，并将状态、Event、Outbox 和最小 BudgetLedger 预留/结算同事务提交。Provider/Tool 细分策略分别在 PROD-02/03 扩展，容量分析归 PROD-06。
+2. **PROD-01B 状态 Store、Journal 与 Outbox（进行中）**：`PROD-01B-1` 已完成组件级 SQLite Schema、Migration 与 RuntimeUnitOfWork，`PROD-01B-2` 已完成 concrete Thread current-state 与 append-only RuntimeEvent 的原子纵切，`PROD-01B-3A` 已完成显式 Policy、Schema v3、真实 v2→v3 迁移和 durable Outbox intent 原子三写；`01B-3B` claim/publish/NACK/ACK/Receipt 尚未实现。完整 01B 仍要求状态表作为当前业务真相源、Journal 作为不可变审计、Snapshot 作为兼容检查点，并将状态、Event、Outbox 和最小 BudgetLedger 预留/结算同事务提交。Provider/Tool 细分策略分别在 PROD-02/03 扩展，容量分析归 PROD-06。
 3. **PROD-01C Durable Invocation**：durable enqueue、幂等、claim/lease/heartbeat、fencing、watchdog、孤儿识别、级联取消、幂等 Finalizer/Reaper、重启恢复和取消意图持久化；进程内执行路径只能承诺逻辑失权和拒绝迟到结果，Backend 请求与进程的物理硬取消归 PROD-02。
 4. **PROD-01D 兼容接入与 Web 查询**：把现有 TaskGraph/ScenarioRuntime/Coding 纵向切片作为 Thread 中可选工作接入，保留回归；Web 先支持持久 Thread/Invocation 查询，不在本批实现完整 Agent 泳道。
 5. **PROD-01E INC-01 与首批 Shadow**：完成 INC-01 Observe-only；再建立 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败四组 Observe/Shadow 信号。消息状态不一致是硬错误，正常离线重试不算事故，只有超过冻结时间窗才是 delivery SLO breach。此时 INC-02 只标记为“部分 Shadow”。
@@ -402,7 +402,7 @@ PROD-01B 的权威 Store 必须在同一事务中校验同 Thread/Turn/AgentSess
 - **nonclaims**：本切片不实现领域 Repository、真实 state+event mutation、Journal append/query、Outbox 投递/Ack、Budget、权威关系/Acceptance、Web、锁竞争容量、掉电保证、lease/fencing/cancel/Reaper、Detector/Incident Store 或 PostgreSQL；
 - **INC**：只生成记录在 VerificationReport 中的合成 fault-injection 测试证据，作为 `INC-01` 的事务前置；本切片没有生产故障证据对象、RuntimeEvent emission、Journal、Replay 或 Incident Store。Detector 数仍为 0，`INC-01` 保持待开始，不报告 detected/missed/MTTD/MTTR。
 
-实现与 `VerificationReport`（开发 Verification，不是 `AcceptanceRecord`）：
+实现摘要（详细、权威证据见 [`VerificationReports/PROD-01B.md`](../VerificationReports/PROD-01B.md)；这是开发 Verification，不是 `AcceptanceRecord`）：
 
 - 新增 `runtime_persistence` 包，仅纳管 `runtime_schema_metadata` 与 `runtime_schema_migrations` 两张表；旧 `SQLiteRuntimeStore` 仍只是兼容 Snapshot Store。UoW 采用显式 commit、WAL、foreign keys、`synchronous=FULL`、固定 busy timeout、线程归属和 fail-closed 状态机；业务 UoW 禁止事务控制 SQL、Schema DDL、ATTACH/DETACH、可变 PRAGMA 与受管 metadata DML。
 - 预切片 Baseline 为 Runtime 64/64、全量 277 项执行（273 通过、4 跳过）。本切片冻结单一 mutation：引入组件级 v1 Migration 与显式 RuntimeUnitOfWork，不增加领域 Repository、Event Journal 或 Incident 能力。
@@ -412,7 +412,79 @@ PROD-01B 的权威 Store 必须在同一事务中校验同 Thread/Turn/AgentSess
 
 确定性 Harness Evolution 轻量记录：`lifecycle_status=COMPLETED`，`decision=KEEP`。Baseline、单一 mutation、固定故障矩阵、正常对照、独立 Review 与回归均已绑定上述证据；Evolver、真实模型、Validation/Held-out、query budget、样本量和统计效果全部为 `N/A`。该决定只保留 01B-1 事务底座，不构成 Runtime Acceptance，也不支持智能效果或生产可靠性外推。
 
-下一动作：先为 `PROD-01B-2` 单独冻结 InvariantCard，再实现最小状态变更与 append-only RuntimeEvent 的同事务提交；Outbox、Budget、权威关系/Acceptance 和并发恢复继续分后续切片，不在 01B-1 收口时偷跑。
+01B-1 收口后的下一动作已经完成：`PROD-01B-2` 按 EXPECTED_RED → 最小实现 → 故障/回归门禁收口；Outbox、Budget、权威关系/Acceptance 和更完整的查询/恢复继续分后续切片，不在 01B-2 偷跑。
+
+#### PROD-01B-2：Thread 当前状态与 RuntimeEvent 原子提交
+
+状态：**已完成（2026-08-25）；契约、实现与开发 Verification 已收口。** 本切片选择真实 `Thread` 作为第一个状态纵切，并复用既有 `RuntimeEvent` 值协议；不建立可容纳任意 JSON 的通用 aggregate blob，也不把一个业务场景重新冒充 Harness 的全部状态模型。
+
+`InvariantCard INV-PROD-01B-2-THREAD-EVENT-ATOMICITY-v1`：
+
+- **single mutation**：一次 `ThreadEventMutation` 只提交一个 post-state `Thread` 与恰好一个 `RuntimeEvent`；二者由调用方显式 `RuntimeUnitOfWork.commit()` 共同线性化，任一校验、写入、故障或 commit 失败均不得留下 orphan state 或 orphan event；
+- **identity/version**：Thread 身份固定为 `(scope_id, thread_id)`。create 只接受 `expected_version=0`、`Thread.version=1`、`state=open`；update 要求当前版本等于 expected、post version=`expected+1`、`scope_id/thread_id/created_at` 不变且 `updated_at` 严格前进。`archived` 为终态；允许 `open→open/paused/archived` 与 `paused→paused/open/archived`，同状态更新必须至少改变 title、participants 或 policy；
+- **event binding**：Event 的 `scope_id`、`aggregate_ref`、`aggregate_version` 和 `thread_ref` 必须等于 post-state Thread 的引用。create 使用 `core:thread_created`；普通字段更新使用 `core:thread_updated`；暂停、恢复和归档分别使用 `core:thread_paused`、`core:thread_resumed`、`core:thread_archived`。payload 的 `state` 必须等于 post-state，update 的 `previous_state` 必须等于 pre-state；
+- **three versions**：`aggregate_version` 是 post-state Thread 版本；`sequence_no` 是该 `(scope_id, aggregate_type, aggregate_id)` Journal 的连续序号；`event_version` 恒为 1。三者语义独立，不用偶然相等推导彼此；首个 sequence 为 1，后续必须严格 `last+1`；
+- **idempotency/conflict**：`event_id` 与 Event 表内 `idempotency_key` 均全局唯一；aggregate sequence 按 `(scope_id, aggregate_type, aggregate_id, sequence_no)` 唯一。Journal 持久保存 canonical Event digest、result Thread digest 与 mutation digest。完全相同的历史成功 mutation 即使 Thread 已继续前进也返回 `ALREADY_COMMITTED` 且零写入；同 event ID、idempotency key 或 sequence 对应不同内容分别返回 typed conflict；duplicate 判断先于 expected-version 判断；
+- **append-only/CAS**：Thread update 使用 `WHERE version=? AND last_sequence_no=?`；Thread head 通过 deferred composite foreign key 绑定同 aggregate/version/sequence/result digest 的 last Event。公共 UoW SQL 不得直接 INSERT/UPDATE/DELETE 受管 Thread/Event 表；Event 另有持久 collision INSERT、UPDATE、DELETE 拒绝 trigger，并以 `WITHOUT ROWID` 消除隐式 rowid 的 `REPLACE` 改写路径。它们是 Harness 单信任域内的应用边界，不宣称能抵御拥有 SQLite 文件写权限的管理员；
+- **schema/migration**：Schema v2 新增 concrete `runtime_threads` 与通用 envelope `runtime_events`，保留 v1 名称和 checksum；初始化器按连续 ledger prefix 在同一 `BEGIN EXCLUSIVE` 中原子执行 fresh v1→v2 或既有 v1→v2，reinitialize 为 no-op，future/gap/checksum/必需 DDL 漂移均 fail-closed；旧 `runtime_snapshots`、Memory、Scenario 与其他未纳管表不回填、不双写、不删除；
+- **reads/integrity**：最小查询只包含 Thread current by scoped ID、Event by global event ID、按 aggregate/sequence 有序读取；读回必须以既有 `Thread.from_dict()` / `RuntimeEvent.from_dict()` 重建，并复核 canonical digest、投影列与 state↔last-event 链。跨 Scope 搜索、通用分页、Replay 与事件重建状态不在本片；
+- **fault points**：只新增 `state_event_after_state_write` 与 `state_event_after_event_append` 两个可回滚点，并复用 `uow_before_commit`；禁止可抛 after-commit hook。异常必须终止并回滚该 UoW，调用方不能 catch 后提交半包；
+- **required red/green gates**：fresh v2、精确 v1→v2、迁移故障 rollback、旧 Snapshot 共存；create/update/reopen；wrong binding/transition/version/sequence；exact retry after later commits；event/idempotency/sequence/stale conflict；公共 SQL 绕过和 raw Event rewrite/delete；两个 fault window、commit 前/后子进程退出、锁竞争；digest/JSON/link corruption fail-closed；Runtime 子集、全量、compileall 与 diff check；
+- **nonclaims**：本切片不实现 Scope/Turn/Message/AgentSession/Invocation Repository、Outbox、BudgetLedger、Acceptance writer、producer authorization、delivery/Ack、Incident/Detector/Replay、旧 Executor/Web 接线、容量/soak、掉电保证或 PostgreSQL，因此不得称完整 State Store、完整 Journal 查询、完整 PROD-01B 或 INC-01 已完成；
+- **INC / Harness Evolution**：故障注入只形成开发 Verification 证据，Detector、IncidentSignal/Ledger 和 Replay 数仍为 0，不报告 detected/missed/MTTD/MTTR。冻结时的确定性轻量轨记录为 `lifecycle_status=FROZEN`、`decision=INCONCLUSIVE`，Baseline=`b864b20093f20077424fc81a564ecffecbf7ecb0` clean；真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`。最终 `COMPLETED/KEEP` 结果与证据见下方 VerificationReport；
+
+冻结时的关键取舍：Plan25 中省略 Scope 的 aggregate sequence 示例在本实现按 `ScopedRef` 语义具体化为 scope-scoped sequence；`event_id` 和事件命名空间的 `idempotency_key` 仍保持全局唯一。Event causation/parent 引用的持久存在性、其他 aggregate 的 typed State Table 与生产者授权留后续切片，不能由 v2 表结构暗示已经具备。
+
+实现摘要（详细、权威证据见 [`VerificationReports/PROD-01B.md`](../VerificationReports/PROD-01B.md)；这是开发 Verification，不是 `AcceptanceRecord`）：
+
+- Schema v2 新增 `runtime_threads` 和 `runtime_events`，并将 v1-only 初始化器升级为连续 migration registry；已发布 v1 migration 名称、checksum 与 DDL hash 被测试常量独立锚定。fresh v2、真实 v1→v2、reinitialize、迁移故障回滚、旧 Snapshot/未纳管表共存和必需 DDL 漂移拒绝均已自动验证。
+- 新增 `ThreadEventMutation`、`SQLiteThreadEventStore`、typed conflict/corruption errors 和 `APPLIED/ALREADY_COMMITTED` 结果。create/update 使用 CAS；Event、结果 Thread 与 mutation 分别保存 canonical digest；查询会重建协议对象并复核投影、digest、当前 head 与 last Event 链，完整性扫描还会反向拒绝 orphan/落后 Thread Event。
+- EXPECTED_RED 首证据为新测试在导入阶段因 01B-2 API 不存在而失败；实现后专项 68/68、Runtime 132/132、默认全量执行 345 项，其中 341 通过、4 个既有真实浏览器 E2E 按设计跳过、0 failure/error。`PYTHONPYCACHEPREFIX=/private/tmp/multiagent-pycache python3 -m compileall -q coding_workflow tests` 与 `git diff --check` 通过，无需用户手动测试。
+- 最终证据绑定 `HEAD=b864b20093f20077424fc81a564ecffecbf7ecb0` 的 dirty 工作区、Python 3.9.6、SQLite 3.51.0，以及实现 hash：`sqlite.py=4e052962d0047b90d0872136044ca4c5d80dadaad3c7e854910ab1bd145b497d`、`state_event.py=ba1a6974b067666b6eb12b7f41431861c8ea672645e301dbbd3d1f5628c26a2c`、`runtime_persistence/__init__.py=41b0fc9d1e5de90206370452d0891588acbb36d9908f67bd60a797e2e8867f41`、`coding_workflow/__init__.py=5a3ff4ff3358b5046aecb1a8cf90e92dd6b62ded314fe0d0c7851fe0eeb8180d`；测试 hash：`test_runtime_sqlite_uow.py=e1e07c5c47c33112f0f9a35ac73e188a8b6ad491f7390f37daa5327eca8416fd`、`test_runtime_thread_event_store.py=c1c2e700283b48e77c80ac15ab25da7a9d08bd4ae55eaa4c2f989f1bfc7b7f2c`。两个独立只读 Review 均为 `APPROVE`；它们是审查建议，不签发 Runtime Acceptance。
+- 红绿过程中实际暴露并关闭了：`INSERT OR REPLACE` 绕过 UPDATE/DELETE trigger、隐式 rowid collision 改写历史 Event、Store 与异库 UoW 静默误接、跨线程 abort 覆盖 typed error、幂等快路径在历史 Event/当前 Thread head/最新 head Event 损坏时误报成功，以及完整性扫描漏掉 orphan Thread Event。每条均有回归，证明本切片不是“想到功能就加”，而是用反例修改实现与边界。
+- INC 联动只增加 orphan state/event、历史改写、幂等冲突、sequence/version drift、跨 Scope/跨数据库误绑和持久数据腐败的开发期预防/故障证据；没有 Detector、IncidentSignal/Ledger、Outbox、Replay 或生产事件观察，`INC-01` 仍为待开始，不报告 detected/missed/MTTD/MTTR。
+
+确定性 Harness Evolution 轻量记录：`lifecycle_status=COMPLETED`、`decision=KEEP`。保留范围仅是 01B-2 的 Thread+RuntimeEvent 原子纵切；真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`，不能外推为完整 Journal、完整 PROD-01B、模型智能或生产可靠性。
+
+01B-2 收口后的下一动作已经执行：`PROD-01B-3` 的 Event+Outbox InvariantCard 已冻结，结构与显式 Policy 两张 EXPECTED_RED 卡已先建立，随后 `01B-3A` 生产实现与独立挑战已经完成。下一动作是 `01B-3B` 发布生命周期。
+
+#### PROD-01B-3：Event+Outbox 可靠发布边界
+
+状态：**契约已冻结（2026-08-25）；`01B-3A=COMPLETED/KEEP`，完整 `01B-3=IN_PROGRESS/INCONCLUSIVE`。** 3A 已把现有 concrete Thread+RuntimeEvent mutation 扩展为可恢复的 durable intent；3B 的 claim/publish/NACK/ACK/Receipt 尚未实现。本切片不建立任意命令队列、真实消息 Broker 或最终用户消息投递系统。
+
+`InvariantCard INV-PROD-01B-3-EVENT-OUTBOX-ATOMICITY-v1`：
+
+下列 InvariantCard 描述完整 01B-3；其中 claim/publish/NACK/ACK/Receipt 条目是 3B 契约与验收目标，不是 3A 已实现事实。
+
+- **single mutation**：Schema v3 生效后，现有 `SQLiteThreadEventStore.apply()` 的每个新成功 mutation 必须在同一 `RuntimeUnitOfWork` 中提交一个 post-state Thread、一个 RuntimeEvent 和恰好一个 Outbox intent；不得保留仍能公开提交 Event-without-Outbox 的旧写入口。state 后、event 后、outbox 后或 commit 前任一失败，重开均为 none；commit 成功后重开必须为 all；
+- **schema/current truth**：v3 新增 `runtime_outbox` 和 `runtime_outbox_receipts`，并在不改变 v2 migration/checksum 的前提下新增 `UNIQUE runtime_events(event_id, scope_id)` 父键索引；否则 SQLite 不能建立下述复合 FK。`runtime_outbox` 同时保存不可变 intent identity 与当前发布状态；`runtime_outbox_receipts` 保存不可变 `OutboxPublishAck` 证据。两表均 `WITHOUT ROWID`，纳入 managed-table authorizer、必需 DDL 校验和正反向 integrity scan；
+- **frozen schema**：`runtime_outbox` 固定非空 `TEXT`：`delivery_key PK`、`source_event_id UNIQUE`、`scope_id`、固定 `destination`、`event_digest(64)`、`created_at`、`intent_digest(64)`、`policy_version`、`policy_digest(64)`、`state`、`updated_at`；固定精确 `INTEGER`：`claim_generation>=0`、`attempt_count>=0`；可空 `TEXT`：`available_at`、`claim_token`、`publisher_id`、`claim_expires_at`、`last_error_code`、`suppress_reason`、`published_at`、`receipt_id UNIQUE`。以 `(source_event_id, scope_id)` 复合 FK 引用 `runtime_events(event_id, scope_id)`。`runtime_outbox_receipts` 固定非空 `TEXT`：`receipt_id PK`、`delivery_key UNIQUE`、`destination`、`source_event_id`、`event_digest(64)`、`claim_token`、`publisher_id`、`sink_id`、`ack_id`、`acked_at`、`ack_digest(64)`；`claim_generation` 为精确正 `INTEGER`，并有 `UNIQUE(receipt_id, delivery_key)` 与 `UNIQUE(sink_id, ack_id)`。Receipt 的 `delivery_key` FK 指向 Outbox；Outbox 的 `(receipt_id, delivery_key)` 以 deferred composite FK 反向绑定同一 Receipt，确保 ACK 事务可原子插入 receipt 再链接 Outbox；
+- **state checks**：在状态相关的可空字段中，`LEGACY_SUPPRESSED` 必须 `generation=attempt=0`、仅 `suppress_reason='pre_outbox_cutover'` 非空，available/claim/error/published/receipt 全空，且 `updated_at=created_at=Event.recorded_at`；新建 `PENDING` 必须 `generation=attempt=0`、`available_at=updated_at=created_at=Event.recorded_at`、`last_error_code=NULL`，其余 suppress/claim/published/receipt 全空；NACK 后的 `PENDING` 必须 generation=attempt>=1、available 与非空 typed error 存在、updated 为 failure time；`CLAIMED` 必须 available/suppress/error/published/receipt 全空，generation=attempt>=1 且 token/publisher/expiry 全非空；`PUBLISHED` 必须 available/suppress/claim/error 全空，generation=attempt>=1 且 published/receipt 全非空。所有时间字段必须是包含时区的 ISO-8601；Clock 产生的时间统一规范为 UTC `+00:00` 与六位微秒。Trigger/CHECK 必须拒绝非法组合、identity 字段改变、Receipt UPDATE/DELETE、碰撞 INSERT 与 `REPLACE`；
+- **immutable intent**：01B-3 只允许固定 destination `core:runtime_events`。Intent 的 `created_at` 精确复用 source Event 的 `recorded_at`，从而使迁移与重试确定；它绑定 `scope_id + source_event_id + event_digest + destination + delivery_key + created_at + policy version/digest + intent_digest`，不复制第二份 `event_json`。Publisher 必须从 append-only Journal join、完整解码并复核 Event 后才可发送。destination、URL、Topic、payload 和 delivery key 都不能由 LLM、Event payload 或业务调用方自由提供；
+- **three keys**：`RuntimeEvent.idempotency_key` 负责 state/event mutation 幂等；`delivery_key=obx-v1-<sha256(destination + NUL + event_id)>` 在所有发布重试中保持不变，供 Sink/Consumer 去重；一次所有权由 `(delivery_key, claim_generation, claim_token, publisher_id)` 标识。`receipt_id=rcp-v1-<sha256(sink_id + NUL + ack_id)>` 由有效 Sink ACK 确定性派生，保证 ACK 重试不会生成另一身份。上述 key 不得混用或由模型生成；
+- **canonical digests**：沿用 01B-2 的 UTF-8、`ensure_ascii=False`、key 排序、无空白 JSON canonicalization。`policy_digest` 的 preimage 固定为 `{schema:'outbox-policy/v1', policy_version, destination, expected_sink_id, claim_ttl_ms, batch_limit, retry_delays_ms}`；`intent_digest` 固定绑定 `{schema:'outbox-intent/v1', scope_id, source_event_id, event_digest, destination, delivery_key, created_at, policy_version, policy_digest}`；`ack_digest` 固定绑定 `{schema:'outbox-publish-ack/v1', receipt_id, delivery_key, destination, source_event_id, event_digest, claim_generation, claim_token, publisher_id, sink_id, ack_id, acked_at}`。三者均为 canonical bytes 的 lowercase SHA-256，不允许调用方传入未复算摘要；
+- **v2 cutover**：保留已发布 v1/v2 migration 名称、checksum 与 DDL。fresh DB 原子得到 v3；真实 v2→v3 必须先校验现有 Thread/Event 数据，再使用本次数据库初始化显式绑定的同一 Policy snapshot，为历史 Event 原子建立 `LEGACY_SUPPRESSED` Outbox，固定原因 `pre_outbox_cutover`。该状态终态、不可 claim、不得伪造 PublishAck，也不得因升级突然重发历史事件；历史 exact retry 仍为零写入；
+- **state machine**：`LEGACY_SUPPRESSED` 为迁移终态；新 intent 从 `PENDING(generation=attempt=0)` 开始。每次成功 claim（包括 NACK 后再 claim 和过期 claim 直接重领）都在一个短事务中令 generation 与 attempt 各 `+1`，生成新 token，设置 `updated_at=claim_time`、`claim_expires_at=claim_time+claim_ttl` 并进入 `CLAIMED`；claim commit 即定义一次 publication attempt 开始。当前且未过期 owner 的 NACK 才可 CAS 回 `PENDING`，保留 generation/attempt，清空 claim 字段，并按冻结策略设置 error/available/updated；过期 owner 不能 ACK/NACK。合法 ACK 在独立事务中插入 Receipt、清空 claim 字段并 CAS 为 `PUBLISHED`。不存在 `SENT`；本片不实现 DLQ、人工 redrive 或永久投递活性保证；
+- **claim/fencing**：Clock、claim token factory 与版本化 Outbox policy 由 Composition Root 注入，不能由 Agent、Event 或 Transport 指定。claim 必须在短 UoW 内 CAS 并先 commit；`now >= claim_expires_at` 即旧 owner 失权，即使尚未重领也不能 ACK/NACK。迟到或错误 generation/token/publisher 的 ACK/NACK 确定性拒绝；这只是单条 Outbox 的本地发布所有权，不实现 01C 的 Invocation queue、heartbeat、Watchdog、Finalizer 或 Reaper；
+- **policy/API**：公开不可变 `OutboxPolicy(policy_version, destination, expected_sink_id, claim_ttl_ms, batch_limit, retry_delays_ms)`，`policy_digest` 只能按 frozen preimage 内部计算。Composition Root 必须通过 `SQLiteRuntimeDatabase(config, outbox_policy=policy)` 为一个数据库显式绑定唯一 v1 Policy；缺失时抛 `RuntimeOutboxConfigurationError` 并拒绝 initialize，Thread/Event/Outbox Store 从该数据库读取同一绑定，调用方不能逐次覆盖。Policy 字段要求固定 destination/expected sink、正整数 TTL/batch limit 与非空非负整数元组 retry delays；第 `n` 次 attempt 失败时，`available_at=failure_time+retry_delays_ms[min(n-1,last_index)]`，01B-3 不加 jitter。缺失或与持久 snapshot 漂移时 fail-closed，不提供隐藏默认值；Policy 版本升级/多版本 registry 另开迁移，不在 v1 静默替换。最小 lifecycle API 为按 delivery key 读取、按单一 scope claim eligible batch、当前 claim NACK、当前 claim acknowledge，以及 `OutboxPublisher.publish_once(scope_id)`；Publisher/lifecycle API 不能注入任意 Clock、token、destination、sink 或 UoW。该限制不改变现有 `ThreadEventStore.apply(uow, mutation)` 的显式事务边界；
+- **transaction split**：事务 A 提交 Thread+Event+Outbox；事务 B 提交 claim；关闭 B 后才可调用 Transport；事务 C 校验 ACK、追加 immutable receipt 并 CAS 为 `PUBLISHED`。任何网络、Broker、Consumer 或 Adapter 调用都不得发生在 SQLite 写事务内。Receipt 是发布证据，不再递归生成新 Event+Outbox，避免无限审计链；
+- **ACK meaning**：`OutboxPublishAck` 必须绑定 destination、delivery key、event ID/digest、当前 claim generation/token、预期 sink identity 与 ack ID/digest。它只表示 Runtime 配置的 Sink 已持久且幂等接纳该 envelope；不等于用户已经看到 Message、不等于工具副作用成功、不等于 `DeliveryAck` 或 `AcceptanceRecord`。不存在任意调用者可直接 `mark_published` 的公共入口；
+- **receipt projection**：ACK commit 后，Outbox 必须满足 `receipt_id == Receipt.receipt_id`、`published_at == updated_at == Receipt.acked_at`、`claim_generation == Receipt.claim_generation`，且双方的 delivery key、destination、source event ID/digest 完全相同；Receipt 的 publisher/token 必须等于被消费的当前 claim，sink 必须等于 policy expected sink。正反向 integrity scan 和 corruption 红测必须逐项复核，而不能只依赖 `(receipt_id, delivery_key)` FK；
+- **failure/ACK retry**：Transport 抛错、无 ACK 或 ACK 无效且 owner 仍有效时，Publisher 尝试以稳定 error code NACK；NACK 成功则按策略回 PENDING，NACK 失败或 owner 已过期则保持 CLAIMED 等待 ACK 重试或到期重领。Sink 已返回有效 ACK 但本地 ACK 事务 busy/失败时不得 NACK，保持 CLAIMED 并优先重试同一 ACK；到期后仍可能用同 delivery key 重投。完全相同且已提交的 Receipt/ACK 重试返回 `ALREADY_ACKNOWLEDGED` 零写入；同 key 的不同 ACK、不同 claim 或不同 digest 一律 typed conflict；
+- **delivery semantics**：本片只承诺 durable intent 与 at-least-once publication attempts。Sink 已接纳但 ACK 丢失、本地 ACK 事务失败或 Publisher 崩溃时，系统必须用相同 canonical Event bytes 与 delivery key 重投。只有 Consumer 将 delivery key Inbox 去重与自身业务效果放在同一事务中时，才能获得 effectively-once acceptance；仍不得称网络或端到端 exactly-once；
+- **ordering**：同一 `(scope_id, aggregate_type, aggregate_id)` 只允许 claim 最早且尚未 `PUBLISHED/LEGACY_SUPPRESSED` 的 sequence；前一条 pending/claimed 会 fail-closed 阻塞后一条。不同 aggregate 不提供全局顺序保证，可并发发布；跨 Scope claim 必须隔离；
+- **authority**：Thread/Event Repository 自动 enqueue；Publisher 只能改变 Outbox lifecycle 和写 Receipt，不能修改 Thread、Event、Acceptance 或其他业务真相。Transport/Sink 只接收冻结的 Event envelope、delivery key 与 attempt metadata，不获得数据库连接或 UoW；若 Consumer 要触发业务变化，必须提交新的、独立鉴权且幂等的 Command；
+- **retry/integrity**：state/event exact retry 必须同时验证 Outbox intent、当前 lifecycle 与 receipt；无论 intent 是 claimed、published 或 legacy-suppressed，都不能重置为 pending。缺失、重复、错 Scope/Event/digest/destination、receipt 错绑或非法状态必须 typed fail-closed，Transport 调用数为 0；Outbox/ACK 冲突不得泄漏裸 `sqlite3` 错误；
+- **SQL authority boundary**：公共 UoW 对两张 Outbox 表的任意 DML 均由 authorizer 拒绝；Store 的私有 managed-operation 只可执行上述 CAS。直接 SQLite 连接也必须被 schema trigger 拒绝 identity/Receipt 改写、DELETE/碰撞/REPLACE 与非法生命周期组合；但持有数据库文件写权限的进程仍在当前 `local_trusted_execution/v1` 信任域内，本片不冒充数据库级 RBAC，也不声称能阻止其伪造一个形状合法的 lifecycle 迁移。生产身份与 DB 文件权限隔离留 PROD-03/07；
+- **required red/green gates**：fresh v3、真实 v2→v3（含新增 Event 父键索引）、历史 suppress、迁移故障回滚与 schema drift；state/event/outbox 三个写窗和 commit 前/后进程退出；exact retry 不重排；公共 UoW 全 DML 拒绝，以及 raw identity/Receipt/非法状态 UPDATE、DELETE、REPLACE/hidden-rowid 绕过；claim 在 Transport 前提交且不持有 writer lock；并发 claim、NACK 后 generation 增长、expiry/reclaim、stale ACK/NACK、exact ACK retry、ACK-vs-reclaim 竞态；Transport 异常/无效 ACK、Sink 接收后 ACK 丢失、claim/ACK SQLite lock、重启恢复、同 aggregate 顺序与跨 Scope 隔离；intent/policy/ack digest 与正反向 FK 腐败；durable Consumer fixture 同 key 两次只产生一次效果；Runtime 子集、全量、compileall 与 diff check；
+- **nonclaims**：本切片不实现真实 Broker/网络/Egress、Consumer Inbox 产品能力、多订阅者/consumer group、Broker retention/认证/TLS、DLQ/redrive、最终用户 Message DeliveryAck、外部工具/不可逆副作用、producer principal RBAC、Invocation lease/fencing/Reaper、Budget、Acceptance writer、Detector/Incident/Replay、其他 aggregate Repository、完整 Journal 查询、PostgreSQL 或完整 PROD-01B；
+- **INC / Harness Evolution**：本片风险目录先冻结为 `event_without_outbox`、`outbox_without_event`、`unexpected_legacy_replay`、`publish_inside_business_transaction`、`stale_publish_ack`、`duplicate_publish_attempt`、`aggregate_publish_reorder` 与 `outbox_corruption`。冻结时 Detector/Incident/Replay 为 0，3A 轻量轨为 `FROZEN/INCONCLUSIVE`；完成后，3A 以最终 22/73/159/372（4 skip）门禁和 10 组真实产品缺陷闭环为证据，独立 Review 给出 `APPROVE`（advisory），项目轻量轨据此记录为 `COMPLETED/KEEP`。完整 01B-3 因 3B 尚未实现仍为 `IN_PROGRESS/INCONCLUSIVE`；Detector/Incident/Replay 仍为 0，`INC-01` 保持待开始。真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`。
+
+以下仅保留演进摘要；01B-1/2/3 的命令、计数、哈希、故障矩阵、真实缺陷、修复与回归位置、Review 和决策以 [`VerificationReports/PROD-01B.md`](../VerificationReports/PROD-01B.md) 为权威记录。历史首轮结构型 EXPECTED_RED 已完成（随后由显式 Policy 红卡扩展）：新增 `demo/tests/test_runtime_outbox.py`，只覆盖 fresh v3/两张 Outbox 表/Event 复合父键索引，以及现有 `ThreadEventStore.apply()` 的 Thread+Event+Outbox 三写 commit/rollback 结构。精确运行 `python3 -m unittest tests.test_runtime_outbox -v` 共发现并执行 3 项，结果为 1 failure + 2 errors：schema 常量仍为 v2、commit 后与同一 UoW 内均不存在 `runtime_outbox`；这是预期能力缺失，不是产品回归或 Incident。旧 01B-1/01B-2 的 68 项对照继续全绿，测试语法、`git diff --check` 均通过；该历史版本 `test_runtime_outbox.py` SHA-256 为 `6d8684486ced5a96c84275d6e0183f292bba7bae885ce5899bb325846e095826`，两份 01B-2 生产实现 hash 未变化。独立 Review 最终为 `APPROVE`，只批准这张历史结构型红卡，不代表完整 01B-3。
+
+首轮 Review 还发现并修正了测试自身的盲点：最初版本从数据库行读取 Policy 再自证 digest、commit 只数 Outbox、rollback 未证明事务内曾写入 Outbox；修订后明确要求 commit 后 `(Thread, Event, Outbox)=(1,1,1)`、rollback 前同一 UoW 内为 `(1,1,1)`、退出后为 `(0,0,0)`。第二轮 Review 又发现仅删除 Policy 自证仍会让无参数构造暗示隐藏默认值，因此继续冻结上述 `OutboxPolicy`/database binding，并新增 Policy digest 独立复算与缺 Policy typed fail-closed 红测。该历史红卡 `test_runtime_outbox.py` SHA-256=`8452ba5f2add07c3cd30e75b5c3ce26ceb941984d58f15e2ab5d20f5e3ab948a`；当时精确执行 5 项、5 failures，首个线性缺口为公开 `OutboxPolicy` 尚不存在。旧 68 项继续全绿，py_compile/diff-check 与两份生产 hash 不变；这些都是历史 EXPECTED_RED，不是最终状态。
+
+`01B-3A` 最终收口：显式 Policy、Schema v3、真实 v2→v3 cutover、历史 Event suppress 与 Thread+Event+Outbox intent 原子三写已实现。独立挑战在首绿之后实际发现并关闭 10 组产品缺陷；最终 adversarial 22/22、directed 73/73、Runtime 159/159、全量 372 项中 368 通过且 4 个既有浏览器 E2E 跳过，compileall 与 diff-check 通过，独立只读 Review 为 `APPROVE`。完整哈希、故障/并发矩阵、缺陷与 ReviewArtifact 见 [`VerificationReports/PROD-01B.md`](../VerificationReports/PROD-01B.md)。下一动作固定为先冻结 `01B-3B` claim/publish/NACK/ACK/Receipt 红卡，再实现事务外 Transport 与 stale ACK 门禁。
 
 PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context、Mailbox 等对象的可选或不透明版本引用，明确不实现 Mailbox 队列/投递、SessionBinding、模型调用、CapabilityGrant/Gateway、Context Compiler/Manifest、SQLite Store/Journal、调度、Web 或现有 Runtime 执行接入。Coding 兼容只做协议映射和往返测试，运行接入留给 PROD-01D。
 
@@ -462,7 +534,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 
 验收证据：`git diff --check` 通过；默认单元回归 213 项通过、4 项真实浏览器测试按设计跳过；Python compileall 通过。无需用户手动检验。
 
-当前仍处于 **PROD-01B：状态 Store、Journal 与 Outbox**；`PROD-01B-1` 已完成，下一动作固定为先冻结 `PROD-01B-2` InvariantCard。
+当前仍处于 **PROD-01B：状态 Store、Journal 与 Outbox**；`PROD-01B-1`、`PROD-01B-2` 与 `PROD-01B-3A` 已完成，完整 `PROD-01B-3` 仍进行中，下一动作是 `01B-3B` claim/publish/NACK/ACK/Receipt。
 
 ## 待验证事项
 
@@ -472,7 +544,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 
 ## 待办事项
 
-- 先冻结并实施 PROD-01B-2，再逐片完成 PROD-01B 剩余的持久 Store、Journal、Outbox、BudgetLedger 和查询协议；01B-1 不重复开发。
+- PROD-01B-3A Policy/Schema v3/durable intent 原子三写已完成；下一步先冻结 01B-3B 红卡，再推进 claim/publish/NACK/ACK/Receipt。之后逐片完成 BudgetLedger、权威关系/Acceptance 和查询恢复协议，01B-1/01B-2/3A 不重复开发。
 - 随后实施 PROD-01C 的 durable Invocation、Finalizer/Reaper、fencing、取消与恢复。
 - 按 PROD/INC 双轨补齐对应事故事件、负向用例、正常对照和覆盖指标。
 - 对每个适用的行为修改同步填写 Harness Evolution 实验模板；PROD-01B 使用确定性轻量轨，只填写 Baseline、单一变更、故障矩阵、正常对照、固定门禁、回归和决策，Evolver/principal、样本量、Validation/Held-out cohort、query budget、统计效果等字段统一标为 `N/A`，不得因此阻塞基础设施开发，也不得把该证据外推为模型智能或 Held-out 效果结论。

@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-本计划是 `PROD-00` Harness 产品定位与 Runtime Charter 的专项设计产物，状态为 **INC-00 文档冻结完成，PROD-01A 协议地基已实现，持久事故链尚未开始**。它定义事故学习闭环的领域模型、控制边界、持久化语义、分批实施、故障演练和验收口径；当前新增代码只提供 RuntimeEvent/Acceptance/Invocation 协议和同步不变量，尚未修改旧 Runtime 执行行为。
+本计划是 `PROD-00` Harness 产品定位与 Runtime Charter 的专项设计产物，状态为 **INC-00 文档冻结完成，PROD-01A 协议地基、PROD-01B-2 首个持久 Thread Event 纵切与 PROD-01B-3A durable Outbox intent 已实现，INC-01 事故链尚未开始**。它定义事故学习闭环的领域模型、控制边界、持久化语义、分批实施、故障演练和验收口径；当前代码已具备 RuntimeEvent/Acceptance/Invocation 协议、同步不变量，以及 concrete Thread+RuntimeEvent+Outbox durable intent 原子三写，但尚未接入 Detector、Incident Ledger、Outbox claim/publish/ACK 生命周期、Replay 或旧 Runtime 执行链。
 
 事故学习系统是 Harness 的横向一等子系统，不是某个 Agent 的“反思 Prompt”，也不是失败后自动写入 Memory 的快捷路径。RuntimeEvent、Journal、Acceptance 与运行状态为它提供执行事实底座；它还必须覆盖用户介入、媒体绑定、直接模型 API、Full Agent Backend、工具、Context、Memory、调度、预算和人工审批。Workspace、Patch 和 Coding Validator 属 Coding Plugin 的事故子目录，不再定义 Harness Core 的完成语义。
 
@@ -644,6 +644,7 @@ MitigationExecutor
 ```text
 runtime_events
 runtime_outbox
+runtime_outbox_receipts
 incidents
 incident_occurrences
 incident_transitions
@@ -658,7 +659,7 @@ fault_injection_runs
 
 约束：
 
-- `UNIQUE(aggregate_type, aggregate_id, sequence_no)`；
+- `UNIQUE(scope_id, aggregate_type, aggregate_id, sequence_no)`；
 - `UNIQUE(idempotency_key)`，按事件/occurrence/副作用各自命名空间管理；
 - `UNIQUE(scope_id, fingerprint_version, fingerprint)` 聚合事故；
 - occurrence 插入与 incident count 更新同事务；
@@ -691,9 +692,9 @@ fault_injection_runs
 
 ### INC-01：Event Journal 与 Incident Ledger，只观察
 
-状态：待开始；`PROD-01A` 已完成 RuntimeEvent envelope、Scope 引用、Acceptance/Invocation 同步不变量和确定性负向测试，`PROD-01B-1` 已完成组件级 SQLite Migration 与 RuntimeUnitOfWork 事务底座，尚无持久 Journal、Ledger、RuntimeEvent emission 或 Detector。后续 01B 切片继续建立持久事实链，在 `PROD-01E` 完成 Observe-only 纵向能力。
+状态：待开始；`PROD-01A` 已完成 RuntimeEvent envelope、Scope 引用、Acceptance/Invocation 同步不变量和确定性负向测试，`PROD-01B-1` 已完成组件级 SQLite Migration 与 RuntimeUnitOfWork，`PROD-01B-2` 已完成 concrete Thread 状态与 RuntimeEvent 的首个持久原子纵切，`PROD-01B-3A` 已完成显式 Policy、Schema v3、真实迁移与 durable Outbox intent 原子三写。当前仍无完整跨领域 Journal、claim/publish/ACK/Receipt 生命周期、Incident Ledger、生产 RuntimeEvent emission 接线或 Detector；后续 01B 切片继续建立事实链，在 `PROD-01E` 完成 Observe-only 纵向能力。
 
-PROD-01A 的事故增量只是一层可验证协议地基：Event payload 深冻结、限长并禁止正文/Prompt/Completion/原始媒体；跨 Scope、错误 Acceptance subject、非法执行/清理组合、过期 lease/fence、取消后迟到结果和幂等冲突在进入持久边界前 fail-closed。PROD-01B-1 新增的是可重开的 SQLite 事务前置：合成故障测试已验证 migration/commit 前回滚、commit 前/后进程退出的 none/all、Schema 漂移拒绝及事务边界逃逸；这些只记录在 VerificationReport，不是生产事故事件、Detector 或 Replay。重复投递、真实 state+event+outbox bundle、孤儿恢复和 Incident 持久链仍未实现；已注册 Detector 数仍为 0，不能提前声称 INC-01 进入 Observe-only。
+PROD-01A 的事故增量是一层可验证协议地基：Event payload 深冻结、限长并禁止正文/Prompt/Completion/原始媒体；跨 Scope、错误 Acceptance subject、非法执行/清理组合、过期 lease/fence、取消后迟到结果和幂等冲突在进入持久边界前 fail-closed。PROD-01B-1 又增加可重开的 SQLite 事务前置；PROD-01B-2 进一步用合成故障、进程退出、并发和腐败注入验证 Thread state+Event 的 all-or-none、append-only、幂等冲突和 fail-closed 读取；PROD-01B-3A 再验证 Event+Outbox intent 三写、迁移、Policy 漂移与 WAL/并发边界。这些开发期证据统一记录在 [`VerificationReports/PROD-01B.md`](../VerificationReports/PROD-01B.md)，不是生产事故事件、Detector 或 Replay。Outbox durable intent 已实现；投递生命周期、Budget、其他领域状态、孤儿恢复和 Incident 持久链仍未实现，已注册 Detector 数仍为 0，不能提前声称 INC-01 进入 Observe-only。
 
 `PROD-01` 完成 INC-01 后，额外为 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败建立四组 Observe/Shadow 信号；这只把 INC-02 标为“部分 Shadow”，不满足 INC-02 完成门禁。
 
@@ -991,4 +992,4 @@ PROD-01A 的事故增量只是一层可验证协议地基：Event payload 深冻
 - `PROD-06`：按交互/协作/多模态/插件分层统计，接入容量、背压、成本和长期运行事故，并启动 INC-05；
 - `PROD-07`：完成 Incident Operations、Game Day、升级、迁移和事故运营。
 
-`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量，`PROD-01B-1` 已完成经合成中断/重开验证的事务地基；下一动作是冻结 `PROD-01B-2` 的状态变更与 append-only RuntimeEvent 原子提交口径，后续继续建立 Journal/Outbox，并在 `PROD-01E` 完成 INC-01 Observe-only。本文没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。
+`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量，`PROD-01B-1` 已完成事务地基，`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切，`PROD-01B-3A` 已完成显式 Policy、Schema v3、真实迁移与 durable Outbox intent 原子三写；下一动作是冻结 `01B-3B` 红卡，再实现 claim/publish/NACK/ACK/Receipt、at-least-once publication 与 stale ACK 门禁，后续继续建立完整事实链，并在 `PROD-01E` 完成 INC-01 Observe-only。本文没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。
