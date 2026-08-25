@@ -19,7 +19,7 @@ Multi-Agent Harness
 
 ## 当前状态
 
-项目目前是 **production-shaped、尚未达到生产级的原型**。现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；Runtime Kernel 已完成 `PROD-01A` 领域协议、`PROD-01B-1` SQLite Schema/Migration/UnitOfWork 事务底座、`PROD-01B-2` concrete Thread current-state + append-only RuntimeEvent 原子纵切，以及 `PROD-01B-3A` 的显式 `OutboxPolicy`、Schema v3、真实 v2→v3 迁移和 Thread+RuntimeEvent+Outbox durable intent 原子三写。完整 `PROD-01B-3` 与 `PROD-01B` 仍在进行中；下一切片是 `01B-3B` claim/publish/NACK/ACK/Receipt。当前不能声称可靠 Outbox 发布、完整 State Store/Journal、BudgetLedger、持久队列、崩溃恢复、多租户隔离或生产自主演进已经完成。
+项目目前是 **production-shaped、尚未达到生产级的原型**。现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；Runtime Kernel 已完成 `PROD-01A` 领域协议、`PROD-01B-1` SQLite Schema/Migration/UnitOfWork 事务底座、`PROD-01B-2` concrete Thread current-state + append-only RuntimeEvent 原子纵切、`PROD-01B-3A` durable Outbox intent 原子三写，以及 `PROD-01B-3B-1` 本地 claim/NACK/expiry-reclaim。完整 `PROD-01B-3` 与 `PROD-01B` 仍在进行中；下一切片是 `01B-3B-2` Transport publish/ACK/Receipt。当前不能声称可靠 Outbox 发布、完整 State Store/Journal、BudgetLedger、持久队列、崩溃恢复、多租户隔离或生产自主演进已经完成。
 
 ## 验证
 
@@ -30,7 +30,7 @@ cd demo
 python3 -m unittest discover -s tests -q
 ```
 
-当前 3A 门禁为 adversarial 22/22、directed 73/73、Runtime 159/159；默认全量执行 372 项，其中 368 通过、4 个既有真实浏览器 E2E 按环境门禁跳过，exit code 0。实现后独立挑战实际击穿并关闭 10 组产品缺陷；历史 5 项 EXPECTED_RED 只作为能力实现前的失败证据保留。精确命令、哈希和限制见上述 VerificationReport。
+当前 3B-1 已完成分层门禁、跨进程/强退恢复和独立 Review；首绿后挑战实际击穿并关闭 4 组产品缺陷，历史 EXPECTED_RED 只作为能力实现前的失败证据保留。精确计数、命令、哈希和限制只在上述 VerificationReport 维护。
 
 ## 权威文档
 

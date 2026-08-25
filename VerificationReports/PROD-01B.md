@@ -37,15 +37,15 @@
 |---|---|---|---|---|
 | `PROD-01B-1` | `COMPLETED` | `HISTORICAL_VERIFICATION` | `COMPLETED` | `KEEP` |
 | `PROD-01B-2` | `COMPLETED` | `HISTORICAL_VERIFICATION + FRESH_DIRECTED_RECHECK` | `COMPLETED` | `KEEP` |
-| `PROD-01B-3` | `IN_PROGRESS`（3A 已完成） | `FRESH_VERIFICATION` | `3A=COMPLETED` | `KEEP (3A only)`；父切片 `INCONCLUSIVE` |
+| `PROD-01B-3` | `IN_PROGRESS`（3A 与 3B-1 已完成；3B-2 待开始） | `3A=FRESH_VERIFICATION`；`3B-1=FRESH_VERIFICATION` | `3A=COMPLETED`；`3B-1=COMPLETED` | `KEEP (3A)` + `KEEP (3B-1 only)`；父切片 `INCONCLUSIVE` |
 
 当前工作区快照：
 
 | 字段 | 值 |
 |---|---|
 | branch | `codex/multimodal-coding-mvp` |
-| HEAD | `b864b20093f20077424fc81a564ecffecbf7ecb0` |
-| worktree | `dirty`；01B-2 与 01B-3 文件不能只靠 HEAD 复现 |
+| HEAD | `99033147fa0583b6573b8bace58e75fbffda859f`（`feat: add atomic runtime outbox intents`） |
+| worktree | `dirty`；3B-1 生产实现、公开导出、冻结/攻击测试和收口文档尚未提交，必须绑定下列哈希 |
 | OS（当前复核） | macOS `26.5` / build `25F71` / arm64 |
 | Python | `3.9.6`，`/Library/Developer/CommandLineTools/usr/bin/python3` |
 | SQLite | `3.51.0` |
@@ -55,14 +55,20 @@
 
 | 文件 | SHA-256 |
 |---|---|
-| `demo/coding_workflow/runtime_persistence/sqlite.py` | `b6c8d36045bc0485e96d653da3856d384cc51d2b5eb735f8a32676a8b56cedb3` |
-| `demo/coding_workflow/runtime_persistence/state_event.py` | `ee040c59a183532d00aa294d54a15f7109802e4e0cf55b9f7537cb3f28de8480` |
-| `demo/coding_workflow/runtime_persistence/__init__.py` | `0a4d640662eb2cbf126edbbd37f6e854be17a223504b05b7ba06bd84fdd2817d` |
-| `demo/coding_workflow/__init__.py` | `b585c1c7c337dc097f66677cc0f94e14f86b1747a308b6187ea2f7dc68f95698` |
-| `demo/tests/test_runtime_sqlite_uow.py` | `7897b88d7adaef96fa0940fe723cfc882274561935b27e97d38fc6bb7f6343ac` |
+| `demo/coding_workflow/runtime_persistence/_record_codec.py` | `c16b792a9c3c7948e3a0081f89ab04263b9df5d842cfabfe75de019d55825985` |
+| `demo/coding_workflow/runtime_persistence/outbox.py` | `85469347d152684529431337778ed87e92b73af899d85427dc268a1168f49a4d` |
+| `demo/coding_workflow/runtime_persistence/sqlite.py` | `7d11ba4d80850fd0dd11d11672c5fee3269185527334896e93f6a7c3bb270d50` |
+| `demo/coding_workflow/runtime_persistence/state_event.py` | `9ce7f9fe8f3d16a164df748954cdeea25056f263ee09ad9bfb960c4458523f17` |
+| `demo/coding_workflow/runtime_persistence/__init__.py` | `2fbd2f21dd3d935b5150d50208965a6987fc09df3999c1d7b15fc37c70b04432` |
+| `demo/coding_workflow/__init__.py` | `a3f5ef7779ad6eca5e9c73ef2ae4486d0ef2b992a187e240696ad60e44746350` |
+| `demo/tests/test_runtime_sqlite_uow.py` | `d1fa39f95f2475856096b58a2902e1be5b658d67298e8b80c78bd0cf99ee27be` |
 | `demo/tests/test_runtime_thread_event_store.py` | `45a04779bd92a81faeab640419cee7ab634c54c324ce1f877ac76d9382bc2d62` |
 | `demo/tests/test_runtime_outbox.py` | `8452ba5f2add07c3cd30e75b5c3ce26ceb941984d58f15e2ab5d20f5e3ab948a` |
 | `demo/tests/test_runtime_outbox_adversarial.py` | `aa0ce3a68eee6b667281eaf44ffb8d5461b8a085b9a927810c4cfc3b951b28cc` |
+| `Plan/Plan26.md`（3B-1 frozen contract，收口前） | `3be814497aeda592345823bb49a6f6cb95ec3d5bbc536e799c08e9c89628c6c5` |
+| `Plan/Plan26.md`（收口状态更新后） | `bc1d8b44d82dc94477abc56d990c54f6267fc0e374372fca4b5eda01b728a93f` |
+| `demo/tests/test_runtime_outbox_claim_lifecycle.py`（3B-1 EXPECTED_RED） | `550561e149f423d6cb35828ac9fa51ec4a4275155140e3b1a9bea6e276697813` |
+| `demo/tests/test_runtime_outbox_claim_lifecycle_adversarial.py` | `0dbff2e2b3173f4d64977b61bd7b7ef8033b14fd028e3cf3f992bf77cceb3323` |
 
 ---
 
@@ -286,17 +292,17 @@ git diff --check
 | 字段 | 值 |
 |---|---|
 | invariant | `INV-PROD-01B-3-EVENT-OUTBOX-ATOMICITY-v1` |
-| slice status | `IN_PROGRESS`；其中 `01B-3A` 已完成，发布生命周期仍未开始 |
-| evidence state | `FRESH_VERIFICATION` |
-| lifecycle | `01B-3A=COMPLETED`；父切片仍为 `IN_PROGRESS` |
-| decision | `KEEP (01B-3A only)`；完整 `01B-3=INCONCLUSIVE` |
+| slice status | `IN_PROGRESS`；`01B-3A` 与 `01B-3B-1` 已完成，`01B-3B-2` 待开始 |
+| evidence state | `01B-3A=FRESH_VERIFICATION`；`01B-3B-1=FRESH_VERIFICATION` |
+| lifecycle | `01B-3A=COMPLETED`；`01B-3B-1=COMPLETED`；父切片仍为 `IN_PROGRESS` |
+| decision | `KEEP (01B-3A)` + `KEEP (3B-1 only)`；完整 `01B-3=INCONCLUSIVE` |
 | Runtime Acceptance | `NOT_ISSUED` |
 
-本次只保留显式 `OutboxPolicy`、Schema v3、真实 v2→v3 cutover、Thread+Event+Outbox 同事务 enqueue、完整性与 exact retry。claim/publish/NACK/ACK/Receipt lifecycle、Transport 和 Consumer 仍未实现，不能把 `KEEP` 外推为完整 01B-3 或完整 PROD-01B。
+3A 只保留显式 `OutboxPolicy`、Schema v3、真实 v2→v3 cutover、Thread+Event+Outbox 同事务 enqueue、完整性与 exact retry。3B-1 只保留本地 SQLite claim/NACK/expiry-reclaim 所有权状态机。Transport、publish/ACK/Receipt 和 Consumer 仍未实现，两个 `KEEP` 都不能外推为可靠发布、完整 01B-3 或完整 PROD-01B。
 
-### 4.2 版本与测试设计
+### 4.2 3A 历史收口版本与测试设计
 
-最终候选绑定 dirty workspace，必须使用下列完整哈希而不是只引用 `HEAD=b864b20093f20077424fc81a564ecffecbf7ecb0`：
+以下是 3A 收口当时绑定 dirty workspace 的历史候选，必须使用下列完整哈希而不是只引用 `HEAD=b864b20093f20077424fc81a564ecffecbf7ecb0`。当前 3B-1 候选以第 1 节和 4.8 的 manifest 为准：
 
 | 文件 | SHA-256 |
 |---|---|
@@ -389,13 +395,13 @@ python3 -m unittest \
 
 ### 4.6 未覆盖风险
 
-- claim/expiry/reclaim、NACK retry、publish/ACK、Receipt projection、ACK-loss 重投与 Consumer Inbox 去重仍未实现/测试。
+- 3A 本身未覆盖 claim/expiry-reclaim/NACK；这些已由 4.8 的 3B-1 证据补齐。publish/ACK、Receipt projection、ACK-loss 重投与 Consumer Inbox 去重仍未实现/测试。
 - 没有真实 Broker、网络、外部副作用、Detector、Incident Ledger 或 Replay。
 - 未覆盖断电、磁盘满、超大 Journal migration 内存峰值、容量/p95/soak、PostgreSQL 和多节点。
 - 持有 SQLite 文件 DDL 权限的可信本地进程仍可植入额外 trigger；当前威胁模型不把它当 DB RBAC 边界。
 - 4 个真实浏览器 E2E 仍按环境门禁 skip；它们与 3A 无直接覆盖关系。
 
-### 4.7 独立 Review 与当前决策
+### 4.7 3A 收口当时的独立 Review 与决定
 
 | 字段 | 记录 |
 |---|---|
@@ -407,9 +413,93 @@ python3 -m unittest \
 | blocking findings | 0；10 组产品缺陷均关闭 |
 | final ReviewArtifact observations | 22/73/159/372、compileall/diff、4 条旧反例、5 轮组合压力均复跑；另验证 preflight 快照竞态在锁内二次检查时 typed 拒绝、异 Policy fresh initialize 50 轮均单赢家、非 busy/locked I/O 错误只尝试一次并保留原错误 |
 | Runtime Acceptance | `NOT_ISSUED` |
-| current decision | `KEEP (01B-3A only)`；完整 `01B-3` 仍 `INCONCLUSIVE` |
+| 3A closeout decision | `KEEP (01B-3A only)`；这是 3A 收口当时的决定，当前 3B-1 决定见 4.8；完整 `01B-3` 仍 `INCONCLUSIVE` |
 
-下一动作是先冻结 `01B-3B` claim/publish/ACK/Receipt 的最小 API 与 EXPECTED_RED，再实现事务外 Transport 和 stale ACK 门禁；不得从 3A 直接宣称可靠发布已完成。
+### 4.8 PROD-01B-3B-1：claim / NACK / expiry-reclaim 收口
+
+| 字段 | 记录 |
+|---|---|
+| invariant | `INV-PROD-01B-3B-1-CLAIM-LIFECYCLE-v1` |
+| baseline HEAD | `99033147fa0583b6573b8bace58e75fbffda859f` |
+| frozen contract hash | `Plan/Plan26.md=3be814497aeda592345823bb49a6f6cb95ec3d5bbc536e799c08e9c89628c6c5` |
+| closure Plan hash | `Plan/Plan26.md=bc1d8b44d82dc94477abc56d990c54f6267fc0e374372fca4b5eda01b728a93f` |
+| frozen / adversarial tests | `550561e149f423d6cb35828ac9fa51ec4a4275155140e3b1a9bea6e276697813` / `0dbff2e2b3173f4d64977b61bd7b7ef8033b14fd028e3cf3f992bf77cceb3323` |
+| slice / evidence | `COMPLETED / FRESH_VERIFICATION` |
+| lifecycle / decision | `COMPLETED / KEEP (3B-1 only)` |
+| Runtime Acceptance | `NOT_ISSUED` |
+
+测试设计在实现前固定为 7 个方法：公开 read/DTO 与 Scope 隔离、初始 PENDING claim、当前 owner NACK 与延迟重试、expiry 边界与旧 owner fencing、同 aggregate 顺序与跨 aggregate/Scope、并发单赢家、claim/NACK CAS 后故障回滚。它们使用 raw SQLite 全行快照、Fake Clock 和确定性 token factory 作为独立 Oracle，不用未来 `get()` 自证。首绿后新增 18 项独立攻击，覆盖时间/溢出、Policy 档位、token、持久腐败、跨 Scope、公共 UoW、线程/进程竞态、busy、`os._exit` 和 exact retry。
+
+环境与第 1 节当前复核环境相同：macOS 26.5 arm64、Python 3.9.6、SQLite 3.51.0；文件型临时 SQLite；未使用模型、网络或外部数据库。执行目录为 `/Users/donbblu/codex/multiAgent/demo`，精确命令：
+
+```bash
+python3 -m unittest tests.test_runtime_outbox_claim_lifecycle tests.test_runtime_outbox_claim_lifecycle_adversarial -q
+python3 -m unittest tests.test_runtime_outbox_claim_lifecycle tests.test_runtime_outbox_claim_lifecycle_adversarial tests.test_runtime_outbox tests.test_runtime_sqlite_uow tests.test_runtime_thread_event_store -q
+python3 -m unittest discover -s tests -p 'test_runtime_*.py' -q
+python3 -m unittest discover -s tests -q
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-pycache python3 -m compileall -q coding_workflow tests
+cd /Users/donbblu/codex/multiAgent
+git diff --check
+```
+
+| run | 执行 | 通过 | 失败 | 错误 | 跳过 | 耗时 | exit | 解释 |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| `01B3B1-EXPECTED-RED-001` | 7 | 0 | 7 | 0 | 0 | 0.002s | 1 | `EXPECTED_CAPABILITY_ABSENT`：6 项首先缺少公开 `SQLiteOutboxLifecycleStore`，read/API 项首先缺少 `OutboxState`；无 import、fixture 或 collection error |
+| `01B3B1-3A-CONTROL-001` | 73 | 73 | 0 | 0 | 0 | 1.866s | 0 | 已 KEEP 的 Outbox/UoW/Thread-Event 基线仍绿；红测没有制造 3A regression |
+| `01B3B1-FIRST-GREEN-001` | 7 | 7 | 0 | 0 | 0 | 0.118s | 0 | 原冻结红卡未修改并首次转绿；尚未决定 KEEP |
+| `01B3B1-DIRECTED-ORACLE-FIX` | 80 | 80 | 0 | 0 | 0 | 未保存 | 0 | 更新旧 fault-enum Oracle 后，7 项新能力与 73 项对照全绿 |
+| `01B3B1-ADVERSARIAL-CROSSPROC` | 18 | 18 | 0 | 0 | 0 | 1.619s | 0 | 独立攻击含跨进程和 `os._exit` 矩阵全绿 |
+| `01B3B1-NEW-FINAL` | 25 | 25 | 0 | 0 | 0 | 2.273s | 0 | 7 项冻结 + 18 项独立攻击 |
+| `01B3B1-DIRECTED-FINAL` | 98 | 98 | 0 | 0 | 0 | 4.161s | 0 | 3B-1 + 3A/UoW/Thread-Event 对照 |
+| `01B3B1-RUNTIME-FINAL` | 184 | 184 | 0 | 0 | 0 | 6.428s | 0 | Runtime 专项全绿 |
+| `01B3B1-FULL-FINAL` | 397 | 393 | 0 | 0 | 4 | 28.514s | 0 | 4 个既有 VisionForge 真实浏览器 E2E 按门禁跳过 |
+| `01B3B1-COMPILE/DIFF-FINAL` | N/A | exit 0 | 0 | 0 | N/A | <1s | 0 | compileall 与 `git diff --check` 通过 |
+
+历史 7 项失败仍只表示“能力当时不存在”，不计产品缺陷。下面四项均发生在实现已经首绿、声称满足契约之后，由独立挑战击穿，故登记为真实 pre-release `PRODUCT_DEFECT`。
+
+#### 故障、并发与恢复矩阵
+
+| 风险 | 注入/调度 | 最终结果 | 回归位置 |
+|---|---|---|---|
+| claim/NACK 写后故障 | `OUTBOX_AFTER_CLAIM_UPDATE`、`OUTBOX_AFTER_NACK_UPDATE` 抛错 | 重开为完整旧状态，零半写 | `test_claim_and_nack_faults_after_cas_roll_back_exact_rows` |
+| 事务 commit 前故障 | 复用 `UOW_BEFORE_COMMIT` | claim/NACK 均完整回滚 | 同上及 `test_process_exit_claim_and_nack_recover_at_transaction_boundaries` |
+| 进程硬退出 | claim/NACK 在写后、commit 前、commit 返回后立即 `os._exit` | commit 前精确旧状态；commit 后精确完整新状态；重开 integrity 通过 | `test_process_exit_claim_and_nack_recover_at_transaction_boundaries` |
+| 同进程并发 | 两线程同时 claim 同一行 | 一个 owner、一个空 loser；generation 只增一次 | `test_concurrent_claim_has_one_winner_and_one_empty_loser` |
+| 跨进程竞态 | spawn + barrier 同时初领/过期重领；旧 owner NACK 与 reclaim 竞态 | 单赢家或可串行解释结果；generation/token/publisher 与 raw DB 一致 | `test_cross_process_claim_reclaim_and_nack_reclaim_are_serializable` |
+| Clock/时间边界 | offset、±1µs、回拨、datetime overflow | typed fail-closed，零写入 | offset/clock/overflow adversarial tests |
+| 批次原子性 | 第 N 个 token 失败/重复 | 整批回滚，不留下部分 owner | `test_batch_token_failure_and_duplicate_roll_back_every_candidate` |
+| 持久腐败 | 同 aggregate 后序行先进入 CLAIMED、PUBLISHED predecessor、跨 Scope 腐败 | claim/NACK/verify 共享校验；本 Scope fail-closed，其他 Scope 不被过度阻塞 | cross-row/published/scope corruption tests |
+| SQLite busy | claim 与 NACK 分别持锁 | deadline 内 typed busy；释放后可重试 | `test_claim_and_nack_busy_are_typed_bounded_and_retryable` |
+
+#### 实际发现的问题
+
+| ID | 分类 | 发现时版本与症状 | 根因与修复位置 | 持久回归 | 状态 |
+|---|---|---|---|---|---|
+| `DEF-01B3B1-001` | PRODUCT_DEFECT | `outbox.py=f4cd79c6df6f000254186858e982dde1f1e90fbd11ddd0d33772c7bebbcfc40c`；Clock 回拨检查在 eligibility 之后，未 eligible 的 lifecycle head 会静默返回空，其他 aggregate 还可能被部分领取 | 在 [`_select_candidates`](../demo/coding_workflow/runtime_persistence/outbox.py#L799) 识别 head 后、判断 eligibility 前检查 lifecycle Clock | `test_clock_rollback_is_typed_and_never_rewrites_current_claim` | FIXED |
+| `DEF-01B3B1-002` | PRODUCT_DEFECT | `outbox.py=ed176cdec8d9dec9ab7e446be9b07081902c5160f0ffaf755f54d7d61ea18690`；Store B 可消费 Store A 返回的 ownership 执行 NACK | [`nack`](../demo/coding_workflow/runtime_persistence/outbox.py#L456) 在事务/Clock 前绑定 `ownership.publisher_id` 与 Store publisher | `test_foreign_publisher_store_cannot_consume_nack_ownership` | FIXED |
+| `DEF-01B3B1-003` | PRODUCT_DEFECT | `outbox.py=34bcb5415d5915ed779fbabb5a53cf8f18a6d078ddc6869c2101adb13c5fc250`；同 aggregate seq1 PENDING、seq2 已 CLAIMED 时仍可领取 seq1，形成双 owner | [`validate_outbox_aggregate_history`](../demo/coding_workflow/runtime_persistence/_record_codec.py#L207) 拒绝后序非终态提前推进；claim/NACK 复用 | `test_later_claimed_sequence_corrupts_scope_and_integrity_scan` 的 claim/NACK Oracle | FIXED |
+| `DEF-01B3B1-004` | PRODUCT_DEFECT | `outbox=185c28f756c4ccdf47f125f64c560f183c686100dd3ac755891aea8daab40e82`、`codec=c16b792a9c3c7948e3a0081f89ab04263b9df5d842cfabfe75de019d55825985`、`state_event=9ce7f9fe8f3d16a164df748954cdeea25056f263ee09ad9bfb960c4458523f17`、`sqlite=7d11ba4d80850fd0dd11d11672c5fee3269185527334896e93f6a7c3bb270d50`；首次失败测试 hash=`505405e6360bdf0000d2bf554eb9f941459a6f0729e13015ed898dacfaa27990`，`verify_integrity()` 对同一跨行腐败返回正常 | [`state_event._verify_connection`](../demo/coding_workflow/runtime_persistence/state_event.py#L289) 收集 Outbox 后调用共享 aggregate validator | 同一测试的 integrity Oracle；最终测试 hash=`0dbff2e2b3173f4d64977b61bd7b7ef8033b14fd028e3cf3f992bf77cceb3323` | FIXED |
+
+实现后未发现 regression。另有一项不计入上述四项：
+
+| ID | 分类 | 问题 | 修正 | 状态 |
+|---|---|---|---|---|
+| `TDEF-01B3B1-001` | TEST_DESIGN_DEFECT | 旧 `test_fault_point_enum_has_no_after_commit_hook` 精确冻结整个 enum，把新增的两个合法事务内 fault point 误判为产品回归 | `test_runtime_sqlite_uow.py` 加入 `outbox_after_claim_update/outbox_after_nack_update`，仍禁止任何 after-commit hook；hash 从 `7897b88d...` 变为 `d1fa39f9...` | FIXED |
+
+#### 独立 Review、未覆盖风险与决定
+
+| 字段 | 记录 |
+|---|---|
+| reviewer principals | `/root/outbox_claim_tests`（独立攻击测试）、`/root/claim_report_audit`（证据审计）、`/root/claim_final_review`（最终只读 Review） |
+| independence | `/root/claim_final_review` 与 `/root/claim_report_audit` 均为独立只读 Reviewer，未参与实现或测试修改；`/root/outbox_claim_tests` 只负责独立攻击测试，未修改生产代码 |
+| final subject | `_record_codec=c16b792a...`、`outbox=85469347...`、`state_event=9ce7f9fe...`、`sqlite=7d11ba4d...`、frozen test=`550561e1...`、adversarial=`0dbff2e2...`；完整值见第 1 节 |
+| final review | `APPROVE`（advisory），0 blocking finding；Reviewer 独立复跑 18/25/98/184/397、compileall 与 diff-check |
+| Runtime Acceptance | `NOT_ISSUED` |
+| decision | `KEEP (3B-1 only)`；完整 `01B-3` 继续 `IN_PROGRESS/INCONCLUSIVE` |
+
+未覆盖风险：本证据只覆盖单宿主文件型 SQLite，不外推到多节点数据库；没有容量、p95 或大表扫描承诺；生产 Composition Root 仍须提供至少 256-bit CSPRNG token factory、每进程唯一 publisher ID 与可信共享 wall clock。Transport、publish、ACK、Receipt、PUBLISHED 深度完整性、ACK-loss 重投、Consumer Inbox、at-least-once/effectively-once 和可靠发布均属于后续 `01B-3B-2` 或更后批次。
+
+下一动作是冻结并建立 `01B-3B-2` 的 Transport publish/ACK/Receipt 红卡：claim 必须已提交且 writer lock 已释放后才能调用 Transport；有效 ACK 在新事务中追加 immutable Receipt 并以当前 ownership CAS 到 PUBLISHED；stale/错误/exact-retry ACK、ACK-vs-reclaim、有效 ACK 后本地提交失败和 PUBLISHED/Receipt 正反向完整性必须形成可执行 Oracle。不得修改已发布 Schema v3/checksum，也不得从本切片冒领可靠发布。
 
 ---
 
@@ -420,7 +510,7 @@ python3 -m unittest \
 1. 01B-1/2 没有保存每个真实缺陷第一次失败时的原始 stdout、时间戳与修复前文件哈希。
 2. 01B-1/2 没有保存完整独立 `ReviewArtifact`、Reviewer principal、逐项 finding 和 disposition。
 3. 01B-3 已在本报告保存 reviewer、subject hash、压力结果、finding 与 disposition，但 Agent 消息的原始 stdout/完整 `ReviewArtifact` 仍未另存为不可变仓库工件。
-4. 01B-1 原始验证发生在 dirty workspace；幸好相同内容随后由 `b864b20` 固化。01B-2/3 仍没有 clean commit checkpoint。
+4. 01B-1 原始验证发生在 dirty workspace，相同内容随后由 `b864b20` 固化；01B-2/3A 已分别由后续 clean checkpoint 固化。当前尚无 clean commit checkpoint 的是 3B-1 候选，因此必须继续以第 1 节的完整文件哈希作为复现主体。
 5. 历史环境没有 OS/arch、依赖锁摘要和完整环境变量；本报告只记录当前复核环境，不倒填历史。
 6. 当前没有自动 Incident Ledger；本报告是开发 Verification，不是生产 Incident Store。
 
@@ -446,3 +536,6 @@ python3 -m unittest \
 | 2026-08-25 | 实现 01B-3A Policy/Schema v3/原子 enqueue；首轮 5 项转绿后逐轮加入 22 项独立挑战。 |
 | 2026-08-25 | 独立挑战、全量门禁与最终 Review 共发现 10 组真实产品缺陷；逐项修复并绑定回归。 |
 | 2026-08-25 | 最终 22/73/159/372 分层门禁全绿，并发初始化 + WAL deadline 连续复跑 5 轮；决定 `KEEP (3A only)`。 |
+| 2026-08-25 | 冻结 3B-1 的 7 项 EXPECTED_RED；首跑 0/7，证明能力缺失且 3A 对照 73/73 未回归。 |
+| 2026-08-25 | 3B-1 首绿后独立挑战发现并关闭 4 组产品缺陷和 1 项测试设计缺陷；补齐跨进程与 `os._exit` 证据。 |
+| 2026-08-25 | 最终 25/98/184/397 分层门禁、compileall/diff-check 与独立 Review 全绿；决定 `KEEP (3B-1 only)`，下一步 3B-2。 |

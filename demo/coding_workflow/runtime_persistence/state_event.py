@@ -11,10 +11,15 @@ from typing import Mapping
 from ..runtime_domain.common import RuntimeProtocolError, namespaced, nonempty
 from ..runtime_domain.events import RuntimeEvent
 from ..runtime_domain.interaction import Thread, ThreadState
+from ._record_codec import (
+    RuntimeStoredDataCorruptionError,
+    decode_outbox_row,
+    decode_runtime_event_row,
+    validate_outbox_aggregate_history,
+)
 from .sqlite import (
     _outbox_delivery_key,
     _outbox_intent_digest,
-    RuntimeDatabaseIntegrityError,
     RuntimePersistenceError,
     RuntimePersistenceFaultPoint,
     RuntimeUnitOfWork,
@@ -48,10 +53,6 @@ class RuntimeIdempotencyConflictError(RuntimeStateEventConflictError):
 
 class RuntimeEventSequenceConflictError(RuntimeStateEventConflictError):
     """An aggregate sequence number is occupied or non-contiguous."""
-
-
-class RuntimeStoredDataCorruptionError(RuntimeDatabaseIntegrityError):
-    """Stored JSON, digest, projection, or state/event linkage drifted."""
 
 
 class ThreadEventApplyResult(str, Enum):
@@ -334,8 +335,16 @@ class SQLiteThreadEventStore:
             )
         if require_outbox:
             self._database._assert_outbox_policy_binding(connection)
+            outbox_records = []
             for event, event_digest in decoded_events:
-                self._verify_event_outbox(connection, event, event_digest)
+                outbox_records.append(
+                    self._verify_event_outbox(
+                        connection,
+                        event,
+                        event_digest,
+                    )
+                )
+            validate_outbox_aggregate_history(tuple(outbox_records))
             extra = connection.execute(
                 """SELECT outbox.delivery_key
                    FROM runtime_outbox AS outbox
@@ -714,7 +723,7 @@ class SQLiteThreadEventStore:
         reader,
         event: RuntimeEvent,
         event_digest: str,
-    ) -> None:
+    ):
         row = reader.execute(
             """SELECT delivery_key, source_event_id, scope_id, destination,
                       event_digest, created_at, intent_digest, policy_version,
@@ -729,95 +738,12 @@ class SQLiteThreadEventStore:
             raise RuntimeStoredDataCorruptionError(
                 f"RuntimeEvent 缺少 Outbox intent: {event.event_id}"
             )
-        policy = self._database.outbox_policy
-        delivery_key = _outbox_delivery_key(
-            policy.destination,
-            event.event_id,
-        )
-        intent_digest = _outbox_intent_digest(
-            scope_id=event.scope_id,
-            source_event_id=event.event_id,
+        return decode_outbox_row(
+            row,
+            event=event,
             event_digest=event_digest,
-            destination=policy.destination,
-            delivery_key=delivery_key,
-            created_at=event.recorded_at,
-            policy=policy,
+            policy=self._database.outbox_policy,
         )
-        expected_identity = (
-            delivery_key,
-            event.event_id,
-            event.scope_id,
-            policy.destination,
-            event_digest,
-            event.recorded_at,
-            intent_digest,
-            policy.policy_version,
-            policy.policy_digest,
-        )
-        if tuple(row[:9]) != expected_identity:
-            raise RuntimeStoredDataCorruptionError(
-                f"Outbox identity/digest 与 RuntimeEvent 不一致: {event.event_id}"
-            )
-        state = row[9]
-        if state not in {
-            "LEGACY_SUPPRESSED",
-            "PENDING",
-            "CLAIMED",
-            "PUBLISHED",
-        }:
-            raise RuntimeStoredDataCorruptionError(
-                f"Outbox state 无效: {event.event_id}"
-            )
-        if not isinstance(row[10], str) or not row[10]:
-            raise RuntimeStoredDataCorruptionError(
-                f"Outbox updated_at 无效: {event.event_id}"
-            )
-        for index, field_name in ((11, "claim_generation"), (12, "attempt_count")):
-            value = row[index]
-            if (
-                not isinstance(value, int)
-                or isinstance(value, bool)
-                or value < 0
-            ):
-                raise RuntimeStoredDataCorruptionError(
-                    f"Outbox {field_name} 无效: {event.event_id}"
-                )
-        if state == "LEGACY_SUPPRESSED":
-            expected_lifecycle = (
-                event.recorded_at,
-                0,
-                0,
-                None,
-                None,
-                None,
-                None,
-                None,
-                "pre_outbox_cutover",
-                None,
-                None,
-            )
-            if tuple(row[10:]) != expected_lifecycle:
-                raise RuntimeStoredDataCorruptionError(
-                    f"LEGACY_SUPPRESSED Outbox lifecycle 漂移: {event.event_id}"
-                )
-        elif state == "PENDING" and row[11] == 0:
-            expected_lifecycle = (
-                event.recorded_at,
-                0,
-                0,
-                event.recorded_at,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-            )
-            if tuple(row[10:]) != expected_lifecycle:
-                raise RuntimeStoredDataCorruptionError(
-                    f"初始 PENDING Outbox lifecycle 漂移: {event.event_id}"
-                )
 
     def _decode_thread_row(
         self,
@@ -883,59 +809,4 @@ class SQLiteThreadEventStore:
 
     @staticmethod
     def _decode_event_row(row) -> RuntimeEvent:
-        try:
-            raw = str(row[13])
-            decoded = json.loads(raw)
-            if _canonical_json(decoded) != raw or _text_digest(raw) != row[14]:
-                raise RuntimeStoredDataCorruptionError(
-                    "runtime_events canonical JSON/digest 漂移"
-                )
-            event = RuntimeEvent.from_dict(decoded)
-            projections = (
-                row[0], row[1], row[2], row[3], row[4], row[5], row[6],
-                row[7], row[8], row[9], row[10], row[11], row[12],
-            )
-            expected = (
-                event.event_id,
-                event.scope_id,
-                event.event_type,
-                event.aggregate_ref.entity_type,
-                event.aggregate_ref.entity_id,
-                event.aggregate_version,
-                event.sequence_no,
-                event.event_version,
-                event.idempotency_key,
-                event.trace_id,
-                event.correlation_id,
-                event.occurred_at,
-                event.recorded_at,
-            )
-            if projections != expected:
-                raise RuntimeStoredDataCorruptionError(
-                    "runtime_events projection 与 RuntimeEvent JSON 不一致"
-                )
-            for digest in (row[15], row[16]):
-                if (
-                    not isinstance(digest, str)
-                    or len(digest) != 64
-                    or any(character not in "0123456789abcdef" for character in digest)
-                ):
-                    raise RuntimeStoredDataCorruptionError(
-                        "runtime_events state/mutation digest 无效"
-                    )
-            expected_mutation_digest = _text_digest(_canonical_json({
-                "expected_version": event.aggregate_version - 1,
-                "result_state_digest": row[15],
-                "event_digest": row[14],
-            }))
-            if row[16] != expected_mutation_digest:
-                raise RuntimeStoredDataCorruptionError(
-                    "runtime_events mutation digest 漂移"
-                )
-            return event
-        except RuntimeStoredDataCorruptionError:
-            raise
-        except (RuntimeProtocolError, TypeError, ValueError, json.JSONDecodeError) as exc:
-            raise RuntimeStoredDataCorruptionError(
-                "runtime_events 无法重建 RuntimeEvent"
-            ) from exc
+        return decode_runtime_event_row(row)

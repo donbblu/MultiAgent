@@ -950,6 +950,8 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 "state_event_after_state_write",
                 "state_event_after_event_append",
                 "state_event_after_outbox_enqueue",
+                "outbox_after_claim_update",
+                "outbox_after_nack_update",
             },
         )
 

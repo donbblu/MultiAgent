@@ -257,7 +257,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 ### Harness Evolution Protocol / 评测驱动演进规则（后续任务强制执行）
 
-状态：**开发纪律与文档协议已冻结；尚无正式 Harness Evolution Experiment、自动 Evolver 或 Held-out 泛化结论。** 权威方法写入 `Plan/Plan26.md` 的 “Harness Evolution Protocol”，本节只保存接续所需的状态、硬门禁和下一动作；与事故闭环的边界写入 `Plan/Plan25.md`。该协议是跨批次开发与证据门禁，不是插队的新生产子系统；当前仍处于 `PROD-01B`，01B-1、01B-2 与 01B-3A 已完成/KEEP，完整 01B-3 仍为 IN_PROGRESS/INCONCLUSIVE，下一动作是 01B-3B claim/publish/NACK/ACK/Receipt。
+状态：**开发纪律与文档协议已冻结；尚无正式 Harness Evolution Experiment、自动 Evolver 或 Held-out 泛化结论。** 权威方法写入 `Plan/Plan26.md` 的 “Harness Evolution Protocol”，本节只保存接续所需的状态、硬门禁和下一动作；与事故闭环的边界写入 `Plan/Plan25.md`。该协议是跨批次开发与证据门禁，不是插队的新生产子系统；当前仍处于 `PROD-01B`，01B-1、01B-2、01B-3A 与 01B-3B-1 已完成/KEEP，完整 01B-3 仍为 IN_PROGRESS/INCONCLUSIVE，下一动作是 01B-3B-2 Transport publish/ACK/Receipt。
 
 固定术语边界：
 
@@ -288,7 +288,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
   - `L3 生产自主 Harness 演进`：自动修改并晋升生产 Harness；当前非目标。INC-03 提供发布验证和 Shadow/Canary/Rollback，INC-04 提供 Learning/Guardrail 审批与退役，INC-05 提供运营和长期复发评价；全部成熟后仍需重新立项。
 - **assumptions_and_uncertainty**：当前离线资产可以支持 L1 的管线 smoke 与小规模实验，但样本量、真实模型重复运行和跨任务 Held-out 尚未冻结；没有这些证据前，不能声称 Multi-Agent、Memory、Reviewer 或任何 Harness 版本更优。
 - **open_questions**：第一次真实 Harness Evolution Pilot 的任务数量、模型、调用预算、重复次数和 Held-out cohort 必须在用户明确授权真实调用时单独预注册；不得从历史示例数字反推。
-- **next_action**：01B-1、01B-2 与 01B-3A 的确定性轻量轨均已以 `decision=KEEP` 收口；完整 01B-3 仍为 `IN_PROGRESS/INCONCLUSIVE`，下一步先冻结并实现 01B-3B claim/publish/NACK/ACK/Receipt。Evolver/Policy/Eval principal、样本量、Validation/Held-out cohort、query budget、统计效果等不适用字段统一标为 `N/A`，不得反向阻塞基础设施开发。`PROD-01B` 不运行真实模型、不复现官方 Evo-Bench，也不调用外部 `evo-hq/evo`；真实模型 Harness Evolution Pilot 不插队，仍复用暂缓的 `CORE-ABLATION-001` 与后续分层评测计划。
+- **next_action**：01B-1、01B-2、01B-3A 与 01B-3B-1 的确定性轻量轨均已以 `decision=KEEP` 收口；完整 01B-3 仍为 `IN_PROGRESS/INCONCLUSIVE`，下一步冻结并实现 01B-3B-2 Transport publish/ACK/Receipt。Evolver/Policy/Eval principal、样本量、Validation/Held-out cohort、query budget、统计效果等不适用字段统一标为 `N/A`，不得反向阻塞基础设施开发。`PROD-01B` 不运行真实模型、不复现官方 Evo-Bench，也不调用外部 `evo-hq/evo`；真实模型 Harness Evolution Pilot 不插队，仍复用暂缓的 `CORE-ABLATION-001` 与后续分层评测计划。
 - **expected_output**：每个适用批次包含一个版本化 Harness Evolution 实验小节或报告，引用可定位 Run/Trial/Evidence，明确示例、离线确定性结果、真实模型实测和生产观察；分别给出 `lifecycle_status=PROPOSED/RUNNING/FROZEN/COMPLETED/INVALID` 与 `decision=KEEP/ROLLBACK/INCONCLUSIVE`。
 - **acceptance_criteria**：后续适用 Plan 至少包含失败/工作负载、Baseline、强对照、可证伪假设、单一 Mutation、固定 manifest、Validation/Held-out 隔离或确定性“不适用”依据、硬门禁、效果与代价、Incident/Regression 落点和决策/回滚；没有真实行为变化时显式写不适用及原因。
 - **required_capabilities**：仓库读、受控候选 Patch、独立评测、版本化报告和与实验范围匹配的故障注入；真实模型、网络、媒体、外部仓库、秘密或副作用仍需当次授权。
@@ -304,13 +304,13 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 `Plan/Plan26.md` 已完成 `PROD-00` 产品 Charter，冻结 Scope、Thread、Turn/Outcome、Message、AgentInstance/AgentSession、Invocation、SessionBinding、RouteEdge、Artifact/Context、Capability 和场景化 Acceptance 的边界。批次 10A～13A 的代码和测试继续作为 Coding、多模态 Intake 与插件机制的已实现资产保留，不因产品纠偏删除，也不得再被描述成默认产品流程。
 
-后续严格一次推进一个小批次。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2` 与 `PROD-01B-3A` 已完成，完整 `PROD-01B` 仍在进行中；下一步只推进 `01B-3B` claim/publish/NACK/ACK/Receipt，不得跳过它直接增加更多供应商、自由 A2A、向量数据库、微服务或分布式 Worker。
+后续严格一次推进一个小批次。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 已完成，完整 `PROD-01B` 仍在进行中；下一步只推进 `01B-3B-2` Transport publish/ACK/Receipt，不得跳过它直接增加更多供应商、自由 A2A、向量数据库、微服务或分布式 Worker。
 
 ### PROD / INC 双轨联动规则（后续任务强制执行）
 
 事故学习闭环是一等子系统，主计划见 `Plan/Plan25.md`，覆盖范围与漏检计算见 `Plan/闭环覆盖范围.md`。它不是 `PROD-07` 才补做的复盘模块，而是从 `PROD-00` 开始伴随每项生产能力演进的横切控制面。
 
-当前事实：`INC-00` 的专项计划及产品泛化已随 `PROD-00` 完成文档冻结；`PROD-01A` 完成 RuntimeEvent 值协议和同步不变量地基，`PROD-01B-2` 完成 concrete Thread+RuntimeEvent 的首个持久原子纵切，`PROD-01B-3A` 又完成显式 Policy、Schema v3、真实迁移与 durable Outbox intent 原子三写。它仍不是完整跨领域 Journal，也没有 claim/publish/ACK 生命周期、Detector、Incident Ledger、Replay 或自动学习，`INC-01`～`INC-05` 状态不因此提前完成。
+当前事实：`INC-00` 的专项计划及产品泛化已随 `PROD-00` 完成文档冻结；`PROD-01A` 完成 RuntimeEvent 值协议和同步不变量地基，`PROD-01B-2` 完成 concrete Thread+RuntimeEvent 的首个持久原子纵切，`PROD-01B-3A` 完成 durable Outbox intent 原子三写，`PROD-01B-3B-1` 完成本地 claim/NACK/expiry-reclaim。它仍不是完整跨领域 Journal，也没有 Transport publish/ACK/Receipt、Detector、Incident Ledger、Replay 或自动学习，`INC-01`～`INC-05` 状态不因此提前完成。
 
 后续任何任务只要新增、修改、拆分、实现或收口一个 `PROD-*` 批次，就必须在同一份 Plan、Backlog 更新和交接摘要中增加 `INC 联动` 小节，至少写明：
 
@@ -420,14 +420,14 @@ Invocation.closed
 
 ### PROD-01：Durable Thread、Message、Invocation 与 Event Journal
 
-状态：**01A、01B-1、01B-2 与 01B-3A 已完成，完整 01B 进行中**；继续严格按 01B-3B 及后续切片、01C～01E 逐批推进。
+状态：**01A、01B-1、01B-2、01B-3A 与 01B-3B-1 已完成，完整 01B 进行中**；继续严格按 01B-3B-2 及后续切片、01C～01E 逐批推进。
 
 目标：建立第一版真正可恢复的交互控制面，并复用现有 Artifact、SQLite Snapshot、TaskGraph 与 ScenarioRuntime，不另起平行真相源。
 
 执行顺序：
 
 1. **PROD-01A 领域协议与迁移骨架（已完成）**：实现最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent`；冻结 Message/Artifact 边界与 Coding 兼容映射。Invocation 只包含 `input_refs + input_digest + policy_snapshot_ref + budget_reservation`，完整 Grant 和 ContextManifest 分别留给 PROD-03/05。
-2. **PROD-01B 状态 Store、Journal 与 Outbox（进行中）**：SQLite 状态表是当前业务真相源，Journal 是不可变审计记录，Snapshot 是兼容恢复检查点；状态更新、Event、Outbox 与最小 BudgetLedger 预留/结算同事务提交。`PROD-01B-1` 已完成组件级版本化 Schema、Migration 与 RuntimeUnitOfWork；`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切；`PROD-01B-3A` 已完成显式 Policy、Schema v3、真实迁移与 durable Outbox intent 原子三写；`01B-3B` 发布生命周期尚未开始，仍不得提前把整个 01B 标为已完成。
+2. **PROD-01B 状态 Store、Journal 与 Outbox（进行中）**：SQLite 状态表是当前业务真相源，Journal 是不可变审计记录，Snapshot 是兼容恢复检查点；状态更新、Event、Outbox 与最小 BudgetLedger 预留/结算同事务提交。`PROD-01B-1` 已完成组件级版本化 Schema、Migration 与 RuntimeUnitOfWork；`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切；`PROD-01B-3A` 已完成 durable Outbox intent 原子三写；`01B-3B-1` 已完成本地 claim/NACK lifecycle；`01B-3B-2` Transport publish/ACK/Receipt 尚未开始，仍不得提前把整个 01B 标为已完成。
 3. **PROD-01C Durable Invocation**：durable enqueue、幂等、claim/lease/heartbeat、fencing、watchdog、孤儿回收、重启恢复和取消意图持久化；模型请求硬取消留给 PROD-02。
 4. **PROD-01D 兼容接入与 Web 查询**：把 TaskGraph、ScenarioRuntime 和当前 Coding 纵向切片接入 Thread 的可选工作，保留回归；Web 先支持持久查询，不实现完整 Agent 泳道。
 5. **PROD-01E INC-01 与首批 Shadow**：完成 `INC-01`；建立 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到结果四组 Observe/Shadow 信号，只将 `INC-02` 标为“部分 Shadow”。
@@ -442,7 +442,7 @@ PROD-01A 实现事实：
 - Invocation 输入用 `ScopedRef + content_hash` 固定，Attempt 持有真实 worker/principal、lease 和 Runtime 单调签发的 fence；执行与清理分轴，终态必须有 TerminalRecord，`TERMINATION_FAILED` 保留独立清理证据，`closed` 不等于 succeeded 或 accepted。
 - late result admission 是纯函数，不写 Store：旧/未来 fence、取消后、终态后、过 deadline/lease、错误 Thread/Attempt/输入/策略一律拒绝；相同 mutation 是幂等 no-op，同 ID 不同 payload 是冲突。
 - AcceptancePolicy/Record/Outcome 固定为 `unknown/needs_input/accepted/rejected`；accepted 必须满足匹配、新鲜证据和策略要求的独立 evaluator。数据类只能校验协议形状，真正“只有 Runtime 可签发”的写权限必须由 PROD-01B Store 在同一事务中强制。
-- RuntimeEvent 只保存小型、脱敏、深冻结 JSON 元数据和引用；在 PROD-01A 当时，append-only、唯一序号、授权写入和 Outbox 均未实现。此后 PROD-01B-2 已完成 concrete Thread 的 append-only/唯一序号持久纵切，PROD-01B-3A 已为该纵切增加 durable Outbox intent；生产者授权与 claim/publish/ACK 生命周期仍未完成。Coding 的 Role/Worker/Task/Artifact/Verification 通过单向适配器映射，旧 passed/verified/completed 都不会直接生成 accepted。
+- RuntimeEvent 只保存小型、脱敏、深冻结 JSON 元数据和引用；在 PROD-01A 当时，append-only、唯一序号、授权写入和 Outbox 均未实现。此后 PROD-01B-2 已完成 concrete Thread 的 append-only/唯一序号持久纵切，PROD-01B-3A 已增加 durable Outbox intent，PROD-01B-3B-1 已增加本地 claim/NACK/expiry-reclaim；生产者授权与 Transport publish/ACK/Receipt 仍未完成。Coding 的 Role/Worker/Task/Artifact/Verification 通过单向适配器映射，旧 passed/verified/completed 都不会直接生成 accepted。
 
 ### PROD-01A / INC 联动与验收
 
@@ -466,7 +466,7 @@ PROD-01A 实现事实：
 - 开发中真实发现并修复的 pre-release 缺陷包括：原始 connection/SQL commit 绕过、ALTER/DDL authorizer 绕过、iterator cursor 泄漏、`INSERT OR ROLLBACK` 让外层事务失效、rollback failure 被隐藏、WAL/Schema 检查时序和 REAL migration version 被强转。所有修复均有回归；这是本次“实现 → 挑战 → 红测/复现 → 修复 → 全量回归”的事故学习前置证据，不是生产 Incident 或 Detector 命中。
 - INC：合成测试覆盖 migration/commit 前回滚、commit 前/后子进程退出的 none/all、重开、锁忙、Schema 漂移和事务逃逸；本切片没有写 RuntimeEvent、Journal、Replay 或 Incident Ledger。`INC-01` 仍待开始，Detector 数为 0，不报告 detected/missed/MTTD/MTTR。
 - Harness Evolution：确定性轻量轨 `lifecycle_status=COMPLETED`、`decision=KEEP`；保留范围仅为 01B-1 事务底座。真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`，本记录是 Verification，不是 `AcceptanceRecord`。
-- 后续 notes：01B-1 留下的通用 v2 migration runner 与实际 DDL shape 校验已由 01B-2 补齐；连接/路径建立失败的异常封装仍是非阻塞后续项。`PROD-01B-3A` 已完成，下一动作是 `01B-3B` claim/publish/NACK/ACK/Receipt。
+- 后续 notes：01B-1 留下的通用 v2 migration runner 与实际 DDL shape 校验已由 01B-2 补齐；连接/路径建立失败的异常封装仍是非阻塞后续项。`PROD-01B-3A` 与 `01B-3B-1` 已完成，下一动作是 `01B-3B-2` Transport publish/ACK/Receipt。
 
 ### PROD-01B-2 / INC 联动与验证摘要
 
@@ -477,19 +477,21 @@ PROD-01A 实现事实：
 - 开发中由红测和独立挑战实际发现并修复：`INSERT OR REPLACE` 绕过 append-only trigger、隐式 rowid collision 改写历史、Store 与异库 UoW 误接、跨线程 abort 覆盖 typed error、损坏的历史 Event/当前 Thread head/最新 head Event 被幂等快路径误报成功，以及完整性扫描漏掉 orphan Thread Event。每个反例都有自动回归。
 - INC：故障注入与负向用例只证明本切片对 orphan state/event、历史改写、duplicate/conflict、sequence/version drift、跨 Scope/跨数据库误绑和持久数据腐败能预防或 fail-closed；当前 Detector、IncidentSignal/Ledger 和 Replay 数仍为 0，`INC-01` 继续待开始，不报告 detected/missed/MTTD/MTTR。
 - Harness Evolution：确定性轻量轨 `lifecycle_status=COMPLETED`、`decision=KEEP`；保留范围仅为 Thread+RuntimeEvent 原子纵切。真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`。
-- 下一动作已执行并收口：`PROD-01B-3A` 的显式 Policy、Schema v3、真实迁移与 durable Outbox intent 已完成；发布生命周期仍留给 01B-3B。
+- 下一动作已执行并收口：`PROD-01B-3A` 的 durable Outbox intent 与 `01B-3B-1` 的本地 claim/NACK lifecycle 已完成；Transport publish/ACK/Receipt 仍留给 01B-3B-2。
 
-### PROD-01B-3A 实现收口 / 01B-3B 接续 Handoff
+### PROD-01B-3A / 3B-1 实现收口，3B-2 接续 Handoff
 
-- 状态：`INV-PROD-01B-3-EVENT-OUTBOX-ATOMICITY-v1` 已冻结；`01B-3A=COMPLETED/KEEP`，完整 `01B-3=IN_PROGRESS/INCONCLUSIVE`。权威完整契约位于 `Plan/Plan26.md` 的 01B-3 小节。
-- 验证报告：最终哈希、22/73/159/372 分层门禁、10 组真实产品缺陷、修复/回归、未覆盖风险和独立 Review 统一见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)；Review 不构成 Runtime Acceptance。
+- 状态：`INV-PROD-01B-3-EVENT-OUTBOX-ATOMICITY-v1` 已冻结；`01B-3A=COMPLETED/KEEP`、`01B-3B-1=COMPLETED/KEEP`，完整 `01B-3=IN_PROGRESS/INCONCLUSIVE`。权威完整契约位于 `Plan/Plan26.md` 的 01B-3 小节。
+- 验证报告：3A/3B-1 的最终哈希、分层门禁、真实产品缺陷、修复/回归、未覆盖风险和独立 Review 统一见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)；Review 不构成 Runtime Acceptance。
 - 3A 已实现的原子边界：Schema v3 后每个新 Thread mutation 自动提交 Thread+RuntimeEvent+固定 `core:runtime_events` durable Outbox intent；不存在 Event-without-Outbox 公共入口。历史 v2 Event 原子迁移为终态 `LEGACY_SUPPRESSED`，不会因升级突然发布。
-- 3B 待实现的投递边界：Outbox 使用独立 delivery key；短事务 claim 先 commit，Transport 只在事务外调用，`OutboxPublishAck` 在新事务中写 immutable receipt 并 CAS 为 `PUBLISHED`。同 aggregate 按 sequence 发布，不提供跨 aggregate 全局顺序。
-- 当前可靠性声明：3A 只承诺 durable intent，不承诺 at-least-once publication attempts。ACK 丢失重投、Consumer Inbox 去重、effectively-once acceptance 与“不称 exactly-once”的门禁均需 3B 及后续切片实现和验证。PublishAck 也不等于用户 Message DeliveryAck、工具副作用成功或 Acceptance。
-- 当前生命周期：3A 只持久化 `generation=attempt=0` 的 `PENDING` 或 `LEGACY_SUPPRESSED`。claim token、expiry/reclaim、NACK、ACK 与 Receipt 尚未实现；它们属于 3B，也不包含 Invocation heartbeat、Watchdog、Finalizer、Reaper 或通用 fencing。
-- INC / Harness Evolution：风险目录已包含 `event_without_outbox`、`outbox_without_event`、`unexpected_legacy_replay`、`publish_inside_business_transaction`、`stale_publish_ack`、重复尝试、顺序漂移和腐败。Detector/Incident/Replay 仍为 0，`INC-01` 待开始；3A 确定性轻量轨为 `COMPLETED/KEEP`，父切片仍为 `IN_PROGRESS/INCONCLUSIVE`，真实模型与 Held-out 为 `N/A`。
+- 3B-1 已实现的所有权边界：短事务 claim 先 commit，claim generation/token/publisher 形成当前本地 ownership；支持 expiry-reclaim 和当前 owner NACK，同 aggregate 顺序与跨 Scope 隔离由共享 decoder/validator 强制。
+- 3B-2 待实现的投递边界：Transport 只在 claim 事务关闭后调用，`OutboxPublishAck` 在新事务中写 immutable receipt 并 CAS 为 `PUBLISHED`。同 aggregate 按 sequence 发布，不提供跨 aggregate 全局顺序。
+- 当前可靠性声明：3A+3B-1 只承诺 durable intent 与本地短事务 ownership，不承诺 Transport 已被调用或 at-least-once publication attempts。ACK 丢失重投、Consumer Inbox 去重、effectively-once acceptance 与“不称 exactly-once”的门禁均需 3B-2 及后续切片实现和验证。PublishAck 也不等于用户 Message DeliveryAck、工具副作用成功或 Acceptance。
+- 当前生命周期：3A 创建 `generation=attempt=0` 的 `PENDING` 或 `LEGACY_SUPPRESSED`；3B-1 已实现 `PENDING↔CLAIMED`、expiry-reclaim、NACK retry 和 stale ownership 拒绝。ACK、Receipt 与 `PUBLISHED` 转换尚未实现；本地 Outbox ownership 也不等于 Invocation heartbeat、Watchdog、Finalizer、Reaper 或通用 fencing。
+- INC / Harness Evolution：风险目录已包含 `event_without_outbox`、`outbox_without_event`、`unexpected_legacy_replay`、`publish_inside_business_transaction`、`stale_publish_ack`、重复尝试、顺序漂移和腐败。Detector/Incident/Replay 仍为 0，`INC-01` 待开始；3A 与 3B-1 确定性轻量轨均为 `COMPLETED/KEEP`，父切片仍为 `IN_PROGRESS/INCONCLUSIVE`，真实模型与 Held-out 为 `N/A`。
 - 证据演进：首轮结构卡 hash=`6d8684486ced5a96c84275d6e0183f292bba7bae885ce5899bb325846e095826`，执行 3 项并准确暴露 v2/表缺失；Review 后的显式 Policy 红卡 hash=`8452ba5f2add07c3cd30e75b5c3ce26ceb941984d58f15e2ab5d20f5e3ab948a`，当时执行 5 项、5 failures。它们是历史 EXPECTED_RED，不是产品事故。实现首绿后独立挑战真实击穿并关闭 10 组产品缺陷；最终 adversarial 22/22、directed 73/73、Runtime 159/159、全量 372 项中 368 通过且 4 skip，compileall/diff-check 通过。
-- 下一动作：先冻结 `01B-3B` claim/publish/NACK/ACK/Receipt 的最小 API 与 EXPECTED_RED，再实现事务外 Transport、stale ACK 门禁和投递恢复；不得从 3A 冒领可靠发布。
+- 3B-1 验证摘要：权威报告保留 7 项 EXPECTED_RED 历史、首绿、4 组真实产品缺陷、跨进程/`os._exit` 恢复、最终门禁和独立 Review；决定仅为 `KEEP (3B-1 only)`，不构成 Runtime Acceptance。
+- 下一动作：冻结 `01B-3B-2` Transport publish/ACK/Receipt 的最小 API 与 EXPECTED_RED，再实现事务外 Transport、stale ACK 门禁和投递恢复；不得从 3B-1 冒领可靠发布。
 
 必做故障演练：消息或副作用已提交但完成事件未写入时 `kill -9`、重复投递、错误 Thread/Session 绑定、取消与完成竞态、SQLite 锁竞争/磁盘异常和孤儿 Invocation 恢复。合法普通对话与当前 Coding 纵向切片都必须有对照，避免把 build/test 误设为所有 Thread 的完成条件。
 
@@ -672,7 +674,7 @@ git status --short
 - 分支：`codex/multimodal-coding-mvp`
 - 远端：`git@github.com:donbblu/MultiAgent.git`
 - 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`
-- 当前开发快照：`HEAD=b864b20093f20077424fc81a564ecffecbf7ecb0`，工作区为 dirty；01B-2/3A 冻结实现与测试 hash、验证命令、历史 EXPECTED_RED、最终门禁和独立 Review 见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。新增 `state_event.py`、Outbox/Thread-Event 测试与其他实现/文档尚未提交，因此当前不是可由单一 commit 精确重现的 clean release baseline。
+- 当前开发快照：`HEAD=99033147fa0583b6573b8bace58e75fbffda859f`，工作区为 dirty；01B-2/3A/3B-1 的冻结实现与测试 hash、验证命令、历史 EXPECTED_RED、最终门禁和独立 Review 见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。3B-1 生产实现、公开导出、测试与收口文档尚未提交，因此当前不是可由单一 commit 精确重现的 clean release baseline。
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒

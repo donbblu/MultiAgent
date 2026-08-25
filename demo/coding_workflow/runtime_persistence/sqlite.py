@@ -195,6 +195,8 @@ class RuntimePersistenceFaultPoint(str, Enum):
     STATE_EVENT_AFTER_STATE_WRITE = "state_event_after_state_write"
     STATE_EVENT_AFTER_EVENT_APPEND = "state_event_after_event_append"
     STATE_EVENT_AFTER_OUTBOX_ENQUEUE = "state_event_after_outbox_enqueue"
+    OUTBOX_AFTER_CLAIM_UPDATE = "outbox_after_claim_update"
+    OUTBOX_AFTER_NACK_UPDATE = "outbox_after_nack_update"
 
 
 class RuntimeUnitOfWorkState(str, Enum):

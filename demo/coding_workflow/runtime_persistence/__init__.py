@@ -29,6 +29,23 @@ from .sqlite import (
     RuntimeUnitOfWorkStateError,
     SQLiteRuntimeDatabase,
 )
+from .outbox import (
+    OutboxClaim,
+    OutboxClaimOwnership,
+    OutboxClaimTokenFactory,
+    OutboxClock,
+    OutboxNackErrorCode,
+    OutboxNackResult,
+    OutboxSnapshot,
+    OutboxState,
+    RuntimeOutboxAttemptExhaustedError,
+    RuntimeOutboxClockError,
+    RuntimeOutboxLifecycleError,
+    RuntimeOutboxOwnershipLostError,
+    RuntimeOutboxTokenFactoryError,
+    RuntimeOutboxValidationError,
+    SQLiteOutboxLifecycleStore,
+)
 from .state_event import (
     RuntimeEventConflictError,
     RuntimeEventSequenceConflictError,
@@ -45,6 +62,14 @@ from .state_event import (
 
 __all__ = [
     "OutboxPolicy",
+    "OutboxState",
+    "OutboxNackErrorCode",
+    "OutboxSnapshot",
+    "OutboxClaimOwnership",
+    "OutboxClaim",
+    "OutboxNackResult",
+    "OutboxClock",
+    "OutboxClaimTokenFactory",
     "RUNTIME_DB_COMPONENT",
     "RUNTIME_DB_SCHEMA_VERSION",
     "RuntimePersistenceError",
@@ -54,6 +79,12 @@ __all__ = [
     "RuntimeSchemaCorruptionError",
     "RuntimeDatabaseIntegrityError",
     "RuntimeOutboxConfigurationError",
+    "RuntimeOutboxLifecycleError",
+    "RuntimeOutboxValidationError",
+    "RuntimeOutboxOwnershipLostError",
+    "RuntimeOutboxClockError",
+    "RuntimeOutboxTokenFactoryError",
+    "RuntimeOutboxAttemptExhaustedError",
     "RuntimeTransactionError",
     "RuntimeDatabaseBusyError",
     "RuntimeUnitOfWorkStateError",
@@ -76,4 +107,5 @@ __all__ = [
     "ThreadEventApplyResult",
     "ThreadEventMutation",
     "SQLiteThreadEventStore",
+    "SQLiteOutboxLifecycleStore",
 ]

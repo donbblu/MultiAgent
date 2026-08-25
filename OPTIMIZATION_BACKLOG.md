@@ -4,7 +4,7 @@
 
 - 最后核对：2026-08-25
 - 当前批次：`PROD-01B` 进行中；`PROD-01B-1` 事务底座与 `PROD-01B-2` Thread+RuntimeEvent 原子纵切已完成
-- 当前动作：`PROD-01B-3A=已完成/KEEP`；完整 `PROD-01B-3` 仍进行中，下一步是 `01B-3B` claim/publish/NACK/ACK/Receipt
+- 当前动作：`PROD-01B-3A` 与 `PROD-01B-3B-1=已完成/KEEP`；完整 `PROD-01B-3` 仍进行中，下一步是 `01B-3B-2` Transport publish/ACK/Receipt
 - 权威验证证据：[`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)
 
 ## 维护规则
@@ -17,7 +17,7 @@
 - 每批结束必须记录修改文件、自动化测试、无法自动完成的手动检验和下一批内容。
 - 模型输出始终是不可信输入。文件写入、命令、浏览器、状态和最终质量门禁由 Runtime 控制。
 - 现有 Coding、VisionForge 和多模态 Intake 测试是兼容回归资产，必须尽可能保持通过。
-- Harness Evolution Protocol 是项目内部跨批次实验门禁，不是新的生产批次；它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。当前仍在 `PROD-01B`，`PROD-01B-2` 与 `01B-3A` 已按确定性轻量轨 `KEEP`；完整 `01B-3` 保持 `IN_PROGRESS/INCONCLUSIVE`，发布生命周期尚未实现。
+- Harness Evolution Protocol 是项目内部跨批次实验门禁，不是新的生产批次；它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。当前仍在 `PROD-01B`，`PROD-01B-2`、`01B-3A` 与 `01B-3B-1` 已按确定性轻量轨 `KEEP`；完整 `01B-3` 保持 `IN_PROGRESS/INCONCLUSIVE`，Transport publish/ACK/Receipt 尚未实现。
 - 影响 Agent 行为的 Harness 修改必须附版本化 Harness Evolution 实验记录：Baseline、失败证据、单一 Hypothesis/候选变更、固定控制项、Validation、隔离 Held-out、代价、回归和保留/回滚决定。无可定位 Run/Trial/Evidence 的数字必须标注“示例（非实测）”，脚本/Fake Model 结果不得冒充真实模型收益。
 - 当前只采用 `L1 人工评测驱动演进`；`L2 Agent 辅助评测驱动演进` 是后续受限候选能力，`L3 生产自主 Harness 演进` 当前非目标。未严格复现官方协议时只能称内部 Harness Evolution Experiment/Pilot，不得宣称 Evo-Bench 成绩。
 
@@ -37,7 +37,7 @@ Core 只接受受控 Message、Artifact、Handoff 和工具请求。模型不能
 |---|---|---|---|---|
 | PROD-00-CHARTER | P0 | 已完成 | Harness 产品定位、Runtime 领域模型、Core/Plugin 边界和场景化 Acceptance | `Plan26`、HANDOFF、Backlog、Learning Path 和事故计划一致；不改 Runtime 行为 |
 | PROD-01A | P0 | 已完成 | 最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent` 协议 | 版本化往返、ID/因果/状态不变量、跨 Scope 引用拒绝、Message/Artifact 单一事实源和 Coding 协议映射测试齐全；Invocation 同步冻结 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 与资源引用；不实现 Store、调度、Mailbox、Backend、Gateway、Context、Web 或执行接入 |
-| PROD-01B | P0 | 进行中 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | `PROD-01B-1` 事务底座、`PROD-01B-2` concrete Thread current-state + RuntimeEvent 原子纵切和 `01B-3A` Policy/Schema v3/durable intent 原子三写已完成；下一步 `01B-3B` claim/publish/NACK/ACK/Receipt。终局仍要求状态表为当前真相源，Journal 为审计，Snapshot 为兼容检查点，状态/Event/Outbox/预算预留结算原子提交 |
+| PROD-01B | P0 | 进行中 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | `PROD-01B-1` 事务底座、`PROD-01B-2` concrete Thread current-state + RuntimeEvent 原子纵切、`01B-3A` durable intent 原子三写和 `01B-3B-1` 本地 claim/NACK lifecycle 已完成；下一步 `01B-3B-2` Transport publish/ACK/Receipt。终局仍要求状态表为当前真相源，Journal 为审计，Snapshot 为兼容检查点，状态/Event/Outbox/预算预留结算原子提交 |
 | PROD-01C | P0 | 待开始 | durable enqueue、幂等、claim/lease/heartbeat、fencing、级联取消、Finalizer/Reaper 与恢复 | kill/retry/cancel 竞态不重复副作用，孤儿 Invocation 和残留 Lease 可幂等回收；进程内路径只承诺逻辑失权，Backend/进程硬取消不越界到本批 |
 | PROD-01D | P0 | 待开始 | 将现有 Task/Scenario/Coding 执行适配到 Thread，并提供 Web 持久查询 | 现有回归尽可能全通过；普通 Thread 不被要求 build/test；Web 不假装已有完整 Agent 泳道 |
 | PROD-01E | P0 | 待开始 | 完成 `INC-01`，并启动四组 `INC-02` Observe/Shadow 事故链 | 覆盖 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败及合法对照；INC-02 仅标为部分 Shadow |
@@ -461,8 +461,8 @@ PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器
 
 ## 当前基线
 
-- 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`；当前代码 `HEAD=b864b20093f20077424fc81a564ecffecbf7ecb0` 且工作区为 dirty，01B-2 与 01B-3A 实现/测试尚未提交，正式可复现基线仍需绑定后续 clean checkpoint。
-- 01B-2 冻结绿色基线（2026-08-25）：专项 68/68、Runtime 132/132；当时默认全量共 345 项，其中 341 项通过、4 项真实浏览器类默认跳过、0 failure、0 error。随后历史 01B-3 红卡曾有 5 项 EXPECTED_RED；该阶段已经结束。当前 3A 最终门禁为 adversarial 22/22、directed 73/73、Runtime 159/159、默认全量 372 项中 368 通过、4 跳过，并实际发现和关闭 10 组产品缺陷。受测 hash、精确命令、独立 Review、历史/当前证据和非声明统一见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。
+- 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`；当前代码 `HEAD=99033147fa0583b6573b8bace58e75fbffda859f` 且工作区为 dirty，01B-3B-1 实现/测试尚未提交，正式可复现基线仍需绑定后续 clean checkpoint。
+- 01B-2、3A 与 3B-1 的历史绿色基线、EXPECTED_RED、最终门禁和真实产品缺陷均保存在权威报告；当前 3B-1 已完成跨进程/强退恢复与独立 Review。受测 hash、精确命令、计数、历史/当前证据和非声明统一见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。
 - 浏览器闭环：批次 2 的 5 个浏览器测试、批次 3 的 6 个纵向链路测试、批次 4 的 6 个修复闭环测试和批次 6 的固定参考图渲染测试共 18 项显式通过。
 - Vue 构建：固定 Vue 3.5.40、Vite 7.3.6、`@vitejs/plugin-vue` 6.0.8、Playwright 1.62.0；`pnpm run build` 已通过。
 - 当前环境 PATH 未提供 Node/npm；已使用 Codex 工作区 Node 24.19.0 与 pnpm 11.19.0 完成锁文件和构建验证。
