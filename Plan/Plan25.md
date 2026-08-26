@@ -992,4 +992,4 @@ PROD-01A 的事故增量是一层可验证协议地基：Event payload 深冻结
 - `PROD-06`：按交互/协作/多模态/插件分层统计，接入容量、背压、成本和长期运行事故，并启动 INC-05；
 - `PROD-07`：完成 Incident Operations、Game Day、升级、迁移和事故运营。
 
-`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量，`PROD-01B-1` 已完成事务地基，`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切，`PROD-01B-3A` 已完成 durable Outbox intent 原子三写，`PROD-01B-3B-1` 已完成本地 claim/NACK/expiry-reclaim；下一动作是冻结 `01B-3B-2` 红卡，再实现 Transport publish/ACK/Receipt、at-least-once publication attempt 与 stale ACK 门禁，后续继续建立完整事实链，并在 `PROD-01E` 完成 INC-01 Observe-only。本文没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。
+`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量，`PROD-01B-1` 已完成事务地基，`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切，`PROD-01B-3A` 已完成 durable Outbox intent 原子三写，`PROD-01B-3B-1` 已完成本地 claim/NACK/expiry-reclaim。用户已批准先完成 `SEC-EXEC-01 local_trusted_execution/v1` 的本地执行安全门禁，再冻结增强版 `01B-3B-2` 红卡并实现 Transport publish/ACK/Receipt、at-least-once publication attempt 与 stale ACK 门禁；后续继续建立完整事实链，并在 `PROD-01E` 完成 INC-01 Observe-only。SEC 的开发期故障证据不提前完成 `INC-01`，本文也没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。

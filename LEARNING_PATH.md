@@ -74,7 +74,7 @@
 
 ### PROD-01：持久交互与可恢复执行
 
-严格按 01A～01E 学习：01A 已实现 Scope/Thread/Turn/Message、通用 AgentProfile/Role、AgentSession、Invocation、Outcome/Acceptance 和 Event 协议；01B 正在实施，其中 01B-1 已完成 SQLite Migration/UoW，01B-2 已完成 Thread+RuntimeEvent 原子提交，01B-3A 已完成 durable intent 原子三写，01B-3B-1 已完成本地 claim/NACK lifecycle，下一步冻结并实现 01B-3B-2 Transport publish/ACK/Receipt；01C 实现 durable Invocation；01D 接入现有 Task/Scenario/Coding 和 Web 查询；01E 完成 INC-01 并启动四组 INC-02 Shadow。
+严格按修订后的顺序学习：01A 已实现 Scope/Thread/Turn/Message、通用 AgentProfile/Role、AgentSession、Invocation、Outcome/Acceptance 和 Event 协议；01B 正在实施，其中 01B-1 已完成 SQLite Migration/UoW，01B-2 已完成 Thread+RuntimeEvent 原子提交，01B-3A 已完成 durable intent 原子三写，01B-3B-1 已完成本地 claim/NACK lifecycle。用户已批准先完成 `SEC-EXEC-01 local_trusted_execution/v1`，再实现增强版 01B-3B-2 Transport publish/ACK/Receipt；随后 01C 实现 durable Invocation，01D 接入现有 Task/Scenario/Coding 和 Web 查询，01E 完成 INC-01 并启动四组 INC-02 Shadow。
 
 本阶段不再从 Plan 与 HANDOFF 拼接测试证据：`PROD-01B` 的测试设计、运行结果、真实缺陷、修复、回归、Review 与决策统一学习和维护在 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。
 
@@ -84,7 +84,7 @@
 
 还要学会把“协作身份”“一次执行”和“机器资源”分开：用户长期看到的是 Thread，AgentInstance/AgentSession 保存可恢复身份与连续性；任务专用 Specialist 是同一 Thread 下的 ChildInvocation/Attempt，不是偷偷创建的新 Thread，也不是常驻模型进程。Invocation 同时有执行状态和清理状态；`SUCCEEDED` 只说明候选结果已经可靠保存，只有执行进入终态、清理达到 `REAPED`、活动 Grant/Lease/ChildInvocation 归零并拒绝旧 fencing token 后，执行域才真正 closed。
 
-01A 只冻结 parent/child、双状态轴、终止原因、deadline、lease、fencing 和资源引用。01C 才实现持久取消、级联取消、Watchdog、幂等 Finalizer/Reaper 和孤儿恢复；02 才实现模型流、连接和 CLI 进程组的硬取消；03 才补强容器/进程、孙进程、短期凭据、Workspace 和端口清理。进程内线程只能证明逻辑失权，不能伪称已经物理终止。
+01A 只冻结 parent/child、双状态轴、终止原因、deadline、lease、fencing 和资源引用。当前插入的 `SEC-EXEC-01` 先完成可信本地子进程的版本化 Profile、进程组监督、同步清理屏障、最小环境和输出脱敏；它不建立持久 Invocation 或生产沙箱。01C 才实现持久取消、级联取消、Watchdog、幂等 Finalizer/Reaper 和孤儿恢复；02 仍负责 Provider/模型请求流、连接和硬取消；03 再补完整 CapabilityGrant、Secret、网络、容器/进程与生产隔离。进程内线程只能证明逻辑失权，可信本地进程监督也不能伪称 OS containment。
 
 最小练习不是“修一个 Bug”，而是：
 

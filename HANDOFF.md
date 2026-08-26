@@ -16,7 +16,35 @@
 凡修改会影响 Agent 行为的 Harness 机制，严格执行“Harness Evolution Protocol / 评测驱动演进规则”，
 记录 Baseline、失败证据、单一可证伪假设、Validation/Held-out 和保留/回滚结论；
 示例数字、脚本/Fake Model 结果不得写成真实模型或生产实测。
+继续前读取 VerificationReports/STEP-LOG.md 的最后条目；任何会改变契约、实现、验证、Review 或 checkpoint 的逻辑步骤，
+必须先追加 PRE_REGISTER，完成后追加 ACTUAL，审查与里程碑分别追加 REVIEW/CHECKPOINT；失败和缺失证据也必须如实保留。
 ```
+
+## 项目 Step Log（后续任务强制执行）
+
+唯一项目级追加式过程账本是 [`VerificationReports/STEP-LOG.md`](VerificationReports/STEP-LOG.md)，权威规则见 [`Plan/Plan26.md`](Plan/Plan26.md) 的 `Append-only Project Step Log Protocol`。它记录每个逻辑步骤的 What / Why / Expected Effect / Actual Effect / Command / Result / Artifact Hash / Review / Status / Git Checkpoint；不记录私密推理，也不替代 VerificationReport、Harness Evolution、INC/RuntimeEvent、`KEEP` 或 Runtime Acceptance。
+
+后续任务开始时必须读取末尾条目并检查 base HEAD/worktree；修改前追加 `PRE_REGISTER`，动作结束后在进入下一状态前追加 `ACTUAL`，收到独立审查后追加 `REVIEW`，里程碑追加 `CHECKPOINT`。失败候选不得删除或改写，只能通过新候选或 `CORRECTION + supersedes_entry_id` 续记；缺失原始证据必须写 `MISSING/UNKNOWN`，未提交只能写 `WORKTREE_ONLY/PENDING`。本轮正式序列从 `TRACE-20260826-001` 开始，当前仍未创建本批 Git commit。
+
+## 新窗口接续摘要（2026-08-25，方案 A 已批准）
+
+以下 `HandoffProposal` 是本次窗口切换的最小接续信息。它记录已经批准的顺序修订，但不创建 RouteEdge、Invocation、权限、任务完成或 Runtime Acceptance。
+
+- **objective**：在不重开已完成 `PROD-01B-1/01B-2/01B-3A/01B-3B-1` 的前提下，从已冻结且独立预审通过的 A～H EXPECTED_RED 进入 `SEC-EXEC-01` 统一本地执行边界实现。
+- **target_role**：下一窗口的本地执行安全 Implementer/Reviewer；按冻结行为 Oracle 实现统一 Supervisor，再做独立 POSIX 攻击与最终 Review。
+- **public_rationale**：技术栈方向没有错；主要问题是新 `runtime_persistence` 尚未接入 CLI/Web 主链，而当前执行入口存在已验证的凭据继承和清理语义缺口。先关闭本地执行风险，再继续 Outbox 投递闭环，不需要更换 Python、SQLite 或自研 Harness。
+- **completed_work**：`01B-3B-1` 本地 claim/NACK/expiry-reclaim 已实现、验证、提交并推送；用户于 2026-08-25 正式选择方案 A，Plan/Backlog/HANDOFF/README/Learning Path 已同步，3B-1 clean checkpoint 已追加。`SEC-EXEC-01` 的 8 项结构红卡与 17 项 mock A～H 行为红卡均已冻结：behavior hash=`63cb6660e72312e0ee3e085056566966ce3e725e191b6ff79001fa13aaf4474d`，fresh 运行 `17 failures / 0 errors / 0 skips`，behavior-first 合并为 `25 failures / 0 errors / 0 skips`；独立定版审查 `approve`、blocking finding 0。既有安全相关基线重跑 101 项通过、4 skip；POSIX 安全 helper 21/21 通过，但真实 workload 仍因 child 归属与 watchdog join blocker 被禁止。`01B-3B-2` 仍必须完成，因为现有 `PENDING/CLAIMED` 生命周期仍需由 ACK/Receipt/PUBLISHED 闭合；本次顺序修订不删除它。
+- **evidence_refs**：当前代码提交 `f66e71e02c206dd361f18f58f669824ae7de6cab`（`feat: add outbox claim lifecycle`）；3B-1 权威证据见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md) 4.8；`SEC-EXEC-01` 红卡及后续收口证据见 [`VerificationReports/SEC-EXEC-01.md`](VerificationReports/SEC-EXEC-01.md)；主链仍使用 legacy Store 见 [`dag_runner.py`](demo/coding_workflow/dag_runner.py)；执行环境风险见 [`coding_agent_cli.py`](demo/coding_agent_cli.py)、[`workspace.py`](demo/coding_workflow/workspace.py) 与 [`browser.py`](demo/coding_workflow/visionforge/browser.py)；决策依据见 [`SecurityProblem.md`](SecurityProblem.md)。
+- **decisions_and_constraints**：唯一顺序冻结为 `SEC-EXEC-01 → 增强版 01B-3B-2 → BudgetLedger/Acceptance/查询恢复`。不重开完成切片、不改写历史 VerificationReport、不原地修改已发布 Schema v3/checksum；继续保留 Python 模块化单体、自研 Harness/Runtime、SQLite WAL 和现有 unittest。不引入 PostgreSQL、真实 Broker、Temporal、Kubernetes、向量数据库或第二套 Agent Runtime。
+- **assumptions_and_uncertainty**：`SEC-EXEC-01` 不是纯 3B-2 单元实现的技术依赖，但已成为再次运行真实模型生成代码、执行候选代码或进入 `PROD-01D` 前的 P0 安全门禁。当前只承诺 macOS/POSIX 单用户可信本地执行，不承诺生产沙箱。
+- **open_questions**：增强版 3B-2 的 first-party Sink 精确名称/存储形态；1k/10k Outbox 的数据分布、机器 manifest 和数值阈值；`ENG-01`（`pyproject.toml`、Python 版本、依赖锁、CI）是否另行推进。它们必须在各自实现红卡前预注册，不能在本 Amendment 中伪装成已批准细节。
+- **next_action**：实现单一 `local_trusted_execution/v1` Profile/Admission/Supervisor 语义，让 Core Validator、Legacy `ProjectWorkspace.run` 和 VisionForge 前台/后台入口全部委托，并先让已冻结的 8 项结构红卡与 17 项 mock 行为红卡转绿。真实 POSIX workload 继续禁跑，直到 fixture 的 child 稳定归属与 watchdog join blocker 被单独修复并复审。
+- **expected_output**：版本化 Profile/digest/admission、可信绝对 executable、显式最小环境、统一进程组终止与清理核对、Workspace quarantine、统一限长/脱敏结果；随后按首绿 → 独立 POSIX 攻击 → 正常/全量回归 → 最终 Review 收口。
+- **acceptance_criteria**：结构卡不能靠空壳或字符串注释通过；A～H 行为 Oracle、正常路径和 no-bypass manifest 全部可执行，清理失败 fail-closed；既有 Result/Artifact 兼容；真实模型、秘密、外部网络和不可逆副作用均不使用；最终 Review blocking finding 为 0 前不得 `KEEP`。
+- **required_capabilities**：文档与 Git 审计、Python unittest、受控假 sentinel/临时 Workspace/loopback 故障夹具、独立 Review；后续 3B-2 还需要 SQLite/Outbox、持久 Sink 和容量基线。
+- **resource_scope**：文档/红卡小批已收口；下一小批仅修改已冻结安全契约列出的仓库内执行入口、统一实现、Composition Root 和对应测试。仍不授权真实模型、生产秘密、外部网络、真实副作用、依赖安装或宿主提权。
+- **budget_or_deadline**：未设置外部调用预算或期限；继续一次只推进一个小批次。
+- **risks**：显式最小环境可能暴露 Python/Node/Playwright 的隐式依赖；父环境与工具运行后自生成环境必须在红卡中区分；`trusted_local` 确认及其 Workspace/input/profile digest 绑定必须由 Composition Root 形成，不能由模型 payload 提供；安全范围不得膨胀成未立项的生产沙箱。
 
 ## 项目目标与定位
 
@@ -208,11 +236,12 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 - **evidence_refs**：`demo/coding_workflow/command_validators.py:93-194`、`demo/coding_workflow/visionforge/browser.py:139-273`、`demo/coding_workflow/workspace.py:24-31,91-118`、`demo/coding_workflow/policy.py:8-31`、`demo/tests/test_command_validators.py:78-107`、`demo/tests/test_visionforge_browser.py:43-75` 与本文件“当前限制”。
 - **decisions_and_constraints**：
   - **适用信任域**：单用户、本人控制的本机；仓库、依赖、锁文件及 build/test/dev/browser 脚本均已人工确认可信；使用可丢弃 Workspace；Browser 只访问 loopback；执行进程不需要真实秘密、外部账号、非 loopback 网络或真实外部副作用。每次启动前由 Composition Root 记录不可由模型生成的 `trusted_local` 确认，并绑定 Workspace/输入摘要与 Profile digest；缺失、过期或摘要不匹配都不执行。
+  - **最小可测试 admission seam**：包根只冻结一个 issuer 名称 `issue_trusted_local_confirmation(*, workspace_digest, input_digest, profile_digest, expires_at_monotonic)`；具体 token 类型与内部字段、内部模块及 Supervisor/Profile 类名均不冻结。`ControlledCommandRunner.run`、`ProjectWorkspace.run`、`BrowserProcessRunner.run/start_background` 只新增可缺省的 `trusted_local=` 关键字语义，使缺失值能到达 admission 并返回 `SANDBOX_REQUIRED`，而不是先被 Python `TypeError` 短路。当请求除缺少确认外已经完全合法时，该结构化拒绝的 `confirmation_request` 映射必须且只含 Runtime 实际计算的 `{workspace_digest,input_digest,profile_digest}`，三个值均为 64 位小写十六进制；拒绝对象仍可另带 `code/audit` 等结构化字段。Composition Root 只能用这份 challenge 调 issuer 后原样重试，测试不猜测或冻结 digest 的私有 preimage/序列化格式。非法 argv、越界路径、非 loopback 网络、秘密或真实副作用请求不得获得 confirmation challenge。issuer token 必须 opaque、不可由 bool/dict/JSON 或模型 payload 重建、绑定 Runtime 内部可信 provenance 且一次性消费；顺序或并发复用跨四入口合计最多一次 spawn。公开可导入不等于模型拥有签发权，Composition Root 只有在用户确认当前可信范围且三个 digest/期限来自这次 Runtime challenge 后才能调用 issuer。
   - **覆盖入口**：Core build/test/CLI Validator、VisionForge build/dev/browser 的前台与后台进程、Legacy `ProjectWorkspace.run`，以及不主动 `setsid`、double-fork 或 daemonize、始终留在同一受管进程组的子孙进程。仓库内不得保留绕过统一监督语义的其他 `subprocess.Popen/run` 执行入口。
   - **当前承诺**：独立宿主进程/进程组；从空映射构造的显式环境；受信任绝对 executable 和完整 argv 精确门禁；`shell=False`、`stdin=DEVNULL` 和非授权 FD 不继承；Harness 文件 API 的绝对路径、`..`、保留路径和 symlink 越界拒绝；版本化 deadline、TERM grace、输出上限；同组进程和受管端口/句柄的同步清理。
   - **环境 Profile**：公共环境名固定为 `PATH/LANG/LC_ALL/HOME/TMPDIR`，其中 `PATH` 来自 Runtime 冻结路径，`HOME/TMPDIR` 是本次运行私有目录；Python Profile 只额外允许 `PYTHONDONTWRITEBYTECODE/PYTHONUNBUFFERED`。模型/云密钥、proxy、`SSH_AUTH_SOCK`、`PYTHONPATH`、`NODE_OPTIONS`、`LD_*/DYLD_*` 和其他父环境变量一律不继承。工具确需新增非秘密变量时必须新建 Profile 版本并同步正常/负向测试，不能直接读取 `os.environ`。
   - **命令 Profile**：每个入口必须绑定版本化 Profile，包含受信任绝对 executable、完整 argv、Workspace cwd、单调 deadline、TERM grace 和输出上限；调用方只能收紧，不能放宽。任一字段缺失、Profile 漂移或 argv 不完全匹配，必须在 spawn 前 fail-closed。
-  - **清理屏障**：success、failure、timeout、cancel、readiness failure、后台 stop 和异常全部进入同一 Finalizer：`TERM process group → 等待 Profile grace → KILL process group → wait/reap 直接子进程 → 核对 owned PID/PGID/port/handle`。Supervisor API 只有在核对完成后才能返回；无法证明清理完成时返回固定 `CLEANUP_FAILED`，不得返回业务成功，该 Workspace 在人工确认前不得启动新进程。
+  - **清理屏障**：success、failure、timeout、cancel、readiness failure、后台 stop 和异常全部进入同一 Finalizer：`TERM process group → 等待 Profile grace → KILL process group → wait/reap 直接子进程 → 核对 owned PID/PGID/port/handle`。Supervisor API 只有在核对完成后才能返回；无法证明清理完成时返回固定 `CLEANUP_FAILED`，不得返回业务成功，该 Workspace 在人工确认前不得启动新进程。失败结果必须提供 Runtime 生成的 `quarantine_id`、正整数 `quarantine_generation`、结构化 `cleanup_evidence` 与 `cleanup_evidence_digest`。解除隔离是只供 Composition Root/operator 使用的两阶段管理面：包根 `request_local_execution_recovery(*, quarantine_id)` 先重新核对全部 owned PID/PGID/port/handle；仍有资源或无法证明消失时保持隔离且不发 challenge，证明完成时返回 `recovery_request`，该映射必须且只含 `quarantine_id/quarantine_generation/workspace_digest/input_digest/profile_digest/cleanup_evidence_digest/recovery_evidence_digest`。调用方把其中三个通用 digest 原样交给既有 issuer 取得 opaque、限时、一次性 token，再调用包根 `recover_local_execution_quarantine(*, quarantine_id, recovery_confirmation)`；Runtime 必须在同一线性化临界区再次核对当前 owned resources、generation 与两份 evidence digest，过期、复用、并发资源再出现或 stale generation 均拒绝。Admission token 与 recovery token 必须做域分离，任何跨协议误用都 fail-closed。不得暴露无授权、无证据绑定的裸 clear 开关，测试也不得猜测两份 evidence 的 canonical preimage。
   - **明确不承诺**：独立低权限 UID/GID、容器/VM、OS 文件系统 containment、默认断网、CPU/内存/PID/磁盘硬配额、真实 Secret Broker、持久 fence/Reaper、Supervisor 崩溃恢复、恶意依赖防护，以及脱离进程组的 `setsid`/double-fork/daemon 或敌对 symlink/TOCTOU/hardlink 攻击。`cwd=Workspace` 和 Harness 路径测试不得被描述成 OS 沙箱。
   - **越界停止规则**：遇到陌生或可能恶意的仓库/依赖/脚本、多用户、真实秘密进入执行进程、非 loopback 网络、真实外部副作用或上述“不承诺”能力成为必需条件时，固定返回 `SANDBOX_REQUIRED` 并拒绝启动；不得回退为普通宿主执行。
 - **frozen_profile_manifest**：以下是当前版本的权威默认值；每次实际运行还要把解析后的绝对 executable、完整 argv、cwd、环境 name/value-source、限制与输入摘要组成 canonical JSON 并记录 `profile_digest`。调用方可以缩短 deadline 或降低输出上限，其他改变都必须升级 `local_trusted_execution` 版本。
@@ -228,20 +257,20 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
   Runtime 冻结 PATH 为 `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`，但只允许先在受信任 Composition Root 解析并写入 Profile 的绝对 executable；Workspace 内同名文件不能参与解析。`HOME/TMPDIR` 每次运行唯一创建为 `0700`，子进程使用 `umask 077`，并在清理屏障内回收。`close_fds=True`，除 stdin/stdout/stderr 和 Profile 显式登记句柄外不得传递 FD。持久化文本超过上限时固定保留前后各一半，插入截断字符数标记，并同时保存原长度与原文 SHA-256，随后通过统一脱敏边界；本地可信版本不承诺对无限原始输出提供 OS 级内存配额。
 - **assumptions_and_uncertainty**：当前支持口径固定为 macOS/POSIX 本地可信执行；模型/Provider Client 位于受信任控制面且不属于子进程 Profile。对模型远端取消和费用停止不作当前版本承诺。
 - **open_questions**：当前版本无会改变上述产品边界的开放问题。任何新增环境变量、命令入口、平台、网络、秘密或副作用都是显式版本变更，必须先修订 Profile、风险说明和验收，不得在实现中静默决定。
-- **next_action**：保持 `PROD-01B` 当前顺序。用户明确启动本地安全 Patch 后，统一三类执行入口和输出脱敏边界，并按下列 A～H 验收；在全部通过前继续标记“契约已冻结、实现未验收”。
+- **next_action**：用户已批准方案 A，本 Patch 现在是再次运行真实模型生成代码、执行候选代码或进入 `PROD-01D` 前的当前 P0 门禁。下列 A～H 的结构与 mock 行为 EXPECTED_RED 已冻结并通过独立预审；下一小批统一三类执行入口和输出脱敏边界，使其转绿。在全部门禁通过前继续标记“契约已冻结、实现未验收”。
 - **expected_output**：版本化 Command/Environment Profile、单一监督语义、迁移后的全部前台/后台入口、冻结的正常路径 manifest、结构化拒绝/清理结果、负向和正常路径测试证据；不包含生产 Sandbox、真实密钥、真实外部副作用或未经授权的宿主配置修改。
 - **acceptance_criteria**：
-  - **A / 信任域 admission**：缺失 `trusted_local`、确认由模型产生、Workspace/输入摘要变化，或请求真实秘密、非 loopback 网络/副作用、陌生依赖时，必须在 spawn 前返回 `SANDBOX_REQUIRED`；spawn/PID/副作用计数均为 0。合法确认绑定 Profile digest 后有正常执行对照。
-  - **B / 环境、FD 与秘密**：对每个前台/后台入口在父环境注入唯一 sentinel，以及 fake provider key、proxy、SSH 和语言注入变量；子进程枚举环境与可用 FD。未列入 Profile 的 name/value 在 child、stdout/stderr、server log、Artifact、Event、SQLite 和下一轮模型输入 fixture 中命中数必须为 0；已列入变量与 `profile_digest` 完全一致；除登记句柄外可继承 FD 为 0。每次 `HOME/TMPDIR` 路径唯一、权限符合 Profile，清理屏障返回后均不存在。
+  - **A / 信任域 admission**：缺失 `trusted_local`、确认由模型产生、Workspace/输入摘要变化，或请求真实秘密、非 loopback 网络/副作用、陌生依赖时，必须在 spawn 前返回 `SANDBOX_REQUIRED`；spawn/PID/副作用计数均为 0。仅“其他检查全部合法、只缺确认”的拒绝可返回 Runtime 计算的三个 digest challenge；合法确认绑定该 challenge 后有正常执行对照，Workspace/input/profile 任一单独漂移、顺序复用或并发复用都仍为零 spawn。
+  - **B / 环境、FD 与秘密**：对每个前台/后台入口在父环境注入唯一 sentinel，以及 fake provider key、proxy、SSH 和语言注入变量；在被 exec 的首个受控探针中枚举初始继承环境与可用 FD。未列入 Profile 的父环境 name/value 在探针、stdout/stderr、server log、Artifact、Event、SQLite 和下一轮模型输入 fixture 中命中数必须为 0；已列入的初始变量与 `profile_digest` 完全一致；除登记句柄外可继承 FD 为 0。`pnpm/node` 等受信任工具在 exec 后自行生成的内部变量必须通过正常路径 manifest 单独记录，不得误算为父环境继承，也不得包含父 sentinel 或秘密。每次 `HOME/TMPDIR` 路径唯一、权限符合 Profile，清理屏障返回后均不存在。
   - **C / 命令与 Profile**：表中每个精确登记 argv 可执行；相同 executable 下任一参数变化、空 registry、字段缺失、digest 漂移、超出上限、shell 元字符和 Workspace 内同名伪 executable 均在 spawn 前拒绝，spawn counter 与 Workspace 外 canary 不变。
   - **D / Workspace API**：Harness 文件 API 对绝对路径、`..`、保留路径和 symlink escape 全部拒绝，Workspace 外 canary 内容与哈希不变；Browser 的 cwd、log、spec、result 和 screenshot 路径也必须解析到获准 Workspace/Runtime 目录。对子进程只验证 cwd 正确，测试名、报告和 UI 不得宣称 OS containment。
-  - **E / 生命周期与失败隔离**：可信 fixture 记录 PID、PGID、port、handle 和 marker，启动同组 child/grandchild 并忽略 TERM；分别触发 success、普通 nonzero failure、timeout、cancel、异常、background stop 和 readiness failure。Supervisor 必须在 Profile 的 5s cleanup barrier 内返回；返回时记录的 PID/PGID 不存在、端口关闭、marker 不再变化、直接子进程已 wait/reap。注入核对失败时必须返回 `CLEANUP_FAILED`，同一 Workspace 的下一次启动在 spawn 前被拒绝，人工解除隔离后才恢复正常对照。
+  - **E / 生命周期与失败隔离**：可信 fixture 记录 PID、PGID、port、handle 和 marker，启动同组 child/grandchild 并忽略 TERM；分别触发 success、普通 nonzero failure、timeout、cancel、异常、background stop 和 readiness failure。Supervisor 必须在 Profile 的 5s cleanup barrier 内返回；返回时记录的 PID/PGID 不存在、端口关闭、marker 不再变化、直接子进程已 wait/reap。注入核对失败时必须返回带 quarantine ID/generation、`cleanup_evidence` 及 Runtime digest 的 `CLEANUP_FAILED`，同一 Workspace 的下一次启动在 spawn 前被拒绝；两阶段 recovery 在仍有资源、错误 ID、过期/复用 token 或 stale generation 时都不得解除，只有新鲜的独立 `recovery_evidence` 与相匹配的一次性确认被管理面核验后才可恢复，随后正常对照才能再次 spawn。
   - **F / 输出边界**：分别产生低于和超过上限的 stdout、stderr 与 server log；低于上限内容保持一致，超限内容只保留规定裁剪结果、原长度和摘要，secret sentinel 经统一脱敏后在所有下游 sink 明文命中为 0；不得把“持久化已限长”外推为 OS 内存配额。
   - **G / 正常对照**：上述 frozen manifest 就是正常路径基线；Core 默认验证、显式 Task 命令以及 VisionForge build/dev/browser 全部通过，结构化 Result/Artifact、timeout 和 error code 契约不变，不再使用无对象或依赖历史测试总数的“回归不退化”。
   - **H / 无旁路**：静态扫描与调用图审查证明受控范围不存在绕过统一监督语义的 `subprocess.Popen/run`；保留的非执行型例外必须在 manifest 逐项说明，不能静默豁免。新增进程入口但未注册 Profile 时，此门禁必须失败。
 - **required_capabilities**：仓库读、受控 Patch、Python/浏览器本地测试和无秘密故障注入；本文不授予真实模型、生产秘密、外部网络、副作用或宿主提权权限。
 - **resource_scope**：`demo/coding_workflow/command_validators.py`、`workspace.py`、`policy.py`、`agents.py`、`dag_runner.py`、`visionforge/browser.py`、`visionforge/web_runtime.py`、`demo/coding_agent_cli.py` 及其直接 Composition Root 和对应测试；范围外出现新的进程入口必须先变更本契约。
-- **budget_or_deadline**：无自动开始时间和外部调用预算；不插队 `PROD-01B`，除非用户明确改变顺序。
+- **budget_or_deadline**：无自动开始时间和外部调用预算；用户已授权方案 A 的仓库内文档、红卡与后续受控实现顺序，但每个小批仍单独收口。未完成 A～H 前，不得再次把真实模型生成代码或候选代码交给当前 Legacy/Browser 执行入口。
 - **risks**：环境 allowlist 可能暴露工具兼容性问题；同宿主 UID、无 OS containment、无网络/资源硬隔离和进程组逃逸仍是已接受的当前残余风险，因此本版本只能运行可信任务并必须展示 `local_trusted_execution/v1`，不能对外表述为生产安全沙箱。
 
 ## 学习与生产实践规则
@@ -257,7 +286,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 ### Harness Evolution Protocol / 评测驱动演进规则（后续任务强制执行）
 
-状态：**开发纪律与文档协议已冻结；尚无正式 Harness Evolution Experiment、自动 Evolver 或 Held-out 泛化结论。** 权威方法写入 `Plan/Plan26.md` 的 “Harness Evolution Protocol”，本节只保存接续所需的状态、硬门禁和下一动作；与事故闭环的边界写入 `Plan/Plan25.md`。该协议是跨批次开发与证据门禁，不是插队的新生产子系统；当前仍处于 `PROD-01B`，01B-1、01B-2、01B-3A 与 01B-3B-1 已完成/KEEP，完整 01B-3 仍为 IN_PROGRESS/INCONCLUSIVE，下一动作是 01B-3B-2 Transport publish/ACK/Receipt。
+状态：**开发纪律与文档协议已冻结；尚无正式 Harness Evolution Experiment、自动 Evolver 或 Held-out 泛化结论。** 权威方法写入 `Plan/Plan26.md` 的 “Harness Evolution Protocol”，本节只保存接续所需的状态、硬门禁和下一动作；与事故闭环的边界写入 `Plan/Plan25.md`。该协议是跨批次开发与证据门禁，不是新的生产子系统；当前产品批次仍处于 `PROD-01B`，01B-1、01B-2、01B-3A 与 01B-3B-1 已完成/KEEP，完整 01B-3 仍为 IN_PROGRESS/INCONCLUSIVE。用户已批准 Plan Amendment，当前 active gate 为 `SEC-EXEC-01`，收口后继续 3B-2。
 
 固定术语边界：
 
@@ -288,7 +317,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
   - `L3 生产自主 Harness 演进`：自动修改并晋升生产 Harness；当前非目标。INC-03 提供发布验证和 Shadow/Canary/Rollback，INC-04 提供 Learning/Guardrail 审批与退役，INC-05 提供运营和长期复发评价；全部成熟后仍需重新立项。
 - **assumptions_and_uncertainty**：当前离线资产可以支持 L1 的管线 smoke 与小规模实验，但样本量、真实模型重复运行和跨任务 Held-out 尚未冻结；没有这些证据前，不能声称 Multi-Agent、Memory、Reviewer 或任何 Harness 版本更优。
 - **open_questions**：第一次真实 Harness Evolution Pilot 的任务数量、模型、调用预算、重复次数和 Held-out cohort 必须在用户明确授权真实调用时单独预注册；不得从历史示例数字反推。
-- **next_action**：01B-1、01B-2、01B-3A 与 01B-3B-1 的确定性轻量轨均已以 `decision=KEEP` 收口；完整 01B-3 仍为 `IN_PROGRESS/INCONCLUSIVE`，下一步冻结并实现 01B-3B-2 Transport publish/ACK/Receipt。Evolver/Policy/Eval principal、样本量、Validation/Held-out cohort、query budget、统计效果等不适用字段统一标为 `N/A`，不得反向阻塞基础设施开发。`PROD-01B` 不运行真实模型、不复现官方 Evo-Bench，也不调用外部 `evo-hq/evo`；真实模型 Harness Evolution Pilot 不插队，仍复用暂缓的 `CORE-ABLATION-001` 与后续分层评测计划。
+- **next_action**：01B-1、01B-2、01B-3A 与 01B-3B-1 的确定性轻量轨均已以 `decision=KEEP` 收口；完整 01B-3 仍为 `IN_PROGRESS/INCONCLUSIVE`，且 01B-3B-2 Transport publish/ACK/Receipt 仍须完成。当前先按已批准 Amendment 完成 `SEC-EXEC-01` 的确定性安全门禁，再继续增强版 3B-2。Evolver/Policy/Eval principal、样本量、Validation/Held-out cohort、query budget、统计效果等不适用字段统一标为 `N/A`，不得反向阻塞基础设施开发。当前不运行真实模型、不复现官方 Evo-Bench，也不调用外部 `evo-hq/evo`；真实模型 Harness Evolution Pilot 不插队，仍复用暂缓的 `CORE-ABLATION-001` 与后续分层评测计划。
 - **expected_output**：每个适用批次包含一个版本化 Harness Evolution 实验小节或报告，引用可定位 Run/Trial/Evidence，明确示例、离线确定性结果、真实模型实测和生产观察；分别给出 `lifecycle_status=PROPOSED/RUNNING/FROZEN/COMPLETED/INVALID` 与 `decision=KEEP/ROLLBACK/INCONCLUSIVE`。
 - **acceptance_criteria**：后续适用 Plan 至少包含失败/工作负载、Baseline、强对照、可证伪假设、单一 Mutation、固定 manifest、Validation/Held-out 隔离或确定性“不适用”依据、硬门禁、效果与代价、Incident/Regression 落点和决策/回滚；没有真实行为变化时显式写不适用及原因。
 - **required_capabilities**：仓库读、受控候选 Patch、独立评测、版本化报告和与实验范围匹配的故障注入；真实模型、网络、媒体、外部仓库、秘密或副作用仍需当次授权。
@@ -304,7 +333,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 `Plan/Plan26.md` 已完成 `PROD-00` 产品 Charter，冻结 Scope、Thread、Turn/Outcome、Message、AgentInstance/AgentSession、Invocation、SessionBinding、RouteEdge、Artifact/Context、Capability 和场景化 Acceptance 的边界。批次 10A～13A 的代码和测试继续作为 Coding、多模态 Intake 与插件机制的已实现资产保留，不因产品纠偏删除，也不得再被描述成默认产品流程。
 
-后续严格一次推进一个小批次。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 已完成，完整 `PROD-01B` 仍在进行中；下一步只推进 `01B-3B-2` Transport publish/ACK/Receipt，不得跳过它直接增加更多供应商、自由 A2A、向量数据库、微服务或分布式 Worker。
+后续严格一次推进一个小批次。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 已完成，完整 `PROD-01B` 仍在进行中。用户已选择方案 A，当前 active gate 是 `SEC-EXEC-01`；A～H 收口后继续增强版 `01B-3B-2`。3B-2 不删除、不重开已发布 Schema v3，也不得借此提前增加更多供应商、自由 A2A、向量数据库、微服务或分布式 Worker。
 
 ### PROD / INC 双轨联动规则（后续任务强制执行）
 
@@ -466,7 +495,7 @@ PROD-01A 实现事实：
 - 开发中真实发现并修复的 pre-release 缺陷包括：原始 connection/SQL commit 绕过、ALTER/DDL authorizer 绕过、iterator cursor 泄漏、`INSERT OR ROLLBACK` 让外层事务失效、rollback failure 被隐藏、WAL/Schema 检查时序和 REAL migration version 被强转。所有修复均有回归；这是本次“实现 → 挑战 → 红测/复现 → 修复 → 全量回归”的事故学习前置证据，不是生产 Incident 或 Detector 命中。
 - INC：合成测试覆盖 migration/commit 前回滚、commit 前/后子进程退出的 none/all、重开、锁忙、Schema 漂移和事务逃逸；本切片没有写 RuntimeEvent、Journal、Replay 或 Incident Ledger。`INC-01` 仍待开始，Detector 数为 0，不报告 detected/missed/MTTD/MTTR。
 - Harness Evolution：确定性轻量轨 `lifecycle_status=COMPLETED`、`decision=KEEP`；保留范围仅为 01B-1 事务底座。真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`，本记录是 Verification，不是 `AcceptanceRecord`。
-- 后续 notes：01B-1 留下的通用 v2 migration runner 与实际 DDL shape 校验已由 01B-2 补齐；连接/路径建立失败的异常封装仍是非阻塞后续项。`PROD-01B-3A` 与 `01B-3B-1` 已完成，下一动作是 `01B-3B-2` Transport publish/ACK/Receipt。
+- 后续 notes：01B-1 留下的通用 v2 migration runner 与实际 DDL shape 校验已由 01B-2 补齐；连接/路径建立失败的异常封装仍是非阻塞后续项。`PROD-01B-3A` 与 `01B-3B-1` 已完成；当前先完成 `SEC-EXEC-01`，随后继续 `01B-3B-2` Transport publish/ACK/Receipt。
 
 ### PROD-01B-2 / INC 联动与验证摘要
 
@@ -491,7 +520,7 @@ PROD-01A 实现事实：
 - INC / Harness Evolution：风险目录已包含 `event_without_outbox`、`outbox_without_event`、`unexpected_legacy_replay`、`publish_inside_business_transaction`、`stale_publish_ack`、重复尝试、顺序漂移和腐败。Detector/Incident/Replay 仍为 0，`INC-01` 待开始；3A 与 3B-1 确定性轻量轨均为 `COMPLETED/KEEP`，父切片仍为 `IN_PROGRESS/INCONCLUSIVE`，真实模型与 Held-out 为 `N/A`。
 - 证据演进：首轮结构卡 hash=`6d8684486ced5a96c84275d6e0183f292bba7bae885ce5899bb325846e095826`，执行 3 项并准确暴露 v2/表缺失；Review 后的显式 Policy 红卡 hash=`8452ba5f2add07c3cd30e75b5c3ce26ceb941984d58f15e2ab5d20f5e3ab948a`，当时执行 5 项、5 failures。它们是历史 EXPECTED_RED，不是产品事故。实现首绿后独立挑战真实击穿并关闭 10 组产品缺陷；最终 adversarial 22/22、directed 73/73、Runtime 159/159、全量 372 项中 368 通过且 4 skip，compileall/diff-check 通过。
 - 3B-1 验证摘要：权威报告保留 7 项 EXPECTED_RED 历史、首绿、4 组真实产品缺陷、跨进程/`os._exit` 恢复、最终门禁和独立 Review；决定仅为 `KEEP (3B-1 only)`，不构成 Runtime Acceptance。
-- 下一动作：冻结 `01B-3B-2` Transport publish/ACK/Receipt 的最小 API 与 EXPECTED_RED，再实现事务外 Transport、stale ACK 门禁和投递恢复；不得从 3B-1 冒领可靠发布。
+- 下一动作：`SEC-EXEC-01` 的 8 项结构红卡与 17 项 mock A～H 行为红卡均已冻结、运行并通过独立预审；现在实现统一 Profile/Admission/Supervisor，使这 25 项先转绿。真实 POSIX workload 仍受 fixture blocker 约束，不得提前运行或冒领生命周期证明。安全门禁最终收口后，再为增强版 `01B-3B-2` 预注册 first-party 本地持久 Sink、容量机器/数据 manifest 与阈值，并验证事务外 Transport、stale ACK、ACK/Receipt、重复投递与重启恢复。不得从 3B-1 冒领可靠发布，也不得原地改写 Schema v3/checksum。
 
 必做故障演练：消息或副作用已提交但完成事件未写入时 `kill -9`、重复投递、错误 Thread/Session 绑定、取消与完成竞态、SQLite 锁竞争/磁盘异常和孤儿 Invocation 恢复。合法普通对话与当前 Coding 纵向切片都必须有对照，避免把 build/test 误设为所有 Thread 的完成条件。
 
@@ -671,10 +700,10 @@ git status --short
 ## Git 基线
 
 - 仓库：`/Users/donbblu/codex/multiAgent`
-- 分支：`codex/multimodal-coding-mvp`
+- 分支：`main`（`codex/multimodal-coding-mvp` 与远端对应分支在本次同步前均指向同一提交）
 - 远端：`git@github.com:donbblu/MultiAgent.git`
 - 历史归档基线提交：`ab1ecd8 chore: archive daily progress 2026-08-22`
-- 当前开发快照：`HEAD=99033147fa0583b6573b8bace58e75fbffda859f`，工作区为 dirty；01B-2/3A/3B-1 的冻结实现与测试 hash、验证命令、历史 EXPECTED_RED、最终门禁和独立 Review 见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。3B-1 生产实现、公开导出、测试与收口文档尚未提交，因此当前不是可由单一 commit 精确重现的 clean release baseline。
+- 当前 3B-1 代码 clean content checkpoint：`HEAD=f66e71e02c206dd361f18f58f669824ae7de6cab`（`feat: add outbox claim lifecycle`），生产实现、公开导出、测试与收口文档均已提交并推送。当前工作树存在后续文档与红卡修改，精确状态以 `git status` 为准；01B-2/3A/3B-1 的历史 EXPECTED_RED、最终门禁、缺陷、文件哈希和独立 Review 继续以 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md) 为权威记录，不因 post-commit checkpoint 被倒填或改写。
 - `.env`、`.runtime/`、`.runs/`、运行输出和 `.DS_Store` 不得提交。
 
 ## 安全提醒

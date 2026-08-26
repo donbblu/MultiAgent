@@ -539,3 +539,30 @@ git diff --check
 | 2026-08-25 | 冻结 3B-1 的 7 项 EXPECTED_RED；首跑 0/7，证明能力缺失且 3A 对照 73/73 未回归。 |
 | 2026-08-25 | 3B-1 首绿后独立挑战发现并关闭 4 组产品缺陷和 1 项测试设计缺陷；补齐跨进程与 `os._exit` 证据。 |
 | 2026-08-25 | 最终 25/98/184/397 分层门禁、compileall/diff-check 与独立 Review 全绿；决定 `KEEP (3B-1 only)`，下一步 3B-2。 |
+
+## 7. Post-commit checkpoints
+
+### 7.1 PROD-01B-3B-1 clean content checkpoint
+
+| 字段 | 值 |
+|---|---|
+| checkpoint id | `01B3B1-CLEAN-COMMIT-F66E71E` |
+| commit | `f66e71e02c206dd361f18f58f669824ae7de6cab` |
+| tree | `b86e823c665f68a3a6968b21fad58d60c26c96e0` |
+| parent | `99033147fa0583b6573b8bace58e75fbffda859f` |
+| subject | `feat: add outbox claim lifecycle` |
+| committed_at | `2026-08-25T20:55:05+08:00` |
+| meaning | 4.8 最终 subject 的生产实现、公开导出、冻结/攻击测试与收口文档已进入可定位提交 |
+| content check | 当前 3B-1 生产实现、公开导出与测试 subject 相对该 commit 无差异，对应第 1 节哈希匹配；`Plan26.md` 因本次 append-only Amendment 有意不再等于 3B-1 收口时的历史文档哈希 |
+| directed recheck | `VR-01B3B1-POSTCOMMIT-F66E71E-20260825`：25/25 通过，0 failure/error，3.323 秒 |
+| Runtime Acceptance | `NOT_ISSUED` |
+
+定向复核在 `demo/` 执行，使用不含父进程秘密的显式环境：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp/multiagent-3b1-checkpoint-home TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 /usr/bin/python3 -m unittest tests.test_runtime_outbox_claim_lifecycle tests.test_runtime_outbox_claim_lifecycle_adversarial -q
+```
+
+该 checkpoint 关闭 5.1 第 4 项中“3B-1 尚无 clean commit checkpoint”的当前内容定位缺口，但不修改其历史原因。第 1 节的 `HEAD=9903314... / dirty`、4.8 的原始命令、计数、耗时、哈希和 Review 仍是当时真实受测快照，不得倒填为在 `f66e71e` clean worktree 上重新执行。
+
+4.8 第 502 行和时间线中的“下一步 3B-2”是 3B-1 收口时的历史 next action。后续经用户批准的 [`Plan Amendment PA-2026-08-25-SEC-EXEC-01-FIRST`](../Plan/Plan26.md) 只在调度上插入 `SEC-EXEC-01`，不改变 3B-2 技术契约、3B-1 决定或上述证据。

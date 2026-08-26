@@ -19,11 +19,11 @@ Multi-Agent Harness
 
 ## 当前状态
 
-项目目前是 **production-shaped、尚未达到生产级的原型**。现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；Runtime Kernel 已完成 `PROD-01A` 领域协议、`PROD-01B-1` SQLite Schema/Migration/UnitOfWork 事务底座、`PROD-01B-2` concrete Thread current-state + append-only RuntimeEvent 原子纵切、`PROD-01B-3A` durable Outbox intent 原子三写，以及 `PROD-01B-3B-1` 本地 claim/NACK/expiry-reclaim。完整 `PROD-01B-3` 与 `PROD-01B` 仍在进行中；下一切片是 `01B-3B-2` Transport publish/ACK/Receipt。当前不能声称可靠 Outbox 发布、完整 State Store/Journal、BudgetLedger、持久队列、崩溃恢复、多租户隔离或生产自主演进已经完成。
+项目目前是 **production-shaped、尚未达到生产级的原型**。现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；Runtime Kernel 已完成 `PROD-01A` 领域协议、`PROD-01B-1` SQLite Schema/Migration/UnitOfWork 事务底座、`PROD-01B-2` concrete Thread current-state + append-only RuntimeEvent 原子纵切、`PROD-01B-3A` durable Outbox intent 原子三写，以及 `PROD-01B-3B-1` 本地 claim/NACK/expiry-reclaim。完整 `PROD-01B-3` 与 `PROD-01B` 仍在进行中；用户已批准方案 A，当前先实施 `SEC-EXEC-01 local_trusted_execution/v1`，收口后再继续增强版 `01B-3B-2` Transport publish/ACK/Receipt。安全契约已经冻结但尚未验收，当前入口不是生产沙箱；也不能声称可靠 Outbox 发布、完整 State Store/Journal、BudgetLedger、持久队列、崩溃恢复、多租户隔离或生产自主演进已经完成。
 
 ## 验证
 
-`PROD-01B` 的版本、环境、命令、计数、故障/并发结果、真实缺陷、修复与回归位置、未覆盖风险、独立 Review 和最终决策统一记录在 [VerificationReports/PROD-01B.md](VerificationReports/PROD-01B.md)。Plan 定义契约，HANDOFF 只保存摘要；不要再从多个文档拼接测试结论。
+`PROD-01B` 的版本、环境、命令、计数、故障/并发结果、真实缺陷、修复与回归位置、未覆盖风险、独立 Review 和最终决策统一记录在 [VerificationReports/PROD-01B.md](VerificationReports/PROD-01B.md)。当前 `SEC-EXEC-01` 的 EXPECTED_RED、后续实现/攻击证据与决定单独记录在 [VerificationReports/SEC-EXEC-01.md](VerificationReports/SEC-EXEC-01.md)。Plan 定义契约，HANDOFF 只保存摘要；不要再从多个文档拼接测试结论。
 
 ```bash
 cd demo
@@ -38,5 +38,7 @@ python3 -m unittest discover -s tests -q
 - [Plan/Plan26.md](Plan/Plan26.md)：Harness 产品定位、Runtime Charter 与 PROD 路线；
 - [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md)：生产演进 Backlog；
 - [LEARNING_PATH.md](LEARNING_PATH.md)：开发与事故驱动学习路径；
+- [SecurityProblem.md](SecurityProblem.md)：`SEC-EXEC-01` 的风险、A/B 取舍与已批准顺序；
+- [VerificationReports/SEC-EXEC-01.md](VerificationReports/SEC-EXEC-01.md)：当前本地可信执行门禁的 EXPECTED_RED 与后续收口证据；
 - [Plan/闭环覆盖范围.md](Plan/闭环覆盖范围.md)：事故学习闭环的覆盖边界与限制；
 - [VerificationReports/PROD-01B.md](VerificationReports/PROD-01B.md)：当前生产批次的权威开发验证与真实缺陷证据。

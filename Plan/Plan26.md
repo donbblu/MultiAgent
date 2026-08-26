@@ -337,6 +337,22 @@ Agent 行为、智能效果和可泛化收益声明必须使用隔离 Held-out�
 
 纯协议/文档批次可以将 Harness Evolution 实验标为“不适用”，但必须说明当前没有可运行行为、已有的负向与正常对照，以及由哪个后续批次完成真实行为验证。未严格复现官方 Evo-Bench 的完整任务、角色、轮次、预算、隔离和计分协议时，本项目只能称为“内部 Harness Evolution Experiment/Pilot”或“评测驱动演进实验”，不宣称完成官方 Evo-Bench 或取得其榜单成绩。
 
+### Append-only Project Step Log Protocol（后续任务强制执行）
+
+项目级过程账本固定为 [`VerificationReports/STEP-LOG.md`](../VerificationReports/STEP-LOG.md)，schema 为 `project-step-log/v1`。它用于回答每个逻辑步骤“做了什么、为什么做、预期与实际效果、证据、Review 与 checkpoint”，不记录私密推理，也不替代本 Plan、各 VerificationReport、Harness Evolution Experiment、INC/RuntimeEvent 或 Runtime Acceptance。
+
+从本协议生效后，一个逻辑步骤使用稳定 `step_id`，其 `PRE_REGISTER/ACTUAL/REVIEW/CORRECTION/CHECKPOINT` 各自使用唯一 `entry_id` 并共享该 `step_id`。任何会改变契约、Oracle、生产实现、验证结论、Review disposition 或 Git checkpoint 的动作都必须执行：
+
+1. 动作前追加 `PRE_REGISTER`：冻结 step ID、目标、公开理由、预期门禁、范围/非目标、base HEAD、相关输入哈希、计划命令、停止/回滚条件；
+2. 动作后、进入下一状态前追加 `ACTUAL`：记录 repo-relative cwd（公开记录统一使用 `<repo>` 占位符）与清理过的精确命令、exit code、pass/fail/error/skip、耗时、关键结果、实际效果、变更文件与 SHA-256、剩余风险和下一动作；失败、部分完成、重试或撤回同样必须记录；
+3. 独立审查单独追加 `REVIEW`，使用 `NOT_REQUESTED/PENDING/APPROVE/APPROVE_WITH_NOTES/REVISE/REJECT`；`PENDING/REVISE/REJECT` 不得收口，Review 也不自动签发 `KEEP` 或 Runtime Acceptance；
+4. 里程碑追加 `CHECKPOINT`：记录 `git status --short`、content hash、commit SHA（若有）和 commit 后状态；未提交必须写 `WORKTREE_ONLY/PENDING`，不得冒充 clean release checkpoint；
+5. 纠错只允许在末尾追加 `CORRECTION + supersedes_entry_id`，候选迭代写新的 `ACTUAL`；不得删除、合并或就地洗掉失败历史。
+
+不得留空或写“同上”。不适用写 `N/A + 原因 + 后续归属`；历史缺口写 `MISSING/UNKNOWN — 原始证据未保存，禁止补造`；秘密值不得进入日志。mock/fake、loopback、真实外部资源与未运行必须明确区分。一个有明确目标的命令组可记为一步，纯只读导航可合并，避免把每次 `rg/sed` 变成噪声；但只要动作改变范围、判断、实现、证据、Review 或 checkpoint，就必须单独入账。
+
+证据冲突优先级固定为：匹配 SHA-256/commit 的原始 Artifact 与测试输出 > 对应 VerificationReport > Step Log 摘要 > HANDOFF。Step Log 发现冲突时只能追加纠正；不能反向改写已经发生的历史证据。
+
 ## 生产边界与模块形态
 
 第一阶段保持 self-hosted、单组织/单信任域、单机优先的 production-shaped modular monolith。模块边界按 Thread/Message、Invocation/Session、Event/Incident、Artifact/Context、Capability/Tool、Scenario/Plugin 和 Web/API 划分；SQLite 继续作为本地模式。
@@ -568,3 +584,29 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 - 随后实施 PROD-01C 的 durable Invocation、Finalizer/Reaper、fencing、取消与恢复。
 - 按 PROD/INC 双轨补齐对应事故事件、负向用例、正常对照和覆盖指标。
 - 对每个适用的行为修改同步填写 Harness Evolution 实验模板；PROD-01B 使用确定性轻量轨，只填写 Baseline、单一变更、故障矩阵、正常对照、固定门禁、回归和决策，Evolver/principal、样本量、Validation/Held-out cohort、query budget、统计效果等字段统一标为 `N/A`，不得因此阻塞基础设施开发，也不得把该证据外推为模型智能或 Held-out 效果结论。
+
+## Plan Amendment：PA-2026-08-25-SEC-EXEC-01-FIRST
+
+状态：**已批准并生效；用户于 2026-08-25 选择方案 A。**
+
+本 Amendment 只修订近期执行顺序，不重开 `PROD-01B-1/01B-2/01B-3A/01B-3B-1`，不修改其状态、哈希、Verification 或 `KEEP` 决定，不原地修改已发布 Schema v3/checksum，也不删除 `01B-3B-2`。
+
+它取代本文以下“当前下一动作”句子，但不改写这些句子形成时的历史事实：
+
+- “PROD-01”列表中把 `01B-3B-2` 作为立即下一步的表述；
+- `01B-2`、`01B-3A/3B-1` 收口段中的下一动作；
+- “PROD-00 验收结论”后的当前下一动作；
+- “待办事项”中立即冻结 `3B-2` 红卡的顺序。
+
+修订后的唯一顺序为：
+
+1. 同步本 Amendment、Backlog、HANDOFF、README、Learning Path，并向 `VerificationReports/PROD-01B.md` 追加 3B-1 post-commit clean content checkpoint；
+2. 以 `local_trusted_execution/v1` 已冻结的 A～H 门禁实施 `SEC-EXEC-01`：先保存 EXPECTED_RED，再实现统一 Command/Environment Profile、可信绝对 executable、进程组 Supervisor、清理屏障、输出限长与脱敏，随后完成独立攻击、正常路径回归和独立 Review；
+3. A～H 全部通过且 `SEC-EXEC-01` 只在其声明范围内得到 Verification/`KEEP` 后，实施增强版 `PROD-01B-3B-2`；
+4. 之后继续 BudgetLedger、Runtime-only Acceptance 和持久查询/恢复。
+
+`SEC-EXEC-01` 当前只覆盖单用户、本人控制的 macOS/POSIX 本地可信执行。它不是生产沙箱，不承诺容器/VM、独立 UID、OS 文件系统 containment、默认断网、硬资源配额、真实 Secret Broker、多租户或敌对代码隔离。实现与验收口径以 [`HANDOFF.md`](../HANDOFF.md) 的 `local_trusted_execution/v1` A～H 和 [`SecurityProblem.md`](../SecurityProblem.md) 为准。
+
+增强版 `01B-3B-2` 在既有 Transport/ACK/immutable Receipt/PUBLISHED CAS 契约上，增加首个 first-party 本地持久、幂等 Sink，ACK/Receipt/ACK-loss/重启故障证据，以及预注册的 1k/10k Outbox 定向容量门。它仍不引入真实 Broker、外部网络、PostgreSQL、Consumer 产品能力或 exactly-once 声明。Sink 的精确名称/存储形态、数据分布、机器 manifest 和数值阈值必须在 `3B-2` EXPECTED_RED 前冻结，不得事后按结果选择。
+
+`ENG-01` 的 `pyproject.toml`、Python 版本、依赖锁和 CI 仍是独立的工程可复现性缺口；本 Amendment 不自动启动或并行修改该批次。真实模型、生产秘密、外部网络、不可逆副作用、依赖安装和宿主提权仍需另行明确授权。
