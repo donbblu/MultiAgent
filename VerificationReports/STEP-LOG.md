@@ -444,3 +444,37 @@
 - `supersedes_entry_id`：`NONE — PRE_REGISTER 的实际执行结果`
 - `git_checkpoint`：`status=STAGED_AND_VERIFIED; commit=PENDING; push=PENDING`
 - `next_action`：重新 stage 本条，复核 cached scope/check，然后创建主 commit；禁止 force push。
+
+### TRACE-20260826-020
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-020 / SEC-EXEC-01-CHECKPOINT-001 / ACTUAL / 2026-08-26T10:58:59+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / SEC-EXEC-01 scoped Git commit / TRACE-20260826-016`
+- `what / why / expected_effect_or_gate`：创建已验证的主 commit，把方案 A 决策、SEC 契约/报告、冻结 EXPECTED_RED、POSIX mock safety 夹具与项目 Step Log 规则放入可定位 Git 历史。
+- `scope / non_goals`：commit 恰含 15 个 allowlist 文件；四个 excluded 路径未包含。未改生产实现；不把红卡冒充绿色能力或 Runtime Acceptance。
+- `baseline`：`branch=main; parent=f66e71e02c206dd361f18f58f669824ae7de6cab; origin/main=f66e71e02c206dd361f18f58f669824ae7de6cab before push`
+- `commands`：在 `<repo>` 执行 `git commit -m "test(sec): freeze trusted local execution gates"`，随后以 `git show -s`、`git diff --name-status HEAD^ HEAD`、`git status --short --branch` 复核。
+- `stop_or_rollback_conditions`：若 commit 文件集合不是 allowlist、commit 失败、或 excluded 路径进入 commit，则停止 push；实际均未触发。
+- `result / effect`：exit=`0`；commit=`e65a68caa9d48687beaeb7c39b03582774373fbc`；tree=`742b257fafd5408417ea361c08e08f5e7084f0c0`；parent=`f66e71e02c206dd361f18f58f669824ae7de6cab`；subject=`test(sec): freeze trusted local execution gates`；committed_at=`2026-08-26T10:58:35+08:00`；`15 files changed, 14798 insertions, 22 deletions`。效果=`achieved`。
+- `artifacts / evidence`：主 commit；提交前门禁见 `TRACE-019`；commit 中 Step Log SHA-256=`412379f85882be5138ee5a0cd456e1f078ba13d4f23f48220a3c91b31b7c72e5`。
+- `remaining_risks`：push 尚未执行；当前 branch 仅本地 ahead 1；工作树仍因 excluded 文件 dirty；生产 SEC 能力未实现、POSIX workload 仍禁跑。
+- `review`：`disposition=APPROVE_WITH_NOTES; evidence=scope allowlist + cached gates + commit content recheck; notes=批准仅指 Git content checkpoint，不是 SEC KEEP`
+- `supersedes_entry_id`：`TRACE-20260826-015 — 将早期 WORKTREE_ONLY content checkpoint 提升为可定位主 Git commit；不删除历史`
+- `git_checkpoint`：`status=COMMITTED_LOCALLY; commit=e65a68caa9d48687beaeb7c39b03582774373fbc; push=PENDING`
+- `next_action`：把本 ACTUAL/CHECKPOINT 记录放入独立 docs commit，复核远端 ancestry 后普通 push 两笔提交。
+
+### TRACE-20260826-021
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-021 / SEC-EXEC-01-CHECKPOINT-001 / CHECKPOINT / 2026-08-26T10:58:59+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / SEC-EXEC-01 main content checkpoint / Plan26 Step Log Protocol`
+- `what / why / expected_effect_or_gate`：锁定主 commit 的 Git 身份与声明边界，供后续实现从明确 parent/commit/tree 接续。
+- `scope / non_goals`：checkpoint 只覆盖 commit `e65a68c...`；不认领 excluded dirty 文件，不记录尚未发生的 push 成功。
+- `baseline`：`parent=f66e71e02c206dd361f18f58f669824ae7de6cab; commit=e65a68caa9d48687beaeb7c39b03582774373fbc; tree=742b257fafd5408417ea361c08e08f5e7084f0c0`
+- `commands`：`git show -s --format=... HEAD`、`git diff --name-status HEAD^ HEAD`、`git status --short --branch`。
+- `stop_or_rollback_conditions`：commit/tree/parent/subject 任一不匹配 `TRACE-020` 时不得创建 docs checkpoint 或 push。
+- `result / effect`：`achieved — 主 content checkpoint 可由 Git commit 复现；branch=main ahead origin/main 1；excluded 工作树改动仍在且未提交`
+- `artifacts / evidence`：commit=`e65a68caa9d48687beaeb7c39b03582774373fbc`，tree=`742b257fafd5408417ea361c08e08f5e7084f0c0`。
+- `remaining_risks`：本条所在 docs commit 的自身 SHA 与最终 remote 状态需由外部交接报告；不能形成自引用 checkpoint。
+- `review`：`disposition=APPROVE_WITH_NOTES; blocking_findings=0; scope=main content commit only`
+- `supersedes_entry_id`：`NONE — TRACE-020 的 milestone checkpoint`
+- `git_checkpoint`：`status=MAIN_COMMIT_RECORDED; main_commit=e65a68caa9d48687beaeb7c39b03582774373fbc; docs_commit=PENDING; push=PENDING`
+- `next_action`：只 stage 本文件，创建 `docs: record SEC checkpoint`；fetch/ancestry 复核后普通 push，禁止 force。
