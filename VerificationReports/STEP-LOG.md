@@ -3528,3 +3528,20 @@ ps -axo pid=,ppid=,pgid=,command=
 - `supersedes_entry_id`：`NONE`
 - `git_checkpoint`：`STAGED_EXACT_62 / denylist=0 / commit=PENDING / push=PENDING`
 - `next_action`：restage本entry后的STEP，复核62-path集合不变，然后创建第一实现提交。
+
+### TRACE-20260827-154
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-154 / SEC-EXEC-01-COMMIT-AND-PUSH / ACTUAL / 2026-08-27T12:27:50+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / first implementation commit / TRACE-150～153`
+- `what / why / expected_effect_or_gate`：在restage STEP后再次确认cached集合仍为批准的62项并创建第一实现提交。原因是先把完整实现/测试/证据闭包原子提交，再由第二小提交记录其不可预知SHA与最终push状态。
+- `scope / non_goals`：第一提交只含62-path allowlist；四项denylist保持worktree-only。尚未push，未运行新测试或修改功能。
+- `baseline`：`parent=0f9e41ad76d7a25deee0a28de42a422707a6f24d; cached paths=62; allowlist hash=f879c2b1b71a7c62dd1b2f331ae356bb0d872482c3ac56faade641df0aee7b9b; cached diff-check=PASS`
+- `commands`：`git add -- VerificationReports/STEP-LOG.md`; cached count/hash/denylist/diff-check/stat；`git commit -m "feat(sec): add trusted local execution boundary"`; postcommit`rev-parse/show/status/rev-list`。
+- `stop_or_rollback_conditions`：未触发；commit exit0，未要求force或hook绕过。
+- `result / effect`：`achieved=yes; commit=1024e0900693b86316bb7807976a7f2e13667d3f; parent=0f9e41ad76d7a25deee0a28de42a422707a6f24d; files=62; insertions=19252; deletions=560; staged_after=0; local ahead of origin/main=1`
+- `artifacts / evidence`：`git show --stat/summary`列出62项；postcommit status精确剩`demo/track.md`、`problems.md`、`prombles.md`删除、`Plan/Plan28.md`四项denylist。
+- `remaining_risks`：第一提交尚未push；最终checkpoint文档本身尚未提交。安全能力限制不变。
+- `review`：`scope/hygiene APPROVE before commit; mechanical cached checks PASS`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`COMMIT_CREATED / 1024e0900693b86316bb7807976a7f2e13667d3f / push=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：只stage HANDOFF与STEP的commit证据，创建第二checkpoint提交；随后重新fetch/divergence核对并普通push。
