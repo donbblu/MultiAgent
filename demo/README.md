@@ -7,6 +7,63 @@
 负责 Worker 调度、状态/权限/预算、Artifact 接纳、真实 Validator 执行和最终门禁。
 模型只能提出结构化计划或 Patch，不能自行修改任务状态、扩大权限或宣告任务完成。
 
+## 默认作品集入口
+
+> 当前入口运行真实的 **Agent Runtime MVP**：它会创建持久 Thread、AgentInstance 与
+> AgentSession，经 SQLite Mailbox 投递结构化 Message，并在共享线程池的 Agent 泳道中
+> 执行 scripted Worker。它尚未经过最终 release check，也不是生产级 Runtime。
+
+要求 Python 3.10+。从仓库根目录运行：
+
+```bash
+python3 demo/portfolio_demo.py --trusted-local-execution
+```
+
+这是 README 唯一推荐的默认 Quickstart。它固定使用 `core-coding-eval-v1` 的三个任务和
+三种 scripted 策略，不读取 `.env`、不访问网络、不启动 Web/Browser、不调用真实模型。
+`--trusted-local-execution` 只批准固定 Suite 已登记的本地 Python Validator；缺少批准
+时会在 Suite、Workspace、Validator 和报告副作用前退出 `2`。
+
+成功输出包含 Runtime 汇总和完整角色时间线。以下 ID 使用占位符；真实运行每次生成
+不同 ID，但冻结的计数和结果不变：
+
+```text
+mode=scripted/offline network=false real_provider=false external_model_calls=0
+runtime scope=portfolio-demo threads=9 agents=21 sessions_closed=21 mailbox_sent=42 mailbox_received=42 stage_messages=21 handoffs=12 fifo=true max_parallel_agents=3
+role=Planner stage=plan Artifact=core:plan ArtifactRef=artifact://<artifact-id> Validator=none result=completed thread_id=portfolio-<run-id>-<task>-<strategy> agent_id=agent-<run-id>-<trial>-planner session_id=session-<run-id>-<trial>-planner session_state=closed lifecycle=created>paused>resumed>closed message_id=message-<run-id>-<n> handoff=false
+role=Developer stage=implement Artifact=core:patch ArtifactRef=artifact://<artifact-id> Validator=none result=completed thread_id=<same-thread> agent_id=agent-<run-id>-<trial>-implementer session_id=session-<run-id>-<trial>-implementer session_state=closed lifecycle=created>paused>resumed>closed message_id=message-<run-id>-<n> handoff=true
+role=Validator stage=initial_validation Artifact=core:validator_feedback ArtifactRef=none Validator=runtime-owned fixed suite result=failed thread_id=<same-thread> agent_id=none session_id=none session_state=runtime-owned lifecycle=runtime-owned message_id=none handoff=false
+role=Tester stage=diagnose Artifact=core:test_diagnosis ArtifactRef=artifact://<artifact-id> Validator=none result=completed thread_id=<same-thread> agent_id=agent-<run-id>-<trial>-tester session_id=session-<run-id>-<trial>-tester session_state=closed lifecycle=created>paused>resumed>closed message_id=message-<run-id>-<n> handoff=true
+role=Fixer stage=fix Artifact=core:patch ArtifactRef=artifact://<artifact-id> Validator=none result=completed thread_id=<same-thread> agent_id=agent-<run-id>-<trial>-fixer session_id=session-<run-id>-<trial>-fixer session_state=closed lifecycle=created>paused>resumed>closed message_id=message-<run-id>-<n> handoff=true
+role=Validator stage=final_validation Artifact=core:validator_feedback ArtifactRef=none Validator=runtime-owned fixed suite result=passed thread_id=<same-thread> agent_id=none session_id=none session_state=runtime-owned lifecycle=runtime-owned message_id=none handoff=false
+status=passed tasks=3 trials=9 delivered=6 expected_failures=3 repaired=3 external_model_calls=0 report=demo/.runs/portfolio-demo/report.json
+```
+
+三个 Single-Agent 失败是预期对照；完整矩阵匹配才会退出 `0`。结构化
+`portfolio-demo-report/v2` 报告写入 `demo/.runs/portfolio-demo/report.json`，包含全部
+Trial、Agent Runtime、StageAudit、Validator、失败原因、期望/实际矩阵和限制声明。
+报告使用临时文件加原子替换；同目录的 `runtime.sqlite3` 按唯一运行 ID 追加持久 Runtime
+证据。`.runs/` 被忽略，Trial Workspace 在结束后清理。`portfolio-demo-report/v1` 只
+代表历史 preview 契约。
+
+公开闭环是：
+
+```text
+固定输入 → 持久 Thread / Agent / Session → SQLite Mailbox
+        → AgentLaneRuntime（同 Agent FIFO、跨 Agent 并行）
+        → WorkerRegistry/Role 路由 → Artifact → PatchIntegrator
+        → Runtime-owned Validator
+        → 失败时 Tester 诊断 / Fixer 修复 / 再验证
+        → 结构化 Handoff + 公开时间线 + portfolio-demo-report/v2
+```
+
+该 scripted/offline Demo 证明冻结场景下的 Agent 生命周期、Mailbox、Handoff、泳道、
+Harness 编排、权限、Artifact、Validator 和 Fix 控制流；不证明 LLM 效果、多 Agent
+普遍优越性或生产认证。它没有 ACK/重试/崩溃重投、跨进程泳道协调、in-flight 恢复、
+exactly-once 或 durable Turn Store。CLI 与 JSON 报告是可复用 MVP 产品面；只有完成
+最终 release check 后才能称为作品集发布候选。下文真实模型 CLI、Web 和 VisionForge
+是保留的进阶/纵向入口，不是默认路径。
+
 ## 当前执行路线
 
 通用 CLI 和 Web 任务只使用 DAG Runtime：
@@ -66,16 +123,40 @@ Artifact 是否就绪分配工作；所有关键交接与结果均为结构化 A
 
 ## 运行测试
 
-要求 Python 3.10+。在本目录执行：
+要求 Python 3.10+。在本目录执行定向 Agent Runtime + Demo 回归：
 
 ```bash
-python3 -m unittest discover -s tests -q
+python3 -m unittest \
+  tests.test_agent_runtime \
+  tests.test_agent_mailbox \
+  tests.test_coding_ablation \
+  tests.test_portfolio_agent_runtime \
+  tests.test_portfolio_demo
 ```
+
+运行 Runtime 测试集：
+
+```bash
+python3 -m unittest discover -s tests -p 'test_runtime*.py'
+```
+
+运行完整非预期红测集合：
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest $(rg --files tests -g 'test_*.py' -g '!test_*expected_red.py' | sed 's#/#.#g; s#\.py$##')
+```
+
+`test_local_trusted_execution_expected_red.py` 与
+`test_local_trusted_execution_behavior_expected_red.py` 是必须在独立新解释器中执行的历史
+EXPECTED_RED 证据；不要把它们混入普通 discover 进程。
 
 真实浏览器测试默认跳过。安装 Chromium 或设置
 `VISIONFORGE_BROWSER_EXECUTABLE` 后，可通过 `VISIONFORGE_E2E=1` 显式运行。
 
-## 通用 CLI
+## 进阶：真实模型通用 CLI（非默认）
+
+以下入口会根据配置进入真实 Provider 路径，可能读取供应商配置并访问网络；它不属于
+离线作品集 Quickstart，也不能用 scripted Demo 的结果替代真实模型效果评测。
 
 ```bash
 python3 coding_agent_cli.py \
@@ -100,7 +181,10 @@ python3 coding_agent_cli.py "需求" \
 python3 -m unittest discover -s tests -v
 ```
 
-## Web 界面
+## 进阶：Web 界面（非默认）
+
+现有 Web 是 Coding Harness 兼容工作台，不是完整持久 Thread/Agent 控制面；任务索引和
+运行句柄仍主要保存在进程内。它不属于作品集完成门禁，也不替代默认 CLI 报告。
 
 ```bash
 python3 web_server.py
@@ -119,6 +203,11 @@ tool calling 和 structured output 等能力声明。
 ## 关键目录
 
 - `coding_workflow/dag_runner.py`：通用 DAG 端到端入口与局部 FixTask 闭环。
+- `coding_workflow/agent_runtime.py`：Agent 实体、Session、Message/Handoff 与 Manager 契约。
+- `coding_workflow/runtime_persistence/agent.py`：Agent、Session 和私有状态 SQLite Store。
+- `coding_workflow/runtime_persistence/mailbox.py`：持久 Mailbox 与消费游标。
+- `coding_workflow/portfolio_agent_runtime.py`：作品集 Demo 的 Agent 泳道、Mailbox 与 Worker 适配层。
+- `portfolio_demo.py`：默认离线入口、Runtime 汇总和 `portfolio-demo-report/v2` 组装。
 - `coding_workflow/harness/`：TaskGraph、调度、生命周期、注册表和执行器。
 - `coding_workflow/planning.py`：结构化任务规划与非法图修复。
 - `coding_workflow/graph_workers.py`：DAG Worker 契约实现。

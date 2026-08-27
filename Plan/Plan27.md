@@ -2,7 +2,9 @@
 
 日期：2026-08-24
 
-讨论主题：在保持 `PROD-01B → 01C → 01D → 01E` 主线不变的前提下，冻结 Harness 行为优化的证据协议、当前本地子进程安全边界，以及未来重复经验生成 Skill 候选的治理方式。
+> 2026-08-27 路线注记：本文保留 2026-08-24 的策略与当时生产顺序，不再定义当前执行优先级。当前路线以 [`Plan29`](Plan29.md) 的 `MVP-CLOSE-01` 为准；本文所有“当前顺序/优先级”均按历史快照理解，生产增强恢复时再重新核对。
+
+讨论主题（2026-08-24 历史语境）：在保持 `PROD-01B → 01C → 01D → 01E` 主线不变的前提下，冻结 Harness 行为优化的证据协议、当前本地子进程安全边界，以及未来重复经验生成 Skill 候选的治理方式。
 
 ## 目标与背景
 
@@ -13,7 +15,7 @@
 3. 重复问题是否应该自动沉淀为 Skill 尚无治理边界，自动激活可能把错误经验永久传播；
 4. “Runtime 是项目本体”的简称会漏掉编排、Context/Memory、Eval、Security、Incident 和 Plugin 治理，需要统一 Harness、Runtime Kernel、Plugin 和 Model 的术语层级。
 
-本计划只归档本次形成的策略，不实现新的 Runtime 行为，不调用真实模型，不访问外部仓库，不安装 Evo-Bench 或 `evo-hq/evo`，也不改变当前生产批次顺序。
+本计划只归档当时形成的策略，不实现新的 Runtime 行为，不调用真实模型，不访问外部仓库，不安装 Evo-Bench 或 `evo-hq/evo`，在 2026-08-24 当时也不改变生产批次顺序。
 
 ## 候选方案对比
 
@@ -52,11 +54,11 @@
 
 ## 最终选择
 
-1. 当前采用 **L1 人工评测驱动演进**。所有会改变 Agent 行为的 Harness 修改使用 `Baseline → 失败证据 → 可证伪假设 → 单一 Mutation → Validation → Held-out 或确定性故障矩阵 → KEEP/ROLLBACK/INCONCLUSIVE`。L2 保留为后续受控候选能力，L3 明确为当前非目标。
-2. 当前子进程边界采用 **`local_trusted_execution/v1` 契约**，但状态仅为“边界与验收口径已冻结，代码未验收”。它只能处理本人控制的可信仓库和可丢弃 Workspace，不得称为生产安全沙箱。
+1. 本计划当时选择 **L1 人工评测驱动演进**。所有会改变 Agent 行为的 Harness 修改使用 `Baseline → 失败证据 → 可证伪假设 → 单一 Mutation → Validation → Held-out 或确定性故障矩阵 → KEEP/ROLLBACK/INCONCLUSIVE`。L2 保留为后续受控候选能力，L3 明确为非目标。
+2. 本计划当时为子进程边界选择 **`local_trusted_execution/v1` 契约**，当时状态仅为“边界与验收口径已冻结，代码未验收”；其后主体候选已实现，但完整安全认证仍未签发。它只能处理本人控制的可信仓库和可丢弃 Workspace，不得称为生产安全沙箱。
 3. Skill 采用 **延后的只读候选箱**。系统未来只能自动产生 `LearningItem(kind=skill, status=PROPOSED)` 或等价投影，不能直接激活；该能力不插队 PROD-01B，等待 PROD-05/INC-04。
 4. 固定术语为 **Harness 是项目本体、Runtime Kernel 是执行内核、Plugin 是专业能力、Model/Backend 是可替换负载**。术语澄清不修改既有领域模型或 PROD 顺序。
-5. 当前推进顺序保持 `PROD-01B → 01C → 01D → 01E`。本次策略都是跨批次门禁、产品边界或后续提醒，不是新的插队生产子系统。
+5. 本计划批准时的推进顺序保持 `PROD-01B → 01C → 01D → 01E`。该历史顺序现已由 Plan29 后置；本次策略仍只是跨批次门禁、产品边界或后续提醒，不是新的插队生产子系统。
 
 ## 选择理由
 
@@ -137,9 +139,9 @@ RuntimeEvent / Verification / Incident / human correction
 - 跨任务事件和事故证据能否稳定生成 Skill 指纹，并有效区分 Skill、Regression、Policy、Validator、Adapter 和 Runbook。
 - 评测报告能否完整保留失败、缺失、重试、用量、配置 hash 和 Evidence，而不是只展示最佳 Run。
 
-## 待办事项
+## 历史待办事项（当前由 Plan29 重新排序）
 
-- 继续实施 PROD-01B，不因本计划改变当前优先级。
+- 当时的动作是继续实施 PROD-01B，不因本计划改变当时优先级；当前已由 Plan29 后置。
 - 在下一份适用 Plan 中使用确定性轻量 Harness Evolution 模板，并记录明确的 KEEP/ROLLBACK/INCONCLUSIVE。
 - 用户重新授权后再实施 `local_trusted_execution/v1`，完成统一 Supervisor、Profile、输出脱敏和 A～H 验收。
 - 在 PROD-05/INC-04 前重新评估 `PROD-05-SKILL-CANDIDATE-INBOX`，未经确认不得提前激活。

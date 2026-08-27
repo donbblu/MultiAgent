@@ -158,12 +158,12 @@ class RuntimeOutboxExpectedRedTests(unittest.TestCase):
             database = SQLiteRuntimeDatabase(RuntimeSQLiteConfig(self.path))
             database.initialize()
 
-    def test_fresh_database_is_v3_with_outbox_tables_and_event_parent_key(self) -> None:
-        """Schema v3 must exist before any Outbox lifecycle API is introduced."""
+    def test_current_database_keeps_v3_outbox_tables_and_event_parent_key(self) -> None:
+        """The current schema must retain the released v3 Outbox contract."""
 
         database, _ = self.runtime()
-        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 3)
-        self.assertEqual(database.schema_version(), 3)
+        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 5)
+        self.assertEqual(database.schema_version(), 5)
         with sqlite3.connect(str(self.path)) as connection:
             table_sql = dict(connection.execute(
                 """SELECT name, sql FROM sqlite_schema

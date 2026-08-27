@@ -1,4 +1,4 @@
-# 交互式多模态 Multi-Agent Harness：生产演进与事故驱动学习路线
+# 交互式多模态 Multi-Agent Harness：项目闭环与后续生产演进路线
 
 ## 1. 学习目标
 
@@ -40,6 +40,8 @@
 
 因此不再使用“L1 完成、向 L2 过渡”这种单轴结论。成熟度按领域分别报告：交互持久性、协作协议、上下文正确性、权限隔离、多模态来源、插件兼容、事故恢复和智能效果。
 
+2026-08-27 起，当前学习与开发目标不是继续逐项补齐所有生产域，而是先完成 [`Plan/Plan29.md`](Plan/Plan29.md) 的作品集主线。薄 scripted/offline Demo、smoke和文档已形成preview；用户随后确认发布前必须真正用上AgentInstance、AgentSession、Mailbox、私有状态、独立执行泳道和Handoff，因此当前阶段改为 `MVP-AGENT-RUNTIME-01`。完整 Outbox Transport、durable Invocation、Incident Shadow、生产隔离和后续 PROD 能力继续作为学习路线保留，但不再阻塞本轮完成。
+
 ## 4. 学习与开发原则
 
 每个 PROD 批次都要回答：
@@ -53,9 +55,9 @@
 7. 如何回放，同时避免再次产生外部副作用？
 8. 这项机制属于 Core 还是某个 Plugin？
 
-以下要求适用于实现批次；纯 Charter 的 PROD-00 是唯一例外，以代码事实核对、跨文档一致性、`git diff --check` 和现有回归验收。故障注入必须匹配已实现边界：纯协议批次使用非法构造和 admission 负向用例，持久化或进程批次才使用 `kill -9`、锁竞争和恢复演练，不能为不存在的资源伪造证据。
+以下严格要求适用于 PROD/INC、安全认证和其他生产增强批次；纯 Charter 的 PROD-00 是历史例外。`MVP-CLOSE-01` 与 `MVP-AGENT-RUNTIME-01` 使用 Plan29 的轻量证据轨：以版本化协议、相关定向正常/负向/事务测试、一个权威 Demo、离线 smoke、compile、diff-check和最终一次独立 Review为完成门禁，不为每个微步骤复制生产级故障、双审和哈希流程。故障注入仍必须匹配已实现边界，不能为不存在的资源伪造证据。
 
-每个实现批次必须留下：
+每个 PROD/INC 或其他生产增强实现批次必须留下：
 
 - 一个版本化领域协议或迁移说明；
 - 正常路径与至少一个负向事故用例；
@@ -66,6 +68,26 @@
 
 ## 5. 分批学习路线
 
+### 当前：MVP-AGENT-RUNTIME-01 单机可用Agent Runtime
+
+状态：进行中，见 [`Plan/Plan29.md`](Plan/Plan29.md)。
+
+`MVP-CLOSE-01A～01C` 已完成入口合同、`demo/portfolio_demo.py`、精确成功矩阵、结构化报告、四类结果测试、一次离线smoke和README；它们保留为preview baseline。当前实现仍是临时WorkerRegistry+DAG，公开角色时间线来自StageAudit投影，不代表真实Agent生命周期。
+
+用户确认后的学习顺序是：
+
+```text
+01A AgentManager / AgentInstance / AgentSession / SQLite Store
+  → 01B Mailbox / 私有状态 / 同Agent串行与跨Agent并行
+  → 01C 真实Handoff / Artifact / Validator / Portfolio Demo
+  → 01D 生命周期报告 / 回归 / 文档 / 独立Review
+  → MVP-CLOSE-01D 最终发布检查
+```
+
+本阶段要真正学习并证明：领域对象怎样成为执行所有者；Agent私有状态如何按身份隔离；Mailbox如何持久、顺序消费并受pause/resume/close约束；共享线程池如何提供每Agent串行泳道；Handoff怎样只传结构化Message/Artifact引用；为什么Runtime-owned Validator仍不能变成Agent自证。
+
+本阶段不要求证明生产级崩溃中执行恢复、Lease/Heartbeat/Fencing、exactly-once、生产Reaper、完整 Browser adversarial、Outbox Transport、Incident Ledger、分布式执行或真实模型效果。已有 Runtime/安全资产作为项目深度保留，但未完成的生产能力必须继续明确标为 Roadmap。
+
 ### PROD-00：产品中心、领域语言与验收边界
 
 状态：已完成文档冻结，见 Plan/Plan26.md。
@@ -74,7 +96,7 @@
 
 ### PROD-01：持久交互与可恢复执行
 
-严格按修订后的顺序学习：01A 已实现 Scope/Thread/Turn/Message、通用 AgentProfile/Role、AgentSession、Invocation、Outcome/Acceptance 和 Event 协议；01B 正在实施，其中 01B-1 已完成 SQLite Migration/UoW，01B-2 已完成 Thread+RuntimeEvent 原子提交，01B-3A 已完成 durable intent 原子三写，01B-3B-1 已完成本地 claim/NACK lifecycle。用户已批准先完成 `SEC-EXEC-01 local_trusted_execution/v1`，再实现增强版 01B-3B-2 Transport publish/ACK/Receipt；随后 01C 实现 durable Invocation，01D 接入现有 Task/Scenario/Coding 和 Web 查询，01E 完成 INC-01 并启动四组 INC-02 Shadow。
+状态：生产增强路线暂缓。01A 已实现 Scope/Thread/Turn/Message、通用 AgentProfile/Role、AgentSession、Invocation、Outcome/Acceptance 和 Event 协议；01B 已完成 SQLite Migration/UoW、Thread+RuntimeEvent 原子提交、durable intent 原子三写和本地 claim/NACK lifecycle。`SEC-EXEC-01` 主体候选也已提交，但完整 Browser/安全认证尚未完成。`01B-3B-2`、01C、完整01D与01E全部保留为 MVP 闭环之后的可选生产路线。
 
 本阶段不再从 Plan 与 HANDOFF 拼接测试证据：`PROD-01B` 的测试设计、运行结果、真实缺陷、修复、回归、Review 与决策统一学习和维护在 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)。
 
@@ -84,7 +106,7 @@
 
 还要学会把“协作身份”“一次执行”和“机器资源”分开：用户长期看到的是 Thread，AgentInstance/AgentSession 保存可恢复身份与连续性；任务专用 Specialist 是同一 Thread 下的 ChildInvocation/Attempt，不是偷偷创建的新 Thread，也不是常驻模型进程。Invocation 同时有执行状态和清理状态；`SUCCEEDED` 只说明候选结果已经可靠保存，只有执行进入终态、清理达到 `REAPED`、活动 Grant/Lease/ChildInvocation 归零并拒绝旧 fencing token 后，执行域才真正 closed。
 
-01A 只冻结 parent/child、双状态轴、终止原因、deadline、lease、fencing 和资源引用。当前插入的 `SEC-EXEC-01` 先完成可信本地子进程的版本化 Profile、进程组监督、同步清理屏障、最小环境和输出脱敏；它不建立持久 Invocation 或生产沙箱。01C 才实现持久取消、级联取消、Watchdog、幂等 Finalizer/Reaper 和孤儿恢复；02 仍负责 Provider/模型请求流、连接和硬取消；03 再补完整 CapabilityGrant、Secret、网络、容器/进程与生产隔离。进程内线程只能证明逻辑失权，可信本地进程监督也不能伪称 OS containment。
+01A 只冻结 parent/child、双状态轴、终止原因、deadline、lease、fencing 和资源引用。历史生产路线曾在 3B-2 前插入 `SEC-EXEC-01`，其主体候选已实现，但 Browser/Renderer 与最终认证仍未完成；Plan29 已将余项后置。它不建立持久 Invocation 或生产沙箱。未来的 01C 才实现持久取消、级联取消、Watchdog、幂等 Finalizer/Reaper 和孤儿恢复；02 仍负责 Provider/模型请求流、连接和硬取消；03 再补完整 CapabilityGrant、Secret、网络、容器/进程与生产隔离。进程内线程只能证明逻辑失权，可信本地进程监督也不能伪称 OS containment。
 
 最小练习不是“修一个 Bug”，而是：
 

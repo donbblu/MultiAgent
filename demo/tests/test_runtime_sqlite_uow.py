@@ -133,6 +133,11 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         with sqlite3.connect(str(self.path)) as connection:
             connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute("DROP TABLE runtime_agent_messages")
+            connection.execute("DROP TABLE runtime_agent_mailbox_cursors")
+            connection.execute("DROP TABLE runtime_agent_private_state")
+            connection.execute("DROP TABLE runtime_agent_sessions")
+            connection.execute("DROP TABLE runtime_agent_instances")
             connection.execute("DROP TABLE runtime_outbox_receipts")
             connection.execute("DROP TABLE runtime_outbox")
             connection.execute("DROP TABLE runtime_outbox_policy")
@@ -199,7 +204,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         database.initialize()
 
         self.assertEqual(database.schema_version(), RUNTIME_DB_SCHEMA_VERSION)
-        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 3)
+        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 5)
         self.assertEqual(RUNTIME_DB_COMPONENT, "runtime_kernel")
         objects = self.raw_rows(
             self.path,
@@ -210,9 +215,16 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         self.assertEqual(
             objects,
             [
+                ("index", "runtime_agent_instances_thread_idx"),
+                ("index", "runtime_agent_messages_pending_idx"),
                 ("index", "runtime_events_event_scope_uq"),
                 ("index", "runtime_events_recorded_idx"),
                 ("index", "runtime_outbox_scope_state_idx"),
+                ("table", "runtime_agent_instances"),
+                ("table", "runtime_agent_mailbox_cursors"),
+                ("table", "runtime_agent_messages"),
+                ("table", "runtime_agent_private_state"),
+                ("table", "runtime_agent_sessions"),
                 ("table", "runtime_events"),
                 ("table", "runtime_outbox"),
                 ("table", "runtime_outbox_policy"),
@@ -246,6 +258,8 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("runtime_kernel", 1, "runtime_kernel_base_v1", 64),
                 ("runtime_kernel", 2, "runtime_thread_event_v2", 64),
                 ("runtime_kernel", 3, "runtime_event_outbox_v3", 64),
+                ("runtime_kernel", 4, "runtime_agent_store_v4", 64),
+                ("runtime_kernel", 5, "runtime_agent_mailbox_v5", 64),
             ],
         )
         database.verify_integrity()
@@ -277,7 +291,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.database().initialize()
 
-        self.assertEqual(self.database().schema_version(), 3)
+        self.assertEqual(self.database().schema_version(), 5)
         self.assertEqual(
             self.raw_rows(self.path, "SELECT id, value FROM probe_parent"),
             [("v1", "stable")],
@@ -293,6 +307,8 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 (1, "runtime_kernel_base_v1", 64),
                 (2, "runtime_thread_event_v2", 64),
                 (3, "runtime_event_outbox_v3", 64),
+                (4, "runtime_agent_store_v4", 64),
+                (5, "runtime_agent_mailbox_v5", 64),
             ],
         )
         self.assertEqual(
@@ -320,7 +336,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.assertEqual(self.schema_snapshot(self.path), before)
         self.database().initialize()
-        self.assertEqual(self.database().schema_version(), 3)
+        self.assertEqual(self.database().schema_version(), 5)
 
     def test_required_v2_trigger_drift_fails_closed(self) -> None:
         self.database().initialize()
@@ -360,7 +376,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 connection.execute("PRAGMA table_info(runtime_snapshots)").fetchall(),
                 before_columns,
             )
-        self.assertEqual(self.database().schema_version(), 3)
+        self.assertEqual(self.database().schema_version(), 5)
 
     def test_initialization_preserves_database_global_version_pragmas(self) -> None:
         self.path.parent.mkdir(parents=True)
@@ -396,7 +412,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         with self.assertRaisesRegex(
             RuntimeSchemaTooNewError,
-            "found=4.*supported=3",
+            f"found={RUNTIME_DB_SCHEMA_VERSION + 1}.*supported={RUNTIME_DB_SCHEMA_VERSION}",
         ):
             self.database().initialize()
 
@@ -490,7 +506,13 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         )
         self.assertEqual(
             before,
-            [(1.5, "real"), (2, "integer"), (3, "integer")],
+            [
+                (1.5, "real"),
+                (2, "integer"),
+                (3, "integer"),
+                (4, "integer"),
+                (5, "integer"),
+            ],
         )
 
         with self.assertRaisesRegex(RuntimeSchemaCorruptionError, "必须是整数"):
@@ -553,7 +575,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
             )
 
         self.database().initialize()
-        self.assertEqual(self.database().schema_version(), 3)
+        self.assertEqual(self.database().schema_version(), 5)
         self.assertEqual(
             self.raw_rows(self.path, "SELECT id, value FROM legacy_canary"),
             [("one", "stable")],

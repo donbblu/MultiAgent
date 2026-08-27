@@ -2,6 +2,8 @@
 
 > 本文件是 `PROD-01B` 测试、挑战、缺陷、修复与决策证据的权威入口。`Plan` 负责定义应当实现什么，测试代码负责提供可执行 Oracle，本报告负责记录实际发生了什么；`HANDOFF` 与 Backlog 只保存摘要和本文件链接。若摘要与本报告冲突，以受测文件哈希匹配的本报告条目为准。
 
+> 2026-08-27 路线注记：本报告继续作为已完成 01B 切片的权威历史证据，但不再定义当前执行优先级。报告中的“下一动作”保留其记录发生时的含义；当前先执行 [`Plan29`](../Plan/Plan29.md) 的 `MVP-CLOSE-01`，未完成的 3B-2 与其后生产增强已后置。
+
 ## 0. 报告身份与证据规则
 
 | 字段 | 值 |
@@ -9,7 +11,7 @@
 | `report_schema` | `verification-report/v1` |
 | `report_id` | `VR-PROD-01B` |
 | `created_at` | `2026-08-25` |
-| `last_updated` | `2026-08-25` |
+| `last_updated` | `2026-08-27` |
 | `contract_ref` | [`Plan/Plan26.md`](../Plan/Plan26.md) |
 | `incident_plan_ref` | [`Plan/Plan25.md`](../Plan/Plan25.md) |
 | `runtime_acceptance` | `NOT_ISSUED` |
@@ -499,7 +501,7 @@ git diff --check
 
 未覆盖风险：本证据只覆盖单宿主文件型 SQLite，不外推到多节点数据库；没有容量、p95 或大表扫描承诺；生产 Composition Root 仍须提供至少 256-bit CSPRNG token factory、每进程唯一 publisher ID 与可信共享 wall clock。Transport、publish、ACK、Receipt、PUBLISHED 深度完整性、ACK-loss 重投、Consumer Inbox、at-least-once/effectively-once 和可靠发布均属于后续 `01B-3B-2` 或更后批次。
 
-下一动作是冻结并建立 `01B-3B-2` 的 Transport publish/ACK/Receipt 红卡：claim 必须已提交且 writer lock 已释放后才能调用 Transport；有效 ACK 在新事务中追加 immutable Receipt 并以当前 ownership CAS 到 PUBLISHED；stale/错误/exact-retry ACK、ACK-vs-reclaim、有效 ACK 后本地提交失败和 PUBLISHED/Receipt 正反向完整性必须形成可执行 Oracle。不得修改已发布 Schema v3/checksum，也不得从本切片冒领可靠发布。
+3B-1 收口时记录的历史下一动作是冻结并建立 `01B-3B-2` 的 Transport publish/ACK/Receipt 红卡：claim 必须已提交且 writer lock 已释放后才能调用 Transport；有效 ACK 在新事务中追加 immutable Receipt 并以当前 ownership CAS 到 PUBLISHED；stale/错误/exact-retry ACK、ACK-vs-reclaim、有效 ACK 后本地提交失败和 PUBLISHED/Receipt 正反向完整性必须形成可执行 Oracle。该动作现已后置；未来恢复时仍不得修改已发布 Schema v3/checksum，也不得从本切片冒领可靠发布。
 
 ---
 

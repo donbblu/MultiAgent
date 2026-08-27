@@ -4,20 +4,36 @@
 
 新任务先阅读本文，再检查 `git status`、最近提交和本文件列出的关键代码。代码、测试和 Git 是事实来源；本文用于恢复当前方向，不替代代码检查。
 
-推荐的新任务开场指令：
+新窗口直接复制以下指令：
 
 ```text
-请读取 /Users/donbblu/codex/multiAgent/HANDOFF.md，
-再检查 git status、最近一次提交和其中列出的关键文件。
-以代码和测试为事实来源，不要重新读取旧聊天。
-从 HANDOFF.md 的“下一步”继续推进。
-规划、实现或收口任何 PROD-* 批次时，严格执行“PROD / INC 双轨联动规则”，
-同步写明并更新对应的 INC-* 事故学习增量，不得只推进功能主线。
-凡修改会影响 Agent 行为的 Harness 机制，严格执行“Harness Evolution Protocol / 评测驱动演进规则”，
-记录 Baseline、失败证据、单一可证伪假设、Validation/Held-out 和保留/回滚结论；
-示例数字、脚本/Fake Model 结果不得写成真实模型或生产实测。
-继续前读取 VerificationReports/STEP-LOG.md 的最后条目；任何会改变契约、实现、验证、Review 或 checkpoint 的逻辑步骤，
-必须先追加 PRE_REGISTER，完成后追加 ACTUAL，审查与里程碑分别追加 REVIEW/CHECKPOINT；失败和缺失证据也必须如实保留。
+请在 /Users/donbblu/codex/multiAgent 继续项目。
+先读取 HANDOFF.md 顶部“新窗口接续摘要”、Plan/Plan29.md 的
+“2026-08-27 用户确认修订：发布前必须完成 Agent Runtime MVP”，
+以及 VerificationReports/STEP-LOG.md 的 TRACE-174 及之后最新条目；再检查 git status、HEAD 和相关代码。
+以代码、测试和 Git 为事实来源，不需要旧聊天。
+
+当前事实：MVP-CLOSE-01A～01C 的薄 scripted/offline baseline已保留；
+MVP-AGENT-RUNTIME-01A～01C 已完成真实 AgentInstance/AgentSession、SQLite schema v5、
+受控私有状态、持久Mailbox/消费游标、同Agent串行/跨Agent并行lane、结构化Handoff与Portfolio Demo接入。
+01C实smoke为9 Trial/6交付/3预期失败/3修复、21 scripted/0 model、9 Thread、21 Agent、
+42/42 Mailbox、21 stage Message和12跨Agent Handoff，全部Session关闭；双轴code-review最终0 finding。
+01D已更新根README与demo/README并完成33定向、184 Runtime、579非expected-red、连续5次CLI smoke、
+compile/diff和独立review-artifact；初审唯一Medium是本HANDOFF/Plan29状态过期，修正后窄复核已确认关闭，最终0 finding。
+用户已明确启动MVP-CLOSE-01D；候选manifest见TRACE-194，当前正在创建本地release-candidate、
+执行干净检出复现和最终独立Review。尚未完成，不能提前宣布作品集完成。
+
+用户已确认新的发布前主线：MVP-AGENT-RUNTIME-01A → 01B → 01C → 01D → MVP-CLOSE-01D。
+MVP-AGENT-RUNTIME-01A～01D已全部完成，`MVP-CLOSE-01D`正在执行。只按TRACE-194冻结manifest
+创建本地候选并运行发布门禁；不要重复Agent Runtime实现，也不要扩张候选范围。
+
+不得跳过`MVP-CLOSE-01D`的干净检出和独立Review；不得扩张到分布式队列、Lease/Heartbeat、
+崩溃中执行恢复、exactly-once、生产Reaper、完整Web、真实模型、网络或Browser。
+不得触碰 demo/track.md、problems.md、prombles.md 的删除状态或 Plan/Plan28.md。
+用户本轮已授权为`MVP-CLOSE-01D`创建本地release-candidate分支/commit；仍不授权push/tag/deploy。
+
+01D不重写01C执行内核；若必须扩大到完整PROD-01C～05或破坏现有
+Artifact/Validator安全边界，立即停止并报告阻塞，不得自动扩大范围。
 ```
 
 ## 项目 Step Log（后续任务强制执行）
@@ -26,26 +42,29 @@
 
 后续任务开始时必须读取末尾条目并检查 base HEAD/worktree；修改前追加 `PRE_REGISTER`，动作结束后在进入下一状态前追加 `ACTUAL`，收到独立审查后追加 `REVIEW`，里程碑追加 `CHECKPOINT`。失败候选不得删除或改写，只能通过新候选或 `CORRECTION + supersedes_entry_id` 续记；缺失原始证据必须写 `MISSING/UNKNOWN`，未提交只能写 `WORKTREE_ONLY/PENDING`。本轮正式序列从 `TRACE-20260826-001` 开始，当前仍未创建本批 Git commit。
 
-## 新窗口接续摘要（2026-08-25，方案 A 已批准）
+`MVP-CLOSE-01` 与 `MVP-AGENT-RUNTIME-01` 按 Plan29 使用轻量例外：每个 01A～01D 批次只做批次级 PRE_REGISTER 和结束时 ACTUAL/CHECKPOINT；搜索、微小修正与普通定向复跑不再逐步建哈希/双审链。只有安全边界、真实外部副作用、Agent Runtime 01D和最终发布候选需要独立 Review；恢复 PROD/INC/安全认证时才回到上述严格协议。
 
-以下 `HandoffProposal` 是本次窗口切换的最小接续信息。它记录已经批准的顺序修订，但不创建 RouteEdge、Invocation、权限、任务完成或 Runtime Acceptance。
+## 新窗口接续摘要（2026-08-27，Agent Runtime MVP 修订）
 
-- **objective**：在不重开已完成 `PROD-01B-1/01B-2/01B-3A/01B-3B-1`、不冒领`KEEP`或Runtime Acceptance的前提下，把当前完整SEC-EXEC实现/测试/证据闭包按已审62-path allowlist提交并普通推送，然后停止。
-- **target_role**：当前提交与续接审查者。`stdout_short`可信fixture只完成过一次开发级真实smoke，不是持续execution授权、production integration、KEEP或Runtime Acceptance；本轮不得重跑或扩展target。
-- **public_rationale**：技术栈方向没有错；主要问题是新 `runtime_persistence` 尚未接入 CLI/Web 主链，而当前执行入口存在已验证的凭据继承和清理语义缺口。先关闭本地执行风险，再继续 Outbox 投递闭环，不需要更换 Python、SQLite 或自研 Harness。
-- **completed_work**：`01B-3B-1` 已提交并推送；方案 A 已批准。`SEC-EXEC-01` 当前完成单一 `Popen` owner、五 Profile、global one-shot admission、Composition-owned exact-bool approval、Core/Legacy/VisionForge adapters、cleanup fence/quarantine/recovery、bounded/redacted output、autonomous dev lease与eval trial-root接线。结构+行为 Oracle、父级 pure-mock 与 supervisor 门禁已完成已登记的首红/修复/复核链。冻结六工件上又各执行一次 watchdog-only（run_id `...0001`）与 arm→ACK→disarm（run_id `...0002`）；两次均 exact one test、0 skip/failure/error、terminal clean/join、零 target，并分别完成双独立 Review `APPROVE/blocking=0` 与 producer-bound exact cleanup。之后按小批次新增默认禁用的`test_local_execution_posix_target_smoke.py`，并只执行一次可信fixture `stdout_short`：1/1通过、0.614s、stdout/stderr精确、direct child exit/reap为0、watchdog clean/join、登记target group/PIDs均消失、临时root删除且外部只读`ps`未发现fixture残留。再下一小批新增默认禁用的`test_project_workspace_production_smoke.py`，真实跑通一次`ProjectWorkspace → LocalExecutionApprover → challenge/token/retry → 统一Popen → CommandResult/cleanup`：issuer=1、spawn=1、`/usr/bin/python3 -V`输出精确、exit/reap=0、Profile/cleanup有效、无本批新增私有目录或进程残留。随后完成首个用户可见CLI小批：默认无flag在模型/Workspace/process前返回可解析报告与`spawn=0`，显式批准的pure-mock路径以同一payload输出Profile/exit/duration/cleanup且不冒称真实spawn；聚焦7/7与单次快检通过。第二个用户授权小批已把真实timeout与模拟quarantine拆开：一次Guard-backed `hang_ignore_term`在3.957s内通过，Runtime `_spawn=1`、目标leader+grandchild共2 PID、TERM后KILL、direct child reaped、PGID absent、stream/private root关闭、watchdog以`cleanup_control` clean/join；pure quarantine卡又证明同Workspace第二次spawn=0。第三批已将VisionForge CLI/Web缺授权拒绝提前到env/Suite/model/plugin/Workspace/Browser runner之前，保留budget-only模式，并区分“已批准”和“将执行”；首红2/2后focused pure 7/7、process/network/model均0。第四批在四个隔离解释器中完成聚焦回归：168项运行、163通过、5个真实opt-in方法按设计跳过、0失败/0错误、无新增真实boundary；报告经一次`REVISE`补齐5个精确test ID后独立`APPROVE/blocking=0`。第五批把当前66个dirty路径完整分区为17个本五批内容文件、2个协调文件、4个明确无关用户文件与43个此前/范围外文件，15个非自引用工件哈希全部匹配，独立scope review为`APPROVE/blocking=0`。完整62-path SEC-EXEC闭包已提交为`1024e0900693b86316bb7807976a7f2e13667d3f`，checkpoint文档提交为`66acb61aea5290c34d90a1533ee9e7b034de4d1e`；两者已普通push到`origin/main`并核对本地/远端一致。上述结果都不是完整production验收或`KEEP`。4个真实Browser E2E、Renderer/browser binary Profile和最终 `KEEP` 仍未收口；本地仍保留四项未提交denylist用户改动，`01B-3B-2` 仍须等待后续明确小批次。
-- **evidence_refs**：当前 base HEAD=`0f9e41ad76d7a25deee0a28de42a422707a6f24d`；3B-1 权威证据见 [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md) 4.8；当前安全实现、审查与限制见 [`VerificationReports/SEC-EXEC-01.md`](VerificationReports/SEC-EXEC-01.md) 4.3～4.6；逐步 What/Why/Effect 与偏差见 [`VerificationReports/STEP-LOG.md`](VerificationReports/STEP-LOG.md) `TRACE-20260826-043`～`059`，两档 reviewed POSIX no-target 执行与 cleanup 见 `TRACE-20260826-091`～`104`，单次真实`stdout_short`开发smoke见`TRACE-20260826-119`～`121`，单次Legacy production path见`TRACE-20260826-122`～`124`，CLI可见报告见`TRACE-20260827-125`～`127`及[`SEC-EXEC-CLI-VISIBLE-DEMO.md`](VerificationReports/SEC-EXEC-CLI-VISIBLE-DEMO.md)，真实timeout与pure quarantine拆分证据见`TRACE-20260827-129`～`134`及[`SEC-EXEC-BATCH2-TIMEOUT-CLEANUP.md`](VerificationReports/SEC-EXEC-BATCH2-TIMEOUT-CLEANUP.md)，VisionForge pure Composition见`TRACE-20260827-135`～`139`及[`SEC-EXEC-BATCH3-VISIONFORGE-COMPOSITION.md`](VerificationReports/SEC-EXEC-BATCH3-VISIONFORGE-COMPOSITION.md)，聚焦回归与精确skip清单见`TRACE-20260827-140`～`145`及[`SEC-EXEC-FOCUSED-REGRESSION-SCORECARD.md`](VerificationReports/SEC-EXEC-FOCUSED-REGRESSION-SCORECARD.md)，五批范围/hash分区见`TRACE-20260827-146`～`149`及[`SEC-EXEC-FIVE-BATCH-MANIFEST.md`](VerificationReports/SEC-EXEC-FIVE-BATCH-MANIFEST.md)。真实入口分别为[`test_local_execution_posix_target_smoke.py`](demo/tests/test_local_execution_posix_target_smoke.py)、[`test_project_workspace_production_smoke.py`](demo/tests/test_project_workspace_production_smoke.py)和[`test_local_execution_timeout_cleanup_smoke.py`](demo/tests/test_local_execution_timeout_cleanup_smoke.py)；主链仍使用 legacy Store 见 [`dag_runner.py`](demo/coding_workflow/dag_runner.py)，决策依据见 [`SecurityProblem.md`](SecurityProblem.md)。
-- **posix_artifact_checkpoint**：runner=`20da45a1…448b`；card=`bd0d2654…1d02`；smoke=`bca89a4f…d44f`；helper=`a87ed9f8…2999`；fixture=`80ecd65d…06d8`；safety=`266b8a32…9bdd`。完整64位哈希见 `VerificationReports/SEC-EXEC-01.md` 4.3。
-- **decisions_and_constraints**：唯一顺序冻结为 `SEC-EXEC-01 → 增强版 01B-3B-2 → BudgetLedger/Acceptance/查询恢复`。不重开完成切片、不改写历史 VerificationReport、不原地修改已发布 Schema v3/checksum；继续保留 Python 模块化单体、自研 Harness/Runtime、SQLite WAL 和现有 unittest。不引入 PostgreSQL、真实 Broker、Temporal、Kubernetes、向量数据库或第二套 Agent Runtime。
-- **assumptions_and_uncertainty**：当前只承诺 macOS/POSIX 单用户可信本地执行，不承诺生产沙箱。Python 无法形式化硬抢占 `killpg/waitpid/close/rmtree` 等OS syscall；5秒是Runtime协议deadline，真实调度仍须POSIX证据。
-- **open_questions**：ReferenceImageRenderer 采用预渲染hash-pinned资产还是新增明确Profile；browser executable如何进入Profile manifest而不恢复任意environment；增强版3B-2 Sink与1k/10k容量阈值；`ENG-01`是否另行推进。
-- **next_action**：两项主体提交已推送并核对到`origin/main=66acb61aea5290c34d90a1533ee9e7b034de4d1e`。现在只提交并推送本次远端状态记录，随后停止；不自动进入Browser/full/target/`01B-3B-2`。
-- **expected_output**：远端包含实现、checkpoint和本远端状态记录三个普通提交；`origin/main`精确指向终端记录提交，四个denylist用户改动仍留在本地且未暂存；不包含KEEP、Runtime Acceptance或新的真实执行。
-- **acceptance_criteria**：结构卡不能靠空壳或字符串注释通过；A～H 行为 Oracle、正常路径和 no-bypass manifest 全部可执行，清理失败 fail-closed；既有 Result/Artifact 兼容；真实模型、秘密、外部网络和不可逆副作用均不使用；最终 Review blocking finding 为 0 前不得 `KEEP`。
-- **required_capabilities**：文档与 Git 审计、Python unittest、受控假 sentinel/临时 Workspace/loopback 故障夹具、独立 Review；后续 3B-2 还需要 SQLite/Outbox、持久 Sink 和容量基线。
-- **resource_scope**：主体allowlist为独立scope review批准的62项（23实现/调用方、26测试/fixture、13证据/协调）；远端状态记录只追加`HANDOFF.md`与`STEP-LOG.md`。明确denylist为`demo/track.md`、`problems.md`、`prombles.md`删除和`Plan/Plan28.md`。主体提交、checkpoint提交、终端记录提交与普通push已授权；模型、生产秘密、外网、依赖安装、Browser E2E、额外真实workload、force push及denylist仍未授权，无关用户改动必须保留。
-- **budget_or_deadline**：未设置外部调用预算或期限；继续一次只推进一个小批次。
-- **risks**：显式最小环境可能暴露 Python/Node/Playwright 的隐式依赖；父环境与工具运行后自生成环境必须在红卡中区分；`trusted_local` 确认及其 Workspace/input/profile digest 绑定必须由 Composition Root 形成，不能由模型 payload 提供；安全范围不得膨胀成未立项的生产沙箱。
+2026-08-27 用户先把目标改为作品集闭环，随后在 `workflow4` 进一步明确：不需要生产级，但作品集必须真正用上“Agent像线程一样存在”的设计。旧HANDOFF遗漏了这个后续决定，导致01B/01C按更窄的薄Demo合同完成。用户已确认纠正：现有成果保留为preview baseline，发布前必须先完成 [`Plan/Plan29.md`](Plan/Plan29.md) 的 `MVP-AGENT-RUNTIME-01`；原完整PROD/INC/SEC生产路线继续后置。
+
+以下 `HandoffProposal` 是当前最小接续信息。它记录已经批准的优先级修订，但不创建 RouteEdge、Invocation、权限、任务完成、`KEEP` 或 Runtime Acceptance。
+
+- **objective**：从冻结manifest形成可识别的本地release-candidate，并从干净检出复现Quickstart、回归和最终独立Review。
+- **target_role**：`MVP-CLOSE-01D`发布检查实施者；只操作TRACE-194清单，不重写01C适配层、不触碰保护路径、不push/tag/deploy。
+- **public_rationale**：现有薄Demo清楚展示了Harness控制流，但角色时间线只是StageAudit投影，不能证明“独立Agent像逻辑线程一样存在”。用户已确认这项设计必须在作品集发布前真正可用，而不必扩张到分布式或生产级。
+- **completed_work**：`MVP-CLOSE-01A～01C` 薄Demo baseline保留；`MVP-AGENT-RUNTIME-01A/01B` 完成schema v5 Agent/Session/私有状态/Mailbox/lane；`01C`新增Portfolio专用薄适配，每Trial真实创建Agent并让stage经持久Mailbox/lane执行，v2报告保存9 Thread/21 Agent/42 Message/12 Handoff/生命周期/FIFO/并行；`01D`已更新两份README并通过33/184/579回归、5次CLI smoke、compile/diff。独立初审确认实现/报告/README/测试无功能发现，只要求刷新Plan/HANDOFF状态。
+- **evidence_refs**：base `HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e`；薄Demo/文档证据见 `TRACE-162～173`；路线纠正见 `TRACE-174～176`；01A见 `TRACE-177～180`；01B见 `TRACE-181～183`；01C见`TRACE-184～187`；01D预注册与初审见`TRACE-188～189`；权威合同见 [`Plan/Plan29.md`](Plan/Plan29.md)。
+- **decisions_and_constraints**：当前唯一顺序为 `MVP-AGENT-RUNTIME-01A → 01B → 01C → 01D → MVP-CLOSE-01D`。MVP使用单进程、共享线程池、SQLite持久Agent/Session/Mailbox/私有状态；同Agent FIFO、不同Agent可并行，pause/resume/close影响调度，Handoff必须经过Mailbox。Runtime-owned Validator保持独立，不变成能自证的Agent。完整PROD-01C～05仍后置。
+- **assumptions_and_uncertainty**：01B固定单recipient、领取即推进游标，无ack/重试/崩溃重投；Message `turn_ref` 当前只有typed Scope引用，没有durable Turn存在性Store。当前仍是WORKTREE_ONLY，未验证干净检出可复现性，也未形成release candidate；这些属于后续`MVP-CLOSE-01D`。
+- **open_questions**：Agent Runtime MVP无待决产品问题；当前只剩候选manifest依赖是否完整、干净检出是否可复现及独立Reviewer是否批准。tag/发布仍等待用户未来另行决定。
+- **next_action**：创建`codex/mvp-close-01d`本地分支，只stage TRACE-194清单并核对；提交候选后在独立worktree运行Quickstart/门禁，再做独立Review。
+- **expected_output**：一个不含四个保护路径的本地候选commit；干净检出保持9/6/3/3、21 scripted、0 model、9 Thread、21 closed Agent/Session、42/42 Mailbox、21 stage Message、12 Handoff、FIFO和max parallel 3，并有最终Review证据。
+- **acceptance_criteria**：Agent/Message/Handoff不是StageAudit投影；Planner/Developer/Tester/Fixer至少按实际策略创建并通过Mailbox执行；Validator保持Runtime-owned独立门禁；所有Agent最终关闭；报告与stdout矩阵不漂移；既有拒绝边界、临时Workspace、无网络/模型和原子报告保持。
+- **required_capabilities**：仓库读写、Python/SQLite、Git本地branch/stage/commit/worktree；不授予真实模型、网络、Browser、push/tag/deploy。
+- **resource_scope**：精确候选清单见TRACE-194。继续保护 `demo/track.md`、`problems.md`、`prombles.md`、`Plan/Plan28.md`；不改Web、模型、固定Suite或受控执行安全合同。
+- **budget_or_deadline**：无新增实现估算或期限；未设置token/费用预算。
+- **risks**：最大风险是脏工作树把保护路径带入候选，或只测当前目录而没有验证干净检出。现有实现限制仍是无ack/retry/crash redelivery、无多进程lane协调、无durable Turn Store、无真实模型/网络/Browser和无生产认证。
 
 ## 项目目标与定位
 
@@ -258,7 +277,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
   Runtime 冻结 PATH 为 `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`，但只允许先在受信任 Composition Root 解析并写入 Profile 的绝对 executable；Workspace 内同名文件不能参与解析。`HOME/TMPDIR` 每次运行唯一创建为 `0700`，子进程使用 `umask 077`，并在清理屏障内回收。`close_fds=True`，除 stdin/stdout/stderr 和 Profile 显式登记句柄外不得传递 FD。持久化文本超过上限时固定保留前后各一半，插入截断字符数标记，并同时保存原长度与原文 SHA-256，随后通过统一脱敏边界；本地可信版本不承诺对无限原始输出提供 OS 级内存配额。
 - **assumptions_and_uncertainty**：当前支持口径固定为 macOS/POSIX 本地可信执行；模型/Provider Client 位于受信任控制面且不属于子进程 Profile。对模型远端取消和费用停止不作当前版本承诺。
 - **open_questions**：ReferenceImageRenderer 采用预渲染 hash-pinned 资产还是新增明确 Profile；browser executable 如何进入 Profile-owned manifest 而不恢复任意 environment 注入。任何新增环境变量、命令入口、平台、网络、秘密或副作用都是显式版本变更，必须先修订 Profile、风险说明和验收，不得在实现中静默决定。
-- **next_action**：用户已另行授权把当前完整SEC-EXEC闭包commit并普通push；本批只完成文档同步、允许的pure/mock/default-off验证、显式62-path staging和两阶段checkpoint commit，不重跑任何target。推送后停止。后续真实Browser/Renderer、full regression、更多POSIX target或`01B-3B-2`必须分别重新PRE_REGISTER；最终Review完成前继续标记`INCONCLUSIVE / KEEP_NOT_ISSUED`。
+- **next_action**：完整SEC-EXEC闭包及远端checkpoint已经提交并推送；本安全认证路线现已暂缓。后续真实Browser/Renderer、full regression、更多POSIX target或最终安全Review只有在用户恢复SEC认证时才分别PRE_REGISTER；当前保持`INCONCLUSIVE / KEEP_NOT_ISSUED`并转向Plan29项目闭环。
 - **expected_output**：版本化 Command/Environment Profile、单一监督语义、迁移后的全部前台/后台入口、冻结的正常路径 manifest、结构化拒绝/清理结果、负向和正常路径测试证据；不包含生产 Sandbox、真实密钥、真实外部副作用或未经授权的宿主配置修改。
 - **acceptance_criteria**：
   - **A / 信任域 admission**：缺失 `trusted_local`、确认由模型产生、Workspace/输入摘要变化，或请求真实秘密、非 loopback 网络/副作用、陌生依赖时，必须在 spawn 前返回 `SANDBOX_REQUIRED`；spawn/PID/副作用计数均为 0。仅“其他检查全部合法、只缺确认”的拒绝可返回 Runtime 计算的三个 digest challenge；合法确认绑定该 challenge 后有正常执行对照，Workspace/input/profile 任一单独漂移、顺序复用或并发复用都仍为零 spawn。
@@ -287,7 +306,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 ### Harness Evolution Protocol / 评测驱动演进规则（后续任务强制执行）
 
-状态：**开发纪律与文档协议已冻结；尚无正式 Harness Evolution Experiment、自动 Evolver 或 Held-out 泛化结论。** 权威方法写入 `Plan/Plan26.md` 的 “Harness Evolution Protocol”，本节只保存接续所需的状态、硬门禁和下一动作；与事故闭环的边界写入 `Plan/Plan25.md`。该协议是跨批次开发与证据门禁，不是新的生产子系统；当前产品批次仍处于 `PROD-01B`，01B-1、01B-2、01B-3A 与 01B-3B-1 已完成/KEEP，完整 01B-3 仍为 IN_PROGRESS/INCONCLUSIVE。用户已批准 Plan Amendment，当前 active gate 为 `SEC-EXEC-01`，收口后继续 3B-2。
+状态：**开发纪律与文档协议已冻结；尚无正式 Harness Evolution Experiment、自动 Evolver 或 Held-out 泛化结论。** 权威方法写入 `Plan/Plan26.md` 的 “Harness Evolution Protocol”，本节只保存历史生产证据边界。技术成熟度仍停在部分 `PROD-01B`，当前 active milestone 是 `MVP-AGENT-RUNTIME-01`；Harness Evolution、SEC最终认证和3B-2均不再阻塞作品集闭环。
 
 固定术语边界：
 
@@ -318,12 +337,12 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
   - `L3 生产自主 Harness 演进`：自动修改并晋升生产 Harness；当前非目标。INC-03 提供发布验证和 Shadow/Canary/Rollback，INC-04 提供 Learning/Guardrail 审批与退役，INC-05 提供运营和长期复发评价；全部成熟后仍需重新立项。
 - **assumptions_and_uncertainty**：当前离线资产可以支持 L1 的管线 smoke 与小规模实验，但样本量、真实模型重复运行和跨任务 Held-out 尚未冻结；没有这些证据前，不能声称 Multi-Agent、Memory、Reviewer 或任何 Harness 版本更优。
 - **open_questions**：第一次真实 Harness Evolution Pilot 的任务数量、模型、调用预算、重复次数和 Held-out cohort 必须在用户明确授权真实调用时单独预注册；不得从历史示例数字反推。
-- **next_action**：01B-1、01B-2、01B-3A 与 01B-3B-1 的确定性轻量轨均已以 `decision=KEEP` 收口；完整 01B-3 仍为 `IN_PROGRESS/INCONCLUSIVE`，且 01B-3B-2 Transport publish/ACK/Receipt 仍须完成。当前先按已批准 Amendment 完成 `SEC-EXEC-01` 的确定性安全门禁，再继续增强版 3B-2。Evolver/Policy/Eval principal、样本量、Validation/Held-out cohort、query budget、统计效果等不适用字段统一标为 `N/A`，不得反向阻塞基础设施开发。当前不运行真实模型、不复现官方 Evo-Bench，也不调用外部 `evo-hq/evo`；真实模型 Harness Evolution Pilot 不插队，仍复用暂缓的 `CORE-ABLATION-001` 与后续分层评测计划。
+- **next_action**：保持既有 KEEP/INCONCLUSIVE 历史不变；当前不继续 SEC、3B-2 或真实模型实验。薄入口作为preview baseline保留，`MVP-AGENT-RUNTIME-01A～01D` 已完成；停止并等待用户决定是否另行启动`MVP-CLOSE-01D`，生产路线未来恢复时再按原严格协议续接。
 - **expected_output**：每个适用批次包含一个版本化 Harness Evolution 实验小节或报告，引用可定位 Run/Trial/Evidence，明确示例、离线确定性结果、真实模型实测和生产观察；分别给出 `lifecycle_status=PROPOSED/RUNNING/FROZEN/COMPLETED/INVALID` 与 `decision=KEEP/ROLLBACK/INCONCLUSIVE`。
 - **acceptance_criteria**：后续适用 Plan 至少包含失败/工作负载、Baseline、强对照、可证伪假设、单一 Mutation、固定 manifest、Validation/Held-out 隔离或确定性“不适用”依据、硬门禁、效果与代价、Incident/Regression 落点和决策/回滚；没有真实行为变化时显式写不适用及原因。
 - **required_capabilities**：仓库读、受控候选 Patch、独立评测、版本化报告和与实验范围匹配的故障注入；真实模型、网络、媒体、外部仓库、秘密或副作用仍需当次授权。
 - **resource_scope**：本规则约束所有 Harness/Runtime/Plugin 行为修改；实验记录只能引用已经实现或按 PROD/INC 路线建设的 RuntimeEvent、Incident、Artifact、Verification 和 Acceptance 权威对象，不新建平行事实库。某类真相源尚未落地时只能标注计划引用或 `N/A`，不得伪造对应记录或声称已由 Runtime 验收。
-- **budget_or_deadline**：本文不授权模型调用或新增预算，不改变 `PROD-01B` 顺序。
+- **budget_or_deadline**：本文不授权模型调用或新增预算；当前作品集闭环优先于恢复 `PROD-01B` 顺序。
 - **risks**：小样本、验证集泄漏、只挑最佳 Run、同时改变多个变量、脚本结果冒充真实收益和 Evolver 越权都会制造虚假改进；命中任一项时实验必须标为 `INVALID`，而不是修饰报告。
 
 ## 下一步
@@ -334,7 +353,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 `Plan/Plan26.md` 已完成 `PROD-00` 产品 Charter，冻结 Scope、Thread、Turn/Outcome、Message、AgentInstance/AgentSession、Invocation、SessionBinding、RouteEdge、Artifact/Context、Capability 和场景化 Acceptance 的边界。批次 10A～13A 的代码和测试继续作为 Coding、多模态 Intake 与插件机制的已实现资产保留，不因产品纠偏删除，也不得再被描述成默认产品流程。
 
-后续严格一次推进一个小批次。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 已完成，完整 `PROD-01B` 仍在进行中。用户已选择方案 A，当前 active gate 是 `SEC-EXEC-01`；A～H 收口后继续增强版 `01B-3B-2`。3B-2 不删除、不重开已发布 Schema v3，也不得借此提前增加更多供应商、自由 A2A、向量数据库、微服务或分布式 Worker。
+2026-08-27 起后续仍一次只推进一个小批次；`MVP-CLOSE-01A～01C` 已完成为preview baseline，`MVP-AGENT-RUNTIME-01A～01D` 已完成，`MVP-CLOSE-01D`暂停。当前没有活动实施批次，只等待用户决定是否另行启动`MVP-CLOSE-01D`。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 的完成事实保留；完整 `PROD-01B`、SEC最终认证和增强版 `01B-3B-2` 统一转为后续 Roadmap。
 
 ### PROD / INC 双轨联动规则（后续任务强制执行）
 
@@ -450,11 +469,11 @@ Invocation.closed
 
 ### PROD-01：Durable Thread、Message、Invocation 与 Event Journal
 
-状态：**01A、01B-1、01B-2、01B-3A 与 01B-3B-1 已完成，完整 01B 进行中**；继续严格按 01B-3B-2 及后续切片、01C～01E 逐批推进。
+状态：**01A、01B-1、01B-2、01B-3A 与 01B-3B-1 已完成，完整 01B 技术上仍在进行中、当前路线已暂缓**。现在执行 Plan29 的 `MVP-AGENT-RUNTIME-01` 单机作品集切片；它不等于恢复或完成PROD批次。未来恢复生产 Roadmap 时，再按 01B-3B-2、01C～01E 逐批推进。
 
 目标：建立第一版真正可恢复的交互控制面，并复用现有 Artifact、SQLite Snapshot、TaskGraph 与 ScenarioRuntime，不另起平行真相源。
 
-执行顺序：
+未来生产 Roadmap 的执行顺序：
 
 1. **PROD-01A 领域协议与迁移骨架（已完成）**：实现最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent`；冻结 Message/Artifact 边界与 Coding 兼容映射。Invocation 只包含 `input_refs + input_digest + policy_snapshot_ref + budget_reservation`，完整 Grant 和 ContextManifest 分别留给 PROD-03/05。
 2. **PROD-01B 状态 Store、Journal 与 Outbox（进行中）**：SQLite 状态表是当前业务真相源，Journal 是不可变审计记录，Snapshot 是兼容恢复检查点；状态更新、Event、Outbox 与最小 BudgetLedger 预留/结算同事务提交。`PROD-01B-1` 已完成组件级版本化 Schema、Migration 与 RuntimeUnitOfWork；`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切；`PROD-01B-3A` 已完成 durable Outbox intent 原子三写；`01B-3B-1` 已完成本地 claim/NACK lifecycle；`01B-3B-2` Transport publish/ACK/Receipt 尚未开始，仍不得提前把整个 01B 标为已完成。
@@ -496,7 +515,7 @@ PROD-01A 实现事实：
 - 开发中真实发现并修复的 pre-release 缺陷包括：原始 connection/SQL commit 绕过、ALTER/DDL authorizer 绕过、iterator cursor 泄漏、`INSERT OR ROLLBACK` 让外层事务失效、rollback failure 被隐藏、WAL/Schema 检查时序和 REAL migration version 被强转。所有修复均有回归；这是本次“实现 → 挑战 → 红测/复现 → 修复 → 全量回归”的事故学习前置证据，不是生产 Incident 或 Detector 命中。
 - INC：合成测试覆盖 migration/commit 前回滚、commit 前/后子进程退出的 none/all、重开、锁忙、Schema 漂移和事务逃逸；本切片没有写 RuntimeEvent、Journal、Replay 或 Incident Ledger。`INC-01` 仍待开始，Detector 数为 0，不报告 detected/missed/MTTD/MTTR。
 - Harness Evolution：确定性轻量轨 `lifecycle_status=COMPLETED`、`decision=KEEP`；保留范围仅为 01B-1 事务底座。真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`，本记录是 Verification，不是 `AcceptanceRecord`。
-- 后续 notes：01B-1 留下的通用 v2 migration runner 与实际 DDL shape 校验已由 01B-2 补齐；连接/路径建立失败的异常封装仍是非阻塞后续项。`PROD-01B-3A` 与 `01B-3B-1` 已完成；当前先完成 `SEC-EXEC-01`，随后继续 `01B-3B-2` Transport publish/ACK/Receipt。
+- 后续 notes：01B-1 留下的通用 v2 migration runner 与实际 DDL shape 校验已由 01B-2 补齐；连接/路径建立失败的异常封装仍是非阻塞后续项。`PROD-01B-3A` 与 `01B-3B-1` 已完成；SEC最终认证与`01B-3B-2`已后置，当前按Plan29收口作品集闭环。
 
 ### PROD-01B-2 / INC 联动与验证摘要
 
@@ -521,7 +540,7 @@ PROD-01A 实现事实：
 - INC / Harness Evolution：风险目录已包含 `event_without_outbox`、`outbox_without_event`、`unexpected_legacy_replay`、`publish_inside_business_transaction`、`stale_publish_ack`、重复尝试、顺序漂移和腐败。Detector/Incident/Replay 仍为 0，`INC-01` 待开始；3A 与 3B-1 确定性轻量轨均为 `COMPLETED/KEEP`，父切片仍为 `IN_PROGRESS/INCONCLUSIVE`，真实模型与 Held-out 为 `N/A`。
 - 证据演进：首轮结构卡 hash=`6d8684486ced5a96c84275d6e0183f292bba7bae885ce5899bb325846e095826`，执行 3 项并准确暴露 v2/表缺失；Review 后的显式 Policy 红卡 hash=`8452ba5f2add07c3cd30e75b5c3ce26ceb941984d58f15e2ab5d20f5e3ab948a`，当时执行 5 项、5 failures。它们是历史 EXPECTED_RED，不是产品事故。实现首绿后独立挑战真实击穿并关闭 10 组产品缺陷；最终 adversarial 22/22、directed 73/73、Runtime 159/159、全量 372 项中 368 通过且 4 skip，compileall/diff-check 通过。
 - 3B-1 验证摘要：权威报告保留 7 项 EXPECTED_RED 历史、首绿、4 组真实产品缺陷、跨进程/`os._exit` 恢复、最终门禁和独立 Review；决定仅为 `KEEP (3B-1 only)`，不构成 Runtime Acceptance。
-- 下一动作：`SEC-EXEC-01` 的统一 Profile/Admission/Supervisor、两档零target证据、target artifact、一次`stdout_short`开发smoke、一次Legacy production path、一次timeout cleanup和五批聚焦检查点均已完成；当前仍是`INCONCLUSIVE / KEEP_NOT_ISSUED`，这些窄执行不授予重跑或扩展权限。用户本轮只授权显式62-path commit与普通push，完成后停止。之后若继续，真实Browser/Renderer、full regression、更多POSIX target、最终Review或增强版`01B-3B-2`必须各自单独预注册；不得从3B-1冒领可靠发布，也不得原地改写Schema v3/checksum。
+- 历史窗口收口：`SEC-EXEC-01` 的统一 Profile/Admission/Supervisor、两档零target证据、target artifact、一次`stdout_short`开发smoke、一次Legacy production path、一次timeout cleanup和五批聚焦检查点均已完成并提交；决定仍是`INCONCLUSIVE / KEEP_NOT_ISSUED`。当时仅授权的62-path commit与普通push也已结束。当前不继续该认证或增强版`01B-3B-2`，而是按Plan29完成作品集闭环；未来若恢复真实Browser/Renderer、full regression、更多POSIX target、最终Review或3B-2，仍须分别预注册，不得冒领可靠发布或原地改写Schema v3/checksum。
 
 必做故障演练：消息或副作用已提交但完成事件未写入时 `kill -9`、重复投递、错误 Thread/Session 绑定、取消与完成竞态、SQLite 锁竞争/磁盘异常和孤儿 Invocation 恢复。合法普通对话与当前 Coding 纵向切片都必须有对照，避免把 build/test 误设为所有 Thread 的完成条件。
 
@@ -544,7 +563,7 @@ PROD-01A 实现事实：
 
 ### 后续提醒：Skill 候选箱
 
-状态：**待开始，不纳入当前周或 PROD-01B 完成范围**。未来讨论“后续展望”、“优化项”、Skill/Learning/Memory 治理、PROD-05 或 INC-04 时，必须提醒用户重新评估 PROD-05-SKILL-CANDIDATE-INBOX；未经用户确认不得让它插队当前生产主线。
+状态：**暂缓，不纳入当前 `MVP-CLOSE-01`**。未来讨论“后续展望”、Skill/Learning/Memory 治理、PROD-05 或 INC-04 时，必须提醒用户重新评估 PROD-05-SKILL-CANDIDATE-INBOX；未经用户确认不得让它插队当前项目闭环主线。
 
 已确认的产品边界：
 

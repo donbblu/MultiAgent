@@ -182,6 +182,17 @@ class RuntimeOutboxAdversarialTests(unittest.TestCase):
         "DROP TABLE runtime_outbox_policy",
         "DROP INDEX runtime_events_event_scope_uq",
     )
+    _V4_DROP_STATEMENTS = (
+        "DROP TABLE runtime_agent_private_state",
+        "DROP TABLE runtime_agent_sessions",
+        "DROP INDEX runtime_agent_instances_thread_idx",
+        "DROP TABLE runtime_agent_instances",
+    )
+    _V5_DROP_STATEMENTS = (
+        "DROP INDEX runtime_agent_messages_pending_idx",
+        "DROP TABLE runtime_agent_messages",
+        "DROP TABLE runtime_agent_mailbox_cursors",
+    )
 
     def setUp(self) -> None:
         self._temporary = tempfile.TemporaryDirectory()
@@ -276,15 +287,19 @@ class RuntimeOutboxAdversarialTests(unittest.TestCase):
     def strip_v3_to_released_v2(self, path: Path) -> None:
         with sqlite3.connect(str(path)) as connection:
             connection.execute("PRAGMA foreign_keys = OFF")
+            for statement in self._V5_DROP_STATEMENTS:
+                connection.execute(statement)
+            for statement in self._V4_DROP_STATEMENTS:
+                connection.execute(statement)
             for statement in self._V3_DROP_STATEMENTS:
                 connection.execute(statement)
             connection.execute(
                 """DELETE FROM runtime_schema_migrations
-                   WHERE component = 'runtime_kernel' AND schema_version = 3"""
+                   WHERE component = 'runtime_kernel' AND schema_version >= 3"""
             )
             connection.execute(
                 """UPDATE runtime_schema_metadata SET schema_version = 2
-                   WHERE component = 'runtime_kernel' AND schema_version = 3"""
+                   WHERE component = 'runtime_kernel' AND schema_version = 5"""
             )
         self.assert_released_v2(path)
 

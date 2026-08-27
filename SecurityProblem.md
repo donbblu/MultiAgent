@@ -6,9 +6,11 @@
 
 本文是问题分析与决策依据，不是 Runtime Acceptance、生产安全声明或实现授权。代码、测试、Git 和版本化 VerificationReport 仍是事实来源。
 
+> 2026-08-27 路线注记：本文保留 2026-08-25 在生产路线内选择“SEC 优先”的历史决策，不再定义当前执行优先级。当前应先按 [`Plan/Plan29.md`](Plan/Plan29.md) 完成作品集闭环；SEC 余下认证和 3B-2 均已后置。本文中的“当前”“下一步”“正式主线”除非另有日期，均按 2026-08-25 决策快照理解。
+
 ## 问题背景
 
-当前项目已经完成 `PROD-01B-3A` 的 durable Outbox intent，以及 `PROD-01B-3B-1` 的本地 claim、NACK 和 expiry-reclaim。正式功能主线的下一批是 `PROD-01B-3B-2`：
+截至 2026-08-25，项目已经完成 `PROD-01B-3A` 的 durable Outbox intent，以及 `PROD-01B-3B-1` 的本地 claim、NACK 和 expiry-reclaim；当时正式功能主线的下一批是 `PROD-01B-3B-2`：
 
 ```text
 claim 已提交并释放 SQLite writer lock
@@ -40,7 +42,7 @@ claim 已提交并释放 SQLite writer lock
 3. 一旦发生误用，后果是否可逆？
 4. 推迟安全 Patch 会不会让后续接线和测试建立在错误边界上？
 
-## 当前可验证的执行缺口
+## 决策时可验证的执行缺口（2026-08-25 快照）
 
 ### 1. 父进程秘密可能进入子进程
 
@@ -173,7 +175,7 @@ B 只有在以下门禁全部成立时才是可控的临时选择：
 
 这些门禁只能降低 B 的临时风险，不能替代安全实现本身。
 
-## 当前建议
+## 当时建议（2026-08-25）
 
 推荐选择 **A**，原因不是 `SEC-EXEC-01` 是 `3B-2` 的技术依赖，而是当前已知风险涉及秘密和可能不可逆的外部副作用；同时项目后续的 CLI/Web/`PROD-01D` 会显著扩大旧执行边界的影响面。
 
@@ -206,7 +208,7 @@ SEC-EXEC-01
   → BudgetLedger / Acceptance / 查询恢复
 ```
 
-方案 B 保留为风险分析，不再是当前执行路径。此决定不表示 `SEC-EXEC-01` 已实现、A～H 已通过或 Runtime Acceptance 已签发，也不批准真实模型、真实秘密、外部网络或不可逆副作用。
+方案 B 保留为风险分析，不再是 2026-08-25 生产执行路径。自 2026-08-27 起，方案 A 的余下认证与方案 B 对应的 3B-2 均被 Plan29 后置。历史决定不表示 A～H 已全部通过或 Runtime Acceptance 已签发，也不批准真实模型、真实秘密、外部网络或不可逆副作用。
 
 ## 关键决策原则
 
@@ -220,9 +222,9 @@ SEC-EXEC-01
 
 ## 相关事实来源
 
-- [`HANDOFF.md`](HANDOFF.md)：当前窗口 Handoff、已选择 A 的接续摘要、`local_trusted_execution/v1` 契约和 A～H 验收。
-- [`Plan/Plan26.md`](Plan/Plan26.md)：正式的 `PA-2026-08-25-SEC-EXEC-01-FIRST` 顺序 Amendment、当前生产顺序与 `PROD-01B-3B-2` 契约。
-- [`OPTIMIZATION_BACKLOG.md`](OPTIMIZATION_BACKLOG.md)：当前批次状态和下一动作。
+- [`HANDOFF.md`](HANDOFF.md)：当前窗口 Handoff、Plan29 优先级，以及 `local_trusted_execution/v1` 的历史接续摘要和 A～H 契约。
+- [`Plan/Plan26.md`](Plan/Plan26.md)：正式的 `PA-2026-08-25-SEC-EXEC-01-FIRST` 历史 Amendment、后续生产 Roadmap 与 `PROD-01B-3B-2` 契约。
+- [`OPTIMIZATION_BACKLOG.md`](OPTIMIZATION_BACKLOG.md)：当前 MVP 批次状态与后续 Roadmap。
 - [`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)：3A/3B-1 的版本化证据、缺口和 3B-2 红卡要求。
 - [`demo/coding_workflow/runtime_persistence/outbox.py`](demo/coding_workflow/runtime_persistence/outbox.py)：当前 claim/NACK/reclaim 生命周期实现。
 - [`demo/coding_agent_cli.py`](demo/coding_agent_cli.py)、[`demo/coding_workflow/workspace.py`](demo/coding_workflow/workspace.py)、[`demo/coding_workflow/visionforge/browser.py`](demo/coding_workflow/visionforge/browser.py)：当前执行边界的主要证据。

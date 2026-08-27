@@ -2,6 +2,8 @@
 
 日期：2026-08-22；2026-08-23 随产品中心纠偏完成 Core/Plugin 泛化
 
+> 2026-08-27 路线注记：本文继续定义事故学习领域与未来 INC Roadmap，但不再决定当前实施顺序。当前先执行 [`Plan29`](Plan29.md) 的 `MVP-CLOSE-01`；`SEC-EXEC-01` 余下认证、`01B-3B-2`、`PROD-01E/INC-01` 实现均已后置。文末旧顺序只保留为历史生产路线记录。
+
 ## 当前状态
 
 本计划是 `PROD-00` Harness 产品定位与 Runtime Charter 的专项设计产物，状态为 **INC-00 文档冻结完成，PROD-01A 协议地基、PROD-01B-2 首个持久 Thread Event 纵切、PROD-01B-3A durable Outbox intent 与 PROD-01B-3B-1 本地 claim/NACK lifecycle 已实现，INC-01 事故链尚未开始**。它定义事故学习闭环的领域模型、控制边界、持久化语义、分批实施、故障演练和验收口径；当前代码已具备 RuntimeEvent/Acceptance/Invocation 协议、同步不变量、concrete Thread+RuntimeEvent+Outbox durable intent 原子三写和本地 claim/NACK/expiry-reclaim，但尚未接入 Detector、Incident Ledger、Transport publish/ACK/Receipt、Replay 或旧 Runtime 执行链。
@@ -979,7 +981,7 @@ PROD-01A 的事故增量是一层可验证协议地基：Event payload 深冻结
 - “写了复盘文档”；
 - “Agent 自己判断已经修好”。
 
-## 当前计划结论与下一步
+## 生产 Roadmap 结论与历史下一步
 
 事故学习闭环作为 Harness 的一等横向子系统，以 RuntimeEvent、Journal、Acceptance 和运行状态为执行事实底座，按 `Plan/Plan26.md` 跨 `PROD-01`～`PROD-07` 渐进落地：
 
@@ -992,4 +994,4 @@ PROD-01A 的事故增量是一层可验证协议地基：Event payload 深冻结
 - `PROD-06`：按交互/协作/多模态/插件分层统计，接入容量、背压、成本和长期运行事故，并启动 INC-05；
 - `PROD-07`：完成 Incident Operations、Game Day、升级、迁移和事故运营。
 
-`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量，`PROD-01B-1` 已完成事务地基，`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切，`PROD-01B-3A` 已完成 durable Outbox intent 原子三写，`PROD-01B-3B-1` 已完成本地 claim/NACK/expiry-reclaim。用户已批准先完成 `SEC-EXEC-01 local_trusted_execution/v1` 的本地执行安全门禁，再冻结增强版 `01B-3B-2` 红卡并实现 Transport publish/ACK/Receipt、at-least-once publication attempt 与 stale ACK 门禁；后续继续建立完整事实链，并在 `PROD-01E` 完成 INC-01 Observe-only。SEC 的开发期故障证据不提前完成 `INC-01`，本文也没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。
+`INC-00` 文档冻结已经完成，`PROD-01A` 已落地 INC-01 所需的事件值协议与同步不变量，`PROD-01B-1` 已完成事务地基，`PROD-01B-2` 已完成 concrete Thread 状态与 append-only RuntimeEvent 原子纵切，`PROD-01B-3A` 已完成 durable Outbox intent 原子三写，`PROD-01B-3B-1` 已完成本地 claim/NACK/expiry-reclaim。2026-08-25 的历史生产顺序曾要求先完成 `SEC-EXEC-01 local_trusted_execution/v1`，再实施增强版 `01B-3B-2`，随后建立完整事实链并在 `PROD-01E` 完成 INC-01 Observe-only；2026-08-27 起这些未完成项统一后置，当前以 Plan29 的作品集闭环为准。SEC 的开发期故障证据仍不提前完成 `INC-01`，本文也没有授权真实模型、网络、媒体、外部仓库或不可逆副作用。

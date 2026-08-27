@@ -2,6 +2,8 @@
 
 > 本文件是 `local_trusted_execution/v1` 的 EXPECTED_RED、实现、攻击、回归和决定证据入口。`Plan` 与 `HANDOFF` 定义应当实现什么，测试提供可执行 Oracle，本报告只记录实际发生了什么。当前状态不是安全验收或 Runtime Acceptance。
 
+> 2026-08-27 优先级更新：用户决定先完成 [`MVP-CLOSE-01`](../Plan/Plan29.md) 作品集版项目闭环。本报告及既有实现证据保持有效，当前决定仍为 `INCONCLUSIVE / KEEP_NOT_ISSUED`；余下 Browser/Renderer、完整 target adversarial、full regression 和最终安全 Review 转为后续认证，不再阻塞 MVP 完成。
+
 ## 0. 报告身份
 
 | 字段 | 值 |
@@ -9,7 +11,7 @@
 | `report_schema` | `verification-report/v1` |
 | `report_id` | `VR-SEC-EXEC-01` |
 | `created_at` | `2026-08-25` |
-| `last_updated` | `2026-08-26` |
+| `last_updated` | `2026-08-27` |
 | `contract_ref` | [`HANDOFF.md`](../HANDOFF.md) 的 `local_trusted_execution/v1` A～H |
 | `plan_amendment_ref` | [`PA-2026-08-25-SEC-EXEC-01-FIRST`](../Plan/Plan26.md) |
 | `decision_ref` | [`SecurityProblem.md`](../SecurityProblem.md) |
@@ -23,7 +25,7 @@
 
 ## 1. 变更与非变更边界
 
-用户于 2026-08-25 正式选择方案 A，当前顺序固定为：
+用户于 2026-08-25 正式选择方案 A；以下是当时冻结的生产路线顺序。它自 2026-08-27 起已由 Plan29 后置，不是当前 MVP 执行顺序：
 
 ```text
 SEC-EXEC-01
@@ -263,10 +265,10 @@ coding_workflow/local_execution.py: subprocess.Popen(...)
 
 1. mock/structural实现、两档真实POSIX零target窄证据、Gate-02合同、默认禁用target artifact及一次`stdout_short`开发smoke均已完成；状态仍为`INCONCLUSIVE / KEEP_NOT_ISSUED`。
 2. target artifact与窄receipt已经存在，但只覆盖一次可信fixture开发smoke，不是重复执行授权、完整PGID/port/marker adversarial或production Runtime验收。继续禁止未经新PRE_REGISTER的returned tuple、target `Popen`、`success_orphan`、端口/崩溃workload和完整真实测试集合。
-3. 当前用户只授权把完整SEC-EXEC闭包commit并普通push；完成后停止。更多POSIX target、真实Browser/Renderer、full regression和增强版`PROD-01B-3B-2`必须分别另行PRE_REGISTER，不能合并推进。
-4. Browser后续先冻结ReferenceImageRenderer（预渲染hash-pinned资产或明确Profile）与Profile-owned browser binary，再迁移4个陈旧E2E fixture，不能恢复任意environment注入。
-5. 获授权的真实Browser正常对照、当前最终哈希full regression、compileall、静态no-bypass与`git diff --check`全部通过后，再进行独立最终Review。
-6. 只有required门禁全部通过且final Review blocking finding为0，才能决定`KEEP (local_trusted_execution/v1 only)`；否则保持`INCONCLUSIVE`或`ROLLBACK`。然后才回到增强版`PROD-01B-3B-2`。
+3. 完整 SEC-EXEC 实现/测试/证据闭包已提交并推送；当前作品集主线改为 `MVP-CLOSE-01`。更多POSIX target、真实Browser/Renderer、full regression和增强版`PROD-01B-3B-2`全部后置，恢复时必须分别另行PRE_REGISTER，不能合并推进。
+4. 若未来恢复安全认证，Browser先冻结ReferenceImageRenderer（预渲染hash-pinned资产或明确Profile）与Profile-owned browser binary，再迁移4个陈旧E2E fixture，不能恢复任意environment注入。
+5. 未来获授权的真实Browser正常对照、对应最终哈希full regression、compileall、静态no-bypass与`git diff --check`全部通过后，再进行独立最终Review。
+6. 只有上述required门禁全部通过且final Review blocking finding为0，未来才能决定`KEEP (local_trusted_execution/v1 only)`；在此之前保持`INCONCLUSIVE`。MVP 完成不得被解释成安全 `KEEP`、Runtime Acceptance 或生产沙箱验收。
 
 ## 7. Harness Evolution / INC 联动
 

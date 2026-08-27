@@ -59,6 +59,28 @@ from .state_event import (
     ThreadEventApplyResult,
     ThreadEventMutation,
 )
+from .agent import (
+    AgentClosedError,
+    AgentCreateResult,
+    AgentPausedError,
+    AgentPrivateState,
+    AgentRecord,
+    AgentStateTransitionError,
+    AgentStoreAccessError,
+    AgentStoreConflictError,
+    AgentStoreError,
+    AgentStoreValidationError,
+    SQLiteAgentStore,
+)
+from .mailbox import (
+    MailboxConflictError,
+    MailboxCursor,
+    MailboxDelivery,
+    MailboxError,
+    MailboxSendResult,
+    MailboxValidationError,
+    SQLiteMailboxStore,
+)
 
 __all__ = [
     "OutboxPolicy",
@@ -108,4 +130,22 @@ __all__ = [
     "ThreadEventMutation",
     "SQLiteThreadEventStore",
     "SQLiteOutboxLifecycleStore",
+    "AgentStoreError",
+    "AgentStoreValidationError",
+    "AgentStoreConflictError",
+    "AgentStoreAccessError",
+    "AgentStateTransitionError",
+    "AgentClosedError",
+    "AgentPausedError",
+    "AgentCreateResult",
+    "AgentRecord",
+    "AgentPrivateState",
+    "SQLiteAgentStore",
+    "MailboxError",
+    "MailboxValidationError",
+    "MailboxConflictError",
+    "MailboxSendResult",
+    "MailboxCursor",
+    "MailboxDelivery",
+    "SQLiteMailboxStore",
 ]

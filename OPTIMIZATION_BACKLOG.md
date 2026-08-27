@@ -2,9 +2,9 @@
 
 本文是项目方向和优化工作的单一待办清单。`HANDOFF.md` 负责恢复上下文；具体批次、状态和验收条件以本文为准。
 
-- 最后核对：2026-08-25
-- 当前批次：`PROD-01B` 进行中；`PROD-01B-1` 事务底座与 `PROD-01B-2` Thread+RuntimeEvent 原子纵切已完成
-- 当前动作：用户已批准方案 A；先实施 `SEC-EXEC-01 local_trusted_execution/v1`，A～H 收口后再推进增强版 `01B-3B-2` Transport publish/ACK/Receipt
+- 最后核对：2026-08-27
+- 当前批次：`MVP-AGENT-RUNTIME-01` 进行中；在薄Demo preview基础上真正接入单机Agent身份、Session、Mailbox、私有状态、执行泳道和Handoff
+- 当前动作：`MVP-CLOSE-01A～01C` 已完成为preview baseline，`MVP-CLOSE-01D`暂停；下一批只做 `MVP-AGENT-RUNTIME-01A` Agent实体与SQLite Store
 - 权威验证证据：[`VerificationReports/PROD-01B.md`](VerificationReports/PROD-01B.md)
 - 当前安全证据：[`VerificationReports/SEC-EXEC-01.md`](VerificationReports/SEC-EXEC-01.md)
 
@@ -13,12 +13,12 @@
 - 状态只使用：`待开始`、`进行中`、`已完成`、`暂缓`。
 - 一次只推进一个批次；用户确认“下一批”后才开始后一批。
 - 开始时改为 `进行中`；实现、自动化测试和运行证据齐全后才能改为 `已完成`。
-- 每个实施批次必须维护独立 `VerificationReport`，记录受测哈希、环境、命令、计数、真实缺陷、修复/回归、未覆盖风险、独立 Review 与 `KEEP/ROLLBACK/INCONCLUSIVE`；报告缺失或证据与哈希不匹配时不得标记 `已完成/KEEP`。
+- PROD/INC 与安全认证批次必须维护独立 `VerificationReport`，记录受测哈希、环境、命令、计数、真实缺陷、修复/回归、未覆盖风险、独立 Review 与 `KEEP/ROLLBACK/INCONCLUSIVE`；报告缺失或证据与哈希不匹配时不得标记 `已完成/KEEP`。`MVP-CLOSE-01` 与 `MVP-AGENT-RUNTIME-01` 按 Plan29 使用轻量作品集证据，不要求生产级 VerificationReport、双 Review 或完整 adversarial 矩阵。
 - `PROD-00` 是唯一的 Charter 例外，以代码事实核对、文档一致性、`git diff --check` 和现有回归验收；主动故障演练从 `PROD-01` 开始。
 - 每批结束必须记录修改文件、自动化测试、无法自动完成的手动检验和下一批内容。
 - 模型输出始终是不可信输入。文件写入、命令、浏览器、状态和最终质量门禁由 Runtime 控制。
 - 现有 Coding、VisionForge 和多模态 Intake 测试是兼容回归资产，必须尽可能保持通过。
-- Harness Evolution Protocol 是项目内部跨批次实验门禁，不是新的生产批次；它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。当前产品批次仍为 `PROD-01B`，`PROD-01B-2`、`01B-3A` 与 `01B-3B-1` 已按确定性轻量轨 `KEEP`；完整 `01B-3` 保持 `IN_PROGRESS/INCONCLUSIVE`，Transport publish/ACK/Receipt 尚未实现。当前 active gate 是经 Plan Amendment 插入的 `SEC-EXEC-01`。
+- Harness Evolution Protocol 是项目内部跨批次实验门禁，不是新的生产批次；它借鉴但不等于官方 Evo-Bench，也不等于或依赖外部 `evo-hq/evo`。`PROD-01B-2`、`01B-3A` 与 `01B-3B-1` 已按确定性轻量轨 `KEEP`；完整 `01B-3` 保持 `IN_PROGRESS/INCONCLUSIVE`，Transport publish/ACK/Receipt 尚未实现。当前 active milestone 是 `MVP-AGENT-RUNTIME-01`，不以完成 Harness Evolution 或生产认证作为作品集版闭环前置条件。
 - 影响 Agent 行为的 Harness 修改必须附版本化 Harness Evolution 实验记录：Baseline、失败证据、单一 Hypothesis/候选变更、固定控制项、Validation、隔离 Held-out、代价、回归和保留/回滚决定。无可定位 Run/Trial/Evidence 的数字必须标注“示例（非实测）”，脚本/Fake Model 结果不得冒充真实模型收益。
 - 当前只采用 `L1 人工评测驱动演进`；`L2 Agent 辅助评测驱动演进` 是后续受限候选能力，`L3 生产自主 Harness 演进` 当前非目标。未严格复现官方协议时只能称内部 Harness Evolution Experiment/Pilot，不得宣称 Evo-Bench 成绩。
 
@@ -32,24 +32,37 @@ Core 只接受受控 Message、Artifact、Handoff 和工具请求。模型不能
 
 完整 Charter 见 `Plan/Plan26.md`。
 
-## 生产主线
+## 当前项目闭环主线
+
+| ID | 优先级 | 状态 | 内容 | 验收条件 |
+|---|---|---|---|---|
+| MVP-CLOSE-01A | P0 | 已完成 | 冻结一个权威离线 Demo、单一 Quickstart、输入/输出和报告口径 | 已冻结待01B新增的 `demo/portfolio_demo.py` 目标入口；固定3任务×3策略、退出码、报告schema、四类结果和01B两文件范围 |
+| MVP-CLOSE-01B | P0 | 已完成 | 补齐用户可直接执行的端到端 Harness preview闭环 | `portfolio-demo/v1`、9 Trial精确矩阵、四类结果测试和离线smoke通过；只证明临时Worker/DAG控制流 |
+| MVP-CLOSE-01C | P0 | 已完成 | 完善 README、架构、示例输出和限制 | 新用户可运行preview；文档已明确真实Agent Runtime尚未接入 |
+| MVP-AGENT-RUNTIME-01A | P0 | 下一批 | AgentManager、AgentInstance/Session与SQLite Store | 创建/查询/暂停/恢复/关闭、私有状态隔离、重启读取、负向迁移和事务回滚测试通过 |
+| MVP-AGENT-RUNTIME-01B | P0 | 待开始 | 持久Mailbox与独立执行泳道 | 同Agent FIFO、不同Agent并行；pause/resume/close实际影响投递、领取和调度 |
+| MVP-AGENT-RUNTIME-01C | P0 | 待开始 | 真实Handoff与Portfolio Demo接入 | Planner/Developer/Tester/Fixer是真实Agent；Mailbox/Handoff传递Artifact引用，Validator仍Runtime-owned |
+| MVP-AGENT-RUNTIME-01D | P0 | 待开始 | 生命周期报告、回归、文档与独立Review | Agent/Session/Mailbox/lane/Handoff证据齐全，所有Agent关闭，compile/diff和独立Review通过 |
+| MVP-CLOSE-01D | P0 | 暂缓 | 作品集版发布检查 | 仅在MVP-AGENT-RUNTIME-01A～01D完成后，从干净候选运行Quickstart、smoke、回归并形成release candidate |
+
+## 生产演进 Roadmap（当前暂缓）
 
 | ID | 优先级 | 状态 | 内容 | 验收条件 |
 |---|---|---|---|---|
 | PROD-00-CHARTER | P0 | 已完成 | Harness 产品定位、Runtime 领域模型、Core/Plugin 边界和场景化 Acceptance | `Plan26`、HANDOFF、Backlog、Learning Path 和事故计划一致；不改 Runtime 行为 |
 | PROD-01A | P0 | 已完成 | 最小 `Scope/Thread/Turn/Message`、通用 `AgentProfile/Role`、`AgentInstance/AgentSession`、`Invocation/Attempt`、`Outcome`、`AcceptancePolicy/Record` 和 `RuntimeEvent` 协议 | 版本化往返、ID/因果/状态不变量、跨 Scope 引用拒绝、Message/Artifact 单一事实源和 Coding 协议映射测试齐全；Invocation 同步冻结 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 与资源引用；不实现 Store、调度、Mailbox、Backend、Gateway、Context、Web 或执行接入 |
-| SEC-EXEC-01 | P0 | 进行中 | 实现 `local_trusted_execution/v1` 本地可信执行门禁 | A～H 全部通过；统一已登记执行入口、显式最小环境、可信 executable、进程组清理、输出限长/脱敏和正常路径回归；不得宣称生产沙箱 |
-| PROD-01B | P0 | 进行中 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | `PROD-01B-1` 事务底座、`PROD-01B-2` concrete Thread current-state + RuntimeEvent 原子纵切、`01B-3A` durable intent 原子三写和 `01B-3B-1` 本地 claim/NACK lifecycle 已完成；`01B-3B-2` 仍未完成，将在 `SEC-EXEC-01` 收口后实施增强版 Transport publish/ACK/Receipt。终局仍要求状态表为当前真相源，Journal 为审计，Snapshot 为兼容检查点，状态/Event/Outbox/预算预留结算原子提交 |
-| PROD-01C | P0 | 待开始 | durable enqueue、幂等、claim/lease/heartbeat、fencing、级联取消、Finalizer/Reaper 与恢复 | kill/retry/cancel 竞态不重复副作用，孤儿 Invocation 和残留 Lease 可幂等回收；进程内路径只承诺逻辑失权，Backend/进程硬取消不越界到本批 |
-| PROD-01D | P0 | 待开始 | 将现有 Task/Scenario/Coding 执行适配到 Thread，并提供 Web 持久查询 | 现有回归尽可能全通过；普通 Thread 不被要求 build/test；Web 不假装已有完整 Agent 泳道 |
-| PROD-01E | P0 | 待开始 | 完成 `INC-01`，并启动四组 `INC-02` Observe/Shadow 事故链 | 覆盖 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败及合法对照；INC-02 仅标为部分 Shadow |
-| PROD-02 | P0 | 待开始 | Backend v2、Session 与 Streaming | 流式、硬取消、错误分类、受控 fallback 和 Canary |
-| PROD-03 | P0 | 待开始 | Capability、Tool Gateway 与执行隔离 | 每 Invocation Grant、高风险 Approval、资源与副作用审计 |
-| PROD-04 | P0 | 待开始 | 交互式多 Agent 协作控制面与 Thread Web | Mailbox、Handoff、并行/依赖、收敛、用户介入和 Agent 泳道可追踪 |
-| PROD-05 | P1 | 待开始 | Context、共享记忆与多模态工作区 | ContextManifest、ACL/版本/TTL、媒体附件和检索评测 |
-| PROD-05-SKILL-CANDIDATE-INBOX | P1 | 待开始 | Harness 自动发现重复认知流程，在 API + Web 的 Learning → Skill Candidates 中提供可审计的 Skill 候选箱；CLI 可选 | 不纳入当前周或 PROD-01B；依赖持久 Journal、Incident/LearningStore 和 INC-04；同 Scope 至少 3 个独立真实任务/事故且有验证成功证据才生成 PROPOSED；重试/Replay/Shadow 不重复计数；非 Skill 落点会被路由到 Regression/Invariant/Policy/Validator/Adapter/Runbook；人工批准、Offline Eval、独立 Review 和 Shadow 通过前不得 Active |
-| PROD-06 | P1 | 待开始 | 插件产品化与效果/容量验证 | 持续交互、协作、多模态和插件/工具任务分层评测；形成版本化 Harness Evolution 评测资产与跨场景 Held-out 报告；Coding/VisionForge 不污染 Core 指标 |
-| PROD-07 | P1 | 待开始 | 迁移与事故运营 | Replay、Canary、回滚、备份恢复、Game Day 和 Runbook |
+| SEC-EXEC-01 | P0 | 暂缓 | `local_trusted_execution/v1` 主体实现已提交；完整 Browser/target adversarial与最终安全 `KEEP` 后置 | 当前只能表述为受限本地可信执行候选，不得宣称生产沙箱或安全认证完成 |
+| PROD-01B | P0 | 暂缓 | SQLite 状态 Store、append-only Journal、Outbox、最小 BudgetLedger 与持久查询 | 已完成切片继续有效；`01B-3B-2`、Budget/Acceptance/完整查询恢复留后续，不阻塞 MVP |
+| PROD-01C | P0 | 暂缓 | durable enqueue、幂等、claim/lease/heartbeat、fencing、级联取消、Finalizer/Reaper 与恢复 | kill/retry/cancel 竞态不重复副作用，孤儿 Invocation 和残留 Lease 可幂等回收；进程内路径只承诺逻辑失权 |
+| PROD-01D | P0 | 暂缓 | 将现有 Task/Scenario/Coding 执行适配到 Thread，并提供 Web 持久查询 | 完整持久 Web 接入后置；MVP 可复用现有稳定入口，但不得冒称本批完成 |
+| PROD-01E | P0 | 暂缓 | 完成 `INC-01`，并启动四组 `INC-02` Observe/Shadow 事故链 | Incident/Shadow 不再是作品集版闭环前置条件 |
+| PROD-02 | P0 | 暂缓 | Backend v2、Session 与 Streaming | 流式、硬取消、错误分类、受控 fallback 和 Canary |
+| PROD-03 | P0 | 暂缓 | Capability、Tool Gateway 与执行隔离 | 每 Invocation Grant、高风险 Approval、资源与副作用审计 |
+| PROD-04 | P0 | 暂缓 | 交互式多 Agent 协作控制面与 Thread Web | Mailbox、Handoff、并行/依赖、收敛、用户介入和 Agent 泳道可追踪 |
+| PROD-05 | P1 | 暂缓 | Context、共享记忆与多模态工作区 | ContextManifest、ACL/版本/TTL、媒体附件和检索评测 |
+| PROD-05-SKILL-CANDIDATE-INBOX | P1 | 暂缓 | Harness 自动发现重复认知流程，在 API + Web 的 Learning → Skill Candidates 中提供可审计的 Skill 候选箱；CLI 可选 | 不纳入当前MVP；依赖持久 Journal、Incident/LearningStore 和 INC-04；人工批准、Offline Eval、独立 Review 和 Shadow 通过前不得 Active |
+| PROD-06 | P1 | 暂缓 | 插件产品化与效果/容量验证 | 持续交互、协作、多模态和插件/工具任务分层评测；形成版本化 Harness Evolution 评测资产与跨场景 Held-out 报告；Coding/VisionForge 不污染 Core 指标 |
+| PROD-07 | P1 | 暂缓 | 迁移与事故运营 | Replay、Canary、回滚、备份恢复、Game Day 和 Runbook |
 
 统一生命周期门禁：任务专用 Specialist 默认是同一 Scope/Thread 下的 ChildInvocation，而不是新 Thread；`execution_state` 进入技术终态不代表已经清理。只有执行终态、`cleanup_state=REAPED`、活动 Grant/Lease/ChildInvocation 为零且旧 Attempt 已被 fencing 时才能关闭 Invocation。任何 `TERMINATION_FAILED`、残留资源或取消后副作用都必须保留证据并进入恢复/事故链。
 
@@ -445,7 +458,7 @@ PROD-01A 验收：新增通用 `runtime_domain` 与 Coding 单向兼容适配器
 
 ## 暂缓或重新归位的优化
 
-- 受 Runtime 控制的 Thread、Message、AgentSession、Handoff、用户介入和 Tool Capability 已进入 `PROD-01`～`PROD-05` 主线，不再以“自由 Agent 聊天”名义暂缓。
+- 受 Runtime 控制的 Thread、Message、AgentSession、Handoff、用户介入和 Tool Capability 已归入未来 `PROD-01`～`PROD-05` Roadmap，不再以“自由 Agent 聊天”名义定义；当前 `MVP-CLOSE-01` 不以补齐这些生产能力为完成门槛。
 - 通用记忆测评与 ContextManifest 属 `PROD-05`；向量或混合检索仍须由评测证明必要性。
 - 符号级调度冲突、Spring Boot 自动生成和其他领域实现归对应插件，不进入 Core 默认路径。
 - 敌对多租户、无限制 A2A、开放网络、微服务拆分、复杂分布式调度和任意远程 Worker 继续暂缓。

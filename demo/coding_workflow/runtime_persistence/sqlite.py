@@ -13,10 +13,12 @@ from typing import Callable, Iterable, Mapping
 
 
 RUNTIME_DB_COMPONENT = "runtime_kernel"
-RUNTIME_DB_SCHEMA_VERSION = 3
+RUNTIME_DB_SCHEMA_VERSION = 5
 _MIGRATION_V1_NAME = "runtime_kernel_base_v1"
 _MIGRATION_V2_NAME = "runtime_thread_event_v2"
 _MIGRATION_V3_NAME = "runtime_event_outbox_v3"
+_MIGRATION_V4_NAME = "runtime_agent_store_v4"
+_MIGRATION_V5_NAME = "runtime_agent_mailbox_v5"
 _OUTBOX_DESTINATION = "core:runtime_events"
 _SQLITE_SIGNED_INT64_MAX = (1 << 63) - 1
 
@@ -245,6 +247,11 @@ _MANAGED_DATA_TABLES = frozenset(
         "runtime_outbox_policy",
         "runtime_outbox",
         "runtime_outbox_receipts",
+        "runtime_agent_instances",
+        "runtime_agent_sessions",
+        "runtime_agent_private_state",
+        "runtime_agent_mailbox_cursors",
+        "runtime_agent_messages",
     }
 )
 
@@ -569,6 +576,127 @@ _MIGRATION_V3_CHECKSUM = sha256(
     ("\n".join(_MIGRATION_V3_DDL) + "\n" + _MIGRATION_V3_NAME).encode("utf-8")
 ).hexdigest()
 
+_MIGRATION_V4_DDL = (
+    """CREATE TABLE runtime_agent_instances (
+        agent_instance_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        profile_id TEXT NOT NULL,
+        principal_id TEXT NOT NULL,
+        version INTEGER NOT NULL
+            CHECK (typeof(version) = 'integer' AND version = 1),
+        created_at TEXT NOT NULL,
+        instance_json TEXT NOT NULL CHECK (json_valid(instance_json)),
+        instance_digest TEXT NOT NULL CHECK (length(instance_digest) = 64),
+        UNIQUE (scope_id, thread_id, agent_instance_id),
+        FOREIGN KEY (scope_id, thread_id)
+            REFERENCES runtime_threads(scope_id, thread_id)
+            ON UPDATE RESTRICT ON DELETE RESTRICT
+    )""",
+    """CREATE INDEX runtime_agent_instances_thread_idx
+        ON runtime_agent_instances(scope_id, thread_id, agent_instance_id)""",
+    """CREATE TABLE runtime_agent_sessions (
+        agent_session_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        agent_instance_id TEXT NOT NULL UNIQUE,
+        state TEXT NOT NULL CHECK (state IN ('active', 'paused', 'closed')),
+        version INTEGER NOT NULL
+            CHECK (typeof(version) = 'integer' AND version >= 1),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        closed_at TEXT NOT NULL,
+        session_json TEXT NOT NULL CHECK (json_valid(session_json)),
+        session_digest TEXT NOT NULL CHECK (length(session_digest) = 64),
+        UNIQUE (
+            scope_id, thread_id, agent_instance_id, agent_session_id
+        ),
+        FOREIGN KEY (scope_id, thread_id, agent_instance_id)
+            REFERENCES runtime_agent_instances(
+                scope_id, thread_id, agent_instance_id
+            ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    )""",
+    """CREATE TABLE runtime_agent_private_state (
+        agent_session_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        agent_instance_id TEXT NOT NULL UNIQUE,
+        version INTEGER NOT NULL
+            CHECK (typeof(version) = 'integer' AND version >= 1),
+        updated_at TEXT NOT NULL,
+        state_json TEXT NOT NULL CHECK (json_valid(state_json)),
+        state_digest TEXT NOT NULL CHECK (length(state_digest) = 64),
+        FOREIGN KEY (
+            scope_id, thread_id, agent_instance_id, agent_session_id
+        ) REFERENCES runtime_agent_sessions(
+            scope_id, thread_id, agent_instance_id, agent_session_id
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    )""",
+)
+_MIGRATION_V4_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V4_DDL) + "\n" + _MIGRATION_V4_NAME).encode("utf-8")
+).hexdigest()
+
+_MIGRATION_V5_DDL = (
+    """CREATE TABLE runtime_agent_mailbox_cursors (
+        agent_instance_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        agent_session_id TEXT NOT NULL UNIQUE,
+        last_enqueued_sequence INTEGER NOT NULL
+            CHECK (
+                typeof(last_enqueued_sequence) = 'integer'
+                AND last_enqueued_sequence >= 0
+            ),
+        consume_cursor INTEGER NOT NULL
+            CHECK (
+                typeof(consume_cursor) = 'integer'
+                AND consume_cursor >= 0
+                AND consume_cursor <= last_enqueued_sequence
+            ),
+        version INTEGER NOT NULL
+            CHECK (typeof(version) = 'integer' AND version >= 1),
+        updated_at TEXT NOT NULL,
+        UNIQUE (scope_id, thread_id, agent_instance_id, agent_session_id),
+        FOREIGN KEY (
+            scope_id, thread_id, agent_instance_id, agent_session_id
+        ) REFERENCES runtime_agent_sessions(
+            scope_id, thread_id, agent_instance_id, agent_session_id
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    )""",
+    """CREATE TABLE runtime_agent_messages (
+        message_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        recipient_agent_instance_id TEXT NOT NULL,
+        recipient_agent_session_id TEXT NOT NULL,
+        sender_agent_instance_id TEXT NOT NULL,
+        mailbox_sequence INTEGER NOT NULL
+            CHECK (typeof(mailbox_sequence) = 'integer' AND mailbox_sequence >= 1),
+        enqueued_at TEXT NOT NULL,
+        consumed_at TEXT NOT NULL,
+        message_json TEXT NOT NULL CHECK (json_valid(message_json)),
+        message_digest TEXT NOT NULL CHECK (length(message_digest) = 64),
+        UNIQUE (recipient_agent_instance_id, mailbox_sequence),
+        FOREIGN KEY (
+            scope_id, thread_id, recipient_agent_instance_id,
+            recipient_agent_session_id
+        ) REFERENCES runtime_agent_mailbox_cursors(
+            scope_id, thread_id, agent_instance_id, agent_session_id
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (sender_agent_instance_id)
+            REFERENCES runtime_agent_instances(agent_instance_id)
+            ON UPDATE RESTRICT ON DELETE RESTRICT
+    )""",
+    """CREATE INDEX runtime_agent_messages_pending_idx
+        ON runtime_agent_messages(
+            recipient_agent_instance_id, consumed_at, mailbox_sequence
+        )""",
+)
+_MIGRATION_V5_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V5_DDL) + "\n" + _MIGRATION_V5_NAME).encode("utf-8")
+).hexdigest()
+
 
 @dataclass(frozen=True)
 class _RuntimeMigration:
@@ -582,6 +710,8 @@ _MIGRATIONS = (
     _RuntimeMigration(1, _MIGRATION_V1_NAME, _MIGRATION_V1_DDL, _MIGRATION_V1_CHECKSUM),
     _RuntimeMigration(2, _MIGRATION_V2_NAME, _MIGRATION_V2_DDL, _MIGRATION_V2_CHECKSUM),
     _RuntimeMigration(3, _MIGRATION_V3_NAME, _MIGRATION_V3_DDL, _MIGRATION_V3_CHECKSUM),
+    _RuntimeMigration(4, _MIGRATION_V4_NAME, _MIGRATION_V4_DDL, _MIGRATION_V4_CHECKSUM),
+    _RuntimeMigration(5, _MIGRATION_V5_NAME, _MIGRATION_V5_DDL, _MIGRATION_V5_CHECKSUM),
 )
 
 _REQUIRED_SCHEMA_OBJECTS = {
@@ -612,6 +742,17 @@ _REQUIRED_SCHEMA_OBJECTS = {
         ("trigger", "runtime_outbox_receipts_deny_update", _MIGRATION_V3_DDL[11]),
         ("trigger", "runtime_outbox_receipts_deny_delete", _MIGRATION_V3_DDL[12]),
         ("trigger", "runtime_outbox_receipts_deny_replace", _MIGRATION_V3_DDL[13]),
+    ),
+    4: (
+        ("table", "runtime_agent_instances", _MIGRATION_V4_DDL[0]),
+        ("index", "runtime_agent_instances_thread_idx", _MIGRATION_V4_DDL[1]),
+        ("table", "runtime_agent_sessions", _MIGRATION_V4_DDL[2]),
+        ("table", "runtime_agent_private_state", _MIGRATION_V4_DDL[3]),
+    ),
+    5: (
+        ("table", "runtime_agent_mailbox_cursors", _MIGRATION_V5_DDL[0]),
+        ("table", "runtime_agent_messages", _MIGRATION_V5_DDL[1]),
+        ("index", "runtime_agent_messages_pending_idx", _MIGRATION_V5_DDL[2]),
     ),
 }
 _MANAGED_SCHEMA_OBJECT_NAMES = frozenset(
@@ -814,14 +955,38 @@ class SQLiteRuntimeDatabase:
                 connection.execute(
                     "PRAGMA foreign_key_check(runtime_outbox_receipts)"
                 )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_instances)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_sessions)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_private_state)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_mailbox_cursors)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_messages)"
+                )
             )
             if foreign_key_rows:
                 raise RuntimeDatabaseIntegrityError(
                     f"SQLite foreign_key_check 发现 {len(foreign_key_rows)} 个问题"
                 )
             from .state_event import SQLiteThreadEventStore
+            from .agent import SQLiteAgentStore
+            from .mailbox import SQLiteMailboxStore
 
             SQLiteThreadEventStore(self)._verify_connection(connection)
+            SQLiteAgentStore(self)._verify_connection(connection)
+            SQLiteMailboxStore(self)._verify_connection(connection)
         finally:
             connection.close()
 

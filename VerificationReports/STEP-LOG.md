@@ -3562,3 +3562,666 @@ ps -axo pid=,ppid=,pgid=,command=
 - `supersedes_entry_id`：`NONE`
 - `git_checkpoint`：`REMOTE_CONFIRMED_AT_66acb61 / terminal-record commit=PENDING / KEEP_NOT_ISSUED`
 - `next_action`：只提交本entry与HANDOFF同步，普通push该终端记录后核远端SHA并停止；不再为最终push递归创建第四记录提交。
+
+### TRACE-20260827-156
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-156 / MVP-CLOSE-01-PLAN-RESET / PRE_REGISTER / 2026-08-27T13:10:00+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / portfolio-complete project closure scope reset / user instruction: 先让整个项目回收、闭环，成为完整项目，不要求立即生产级`
+- `what / why / expected_effect_or_gate`：把当前主线从“继续追求生产级 SEC/PROD 认证”改为“先形成可运行、可演示、可复现、边界诚实的完整项目闭环”。原因是现有生产路线的认证成本已经压过个人项目的近期价值；预期新增一个明确的 `MVP-CLOSE-01` 收口阶段，保留已完成安全与持久化资产，把完整 Browser adversarial、`01B-3B-2`、BudgetLedger/Acceptance 扩展、`01C/01E` 等生产增强下沉为后续展望，并优先统一一个真实入口、结果/证据可见性、Demo/README 和合理回归。
+- `scope / non_goals`：只新增/修改计划与状态文档：预计新增 `Plan/Plan29.md`，同步 `Plan/Plan26.md`、`OPTIMIZATION_BACKLOG.md`、`LEARNING_PATH.md`、`README.md`、`HANDOFF.md`、`VerificationReports/SEC-EXEC-01.md` 与本日志；不修改 production/test，不运行模型、Browser、真实子进程或网络，不stage/commit/push，不触碰 `demo/track.md`、`problems.md`、`prombles.md` 删除和用户未跟踪的 `Plan/Plan28.md`。
+- `baseline`：`branch=main; HEAD=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; HANDOFF=0222ebf0bfaf305c4c3c49c40feaf9047490a94c9b906c345b73d9990a2cb3ed; Plan26=6bacf9de29aec7b0950e30f61763ea8ff29482d38d9ec4eb9737802e070d646a; Backlog=7d5f89259dfa8d97c042cd5541b15f05f80edda771ef447733e8b1ccc2e3bbc1; Learning=d7ea049d462fab38d0b59bb9670d025553419e5f342ee46de91b7b9eb95d81f7; README=89393fad35342645878aa18e51a39b7e50e8562a939a5eede69ddda856f88aed; SEC=112f34927b025328d3629b8bafdb39eb50d3f123ea980400ba67691eff0c2abf; STEP=ac5ac03cbc90328ac46386c840d5dbbda2ad146acdd6e488ee6b9129dc5de876; worktree has exactly four pre-existing unrelated/user paths`
+- `commands`：计划使用 `apply_patch` 精确修改上述文档；随后执行 scoped `git diff --check`、新 Plan no-index check、跨文档 stale-current-claim 扫描、明确文件 SHA-256 和独立只读一致性 Review。实际命令与结果写 ACTUAL。
+- `stop_or_rollback_conditions`：若新范围删除或倒写历史证据、把当前原型冒称生产级、让未来生产路线继续阻塞 MVP 收口、误触四项用户改动，或跨文档仍同时存在两个“当前主线”，立即停止并记录 REVISE。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期 `Plan/Plan29.md` 及七份同步文档的内容哈希、格式检查和独立一致性结论。
+- `remaining_risks`：本批只重排目标与验收，不实现新的端到端入口；项目是否达到闭环仍须后续 `MVP-CLOSE-01` 实现批次验证。
+- `review`：`PENDING — independent read-only cross-document scope review after edits`
+- `supersedes_entry_id`：`NONE — preserves historical PROD/SEC evidence; changes only current priority and completion target`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：新增项目闭环计划并同步权威入口；不开始功能实现。
+
+### TRACE-20260827-157
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-157 / MVP-CLOSE-01-PLAN-RESET / ACTUAL / 2026-08-27T13:27:59+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / portfolio-complete scope synchronization / TRACE-156 + Plan29`
+- `what / why / expected_effect_or_gate`：新增Plan29并把当前主线统一改为`MVP-CLOSE-01A～01D`。作品集完成被定义为权威离线Demo、端到端Artifact/验证/报告、Quickstart/可见性和轻量发布检查；SEC完整认证、01B-3B-2、01C/完整01D/01E及PROD-02～07全部保留但后置。原因是优先获得完整、可展示的项目故事；效果是生产技术成熟度与当前完成目标明确分离。
+- `scope / non_goals`：实际新增`Plan/Plan29.md`，同步`Plan/Plan26.md`、Backlog、Learning Path、README、HANDOFF、SEC报告和STEP；未修改production/test，未运行模型、Browser、网络、真实子进程或测试，未stage/commit/push；四项用户路径保持原状态。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; pre-edit hashes见TRACE-156`
+- `commands`：使用`apply_patch`进行文档修改；随后运行scoped tracked `git diff --check`（exit0/output empty）、新Plan `git diff --no-index --check /dev/null Plan/Plan29.md`（output empty，exit1仅因新文件与/dev/null不同）、跨文档旧active-route `rg`（无命中，exit1）、明确文件`shasum -a 256`、scoped diff stat和`git status --short`。另由只读scope顾问核对现有入口，建议优先复用scripted ablation worker并避免把测试Fake Model冒充产品Provider，已纳入Plan29。
+- `stop_or_rollback_conditions`：未触发；没有删除历史证据、没有把MVP冒称生产级、没有触碰四项用户改动，七个主状态文档和SEC报告均指向Plan29当前主线。
+- `result / effect`：`achieved=yes; current milestone=MVP-CLOSE-01A; production code changes=0; test executions=0; external calls=0; prior user paths touched=0; review=PENDING`
+- `artifacts / evidence`：review前hash：`Plan29`（最后一处scripted措辞修正后将在CHECKPOINT重算）；`Plan26=6f49123308688665038d673e1dd166bb06097e9f6e96f73ebfa36664b80c4791`; `Backlog=6a6d1f4811aedb5f77112f80896ff434b0308ca57f1f12ec1860280c61c55ccb`; `Learning=8d22c6bf5eb41dfdf7c1817bdc85913848fc326c9c9da95918f09bca69f653c6`; `README=2834a07356c4ddeba4c285d73c625f1a88ca281a2d1ce9fad56bca1c5be00d25`; `HANDOFF=cbd52b17a8a0ac329dcba3935c8020ea1c140105731cfb52b52c7b09de30d306`; `SEC=0eba87e6f660887ea03fc65045fd54190b63565dae9adfe4d6787ba2b4330f64`; pre-ACTUAL `STEP=cc68e3820bb360669b52ec0a130cb10cf05043b91dc0933c9ba937073bb00a8f`。
+- `remaining_risks`：Plan29目前只改变目标和证据强度，尚未选择并实际跑通权威离线Demo；根README的Quickstart将在01A/01B后才能成为真实完成路径。现有Web批准字段和持久性限制明确不纳入默认入口，除非后续只需极小修正。
+- `review`：`PENDING — independent cross-document consistency review next`
+- `supersedes_entry_id`：`NONE — TRACE-156 scope achieved`
+- `git_checkpoint`：`WORKTREE_ONLY / current plan reset complete / commit=PENDING`
+- `next_action`：独立只读复核当前主线、延期边界、轻量证据规则和非声明；修正blocking后追加CHECKPOINT。
+
+### TRACE-20260827-158
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-158 / MVP-CLOSE-01-PLAN-RESET / REVIEW / 2026-08-27T13:28:00+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/mvp_docs_final_review / independent read-only cross-document route review / TRACE-156～157 + Plan29`
+- `what / why / expected_effect_or_gate`：独立 Reviewer 核对作品集闭环定位、延期边界、轻量证据规则、历史证据和用户路径隔离。新 Plan29 的范围与非声明通过，但发现多个历史章节仍以“当前/唯一顺序”描述旧生产路线；若从局部章节恢复，接续者可能绕过 Plan29。
+- `scope / non_goals`：只读文档审查；未修改文件、运行测试或签发 Runtime Acceptance/SEC KEEP。
+- `baseline`：`base=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; Plan29 reviewer snapshot=7480c87a...; worktree-only`
+- `commands`：Reviewer 静态检查 Plan29、README、HANDOFF、Plan26/27、Backlog、Learning Path、SecurityProblem、SEC/PROD VerificationReport 和 Step Log；生产者另复核精确行段与 stale-route `rg`。
+- `stop_or_rollback_conditions`：已触发跨文档双主线停止条件；在旧“当前/唯一顺序”就地标记为历史并由同一 Reviewer 复核前，不得宣布计划切换完成。
+- `result / effect`：`REVISE; high=2 groups; Plan29 scope itself accepted; historical/current route ambiguity blocking`
+- `artifacts / evidence`：blocking 位置包括 `Plan26` Amendment、`HANDOFF` PROD-01、`SEC-EXEC-01` 历史顺序、`LEARNING_PATH`、Backlog，以及 README 所链接的 `SecurityProblem`、`Plan27`、`PROD-01B` 历史路线文本。
+- `remaining_risks`：修正必须保留当时的测试、决策和证据，不得把历史文件伪装成当时就采用 Plan29。
+- `review`：`REVISE / blocking route ambiguity`
+- `supersedes_entry_id`：`NONE — TRACE-157 remains the producer record; this review blocks its final checkpoint`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / final approval=PENDING`
+- `next_action`：扩大文档同步范围，仅追加/更新路线状态横幅与现在时指令：`SecurityProblem.md`、`Plan/Plan27.md`、`VerificationReports/PROD-01B.md`；同时修正既有同步文档中的局部旧指令。完成机械检查后请同一 Reviewer 复核。
+
+### TRACE-20260827-159
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-159 / MVP-CLOSE-01-PLAN-RESET / REVIEW / 2026-08-27T13:36:45+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/mvp_docs_final_review / independent read-only re-review / TRACE-158 corrections + Plan29`
+- `what / why / expected_effect_or_gate`：同一独立 Reviewer 复核原两个 High、当前主线、延期边界、轻量证据适用范围、历史语境和用户路径隔离。修正已覆盖 Plan26/HANDOFF/SEC/Learning/Backlog，并为 SecurityProblem、Plan27、PROD-01B 和仓库级扫描追加发现的 Plan25 添加历史路线注记。
+- `scope / non_goals`：只读文档复核；未修改代码/测试，未运行行为测试，未签发 Runtime Acceptance、SEC KEEP 或项目完成声明。
+- `baseline`：`base=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; reviewed 12-file manifest SHA-256=20451a85b9784ca9afd9472e735c0af75d89bafd96fbff5e1f84aca2817cdc72`
+- `commands`：Reviewer 静态复核最新 12 文件；生产者运行 repo-wide old-route scan、tracked diff-check、新 Plan29 no-index format check、status/staging 与明确内容哈希。
+- `stop_or_rollback_conditions`：未触发；没有剩余能让接续者绕过 Plan29 的 blocking 当前路线指令。
+- `result / effect`：`APPROVE; issues=0; blocking=0; original two High=CLOSED`
+- `artifacts / evidence`：Plan29 明确 portfolio/local-demo 定位和非生产声明；HANDOFF、Backlog、Learning、README 统一指向 `MVP-CLOSE-01`；SEC、3B-2、01C、完整01D、01E和PROD-02+均后置；历史文件保留原事实并加日期语境。
+- `remaining_risks`：本结论只批准路线文档一致性；`MVP-CLOSE-01A～01D` 尚未实施，Quickstart 与离线端到端 Demo 尚未形成。
+- `review`：`APPROVE / independent / blocking=0`
+- `supersedes_entry_id`：`TRACE-20260827-158 review disposition only; REVISE history remains preserved`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING`
+- `next_action`：记录计划重置 CHECKPOINT；随后只从 `MVP-CLOSE-01A` 继续，不自动进入实现或生产路线。
+
+### TRACE-20260827-160
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-160 / MVP-CLOSE-01-PLAN-RESET / CHECKPOINT / 2026-08-27T13:36:45+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / final route-reset checkpoint / Plan29 + TRACE-156～159`
+- `what / why / expected_effect_or_gate`：完成“先作品集闭环、后生产增强”的权威路线切换。新增 Plan29，当前执行序列固定为 `MVP-CLOSE-01A → 01B → 01C → 01D`；旧 SEC/PROD/INC 顺序只作为历史证据或未来 Roadmap，不能阻塞作品集版完成。
+- `scope / non_goals`：文档与计划状态共 12 文件；production/test changes=0，test executions=0，模型/Browser/网络/真实子进程=0，stage/commit/push=0。四项批前用户路径 `demo/track.md`、`problems.md`、`prombles.md` 删除、`Plan/Plan28.md` 保持原状态。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; staging empty`
+- `commands`：`apply_patch` 精确同步 12 文档；两轮独立只读 Review（先 REVISE，修正后 APPROVE）；tracked `git diff --check` exit0；新 Plan29 `git diff --no-index --check /dev/null` 无格式输出、exit1仅表示新增文件与空文件不同；repo-wide stale-route `rg`；`shasum -a 256`；status/staging 检查。
+- `stop_or_rollback_conditions`：未触发。Plan29 未冒称 production-ready/Runtime Acceptance/SEC KEEP；生产高风险批次恢复时仍回到严格证据协议；历史测试和决定未被倒写。
+- `result / effect`：`achieved=yes; plan reset complete; current milestone=MVP-CLOSE-01A; independent review=APPROVE/blocking0; project implementation closure=NOT_STARTED`
+- `artifacts / evidence`：`Plan29=7480c87aae99315d82b11650a6f82d9022db54fb8828744b885275b1a4b08f8e; Plan26=069c2b9a7f027afe4844abf345c5d6cf91510a1b819ef5daf18f244c1ba4600c; Plan27=a6a7fe9b5f552ca6eec6e818ff3e5df1e5071f9ed747b51c1c32e8a90a81ce4f; Plan25=de5491c1d2ccff5b3daad64034c9dc0544a029942e411f00728b3d1be783eaed; Backlog=144b3f1126268a63f1edfaa8fdd1956e8feac4b78c43222611f3b15761c29f18; Learning=0db45b98d88996964d065846ab5763d796eb6c396274aee362a4cf8e8ef3dbbc; README=dcfadb2ad9dfeb8a5b0d6df0d8b93d37cf6634795e7d308403e53dd12928e6a9; HANDOFF=ba9b19f4a9d6fc38461448d577fcb237099f17c16d6dce09064266b64d2fc918; SecurityProblem=e740c0772855b570170f047a70b61b67d5fbf10aa5297d4625ac710451243203; SEC=de118ee81ed737bae59e5b4ac56b7343bc5e7e8608dda6f15730e0933b4d8967; PROD-01B=2853a935c19b41c6e560d8ea07c91e51045e390e88e24f6cf6c54d574392e20a; pre-REVIEW/CHECKPOINT STEP=e7ad45f0bfd64d6c43b4ce087f3a9981102bbf3a8ba845253ce5a83c30fd6dfc`
+- `remaining_risks`：路线切换不等于项目已经闭环。下一批仍需只读核对并冻结权威 scripted/offline 入口、Quickstart、输出目录、退出码和报告字段；现有 Web 批准字段/内存态限制不纳入默认入口，除非后续证明只需极小修正。
+- `review`：`APPROVE / blocking=0 / route documentation only`
+- `supersedes_entry_id`：`NONE — TRACE-158 REVISE and corrections remain in append-only history`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：只开始 `MVP-CLOSE-01A`：比较现有 `core_coding_ablation_run.py` scripted worker、Coding DAG 与 CLI/Web，选择最少改动的默认离线 Demo，冻结单一 Quickstart 和结构化报告合同；不要自动实施 01B 或任何生产 Roadmap。
+
+### TRACE-20260827-161
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-161 / MVP-CLOSE-01A-ENTRY-CONTRACT / PRE_REGISTER / 2026-08-27T13:56:40+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / authoritative offline portfolio entry freeze / Plan29 MVP-CLOSE-01A`
+- `what / why / expected_effect_or_gate`：比较现有 scripted ablation、fixed Coding eval、通用 Coding CLI 与 Web 路径，选择一个依赖最少、默认离线、能复用真实 Artifact/Validator/Fix 资产的作品集“正门”；冻结未来 Quickstart、固定输入、输出目录、退出码、顶层报告字段、四类结果和下一批最小文件范围。原因是先消除入口分散和产品叙事歧义，再实施薄包装层。
+- `scope / non_goals`：本批只做只读代码核对和文档合同冻结，预计修改 `Plan/Plan29.md`、`HANDOFF.md`、`OPTIMIZATION_BACKLOG.md`、`LEARNING_PATH.md` 与本日志；不修改 production/test，不创建入口，不运行本地验证、模型、Browser、网络或真实子进程，不stage/commit/push，不触碰四项批前用户路径。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; staging empty; prior route-reset subject remains WORKTREE_ONLY; current milestone=MVP-CLOSE-01A`
+- `commands`：计划使用 `rg`/`sed` 只读核对入口、Runner、JSON schema、现有测试和 gitignore；由独立只读 Reviewer 比较入口与审查合同；随后用 `apply_patch` 同步权威文档，并运行 scoped diff-check、stale-status scan、hash/status 检查。
+- `stop_or_rollback_conditions`：若推荐入口需要真实模型/网络/Web、复制第二套 Runtime、把测试 Fake Model 冒充产品 Provider、弱化显式本地执行批准，或不能用薄 wrapper 复用现有闭环，则停止并保持 01A 进行中。
+- `result / effect`：`TBD — contract not frozen`
+- `artifacts / evidence`：预期形成可直接交给 01B 的单一命令与版本化报告合同，以及精确最小实现/测试/文档文件范围。
+- `remaining_risks`：01A 只冻结施工图，不代表 Quickstart 已可运行或作品集闭环已经完成。
+- `review`：`PENDING — independent read-only entry/contract review`
+- `supersedes_entry_id`：`NONE — continues TRACE-160 next_action`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY`
+- `next_action`：完成只读入口比较，选择默认 CLI 路径并冻结合同；不开始 01B 实现。
+
+### TRACE-20260827-162
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-162 / MVP-CLOSE-01A-ENTRY-CONTRACT / ACTUAL / 2026-08-27T14:05:47+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / authoritative offline portfolio entry freeze / TRACE-161 + Plan29`
+- `what / why / expected_effect_or_gate`：比较四条候选入口并冻结 `portfolio-demo/v1`：01B 待新增 `demo/portfolio_demo.py` 薄 CLI，底层复用现有 `CodingAblationRunner`、scripted registry、Artifact/Validator/Fix 链；唯一目标 Quickstart 为 `python3 demo/portfolio_demo.py --trusted-local-execution`。固定 Suite、3×3成功矩阵、输出、退出码、`portfolio-demo-report/v1` 字段、四类测试和01B两文件范围均已写入 Plan29。
+- `scope / non_goals`：只修改 Plan29、HANDOFF、Backlog、Learning Path 和 Step Log；production/test changes=0，目标入口/测试文件仍不存在，test/workload executions=0，模型/网络/Browser/真实Validator=0，stage/commit/push=0，四项用户路径未触碰。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; staging empty; prior route-reset worktree retained`
+- `commands`：`rg`/`sed`/`find`/`wc` 只读核对现有入口、Runner、report、tests、Web payload和gitignore；一次无字节码 Python只读加载命令初次误传字符串路径，产生 `AttributeError: 'str' object has no attribute 'resolve'`/exit1，纠正为 `Path('coding_eval/v1')` 后 exit0并确认 Suite ID、manifest与3个task ID；随后使用 `apply_patch` 同步合同并运行 scoped diff-check、status/staging、stale-status和目标文件不存在检查。
+- `stop_or_rollback_conditions`：未触发。选择没有依赖 Web/真实模型/网络，没有复制 Runtime，没有修改固定 Suite或弱化执行批准；目标入口明确为01B待新增，未冒称已运行。
+- `result / effect`：`achieved=yes; MVP-CLOSE-01A=COMPLETED; next=MVP-CLOSE-01B; implementation files created=0; tests run=0`
+- `artifacts / evidence`：`contract_id=portfolio-demo/v1; report schema_version=portfolio-demo-report/v1; demo_id=portfolio-demo; suite=core-coding-eval-v1; manifest=cea75c0ee1f8fafc4d4eebfabbe2ff8f18ee1f2624d3831e198cce984827ee91; expected=9 trials/6 delivered/3 expected failures/3 repairs/21 scripted calls/0 model calls; Plan29=64df526beb73f1cd54fe739003339da16f20a03304d4203d888e7c2deecb1c9e; HANDOFF=31e0e8759eba42969da776963f0af388edf9980a6a658185213dec117cdf12a7; Backlog=0180dbdd5fdeb478c585ae4e56e041040cd74328740c97ffe50a1e0426458a54; Learning=2623dcb6068fce020a28c7b1b5927ad1a5b6288e63aa29ae5392bc32d280e518; pre-entry STEP=eb96830de5a1b91f7dd3c254e070cf53669bf7af4e1d731d6baf8769d5708698`
+- `remaining_risks`：Quickstart 仍不可运行，01B 必须新增入口与测试；三类策略含有预期失败，顶层状态必须按精确矩阵而非“所有Trial都绿”判定；scripted reference repair只证明控制流，不证明模型能力。
+- `review`：`PENDING at producer ACTUAL — independent iterations recorded next`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-161`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING`
+- `next_action`：记录独立 Review 与01A CHECKPOINT；不要在本批开始01B代码。
+
+### TRACE-20260827-163
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-163 / MVP-CLOSE-01A-ENTRY-CONTRACT / REVIEW / 2026-08-27T14:05:47+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/mvp01a_review / independent read-only entry and contract review / TRACE-162 subject`
+- `what / why / expected_effect_or_gate`：Reviewer 先确认入口选择、manifest、3×3矩阵、21 scripted/0 model、两文件施工范围与非生产边界正确，再通过两轮 REVISE 消除实现歧义：区分 CLI contract/report schema并冻结ID值；划清 Runner内完整Trial异常退出1与Runner外未形成报告异常退出3；明确 Backlog中的入口尚待01B新增；最后同步 HANDOFF 的退出码摘要。
+- `scope / non_goals`：独立只读静态审查；未修改文件、运行 workload、授予 Runtime Acceptance 或证明真实模型效果。
+- `baseline`：`reviewed Plan29=64df526beb73f1cd54fe739003339da16f20a03304d4203d888e7c2deecb1c9e; HANDOFF=31e0e8759eba42969da776963f0af388edf9980a6a658185213dec117cdf12a7; Backlog=0180dbdd5fdeb478c585ae4e56e041040cd74328740c97ffe50a1e0426458a54; Learning=2623dcb6068fce020a28c7b1b5927ad1a5b6288e63aa29ae5392bc32d280e518`
+- `commands`：Reviewer 静态核对代码行、文档合同、目标文件不存在、status/staging与用户路径；生产者每轮使用 `apply_patch` 修正并通过 `rg`/diff-check复核。
+- `stop_or_rollback_conditions`：前两轮分别触发3项与1项blocking，均在宣布完成前关闭；最终无blocking。
+- `result / effect`：`APPROVE; blocking=0; original blockers=4 closed; two-file implementation feasibility accepted`
+- `artifacts / evidence`：最终确认 HANDOFF 与 Plan29 同义：完整 Trial 中异常/UNKNOWN→1；Runner外 setup/manifest/serialization/atomic-write 且无完整 Trial 报告→3。Schema、待新增入口、矩阵、四类测试、入口取舍和限制继续有效。
+- `remaining_risks`：Review只批准合同清晰度与可实现性；未审核尚不存在的01B实现或运行结果。
+- `review`：`APPROVE / independent / blocking=0`
+- `supersedes_entry_id`：`NONE — earlier REVISE findings remain preserved in this entry summary`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / STAGING_EMPTY`
+- `next_action`：记录01A CHECKPOINT并停止本批。
+
+### TRACE-20260827-164
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-164 / MVP-CLOSE-01A-ENTRY-CONTRACT / CHECKPOINT / 2026-08-27T14:05:47+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / 01A completion checkpoint / Plan29 01A contract`
+- `what / why / expected_effect_or_gate`：`MVP-CLOSE-01A` 完成：项目“正门”的施工图已唯一化。新用户未来只面对一个固定离线命令；01B实现者只需新增两个文件，并用精确矩阵把预期对照失败与真正项目失败分开。
+- `scope / non_goals`：本检查点只代表入口合同完成，不代表 Demo 已实现、Quickstart 已可运行、01B已开始或作品集项目已完成。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; worktree-only route+01A docs; staging empty`
+- `commands`：见TRACE-162；最终 scoped `git diff --check` exit0、stale-01A scan无命中、contract ID/退出码 scan一致、`.runs/` ignore规则存在、两个目标文件均确认不存在。
+- `stop_or_rollback_conditions`：未触发；最终独立 Review=`APPROVE/blocking0`。
+- `result / effect`：`achieved=yes; 01A=COMPLETED; 01B=NEXT_NOT_STARTED; project portfolio completion=IN_PROGRESS`
+- `artifacts / evidence`：权威合同见 `Plan/Plan29.md` 的“`MVP-CLOSE-01A 权威 Demo 合同`”；接续摘要见 HANDOFF 顶部；Backlog和Learning均指向01B。
+- `remaining_risks`：01B需要真实离线成功测试，会执行固定受控本地Python Validators；届时必须单独PRE_REGISTER并显式使用已有批准边界。若两文件范围无法实现，必须停止报告，不自动修改Core/Web/模型路径。
+- `review`：`APPROVE / blocking=0 / contract only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：下一批是 `MVP-CLOSE-01B`：先PRE_REGISTER，再新增 `demo/portfolio_demo.py` 和 `demo/tests/test_portfolio_demo.py`；本批到此停止。
+
+### TRACE-20260827-165
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-165 / MVP-CLOSE-01B-NEW-WINDOW-HANDOFF / PRE_REGISTER / 2026-08-27T15:16:00+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / prepare-handoff for new window / TRACE-164 + Plan29 01A contract`
+- `what / why / expected_effect_or_gate`：按用户要求更新新窗口交接，让接续者无需旧聊天即可从01B开始，并把“使用时能看到Agent如何工作”收敛为结构化公开执行时间线，不展示私有推理。预期提供可直接复制的新窗口指令和满足 `prepare-handoff` 字段的最小可执行摘要。
+- `scope / non_goals`：只修改 `HANDOFF.md` 与本日志；不开始01B代码、不创建目标文件、不运行测试/Validator/模型/网络/Browser，不stage/commit/push，不触碰四项用户路径。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; 01A=COMPLETED/APPROVE; 01B=NEXT_NOT_STARTED; staging empty`
+- `commands`：读取 `prepare-handoff` SKILL及其examples，核对HANDOFF顶部、Step Log尾部、status和HEAD；计划用 `apply_patch` 增加最小新窗口启动块并同步01B可见性约束，随后运行diff-check、字段/陈旧状态扫描和status/hashes。
+- `stop_or_rollback_conditions`：若交接误称01B已开始/完成、扩大到Web/真实模型/Core、授权本地执行或提交推送、遗漏四项保护路径，或要求展示Agent私有chain-of-thought，则停止并修正。
+- `result / effect`：`TBD — handoff not yet updated`
+- `artifacts / evidence`：预期 `HANDOFF.md` 顶部可复制指令、结构化HandoffProposal与最终内容hash。
+- `remaining_risks`：新窗口仍须自行读取代码和测试，并在01B修改前追加新的批次级PRE_REGISTER；本交接不创建RouteEdge、Invocation、权限或Acceptance。
+- `review`：`PENDING — producer quality check against prepare-handoff checklist`
+- `supersedes_entry_id`：`NONE — continues TRACE-164 next_action without starting implementation`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY`
+- `next_action`：只更新HANDOFF并记录checkpoint，然后让用户切换新窗口。
+
+### TRACE-20260827-166
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-166 / MVP-CLOSE-01B-NEW-WINDOW-HANDOFF / ACTUAL / 2026-08-27T15:17:57+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / prepare-handoff new-window artifact / TRACE-165`
+- `what / why / expected_effect_or_gate`：更新HANDOFF顶部为可直接复制的新窗口指令，并按 `prepare-handoff` 输出合同收敛当前HandoffProposal。交接明确01A已完成/01B未开始、两文件默认范围、公开Agent时间线、精确结果与退出码、用户路径保护、无权限转移及范围扩张停止条件。
+- `scope / non_goals`：只改HANDOFF与Step Log；01B代码/测试文件仍不存在，未运行测试、Validator、模型、网络、Browser，未stage/commit/push，未触碰四项用户路径。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; 01A=COMPLETED/APPROVE; 01B=NEXT_NOT_STARTED; staging empty`
+- `commands`：完整读取 `prepare-handoff/SKILL.md` 与条件引用 `references/examples.md`；用 `sed`/`rg`核对HANDOFF/Step/status；`apply_patch`更新新窗口指令与Proposal字段。首次动态压缩`completed_work`时，`sed`匹配到文件内多个同名字段导致patch verification failure、文件未改；随后使用`rg -m 1`精确取顶层字段并成功替换。最后运行字段、当前声明、权限、目标文件、diff/status/staging和hash检查。
+- `stop_or_rollback_conditions`：未触发。交接没有声称01B已开始/完成，不创建RouteEdge/Invocation/Approval，不把交接文字当本地执行授权，不批准模型/网络/Browser/commit/push，不要求暴露chain-of-thought。
+- `result / effect`：`achieved=yes; handoff ready for new window; required HandoffProposal fields=15/15; 01B implementation changes=0; tests/workloads=0`
+- `artifacts / evidence`：`HANDOFF=5a99f3de00a0a2b60d233b305c90347d9bb28f6774e09b79f745bd3bcf978af5; pre-ACTUAL STEP=6d5b8e36a5c32370763674fc2e0719e13dfde977dd49d28bd350eebc568cca6e; HANDOFF lines 7～31=new-window copy block; lines 47～61=structured HandoffProposal`
+- `remaining_risks`：结构化时间线预计可由现有Trial/StageAudit投影，但要由01B实现/测试验证；真实离线smoke仍需新窗口当次明确批准。
+- `review`：`producer quality check PASS against prepare-handoff checklist; no independent implementation review because no implementation exists`
+- `supersedes_entry_id`：`NONE — TRACE-165 fulfilled`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：记录交接CHECKPOINT并让用户在新窗口复制HANDOFF顶部指令。
+
+### TRACE-20260827-167
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-167 / MVP-CLOSE-01B-NEW-WINDOW-HANDOFF / CHECKPOINT / 2026-08-27T15:17:57+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / new-window transfer checkpoint / HANDOFF top HandoffProposal`
+- `what / why / expected_effect_or_gate`：新窗口交接完成。接续者可只读HANDOFF顶部、Plan29 01A合同和Step Log最新条目后，从01B PRE_REGISTER开始，不需要旧聊天或生产历史回放。
+- `scope / non_goals`：本检查点不开始01B、不授权真实本地执行、不提交或推送，也不宣称Demo已可运行。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; worktree dirty by documented route/01A/handoff changes plus four protected user paths; staging empty`
+- `commands`：见TRACE-166；scoped `git diff --check`通过，HandoffProposal15字段存在，两个01B目标文件不存在，status保护项为`M/M/D/??`。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; ready_to_open_new_window=yes; current task=MVP-CLOSE-01B PRE_REGISTER; implementation=NOT_STARTED`
+- `artifacts / evidence`：权威接续文件为`HANDOFF.md`；复制块位于文件顶部，精确合同位于`Plan/Plan29.md`。
+- `remaining_risks`：新窗口若要执行真实离线Demo/Validators，必须取得当次明确批准；若两新增文件不足，停止报告，不扩大到Core/Web/模型路径。
+- `review`：`PASS / prepare-handoff quality checklist / no authority transfer`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：用户打开新窗口，复制HANDOFF顶部指令；本窗口到此停止。
+
+### TRACE-20260827-168
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-168 / MVP-CLOSE-01B-PORTFOLIO-DEMO / PRE_REGISTER / 2026-08-27T15:24:18+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / thin offline portfolio CLI and directed tests / Plan29 MVP-CLOSE-01A authoritative demo contract`
+- `what / why / expected_effect_or_gate`：实现 `portfolio-demo/v1` 的薄入口与定向测试，把现有 scripted Coding Harness、Artifact、Runtime-owned Validator、Tester/Fixer 闭环投影为公开时间线和 `portfolio-demo-report/v1` 报告。预期在不修改 Runtime Core、固定 Suite、Web 或真实模型路径的前提下，使唯一 Quickstart 可运行，并用精确 3×3 矩阵区分声明的 Single-Agent 对照失败与真正 Demo 失败。
+- `scope / non_goals`：代码范围默认只新增 `demo/portfolio_demo.py` 与 `demo/tests/test_portfolio_demo.py`；本账本仅做批次记录。不得触碰 `demo/track.md`、`problems.md`、`prombles.md` 删除状态或 `Plan/Plan28.md`，不得读取 `.env`、访问网络、Browser 或真实 Provider，不stage/commit/push。本轮用户尚未明确批准实际离线 smoke，因此先做静态实现和不启动真实固定 Validator 的测试；需要运行真实固定 Suite 时另行请求批准。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; staging empty; route/01A/handoff docs remain WORKTREE_ONLY; protected user paths retained; demo/portfolio_demo.py and demo/tests/test_portfolio_demo.py absent`
+- `commands`：已完整读取 HANDOFF 顶部、Plan29 的 01A 权威合同、Step Log TRACE-164～167，并核对 git status/HEAD/recent commits/目标文件不存在；下一步只读检查现有 Runner、report 与测试 API，再用 `apply_patch` 新增两文件并运行不越过当次执行授权的静态/Mock定向检查。
+- `stop_or_rollback_conditions`：若两文件薄包装无法实现合同、必须修改 Core/Suite/Web/模型路径、弱化 `--trusted-local-execution` fail-closed 边界、泄露chain-of-thought，或产生网络/真实模型/Browser依赖，则立即停止并报告阻塞，不自动扩大范围。
+- `result / effect`：`TBD — implementation not yet created`
+- `artifacts / evidence`：`pre-register STEP hash=24c164a8565c41592993882b622e4dee5a93c01b464df43d4bd443c5f5058f40; target contract=portfolio-demo/v1; target report=portfolio-demo-report/v1; expected=9 trials/6 delivered/3 expected failures/3 repairs/21 scripted calls/0 model calls`
+- `remaining_risks`：现有 StageAudit/Trial 字段是否足以稳定生成完整公开时间线仍需代码核对；真实 Validator smoke 在未获本轮明确批准前保持 `NOT_RUN`。
+- `review`：`PENDING — MVP lightweight evidence track; independent review deferred unless safety boundary changes or final 01D candidate`
+- `supersedes_entry_id`：`NONE — starts implementation after TRACE-167 handoff checkpoint`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：读取现有 ablation composition root、report dataclass、StageAudit/Trial 和直接测试，确认薄包装可行后只新增两个目标文件。
+
+### TRACE-20260827-169
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-169 / MVP-CLOSE-01B-PORTFOLIO-DEMO / ACTUAL / 2026-08-27T15:36:02+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root + user-operated trusted local smoke / thin offline portfolio CLI and directed tests / TRACE-168 + Plan29 authoritative demo contract`
+- `what / why / expected_effect_or_gate`：只新增 `demo/portfolio_demo.py` 与 `demo/tests/test_portfolio_demo.py`，实现冻结的 `portfolio-demo/v1` 正门。入口只接受 `--trusted-local-execution`/`--help`，复用现有 scripted Runner，严格核对3任务×3策略矩阵、安全不变量和21/0调用数，输出不含私有推理的公开角色时间线，并原子写入 `portfolio-demo-report/v1`。用户随后在仓库根明确输入并执行可信离线命令，形成真实固定 Validator smoke 与报告证据。
+- `scope / non_goals`：未修改 Runtime Core、固定 Suite、Web、真实模型路径或既有 ablation Runner；未读取 `.env`、访问网络、启动 Browser/真实 Provider，未stage/commit/push。`demo/track.md`、`problems.md`、`prombles.md`删除状态和`Plan/Plan28.md`保持进入本批时的用户状态，未触碰。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; TRACE-168 PRE_REGISTERED; staging empty; two target files initially absent`
+- `commands`：生产者用 `rg`/`sed`只读核对 Runner/Report/StageAudit/Trial/API，`apply_patch`新增两文件；运行 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_portfolio_demo` 两次均 `5 tests/OK`，这些测试全部 Mock Runner、未启动固定 Validator；实际运行无批准 CLI，确认 exit2且只输出批准错误，`--help` exit0。用户随后明确在 `/Users/donbblu/codex/multiAgent` 执行 `python3 demo/portfolio_demo.py --trusted-local-execution`，用户终端显示 exit语义成功摘要；生产者未重复运行该 smoke，只用 `jq`/`shasum`/`git check-ignore`读取并核对生成报告。
+- `stop_or_rollback_conditions`：未触发。两文件范围足够；无Core/Suite/Web/模型路径扩张，无chain-of-thought、网络、真实模型或Browser依赖；批准缺失路径在Suite加载/Runner/报告前fail closed。
+- `result / effect`：`achieved=yes; MVP-CLOSE-01B=COMPLETED; smoke status=passed; tasks=3; trials=9; delivered=6; expected_failures=3; repaired=3; scripted_worker_calls=21; external_model_calls=0; verification mismatches=0; next=MVP-CLOSE-01C`
+- `artifacts / evidence`：`demo/portfolio_demo.py=df2e4625d3e04983b935319018bf3f9deea30192646b7f0ee36895512aa40dac; demo/tests/test_portfolio_demo.py=fc72edfd7c60321e6ba747b409c37e0e7bb28d5bfd3766200539128f30843bc9; ignored demo/.runs/portfolio-demo/report.json=fc40188629a0d30b6418cfbb052a2e4427082620881a21c3d973848f045d3613; report schema=portfolio-demo-report/v1; demo_id=portfolio-demo; suite manifest=cea75c0ee1f8fafc4d4eebfabbe2ff8f18ee1f2624d3831e198cce984827ee91; pre-ACTUAL STEP=227993df374c9b82f4a2f8516315aa555047e8dee38775982aa34f09a0f87676`
+- `remaining_risks`：本结果证明固定 scripted/offline Harness 控制流、权限、Artifact、Validator及Tester/Fixer恢复闭环，不证明LLM效果或生产认证；Trial Workspace为临时目录，无Web、真实Provider或持久用户项目。报告是`.gitignore`覆盖的本地运行产物，后续01C文档只能引用命令/示例与可复现结果，不能把该忽略文件当已提交资产。
+- `review`：`producer contract check PASS; MVP lightweight track does not require independent review for 01B because no safety boundary changed and this is not the final 01D release candidate`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-168`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：追加01B CHECKPOINT并停止本批；下一批按Plan29只开始MVP-CLOSE-01C的Quickstart/可见性文档同步，不在本批自动修改README或开始01D。
+
+### TRACE-20260827-170
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-170 / MVP-CLOSE-01B-PORTFOLIO-DEMO / CHECKPOINT / 2026-08-27T15:36:02+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / 01B completion checkpoint / Plan29 MVP-CLOSE-01B`
+- `what / why / expected_effect_or_gate`：作品集正门已经从01A施工图变为可执行实现：唯一命令真实离线通过，用户可见Planner/Developer/Validator/Tester/Fixer失败恢复时间线，完整报告保留9 Trial与Validator证据，末行稳定摘要精确命中冻结合同。
+- `scope / non_goals`：本检查点只完成01B入口与定向测试；README、Demo说明、架构可见性和示例输出仍属于01C，最终发布核对属于01D；生产Roadmap继续后置。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; implementation/report evidence described in TRACE-169; staging empty`
+- `commands`：见TRACE-169。最终报告读取核对：`status=passed; mode=offline_scripted; schema=portfolio-demo-report/v1; suite/task IDs and manifest exact; execution=21 scripted/0 model/network false/provider false/web false; trial_count=9; mismatches=0; timeline six events exact; limitations present`；`git check-ignore`确认专用报告由`demo/.gitignore:4 .runs/`覆盖。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; 01B=COMPLETED; Quickstart implementation=RUNNABLE; directed tests=5/5 PASS; trusted offline smoke=PASS; project portfolio completion=IN_PROGRESS; 01C=NEXT_NOT_STARTED`
+- `artifacts / evidence`：入口、测试和本地忽略报告hash见TRACE-169；用户终端稳定末行=`status=passed tasks=3 trials=9 delivered=6 expected_failures=3 repaired=3 external_model_calls=0 report=demo/.runs/portfolio-demo/report.json`。
+- `remaining_risks`：对外Quickstart文档尚未同步；目前新用户只有知道命令时才能发现正门。scripted限制和非生产边界必须在01C继续显著展示。
+- `review`：`PASS / producer scoped contract verification / independent final review deferred to 01D`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：下一批是 `MVP-CLOSE-01C`：先追加批次级PRE_REGISTER，再只同步单一Quickstart、示例公开时间线、报告位置、架构故事和诚实限制；不要自动进入01D、生产Roadmap、真实模型、网络、Browser、stage/commit/push。
+
+### TRACE-20260827-171
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-171 / MVP-CLOSE-01C-DOCUMENTATION / PRE_REGISTER / 2026-08-27T15:56:38+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / portfolio Quickstart, visibility, architecture and limits / Plan29 MVP-CLOSE-01C`
+- `what / why / expected_effect_or_gate`：把已通过01B smoke的作品集正门变成无需旧聊天即可发现和理解的默认产品面。根README将提供唯一Quickstart、精确公开时间线示例、报告路径、架构闭环、测试命令、已实现能力与未实现边界；Demo README将把同一入口置顶，并把真实模型CLI/Web清楚标为非默认进阶路径。
+- `scope / non_goals`：默认只修改 `README.md`、`demo/README.md` 与本账本。不得修改代码、Runtime Core、固定Suite、Web、模型路径或Plan28，不运行真实模型/网络/Browser/Validator smoke，不进入01D，不stage/commit/push；`demo/track.md`、`problems.md`和`prombles.md`状态保持不变。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; 01B=COMPLETED; trusted offline smoke=PASS; staging empty; README already contains prior WORKTREE_ONLY route-reset edits that must be preserved; demo/README.md tracked baseline unmodified`
+- `commands`：已读取Plan29的当前完成口径/01C/01D/权威Demo合同、TRACE-169～170、两份README全文与根README现有diff，并核对status/HEAD；下一步仅用`apply_patch`做增量文档编辑，再用链接/命令/示例一致性扫描与`git diff --check`验证。
+- `stop_or_rollback_conditions`：若文档需要扩建Web/Runtime、提供第二个默认入口、暗示真实模型调用或生产认证、覆盖根README已有未提交内容，或无法让命令/输出与01B报告逐字段一致，则停止并报告，不自动扩大范围。
+- `result / effect`：`TBD — documentation not yet updated`
+- `artifacts / evidence`：`README pre-hash=dcfadb2ad9dfeb8a5b0d6df0d8b93d37cf6634795e7d308403e53dd12928e6a9; demo/README pre-hash=b53228ed0132f214d5724d4216f50488c8d2501e21031f143c6e923881c09187; pre-register STEP=aaae70c518eb9d32e532758f8636742b2900b13f437dcf1bf675d026782a952c`
+- `remaining_risks`：根README当前仍以历史VerificationReport为主要验证入口，默认Demo尚不可发现；Demo README现有通用CLI/Web说明可能被误读为默认Quickstart，必须在不删除高级入口的前提下重排信息层级。
+- `review`：`PENDING — producer documentation consistency check; independent final release review remains 01D`
+- `supersedes_entry_id`：`NONE — starts 01C after TRACE-170`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：只编辑根README和Demo README，建立单一默认Quickstart、公开输出/报告、闭环架构、测试与诚实边界；随后进行静态一致性检查。
+
+### TRACE-20260827-172
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-172 / MVP-CLOSE-01C-DOCUMENTATION / ACTUAL / 2026-08-27T15:58:12+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / portfolio Quickstart, visibility, architecture and limits / TRACE-171 + Plan29 MVP-CLOSE-01C`
+- `what / why / expected_effect_or_gate`：增量更新根README与Demo README，让新用户无需HANDOFF或生产历史即可从唯一离线命令进入项目。两份文档现在精确展示公开角色时间线、9/6/3/3与21/0矩阵、报告原子覆盖/忽略/临时Workspace语义、Harness闭环架构、定向和完整测试命令、已实现能力及非生产边界；真实模型CLI和Web保留但明确标为非默认进阶路径。
+- `scope / non_goals`：只修改 `README.md`、`demo/README.md` 和本账本；保留根README进入本批前的WORKTREE_ONLY路线修订。未修改代码、Runtime、Suite、Web、模型路径、Plan28或保护路径，未运行真实Validator smoke/模型/网络/Browser，未stage/commit/push，未进入01D。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; 01B=COMPLETED; README pre-hash=dcfadb2ad9dfeb8a5b0d6df0d8b93d37cf6634795e7d308403e53dd12928e6a9; demo/README pre-hash=b53228ed0132f214d5724d4216f50488c8d2501e21031f143c6e923881c09187; staging empty`
+- `commands`：读取Plan29/TRACE-169～170/两份README及根README现有diff；`apply_patch`增量编辑；完整`sed`复核，`rg`检查唯一命令、稳定摘要、进阶入口和限制语句；执行文档所列定向命令等价形式 `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_portfolio_demo -v`，5 tests/OK；`git diff --check` exit0；用`test -f`确认两份README引用的本地文档链接目标全部存在。
+- `stop_or_rollback_conditions`：未触发。根README只有一个默认作品集命令；未把Web或真实模型路径设为默认，未声称LLM效果、生产级、exactly-once、完整持久Thread或生产沙箱。
+- `result / effect`：`achieved=yes; MVP-CLOSE-01C=COMPLETED; root Quickstart occurrences=1; demo Quickstart occurrences=1; directed tests=5/5 PASS; links=PASS; diff-check=PASS; next=MVP-CLOSE-01D`
+- `artifacts / evidence`：`README.md=759c7091a7c77bc3df18bd3b336523d7983af5c11bab2cac824308538075cf14; demo/README.md=e256d28a395ad4e50f9f7bea02aab253ff8a67f88d0c7b3e45b382413d3de739; pre-ACTUAL STEP=bed586497b8266490a7bfe668d31c4c20ffd2599b5b92c58dee3bf513f368972`
+- `remaining_risks`：01D尚未从干净检出执行最终回归、compile/diff门禁和独立Review，也尚未形成release candidate commit；当前所有01A～01C变更仍为未提交worktree。README保留的真实模型CLI/Web属于进阶入口，不能用本次离线证据为其背书。
+- `review`：`producer documentation consistency check PASS; independent final release review deferred to mandatory 01D`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-171`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：追加01C CHECKPOINT并停止本批；下一批先PRE_REGISTER 01D，再做干净候选/定向回归/compile/diff/独立Review。release candidate commit需要用户明确授权，不能从本次“执行下一步”推定。
+
+### TRACE-20260827-173
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-173 / MVP-CLOSE-01C-DOCUMENTATION / CHECKPOINT / 2026-08-27T15:58:12+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / 01C completion checkpoint / Plan29 MVP-CLOSE-01C`
+- `what / why / expected_effect_or_gate`：作品集入口现在不仅可运行，也能被新用户直接发现、理解和诚实评估。根README用一个命令连接角色时间线、Artifact/Validator失败恢复、报告、架构、测试与边界；Demo README保持相同合同，并把其他兼容入口移出默认主路径。
+- `scope / non_goals`：本检查点完成01C文档可见性，不代表01D发布检查、独立Review、release candidate commit、tag、push或部署完成。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; documentation evidence in TRACE-172; staging empty`
+- `commands`：见TRACE-172；最终两份README的Quickstart命令分别精确出现一次，示例末行与01B真实报告一致，所有本地Markdown链接目标存在，定向测试5/5通过且diff-check通过。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; 01C=COMPLETED; project portfolio completion=IN_PROGRESS; 01D=NEXT_NOT_STARTED`
+- `artifacts / evidence`：两份README最终hash与验证命令见TRACE-172。
+- `remaining_risks`：工作树包含此前多批未提交文档、01B代码和用户保护路径状态；01D必须先精确划定release candidate内容，不能误收用户路径或历史无关改动。
+- `review`：`PASS / producer documentation gate / independent release review pending 01D`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：下一步为 `MVP-CLOSE-01D`，但本批到此停止。开始01D前需确认用户是否授权形成release candidate commit；即使授权，也必须排除 `demo/track.md`、`problems.md`、`prombles.md` 与未经确认的Plan28状态，并先完成最终测试和独立Review。
+
+### TRACE-20260827-174
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-174 / MVP-AGENT-RUNTIME-PLAN-CORRECTION / PRE_REGISTER / 2026-08-27T16:11:10+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root + user-confirmed product correction / restore workflow4 Agent Runtime MVP before release / workflow4 final four Q&A + Plan29/HANDOFF gap`
+- `what / why / expected_effect_or_gate`：暂停尚未开始的 `MVP-CLOSE-01D`，把用户在 `workflow4` 明确要求的“非生产级但真正使用 AgentInstance、AgentSession、Mailbox、私有状态、独立执行泳道、生命周期和真实 Handoff”提升为发布前必做主线。原因是旧HANDOFF未记录该后续产品决定，反而要求只做两文件薄Demo并禁止改Runtime，导致01B/01C虽按旧合同正确完成，却没有满足用户真正关心的线程式Agent存在语义。
+- `scope / non_goals`：本批只纠正 `Plan/Plan29.md`、`HANDOFF.md`、`README.md`、`demo/README.md`、`OPTIMIZATION_BACKLOG.md`、`LEARNING_PATH.md` 与本账本；不实现Agent Runtime、不修改代码/测试/Runtime/Suite/Web/模型路径，不运行Validator/模型/网络/Browser，不stage/commit/push，不触碰 `demo/track.md`、`problems.md`、`prombles.md` 或 `Plan/Plan28.md`。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; 01A/01B/01C thin-demo track completed WORKTREE_ONLY; 01D NOT_STARTED; staging empty; current main still uses temporary WorkerRegistry+DAG; AgentInstance/AgentSession domain objects exist but are not execution owners; no AgentManager/Mailbox/private Agent store/lane manager in main flow`
+- `commands`：只读检查 `workflow4` 最近10轮，确认末四个用户问题与回答依次完成现状盘点、长期计划映射、用户要求“非生产但用上设计”、以及SQLite单机Agent Runtime MVP 12～16小时估算；再用`nl`/`rg`对照当前HANDOFF两文件禁止扩围条款、Plan29“不强制Agent泳道”条款、runtime_domain类和Backlog/Learning陈旧状态。用户随后明确回复“确认”纠正路线；本轮使用`prepare-handoff`及其失败模式示例约束新交接。
+- `stop_or_rollback_conditions`：若纠正会冒称Runtime已实现、把生产级lease/heartbeat/exactly-once重新设为MVP门槛、删除01B/01C有效成果、通过交接文字授予实现/执行/提交权限，或无法冻结一个10～14小时内可分批验证的单机SQLite范围，则停止并请求用户决策。
+- `result / effect`：`TBD — authoritative plan and handoff not yet corrected`
+- `artifacts / evidence`：`Plan29 pre=64df526beb73f1cd54fe739003339da16f20a03304d4203d888e7c2deecb1c9e; HANDOFF pre=5a99f3de00a0a2b60d233b305c90347d9bb28f6774e09b79f745bd3bcf978af5; README pre=759c7091a7c77bc3df18bd3b336523d7983af5c11bab2cac824308538075cf14; demo README pre=e256d28a395ad4e50f9f7bea02aab253ff8a67f88d0c7b3e45b382413d3de739; Backlog pre=0180dbdd5fdeb478c585ae4e56e041040cd74328740c97ffe50a1e0426458a54; Learning pre=2623dcb6068fce020a28c7b1b5927ad1a5b6288e63aa29ae5392bc32d280e518; STEP pre=2b3a115a577ede5f9e9118fd6a49ebf7ec28178a90d11cf9eae5c9009456e168`
+- `remaining_risks`：workflow4的12～16小时是实现前估算，不是已批准架构细节或完成证据；现有薄Demo时间线只能证明StageAudit/Validator控制流，不能当真实Agent生命周期。计划纠正后仍需从代码事实冻结首批最小接口与SQLite schema，逐批实现和测试。
+- `review`：`PENDING — producer consistency check against workflow4 decisions and prepare-handoff quality checklist`
+- `supersedes_entry_id`：`NONE — corrects future route after TRACE-173 without erasing valid 01B/01C evidence`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：更新权威计划、交接、用户README、Backlog与Learning，使 `MVP-AGENT-RUNTIME-01A～01D → MVP-CLOSE-01D` 成为唯一当前顺序，并明确现有Demo只是可复用preview baseline。
+
+### TRACE-20260827-175
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-175 / MVP-AGENT-RUNTIME-PLAN-CORRECTION / ACTUAL / 2026-08-27T16:16:06+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / authoritative route and handoff correction / TRACE-174 + user confirmation`
+- `what / why / expected_effect_or_gate`：纠正Plan29、HANDOFF、两份README、Backlog和Learning Path：保留01A～01C薄Demo/smoke/docs为preview baseline，明确其StageAudit角色投影不证明真实Agent Runtime；暂停MVP-CLOSE-01D；新增发布前顺序 `MVP-AGENT-RUNTIME-01A实体/Store → 01B Mailbox/泳道 → 01C Handoff/Demo → 01D生命周期/Review → MVP-CLOSE-01D`，冻结单进程、SQLite、共享线程池与非生产边界。
+- `scope / non_goals`：只修改七份规划/交接/用户文档及本账本，无代码/测试/Runtime/Suite/Web/模型修改；未运行测试、Validator、模型、网络或Browser，未stage/commit/push，保护路径与Plan28未触碰。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; TRACE-174 PRE_REGISTERED; 01D previously next but NOT_STARTED; staging empty`
+- `commands`：读取`prepare-handoff/SKILL.md`及失败模式examples；通过Codex只读task工具核对`workflow4`最近轮次；`rg`/`nl`核Plan29/HANDOFF/Backlog/Learning/runtime_domain事实；`apply_patch`修订七文档；运行跨文档陈旧状态`rg`、HandoffProposal 15字段fixed-string检查、本地链接/状态/diff-check与hash。一次合并HANDOFF patch因原文标点上下文不精确而verification failure、无字节修改，随后拆分成功；一次双引号`rg`命令含backtick触发zsh unmatched quote并exit、无文件影响，随后改用单引号成功。
+- `stop_or_rollback_conditions`：未触发。新MVP未包含分布式、Lease/Heartbeat/Fencing、崩溃中执行恢复、exactly-once、生产Reaper、完整Web、真实模型或生产认证；没有把协议对象冒称已接入，也没有通过交接授予实现、执行或提交权限。
+- `result / effect`：`achieved=yes; authoritative current milestone=MVP-AGENT-RUNTIME-01; next=MVP-AGENT-RUNTIME-01A NOT_STARTED; MVP-CLOSE-01D=PAUSED; handoff fields=15/15; stale-route scan=PASS; diff-check=PASS; tests/workloads=NOT_RUN documentation-only`
+- `artifacts / evidence`：`Plan29=0e1bee8d3463f655228ec865838daeb8aeb7fb1f4ebc8196bed2dee51559aa2d; HANDOFF=0ddbf015aa4da177f889106f0f424d35b3c14bbe168f19247beab2f4ab7c501f; README=2651486fa967a4ac6db230a7e8eaa821e76d908e4e7dab2865615b8bed60edae; demo README=4a5ed64c09c8246ac245ec795d34a55fce8619a9e3a3b5b4f7156394d3c209b0; Backlog=1db0fd82f4da34952afb07d223c7a7809e59676a06246a42bf810e00163fd2ba; Learning=57538ac24c0ed0be1e89d6a02c6b8dada23835b2824bbf66b08d47a8dd6dbddb; pre-ACTUAL STEP=45e822b7f343997a715d27d7a32a703299c9a1ba91050b7ea03d8d963332afb7`
+- `remaining_risks`：01A API/schema/文件范围仍是unknown，必须由下一批代码检查冻结；SQLite并发/事务、私有状态序列化、单active-session规则和与既有Store的模块归属尚未验证。10～14小时是实现前估算，不是期限。
+- `review`：`producer consistency check PASS against prepare-handoff quality checklist; independent implementation review not applicable because no implementation was created`
+- `supersedes_entry_id`：`NONE — corrects future route after TRACE-173; does not erase 01B/01C evidence`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：追加纠正CHECKPOINT并停止规划批；下一批只从MVP-AGENT-RUNTIME-01A PRE_REGISTER与代码事实/API范围冻结开始。
+
+### TRACE-20260827-176
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-176 / MVP-AGENT-RUNTIME-PLAN-CORRECTION / CHECKPOINT / 2026-08-27T16:16:06+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / corrected new-window stop point / Plan29 Agent Runtime MVP revision`
+- `what / why / expected_effect_or_gate`：`workflow4`丢失的产品决定现已进入权威计划与新窗口交接。后续接续者无需读取旧聊天即可知道preview的真实边界、发布暂停原因、四个Agent Runtime批次、下一批最小目标、验收与停止条件。
+- `scope / non_goals`：本检查点不创建AgentManager、Store、Mailbox、Agent或RouteEdge，不授予本地执行/模型/网络/Browser/commit/push权限，不标记Agent Runtime或作品集完成。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; corrected artifacts in TRACE-175; staging empty`
+- `commands`：见TRACE-175；最终陈旧路线扫描无blocking，顶部HandoffProposal 15/15字段存在，Plan29/README/Backlog/Learning均指向同一顺序，tracked diff-check通过。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; plan correction=COMPLETED; current=MVP-AGENT-RUNTIME-01A NEXT_NOT_STARTED; remaining estimate=10～14h; release check=PAUSED`
+- `artifacts / evidence`：最终文档hash见TRACE-175；新窗口复制指令与HandoffProposal位于HANDOFF顶部，权威批次/边界/验收位于Plan29的“用户确认修订”节。
+- `remaining_risks`：下一批必须先冻结最小API和文件范围，不能把本次规划确认当实现授权范围无限扩张；保护路径和历史dirty worktree仍需继续隔离。
+- `review`：`PASS / prepare-handoff quality checklist / no implementation or acceptance claim`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：等待用户开始下一批；届时先PRE_REGISTER `MVP-AGENT-RUNTIME-01A`，检查AgentInstance/AgentSession与SQLite基础并冻结最小实现范围，不自动进入Mailbox或Demo接入。
+
+### TRACE-20260827-177
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-177 / MVP-AGENT-RUNTIME-01A-AGENT-STORE / PRE_REGISTER / 2026-08-27T16:19:56+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / Agent entity, session lifecycle and SQLite private-state Store / Plan29 MVP-AGENT-RUNTIME-01A + TRACE-176 + user “执行下一批”`
+- `what / why / expected_effect_or_gate`：复用已有 `AgentInstance`/`AgentSession` 值协议和 `SQLiteRuntimeDatabase` migration ledger/UnitOfWork，增加一个单Agent单Session的MVP Store与 `AgentManager`。本批将真实持久创建、查询、pause/resume/close和受控JSON私有状态，以关闭“只有领域对象、没有长期Agent实体”的01A缺口。
+- `scope / non_goals`：冻结文件范围为 `demo/coding_workflow/runtime_persistence/sqlite.py`、新增 `runtime_persistence/agent.py`、`runtime_persistence/__init__.py`、新增 `agent_runtime.py`、新增 `demo/tests/test_agent_runtime.py`，以及仅为 schema v4 兼容更新现有 `test_runtime_sqlite_uow.py`/`test_runtime_outbox.py`/`test_runtime_outbox_adversarial.py`/`test_runtime_outbox_claim_lifecycle_adversarial.py`的硬编码版本断言；本账本追加 ACTUAL/CHECKPOINT。不实现Mailbox、lane/thread pool、Handoff、Demo接入、Web、模型、网络、Browser、Invocation queue、lease/heartbeat/fencing或崩溃中执行恢复；不修改保护路径，不stage/commit/push。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; TRACE-176 current; RUNTIME_DB_SCHEMA_VERSION=3; AgentInstance/AgentSession already storage-neutral; no AgentManager/SQLiteAgentStore/private-state tables; dirty user paths preserved`
+- `commands`：已只读运行 `rg --files`、`rg -n`、`sed`、`git status --short`与 `date`，核对 domain binding、schema v1～v3、migration ledger、managed DML authorizer、UoW rollback、ThreadEventStore decode/integrity及现有硬编码v3测试。功能修改和测试尚未开始。
+- `stop_or_rollback_conditions`：若必须复制第二套Agent领域模型、绕过既有migration ledger/UoW、允许arbitrary pickle/非受控秘密存储、无法fail-closed核对Scope/Thread/Agent/Session归属、削弱Artifact/Validator边界，或需扩张到01B以后能力，立即停止并报告。
+- `result / effect`：`PENDING — API/schema/file scope frozen; implementation and tests not yet run`
+- `artifacts / evidence`：`code inspection only; exact post-change hashes and test counts pending ACTUAL`
+- `remaining_risks`：扩展runtime kernel schema需保持v1～v3已发布ledger/checksum不变、原子升级和Outbox回归；MVP冻结每个AgentInstance恰好一个Session，后续多Session语义须新立项；私有状态必须限定为可canonical JSON化的小型值。
+- `review`：`PENDING — 01A producer tests; independent Review deferred to Agent Runtime 01D per Plan29 light evidence track`
+- `supersedes_entry_id`：`NONE — begins the next batch authorized after TRACE-176`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：实现schema v4与Store/Manager；添加正常、重复/冲突、非法迁移、跨Thread/Agent、关闭后写入、rollback和reopen定向测试；运行相关runtime回归和compile/diff检查后追加ACTUAL/CHECKPOINT。
+
+### TRACE-20260827-178
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-178 / MVP-AGENT-RUNTIME-01A-AGENT-STORE / CORRECTION / 2026-08-27T16:31:00+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / completion status-sync scope correction / TRACE-177 + Plan29/HANDOFF authority`
+- `what / why / expected_effect_or_gate`：在TRACE-177实现/测试范围上，补允许完成门禁通过后只同步 `Plan/Plan29.md` 和 `HANDOFF.md` 的01A状态、01B下一动作与剩余估算。原因是两份权威接续文档若仍写“01A尚未开始”，新窗口会重复实现并跳过真实Mailbox下一批。
+- `scope / non_goals`：只扩大文件范围到 `Plan/Plan29.md` 和 `HANDOFF.md` 的状态/交接小节；不改README/Backlog/Learning，不实现01B，不stage/commit/push。TRACE-177的代码、测试、安全和保护路径边界全部不变。
+- `baseline`：`implementation present WORKTREE_ONLY; new Agent tests=8/8 PASS; all runtime tests=184/184 PASS before final rerun; Plan29/HANDOFF still say 01A next/not started`
+- `commands`：已运行定向Agent测试、87项SQLite/Outbox回归、184项全Runtime回归、`git diff --check` 和只读diff审查；最终复跑/hash尚待ACTUAL。
+- `stop_or_rollback_conditions`：若状态同步会冒称01B Mailbox/lane已实现、宣称Demo已使用真实Agent、提前启动发布检查，或修改其他历史交接事实，则停止。
+- `result / effect`：`PENDING — authoritative status sync allowed only after final 01A gates pass`
+- `artifacts / evidence`：`TRACE-177 implementation scope retained; Plan29/HANDOFF post hashes pending ACTUAL`
+- `remaining_risks`：01B仍需单独PRE_REGISTER和独立实现；本条不能被解读为Mailbox、FIFO、并行lane或Demo接入授权。
+- `review`：`producer status consistency only; independent implementation Review remains deferred to 01D`
+- `supersedes_entry_id`：`TRACE-177 scope/files only; all other PRE_REGISTER fields retained`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：先完成最终定向/全Runtime/compile/diff门禁；通过后同步Plan29/HANDOFF，追加ACTUAL/CHECKPOINT并停止，不自动进入01B。
+
+### TRACE-20260827-179
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-179 / MVP-AGENT-RUNTIME-01A-AGENT-STORE / ACTUAL / 2026-08-27T16:32:14+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / AgentManager + SQLiteAgentStore implementation and verification / TRACE-177 + TRACE-178 + Plan29 MVP-AGENT-RUNTIME-01A`
+- `what / why / expected_effect_or_gate`：完成Runtime schema v4 `runtime_agent_store_v4`，复用现有 `AgentInstance`/`AgentSession`、migration ledger、managed DML authorizer和UnitOfWork；新增 `SQLiteAgentStore` 与 `AgentManager`，提供单Agent单Session的create/query/pause/resume/close、work admission、受控JSON私有状态CAS/持有者隔离、重启读取和integrity检查。这使Agent成为真实持久Runtime实体，而不是StageAudit角色名投影。
+- `scope / non_goals`：按TRACE-177修改/新增Agent Runtime与兼容测试，按TRACE-178仅同步Plan29/HANDOFF状态。未修改Portfolio Demo、Artifact/Validator、WorkerRegistry/DAG、Web、模型、网络、Browser或保护路径；未实现Mailbox、FIFO消费、共享线程池lane、Handoff、lease/fencing或崩溃中恢复；未stage/commit/push。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; RUNTIME_DB_SCHEMA_VERSION pre=3; no Agent Store/Manager; TRACE-177 PRE_REGISTERED; TRACE-178 status-sync correction; staging empty`
+- `commands`：以 `apply_patch` 修改冻结文件；使用 `PYTHONPYCACHEPREFIX=/private/tmp/mvp-agent-pycache PYTHONPATH=demo python3 -m unittest ...`运行Agent/SQLite/Outbox/全Runtime/Portfolio定向回归；使用 `python3 -m py_compile`、`git diff --check`、批次文件行尾whitespace `awk`、`shasum -a 256`、`git status --short`、`git rev-parse` 和陈旧状态 `rg`。首次未设 `PYTHONPYCACHEPREFIX` 的compile因macOS系统Python试图写sandbox外Library/Caches而PermissionError，无源文件影响；随后使用可写 `/private/tmp` 重跑通过。首次87项schema/Outbox回归暴露两个硬编码v3断言失败，只更新为v4期望后87/87通过。
+- `stop_or_rollback_conditions`：未触发。没有复制第二套Agent领域模型；v1～v3 migration名/语句/checksum保持；所有Agent写入经Store + managed UoW，公开UoW直接DML被拒绝；私有状态只允许canonical JSON、最大64KiB，无pickle；关闭后工作/状态写入fail closed。
+- `result / effect`：`achieved=yes; MVP-AGENT-RUNTIME-01A=COMPLETED; schema=4; Agent tests=8/8 PASS; Portfolio+Agent directed=13/13 PASS; all Runtime=184/184 PASS; compile=PASS; diff-check=PASS; trailing-whitespace=0; next=01B NOT_STARTED`
+- `artifacts / evidence`：`runtime_persistence/sqlite.py=b5a51a22de747500add36cff83e1280196b4250c3b4fae0fdcbb39b5198a356a; runtime_persistence/agent.py=34f08fd66abb610df294d04957f792161743723bc398700e200d0987df517d28; runtime_persistence/__init__.py=7bc9d3d606044904dcb30a6c2206b9bf4740d460fc5d003f5cd16870a689d5f7; agent_runtime.py=6834712e0184ea99a029d75941e6a9a84000337c9ec862a6e21254875e49816d; test_agent_runtime.py=cd288f7d0bef5eebe3278608c15302ed25abbea3359b2eb0e48487c2b6d0693b; test_runtime_sqlite_uow.py=b3082346e524d511531b1e6c39188905c17c673c0a2eee1bc656ceeb02d5d7ce; test_runtime_outbox.py=d22bc06b318c7c7c6b4e53bdbf58ae1072a722770e9910baec6f210f3c116e9f; test_runtime_outbox_adversarial.py=bd601f5e0d52a9b574b54878496bf5d9b9061ffe548e647208c3db22e577fe46; test_runtime_outbox_claim_lifecycle_adversarial.py=c6edb07bd855c2792edb697749df6e93cc3474940aca04a24333d6b5eb99088e; Plan29=48d6ca349c3e12e066391ec64732948cdce75d573ad7bedfcec297b6f5cce32d; HANDOFF=43b4f5b65437d3535bdd1b31ec1dcfc15744061161bd1091d40c3273b1742af3; pre-ACTUAL STEP=92d8a89c2248eeb5f22eadbe7c818510d125464e27bb73cae02b4227fbc4b3c1`
+- `remaining_risks`：01A是单进程、单Agent单Session持久基础；仍无Mailbox、消费游标、同Agent FIFO、跨Agent并行和真实Handoff，Portfolio Demo仍不得声称已使用真实Agent Runtime。SQLite原始文件访问不是对抗式多租户安全边界；本MVP不恢复崩溃时正在执行的工作。
+- `review`：`producer deterministic tests PASS; independent implementation Review intentionally deferred to mandatory MVP-AGENT-RUNTIME-01D under Plan29 light evidence track`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-177 and TRACE-178`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED; protected dirty paths preserved`
+- `next_action`：追加01A CHECKPOINT并停止。未来只在用户开始下一批后PRE_REGISTER `MVP-AGENT-RUNTIME-01B`，先冻结Mailbox/lane API和确定性测试；不自动执行。
+
+### TRACE-20260827-180
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-180 / MVP-AGENT-RUNTIME-01A-AGENT-STORE / CHECKPOINT / 2026-08-27T16:32:14+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / completed durable Agent entity/Store checkpoint / Plan29 MVP-AGENT-RUNTIME-01A`
+- `what / why / expected_effect_or_gate`：01A现已产生可重开的真实Agent身份、Session生命周期和私有状态真相源，并与既有Thread/Event/Outbox SQLite基础共用严格迁移和事务边界。Plan29与HANDOFF已把下一批切换为01B，新窗口无需重复01A。
+- `scope / non_goals`：本检查点只关闭01A。它不代表Mailbox/lane/Handoff/Demo接入、01D独立Review或作品集发布检查完成，也不创建commit、tag或push。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; TRACE-179 evidence; branch main; staging empty`
+- `commands`：见TRACE-179；最终组合为8项Agent测试、5项既有Portfolio测试和184项全Runtime测试，全部通过；compile/diff/whitespace门禁通过，无网络/模型/Browser。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; 01A=COMPLETED; 01B=NEXT_NOT_STARTED; remaining estimate=8～11h; MVP-CLOSE-01D remains PAUSED`
+- `artifacts / evidence`：实现、测试、文档hash和命令见TRACE-179；权威合同见Plan29 01A/01B与HANDOFF顶部。
+- `remaining_risks`：下一批必须用持久Mailbox和确定性barrier/event测试真正证明FIFO/并行；不能用角色日志或sleep代替。当前工作树仍含历史未提交修改和用户保护路径，后续仍需隔离。
+- `review`：`PASS / producer verification checkpoint; independent Review deferred to 01D by plan`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：等待用户开始下一批；届时先PRE_REGISTER 01B并只读检查Message/执行器/并发测试事实，不自动跳到01C。
+
+### TRACE-20260827-181
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-181 / MVP-AGENT-RUNTIME-01B-MAILBOX-LANES / PRE_REGISTER / 2026-08-27T16:36:18+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / persistent Agent Mailbox + single-agent serial shared-pool lanes / Plan29 MVP-AGENT-RUNTIME-01B + TRACE-180 + user “执行下一批”`
+- `what / why / expected_effect_or_gate`：在01A真实Agent/Session Store上增加SQLite持久Mailbox和消费游标，并以共享 `ThreadPoolExecutor` + 每Agent单一drain Future实现“同Agent串行、不同Agent可并行”的独立执行lane。目标是让pause/resume/close真正影响投递和领取，为01C结构化Handoff提供可验证运输/调度边界。
+- `scope / non_goals`：冻结文件范围为 `demo/coding_workflow/runtime_persistence/sqlite.py`、新增 `runtime_persistence/mailbox.py`、`runtime_persistence/__init__.py`、`agent_runtime.py`、新增 `demo/tests/test_agent_mailbox.py`，以及仅为schema v5兼容更新 `test_runtime_sqlite_uow.py`/`test_runtime_outbox.py`/`test_runtime_outbox_adversarial.py`/`test_runtime_outbox_claim_lifecycle_adversarial.py`的版本/降级fixture断言；完成门禁后只同步 `Plan/Plan29.md`、`HANDOFF.md` 和本账本。不修改Portfolio Demo、Artifact/Validator、WorkerRegistry/DAG、Web/模型/网络/Browser，不实现Handoff、durable Invocation、ack/retry/lease/fencing、崩溃重投或生产Reaper，不修改保护路径，不stage/commit/push。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; TRACE-180 current; schema=4; 01A AgentManager/SQLiteAgentStore complete WORKTREE_ONLY; Message is storage-neutral and requires typed turn_ref but no durable Turn Store exists; no Mailbox/cursor/lane implementation`
+- `commands`：已只读运行 `tail`/`sed`/`rg`、`git status/rev-parse/diff --cached`、`shasum`和`date`，核对Plan29/HANDOFF/TRACE-180、Message值协议、01A Store/UoW、WorkerRegistry/TaskGraphExecutor ThreadPool与现有 `Barrier/Event` 并发测试风格。功能修改和测试尚未开始。
+- `stop_or_rollback_conditions`：若必须另造Message领域模型、绕过Runtime migration/UoW、用sleep猜测并行/FIFO、允许同Agent同时执行多个handler、pause后继续领取、close后继续投递/调度，或必须扩张到01C/Handoff/Invocation queue，立即停止并报告。
+- `result / effect`：`PENDING — API/schema/file scope frozen; implementation and tests not yet run`
+- `artifacts / evidence`：`sqlite.py pre=b5a51a22de747500add36cff83e1280196b4250c3b4fae0fdcbb39b5198a356a; agent.py pre=34f08fd66abb610df294d04957f792161743723bc398700e200d0987df517d28; agent_runtime.py pre=6834712e0184ea99a029d75941e6a9a84000337c9ec862a6e21254875e49816d; STEP pre=df0e2b117aa3cf5c75b1a1ef943cf1485574a5d23c67367fe6d44a12b3e47e2a; Plan29 pre=48d6ca349c3e12e066391ec64732948cdce75d573ad7bedfcec297b6f5cce32d; HANDOFF pre=43b4f5b65437d3535bdd1b31ec1dcfc15744061161bd1091d40c3273b1742af3`
+- `remaining_risks`：冻结为单recipient Agent Message；现有Message的 `turn_ref` 只能做类型/Scope/Thread间接校验，无durable Turn存在性真相源。消费游标语义为“领取即持久推进”；handler后失败、进程崩溃或断电不重投，必须在结果中诚实保留，不冒称ack/exactly-once。
+- `review`：`PENDING — producer deterministic tests; independent Review deferred to mandatory 01D by Plan29 light evidence track`
+- `supersedes_entry_id`：`NONE — begins 01B after completed TRACE-180`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：实现schema v5 Mailbox Store、MailboxManager和AgentLaneRuntime；用无sleep的Barrier/Event测试FIFO/并行/单lane，再覆盖pause/resume/close、重复/冲突、跨边界、rollback/reopen和公开UoW DML拒绝。
+
+### TRACE-20260827-182
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-182 / MVP-AGENT-RUNTIME-01B-MAILBOX-LANES / ACTUAL / 2026-08-27T16:43:47+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / schema v5 MailboxManager + AgentLaneRuntime implementation / TRACE-181 + Plan29 MVP-AGENT-RUNTIME-01B`
+- `what / why / expected_effect_or_gate`：完成 `runtime_agent_mailbox_v5`：按recipient Agent/Session持久单收件人 `Message`、连续入队序号和领取即推进的消费游标；新增 `SQLiteMailboxStore`/`MailboxManager`，并用共享 `ThreadPoolExecutor` + 每Agent单一活跃drain Future实现 `AgentLaneRuntime`。pause拒绝领取但允许排队，resume后继续，close拒绝新投递/调度并阻止当前handler结束后再领下一条。
+- `scope / non_goals`：按TRACE-181修改/新增Mailbox/lane、schema兼容测试和Plan29/HANDOFF状态。未修改Portfolio Demo、Ablation Runner、Artifact/Validator、WorkerRegistry/DAG、Web、模型、网络、Browser或保护路径；未实现Handoff、ack/retry/lease/fencing、崩溃重投、durable Invocation或生产多实例lane协调；未stage/commit/push。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; schema pre=4; TRACE-180 01A complete; TRACE-181 PRE_REGISTERED; staging empty; protected dirty paths preserved`
+- `commands`：用 `apply_patch` 实现冻结文件；使用 `/private/tmp` pycache运行 `py_compile`、新Mailbox测试、95项Agent/SQLite/Outbox回归、22项Agent+Mailbox+Portfolio定向与184项全Runtime回归；将含Barrier/Event并发测试的9项Mailbox模块独立连续重复5轮（45/45）；运行 `git diff --check`、批次文件行尾 `awk`、陈旧状态 `rg`、`shasum -a 256`、`git status/rev-parse/diff --cached`。所有本批compile/测试/检查首轮即通过，无修复后隐藏的失败候选。
+- `stop_or_rollback_conditions`：未触发。复用已有 `Message`，所有Mailbox写入经managed UoW，公开UoW直接DML被拒绝；FIFO来自SQLite连续序号/消费游标，同Agent串行与跨Agent并行由Future identity、Event和3方Barrier确定性证明，无sleep猜测。v1～v4迁移名/语句/checksum未改，v4→v5保留已有Agent数据测试通过。
+- `result / effect`：`achieved=yes; MVP-AGENT-RUNTIME-01B=COMPLETED; schema=5; Mailbox tests=9/9 PASS and 5x repeat=45/45 PASS; Agent+Mailbox+Portfolio=22/22 PASS; all Runtime=184/184 PASS; compile=PASS; diff-check=PASS; trailing-whitespace=0; next=01C NOT_STARTED`
+- `artifacts / evidence`：`runtime_persistence/sqlite.py=cc52f65821ebb10dc91a55a5a24a8331b8a7183a23dc529f8123f965619b8ad4; runtime_persistence/mailbox.py=cb580e00a0eae24f406471cb2c4cc43766f96f8e364f031a4eb6807f8f18f4d7; runtime_persistence/__init__.py=83b4846d21e0f8660143f0b37c512ad00d780c545d2eecaf34a8ea17699648eb; agent_runtime.py=2b6bfe46612738dea1ffdac39080fc1937e4a7b8494d55f7ed8d585f5ed579ec; test_agent_mailbox.py=e5687d397b2d7cb7a3e24e4aba4a55bd8a555e0150253e08736cf7cdf8ecf247; test_runtime_sqlite_uow.py=9dd17df318e4195e6d2acc8345b230dfe692544ff3c4b1d454adac2e0100e898; test_runtime_outbox.py=7e1a4067146394f45987921630a55b865c8c2271cb661995fd2b469a178141ac; test_runtime_outbox_adversarial.py=3ce6a28b5877ec6ffbe5415b85165c35dffdcd6890a159047fc4f7d2743a5655; test_runtime_outbox_claim_lifecycle_adversarial.py=0515a218598da6e879bbffebcac7af3d6e971d0444e1cfa271c8970732000cfc; Plan29=f568b43023595a4c4113b6a606c6a0e78c46ed1a4647063e48e817334bf6cbc7; HANDOFF=9fedaa18808dad0f8146adc46923cabd8df84588a62da0a3e162a43fc921aaa4; pre-ACTUAL STEP=bd3e286f9006130db797fb523218184fd777cce3927eb254ef8459ef16a6da20`
+- `remaining_risks`：消费游标是receive-time commit；handler后失败不自动重投，测试显式证明该限制而非冒称retry/ack。每Agent单drain保证限于同一 `AgentLaneRuntime` 实例；多Runtime实例/多进程协调需后续lease/fencing。Message `turn_ref` 只验证类型/Scope，因当前无durable Turn Store而不证明Turn存在。Portfolio Demo仍未接入真实Agent/Handoff。
+- `review`：`producer deterministic verification PASS; independent implementation Review intentionally deferred to mandatory MVP-AGENT-RUNTIME-01D under Plan29 light evidence track`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-181`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED; HEAD=origin/main unchanged`
+- `next_action`：追加01B CHECKPOINT并停止。未来只在用户开始下一批后PRE_REGISTER `MVP-AGENT-RUNTIME-01C`，先冻结真实Handoff/Portfolio接入范围；不自动执行。
+
+### TRACE-20260827-183
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-183 / MVP-AGENT-RUNTIME-01B-MAILBOX-LANES / CHECKPOINT / 2026-08-27T16:43:47+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / completed persistent Mailbox and independent lane checkpoint / Plan29 MVP-AGENT-RUNTIME-01B`
+- `what / why / expected_effect_or_gate`：01B现已使Agent具有可重开的独立Mailbox与可执行的单Agent串行lane；跨Agent可在同一共享线程池并行，lifecycle已不是只改数据库字段，而是真正影响投递、领取和后续调度。Plan29/HANDOFF已把下一批切换为01C。
+- `scope / non_goals`：本检查点只关闭01B，不代表结构化Handoff、Portfolio Demo真实Agent接入、01D独立Review或作品集发布完成，也不创建commit/tag/push。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; TRACE-182 evidence; branch main; staging empty`
+- `commands`：见TRACE-182；最终验证为9项Mailbox/lane测试且并发模块5轮稳定、22项Agent+Mailbox+Portfolio定向、184项全Runtime、compile/diff/whitespace全部通过，无网络/模型/Browser。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; 01B=COMPLETED; 01C=NEXT_NOT_STARTED; remaining estimate=5～7h; MVP-CLOSE-01D remains PAUSED`
+- `artifacts / evidence`：实现、测试、文档hash和命令见TRACE-182；权威合同见Plan29 01B/01C与HANDOFF顶部。
+- `remaining_risks`：01C必须让现有scripted worker真正从Mailbox/lane获取工作并产生Message/Artifact Handoff链；只在报告中补Agent ID或重命名StageAudit不能验收。当前工作树仍含历史未提交修改和用户保护路径，后续仍需隔离。
+- `review`：`PASS / producer deterministic checkpoint; independent Review deferred to 01D by plan`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：等待用户开始下一批；届时先PRE_REGISTER 01C并只读检查Portfolio/Ablation/Artifact/Validator事实，不自动跳到01D。
+
+### TRACE-20260827-184
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-184 / MVP-AGENT-RUNTIME-01C-PORTFOLIO-HANDOFF / PRE_REGISTER / 2026-08-27T17:10:08+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / real structured Handoff + Portfolio Demo Agent integration / Plan29 MVP-AGENT-RUNTIME-01C + TRACE-183 + user authorization`
+- `what / why / expected_effect_or_gate`：用一个Portfolio专用薄适配层把既有`CodingAblationRunner` stage实际放入01B持久Mailbox并由`AgentLaneRuntime`消费；每Trial按策略创建Planner、Developer、Tester/Fixer AgentInstance/AgentSession，通过结构化Message传递任务、验证失败、诊断和Artifact引用，保存parent/causation链。预期报告升级为`portfolio-demo-report/v2`并添加真实Thread/Agent/Session/Mailbox/Handoff/lane/生命周期证据，同时保持9 Trial/6交付/3预期失败/3修复/21 scripted/0 model。
+- `scope / non_goals`：冻结代码范围为新增`demo/coding_workflow/portfolio_agent_runtime.py`、新增`demo/tests/test_portfolio_agent_runtime.py`、修改`demo/portfolio_demo.py`与`demo/tests/test_portfolio_demo.py`；完成后只同步`Plan/Plan29.md`、`HANDOFF.md`和本账本。不修改`CodingAblationRunner`、ArtifactStore/PatchIntegrator/Validator、01B Mailbox/schema、固定Suite、Web/模型/网络/Browser；不实现ack/retry/lease/fencing/exactly-once/崩溃中恢复，不触碰保护路径，不stage/commit/push，不进入01D。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; schema=5; 01A/01B complete WORKTREE_ONLY; current Demo uses StageAudit projection only; protected dirty paths preserved`
+- `commands`：已完整读取`tdd`及其tests/mocking引用、`diagnosing-bugs`和`code-review`技能；只读检查HANDOFF/Plan29/TRACE-183、git status/HEAD、Portfolio Demo/报告测试、Ablation Runner/StageAudit、AgentManager/Mailbox/lane、Message和Thread/Event Store。功能修改与测试尚未开始。
+- `stop_or_rollback_conditions`：若适配必须复制第二套Artifact/Validator真相源、把Validator创建为Agent、只在报告投影Agent而stage未经Mailbox/lane执行、改变固定3×3矩阵/21次scripted调用、弱化本地执行批准或必须扩张到Plan29之外，立即停止并报告。
+- `result / effect`：`PENDING — TDD seams/message contract/file scope frozen; implementation and tests not yet run`
+- `artifacts / evidence`：`portfolio_demo.py pre=df2e4625d3e04983b935319018bf3f9deea30192646b7f0ee36895512aa40dac; test_portfolio_demo.py pre=fc72edfd7c60321e6ba747b409c37e0e7bb28d5bfd3766200539128f30843bc9; agent_runtime.py pre=2b6bfe46612738dea1ffdac39080fc1937e4a7b8494d55f7ed8d585f5ed579ec; mailbox.py pre=cb580e00a0eae24f406471cb2c4cc43766f96f8e364f031a4eb6807f8f18f4d7; Plan29 pre=f568b43023595a4c4113b6a606c6a0e78c46ed1a4647063e48e817334bf6cbc7; HANDOFF pre=9fedaa18808dad0f8146adc46923cabd8df84588a62da0a3e162a43fc921aaa4; STEP pre=e983f9f9650cfaf1da840da17a598bb48ad9c3eeff53f90a2e79310793ce6c19`
+- `remaining_risks`：跨Trial并行会同时压测SQLite WAL、Mailbox cursor和本地Validator；若出现不可直接解释的锁竞态/SQLite失败，按用户要求切换`diagnosing-bugs`建立紧密反馈环。Mailbox仍为receive-time consume，handler失败不重投；报告必须诚实保留。
+- `review`：`PENDING — red/green slices first; mandatory Plan29 code-review after all 01C gates pass`
+- `supersedes_entry_id`：`NONE — begins 01C after completed TRACE-183`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：先写第一个Portfolio Agent Runtime公开seam集成红测，然后用最小适配实现让一个真实stage经Mailbox/lane消费并产生Artifact；每个后续行为垂直切片继续红→绿。
+
+### TRACE-20260827-185
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-185 / MVP-AGENT-RUNTIME-01C-PORTFOLIO-HANDOFF / ACTUAL / 2026-08-27T17:27:31+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / real Agent stage execution + structured Handoff + portfolio report v2 / TRACE-184 + Plan29 01C`
+- `what / why / expected_effect_or_gate`：新增Portfolio专用`PortfolioAgentAblationRunner`，不改既有`CodingAblationRunner`；每Trial按策略创建真实Thread、Planner/Developer/Tester/Fixer AgentInstance/AgentSession和私有状态，每个stage的bootstrap+work先持久入Mailbox，再由`AgentLaneRuntime`handler内调用原stage并产生既有Artifact。结构化Message保存body、Artifact引用、parent/causation；报告诚实区分21条stage work Message与12条sender≠recipient的真实Handoff。`portfolio-demo-report/v2`新增`agent_runtime`，CLI直接显示Thread/Agent/Session/生命周期/Mailbox/Handoff/Artifact/FIFO/并行/关闭；Validator继续Runtime-owned非Agent。
+- `scope / non_goals`：只新增`portfolio_agent_runtime.py`/`test_portfolio_agent_runtime.py`并修改`portfolio_demo.py`/`test_portfolio_demo.py`，同步Plan29/HANDOFF/Step Log。没有修改Ablation Runner、ArtifactStore/PatchIntegrator/Validator、Mailbox schema/API、固定Suite、Web/模型/网络/Browser或保护路径；没有ack/retry/lease/fencing/exactly-once/崩溃恢复，没有stage/commit/push，没有进入01D。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; TRACE-184 PRE_REGISTERED; schema=5; protected dirty paths preserved`
+- `commands`：按`tdd`垂直切片运行集成红→绿：缺失适配模块红测、CLI v2/可见性红测、lane thread证据红测、lifecycle/Artifact kind+ref红测、审查后CLI/Handoff语义红测；随后运行6项01C测试连续5轮（30/30）、33项Agent+Mailbox+Ablation+Portfolio定向、184项Runtime回归、除明确`*_expected_red.py`外全仓579项、`py_compile`、`git diff --check`、行尾/debug扫描和两次完整CLI smoke。
+- `stop_or_rollback_conditions`：未触发。首次全仓`unittest discover` 按预期在588项聚合中被`test_local_trusted_execution_behavior_expected_red` 明确拒绝：该安全红卡要求独立新解释器，因此未修改或写成PASS；排除两个明确expected-red文件后579项全通过。本批没有出现无法直接解释的失败、竞态或SQLite异常，故未启用`diagnosing-bugs`。
+- `result / effect`：`achieved=yes; 01C implementation gates PASS; smoke status=passed; 9 trials/6 delivered/3 expected failures/3 repaired/21 scripted/0 model; runtime=9 Threads/21 Agents/42 enqueued+42 consumed/21 stage messages/12 cross-Agent Handoffs/all 21 closed/FIFO true/max parallel 3; directed=33/33; Runtime=184/184; full non-expected-red=579/579 with 9 skips; compile/diff=PASS`
+- `artifacts / evidence`：`portfolio_agent_runtime.py=f5902accc825d63f00a2b6550727b51c77c723705d483380a9fe350faa17bff8; portfolio_demo.py=6b105b934f6afaecf7019bd0d076da95fc89380a2b4253c3d72a1bc8bf947bbe; test_portfolio_agent_runtime.py=ccc8cfdcb648524ba7e35abe3af08a94de2e05ab503833f955d7133e87f2c20e; test_portfolio_demo.py=21153b119fed4e1cd844367b1920f5c1106e3ff1cf462a2e55dd1cd7eaacf224; Plan29=62c6f5f7f6690a7fe5b2871edf6e2a99e0900b8164532b71dbad17425cdb92e1; HANDOFF=2c486c375fb5516ba1707c08d83f33a6bbf6e619b78c31adf5900f76d8994c27; final smoke report=18b192da5c96c6a9104ceb9c2bcabefc88cf99274e02f22f19b79cc50b2e99ad; pre-ACTUAL STEP=dfa3b2072a4fb537688a98c4d04d532403e994313ae4b535ab05eea219b938fa`
+- `remaining_risks`：Mailbox仍为receive-time consume，handler失败不重投；lane串行仅限同一进程/同一`AgentLaneRuntime`实例；无durable Turn存在性Store；每次Demo向专用SQLite追加唯一run证据；仍不表示生产级、崩溃恢复、exactly-once或真实模型效果。
+- `review`：`producer gates PASS; user-requested code-review results recorded in TRACE-186`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-184`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：记录独立双轴Review和01C CHECKPOINT；不开始01D。
+
+### TRACE-20260827-186
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-186 / MVP-AGENT-RUNTIME-01C-PORTFOLIO-HANDOFF / REVIEW / 2026-08-27T17:27:31+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root + /root/01c_standards_review + /root/01c_spec_review / user-requested code-review two-axis review / Plan29 01C + TRACE-184/185`
+- `what / why / expected_effect_or_gate`：按用户明确要求启用`code-review`，两个并行独立子审查者分别检查Standards与Plan29 Spec。首轮Standards报告3个非阻塞smell：弱类型Handoff dict、Stage路由分散、`_send`context未使用；Spec报告2个Major：CLI未直接显示完整Runtime证据，Plan29 v1历史合同与v2实现尚未解冲突。产生者修正后重复双轴复审；Standards再报2个Low死字段/参数，清理后最终确认。
+- `scope / non_goals`：只读审查TRACE-184冻结的四个01C文件、Plan29和实smoke/report证据；子审查者未修改文件、未运行网络/模型/Browser、未签发Runtime Acceptance或发布批准。
+- `baseline`：`fixed point HEAD=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e resolves; commit list HEAD..HEAD empty because user requires WORKTREE_ONLY; normal three-dot diff empty; review therefore pinned to TRACE-184 scoped non-empty worktree manifest and full-file no-index comparisons`
+- `commands`：读取`code-review/SKILL.md`；检查固定点/diff/commit list、Standards来源与Plan29 Spec；并行spawn Standards/Spec审查，每轮后用follow-up对同一审查者复核修正。仓库缺少`docs/agents/issue-tracker.md`，已按技能说明告知用户可运行`/setup-matt-pocock-skills`；因用户已明确Spec为Plan29，本次不因可选issue tracker配置阻塞。
+- `stop_or_rollback_conditions`：首轮2个Spec Major曾阻塞完成声明，已在CHECKPOINT前全部关闭；未触发需扩大架构或回滚的条件。
+- `result / effect`：`FINAL Standards: 0 findings / 0 blockers; FINAL Spec: 0 findings / 0 blockers; prior Standards 3 + follow-up 2 all CLOSED; prior Spec Major 2 both CLOSED`
+- `artifacts / evidence`：Standards最终确认强类型`_StageMessageEvidence`、单一`_StageRoute/_STAGE_ROUTES`、无未使用context/role字段；Spec最终确认CLI可见性、Plan29 v2批准、真实Mailbox/lane、21/12 Message/Handoff语义、Validator分离、生命周期关闭和固定矩阵。
+- `remaining_risks`：`code-review`skill原生假定已提交branch diff，本仓库当前按用户要求为长期WORKTREE_ONLY；本次通过PRE_REGISTER哈希与冻结四文件manifest缩小范围，但仍不等价于可重现的committed three-dot diff。
+- `review`：`APPROVE / two-axis independent review / Standards=0 / Spec=0 / blocking=0`
+- `supersedes_entry_id`：`NONE — preserves initial findings and their corrections in this REVIEW history`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：记录01C CHECKPOINT并停止；不开始01D。
+
+### TRACE-20260827-187
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-187 / MVP-AGENT-RUNTIME-01C-PORTFOLIO-HANDOFF / CHECKPOINT / 2026-08-27T17:27:31+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / completed real Handoff and Portfolio Agent Runtime integration checkpoint / Plan29 MVP-AGENT-RUNTIME-01C`
+- `what / why / expected_effect_or_gate`：01C现已让Portfolio Demo的Planner、Developer、Tester/Fixer真正作为持久Agent存在，stage工作从Mailbox领取并在独立lane执行，结构化Handoff传递Artifact和因果链；CLI/v2报告展示可核对的生命周期、邮箱、顺序/并行与最终关闭。StageAudit仍保留为既有Ablation审计，但不再被当成Agent/Handoff事实源。
+- `scope / non_goals`：本检查点只关闭01C，不表示01D文档/最终MVP Review、`MVP-CLOSE-01D`发布检查、release candidate、production-ready、Runtime Acceptance或SEC KEEP；不创建commit/tag/push。
+- `baseline`：`HEAD=origin/main unchanged at 6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; protected dirty paths preserved; TRACE-185 gates PASS; TRACE-186 review APPROVE`
+- `commands`：见TRACE-185/186；最终状态扫描确认Plan29/HANDOFF当前路线已切到01D，`git diff --check` exit0，staging empty，没有stage/commit/push。
+- `stop_or_rollback_conditions`：未触发；所有审查阻塞在完成声明前关闭。
+- `result / effect`：`achieved=yes; MVP-AGENT-RUNTIME-01C=COMPLETED; code-review APPROVE Standards0/Spec0; next=MVP-AGENT-RUNTIME-01D NOT_STARTED; MVP-CLOSE-01D remains PAUSED`
+- `artifacts / evidence`：实现/测试/文档/report hash见TRACE-185；独立审查处置见TRACE-186；权威schema与下一批见`Plan/Plan29.md`，新窗口接续见`HANDOFF.md`。
+- `remaining_risks`：与TRACE-185一致：无ack/retry/crash redelivery、无多进程lane协调、无durable Turn存在性验证、无真实模型/网络/Browser、无生产认证；这些不在01C内扩张。
+- `review`：`APPROVE / blocking=0 / 01C implementation only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：等待用户启动下一批`MVP-AGENT-RUNTIME-01D`；届时先PRE_REGISTER，再完成生命周期报告校对、两份README、回归与Agent Runtime MVP最终独立Review。不自动开始，不自动进入`MVP-CLOSE-01D`。
+
+### TRACE-20260827-188
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-188 / MVP-AGENT-RUNTIME-01D-DOCS-REGRESSION-REVIEW / PRE_REGISTER / 2026-08-27T18:15:45+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / lifecycle-report documentation, regression and final Agent Runtime MVP independent review / Plan29 MVP-AGENT-RUNTIME-01D + TRACE-187 + user “下一批”`
+- `what / why / expected_effect_or_gate`：校对当前`portfolio-demo-report/v2`、CLI和已实现的Agent生命周期/私有状态/Mailbox/lane/Handoff事实，更新根README与demo/README，移除“preview仍无真实Agent”的过期叙事，并用实际Quickstart输出、定向/全仓回归和独立`review-artifact`审查关闭`MVP-AGENT-RUNTIME-01`。
+- `scope / non_goals`：默认只修改`README.md`、`demo/README.md`，完成后同步`Plan/Plan29.md`、`HANDOFF.md`和本账本；不修改production/test，除非文档一致性或独立Review发现真实阻塞。不进入`MVP-CLOSE-01D`，不执行干净检出/release candidate/commit/tag/push，不扩张Web/真实模型/网络/Browser、PROD/SEC认证、ack/retry/lease/fencing/崩溃恢复，不触碰保护路径。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; 01A–01C complete WORKTREE_ONLY; report schema=v2; latest smoke=9/6/3/3, 21 scripted/0 model, 9 Threads/21 Agents/42 consumed/21 stage messages/12 Handoffs/all closed/FIFO true/max parallel 3; protected dirty paths preserved`
+- `commands`：已完整读取`review-artifact/SKILL.md`及其`references/domain-checklists.md`的code/architecture/handoff检查项；只读检查git status/HEAD、Plan29 01D、HANDOFF、TRACE-187、两份README、01C报告/代码/测试。文档修改、回归和审查尚未开始。
+- `stop_or_rollback_conditions`：若文档必须冒称production-ready/Runtime Acceptance/SEC KEEP/真实模型效果，若实际Quickstart与报告不再满足Plan29固定矩阵，若独立Reviewer发现需扩大到Plan29外的架构问题，或若保护路径/安全边界受影响，立即停止并报告，不自动扩张。
+- `result / effect`：`PENDING — file scope and independent review contract frozen; docs/tests/review not yet performed`
+- `artifacts / evidence`：`README pre=2651486fa967a4ac6db230a7e8eaa821e76d908e4e7dab2865615b8bed60edae; demo/README pre=4a5ed64c09c8246ac245ec795d34a55fce8619a9e3a3b5b4f7156394d3c209b0; Plan29 pre=62c6f5f7f6690a7fe5b2871edf6e2a99e0900b8164532b71dbad17425cdb92e1; HANDOFF pre=2c486c375fb5516ba1707c08d83f33a6bbf6e619b78c31adf5900f76d8994c27; STEP pre=b0d356689dabd4285f130544bfe628e3d84c3ade05c3f0f759ab6b48eb431be0; portfolio_demo.py=6b105b934f6afaecf7019bd0d076da95fc89380a2b4253c3d72a1bc8bf947bbe; agent_runtime.py=2b6bfe46612738dea1ffdac39080fc1937e4a7b8494d55f7ed8d585f5ed579ec; portfolio_agent_runtime.py=f5902accc825d63f00a2b6550727b51c77c723705d483380a9fe350faa17bff8; agent.py=34f08fd66abb610df294d04957f792161743723bc398700e200d0987df517d28; mailbox.py=cb580e00a0eae24f406471cb2c4cc43766f96f8e364f031a4eb6807f8f18f4d7`
+- `remaining_risks`：README当前明确过期：仍写v1报告、StageAudit投影和无真实Agent/Mailbox/lane；全仓普通discover会遇到两个要求独立解释器的`*_expected_red.py`，必须保留并使用已记录的排除命令，不得伪造全绿。
+- `review`：`PENDING — independent reviewer must inspect exact post-doc subject and primary evidence; producer cannot self-approve`
+- `supersedes_entry_id`：`NONE — begins 01D after completed TRACE-187`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：精确更新两份README的Quickstart、实际输出、Agent Runtime架构、测试命令与已知限制；不修改production/test。
+
+### TRACE-20260827-189
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-189 / MVP-AGENT-RUNTIME-01D-DOCS-REGRESSION-REVIEW / REVIEW / 2026-08-27T18:23:06+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/01c_spec_review independent reviewer; producer=/root / fixed post-README 01D candidate / Plan29 MVP-AGENT-RUNTIME-01D + TRACE-188`
+- `what / why / expected_effect_or_gate`：按`review-artifact`对固定版本执行独立只读审查。实现、报告、README、测试与01A～01D功能边界均有证据支持；审查者发现一个Medium文档新鲜度问题：Plan29/HANDOFF仍把01D写成“下一批/等待开始”，HANDOFF还保留已由01C完成的映射开放问题和unknown资源范围，可能误导新窗口重复01C或混淆`MVP-CLOSE-01D`。
+- `scope / non_goals`：审查者未修改文件、未运行真实CLI以避免改变固定report/SQLite、未签发Runtime Acceptance或发布批准。本条封存初始`revise`结论，不能用后续修订覆盖。
+- `baseline`：`subject README=846ad904f8442260884e475003faa9157998a8e07d6c14fd49f69e854e6602a8; demo/README=2d67e5ca1827dbe325241119c9cded643b888d7c7f1967b1eb7a6efc7b1d7981; portfolio_agent_runtime=f5902accc825d63f00a2b6550727b51c77c723705d483380a9fe350faa17bff8; portfolio_demo=6b105b934f6afaecf7019bd0d076da95fc89380a2b4253c3d72a1bc8bf947bbe; report=0b0af3c51bd39af8ee432a80e33ffe00de8219028f38424c0aa1774c94043c4e; STEP pre=64c473f3c31144d0e80fdc99b90bb559bef4babf4ffe37afe01c2331b06dbcd5`
+- `commands`：审查者直接读取Plan29、两份README、Agent/Session/Mailbox/lane/Portfolio实现与测试、report JSON、SQLite只读状态、HANDOFF和TRACE-184～188；独立复跑33/33定向、184/184 Runtime、579项非expected-red（9 skip）、py_compile和`git diff --check`，全部通过；固定subject hashes匹配。
+- `stop_or_rollback_conditions`：功能/安全/范围阻塞未触发；只允许修正Plan29/HANDOFF/Step Log的新鲜度，不能借机进入`MVP-CLOSE-01D`或扩大实现。
+- `result / effect`：`REVISE / one Medium documentation freshness finding; implementation/report/READMEs/tests/scope otherwise supported`
+- `artifacts / evidence`：独立确认`9 Threads/21 closed Agents+Sessions/42 sent+received/21 stage Messages/12 real cross-Agent Handoffs/FIFO/max parallel 3/private state complete/Runtime-owned Validator/9-6-3-3/21 scripted/0 model`；producer真实CLI连续5次证据尚待ACTUAL记录。
+- `remaining_risks`：WORKTREE_ONLY且未验证clean-checkout可复现性；该项属于后续`MVP-CLOSE-01D`，不在本批冒称完成。
+- `review`：`REVISE / Medium=1 / blocking freshness correction required; confidence=high`
+- `supersedes_entry_id`：`NONE — preserves initial independent finding before remediation`
+- `git_checkpoint`：`REVIEWED_FIXED_WORKTREE_SUBJECT / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：仅更新Plan29/HANDOFF为01D已执行待复核、删除过期01C开放问题并明确`MVP-CLOSE-01D`仍暂停；随后请求同一审查者窄复核。
+
+### TRACE-20260827-190
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-190 / MVP-AGENT-RUNTIME-01D-DOCS-REGRESSION-REVIEW / ACTUAL / 2026-08-27T18:25:50+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / lifecycle-report documentation, full regression and independent-review remediation / Plan29 MVP-AGENT-RUNTIME-01D + TRACE-188/189`
+- `what / why / expected_effect_or_gate`：把根README和demo README从历史StageAudit preview叙事更新为真实Agent Runtime MVP：公开CLI示例直接显示Thread、Agent/Session ID与created>paused>resumed>closed、Mailbox/Handoff、Artifact、Runtime-owned Validator、FIFO/并行和关闭汇总；说明v2原子报告与追加SQLite证据的差异、EXPECTED_RED执行方式和真实限制。生产/测试实现保持01C冻结hash不变。独立初审唯一Medium已通过Plan29/HANDOFF新鲜度修正关闭。
+- `scope / non_goals`：功能文档只改`README.md`、`demo/README.md`；状态同步只改Plan29/HANDOFF/追加Step Log。没有修改production/test、固定Suite、Artifact/Validator、安全边界或保护路径；没有网络/模型/Browser、clean checkout、release candidate、stage/commit/tag/push，也没有进入`MVP-CLOSE-01D`。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; TRACE-188 PRE_REGISTER; TRACE-189 initial independent REVIEW=REVISE Medium1`
+- `commands`：定向`python3 -m unittest tests.test_agent_runtime tests.test_agent_mailbox tests.test_coding_ablation tests.test_portfolio_agent_runtime tests.test_portfolio_demo`=33/33；Runtime discover=184/184；排除两个明确`*_expected_red.py`的全仓集合=579/579、skip9；真实`python3 portfolio_demo.py --trusted-local-execution`连续5次均exit0/passed；精确report-contract断言通过；`PYTHONPYCACHEPREFIX=/tmp/multiagent-01d-pycache python3 -m py_compile ...`通过；`git diff --check`通过。系统默认py_compile首次因沙箱外Apple Python cache目录PermissionError，改为允许的/tmp cache后通过；临时JSON断言首次误猜字段路径，按实际schema修正后通过，均非产品失败。
+- `stop_or_rollback_conditions`：未触发。没有无法解释的产品失败、竞态或SQLite异常，故未启用`diagnosing-bugs`；没有修改功能代码，故01D未新增TDD切片。
+- `result / effect`：`achieved=yes; docs accurate; directed=33/33; Runtime=184/184; full non-expected-red=579/579 skip9; real smoke=5/5; report/compile/diff=PASS; review remediation approved with findings=0`
+- `artifacts / evidence`：`README=9ff627b0f5bad97e5f0dafda9fb0d960258672919e10b47a59a8ad74269b85ae; demo/README=2d67e5ca1827dbe325241119c9cded643b888d7c7f1967b1eb7a6efc7b1d7981; Plan29=0b06b944bdf4ea7b5aeaf01b4946609dc97be1cd0cc0a3191554ddd18a326744; HANDOFF=0db84ffb8457239812fa7199ef809b3737a1c7642c4bdfcb45161bdbcbe633ce; report=0b0af3c51bd39af8ee432a80e33ffe00de8219028f38424c0aa1774c94043c4e; pre-ACTUAL STEP=ea188a48078c7ffcbe7ab26b58f1c2d8763264861e87154e81a32b26406eb4cc; implementation hashes unchanged from TRACE-185`
+- `remaining_risks`：Mailbox为receive-time cursor、无ack/retry/crash redelivery；lane仅单进程/单Runtime实例协调；无durable Turn Store/in-flight恢复/exactly-once/真实模型/网络/Browser/生产认证。WORKTREE_ONLY且未验证clean-checkout/release candidate，这些明确留给用户另行启动的`MVP-CLOSE-01D`。
+- `review`：`initial REVISE evidence preserved in TRACE-189; same independent reviewer narrow remediation review=APPROVE / prior Medium CLOSED / findings=0; final status seal pending`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-188 without deleting TRACE-189 finding history`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：让同一独立审查者只读确认最终状态文本与TRACE-190一致；随后追加最终REVIEW/CHECKPOINT并停止，不进入`MVP-CLOSE-01D`。
+
+### TRACE-20260827-191
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-191 / MVP-AGENT-RUNTIME-01D-DOCS-REGRESSION-REVIEW / REVIEW / 2026-08-27T18:26:29+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/01c_spec_review independent reviewer; producer=/root / final 01D status seal / Plan29 01D + TRACE-189/190`
+- `what / why / expected_effect_or_gate`：同一独立审查者在初始Medium修正获批后，对最终README/Plan29/HANDOFF状态和TRACE-190做只读封印复核，确认01D准确标为完成、未冒称release或Runtime Acceptance、`MVP-CLOSE-01D`明确暂停并要求用户另行启动，原始TRACE-189 REVISE记录保持不变。
+- `scope / non_goals`：只读文档/状态复核；未重跑测试/smoke、未修改文件或Runtime状态、未签发发布批准或授权下一批。
+- `baseline`：`README=9ff627b0f5bad97e5f0dafda9fb0d960258672919e10b47a59a8ad74269b85ae; demo/README=2d67e5ca1827dbe325241119c9cded643b888d7c7f1967b1eb7a6efc7b1d7981; Plan29=0b06b944bdf4ea7b5aeaf01b4946609dc97be1cd0cc0a3191554ddd18a326744; HANDOFF=0db84ffb8457239812fa7199ef809b3737a1c7642c4bdfcb45161bdbcbe633ce; pre-REVIEW STEP=a5fe06887998a9cfff776fbbb0f70be4e4228058f4599b10d7075e422b5b007f`
+- `commands`：只读核对上述hash、README状态/后续路线、Plan29 01D与下一动作、HANDOFF接续摘要/HandoffProposal、TRACE-189/190追加历史；按请求未复跑测试。
+- `stop_or_rollback_conditions`：未触发；没有新增不准确、越界或未处置发现。
+- `result / effect`：`APPROVE / findings=0 / prior Medium CLOSED / final status text sealed`
+- `artifacts / evidence`：审查者明确确认TRACE-190的33/184/579、5/5 smoke、report/compile/diff、实现不变、限制和WORKTREE_ONLY记录准确；TRACE-189原始REVISE未改写。
+- `remaining_risks`：本复核依赖TRACE-189/190的测试证据，没有重新执行；clean-checkout/release candidate仍未验证并属于暂停的`MVP-CLOSE-01D`。
+- `review`：`APPROVE / independent read-only review-artifact / findings=0 / no Runtime Acceptance`
+- `supersedes_entry_id`：`NONE — closes TRACE-189 finding while preserving its history`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：追加01D CHECKPOINT并停止；等待用户决定是否另行启动`MVP-CLOSE-01D`。
+
+### TRACE-20260827-192
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-192 / MVP-AGENT-RUNTIME-01D-DOCS-REGRESSION-REVIEW / CHECKPOINT / 2026-08-27T18:26:29+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / completed Agent Runtime MVP documentation, regression and independent review checkpoint / Plan29 MVP-AGENT-RUNTIME-01D`
+- `what / why / expected_effect_or_gate`：`MVP-AGENT-RUNTIME-01A～01D`现已全部完成：真实Agent/Session/私有状态、持久Mailbox、同Agent FIFO/跨Agent并行lane、结构化Handoff、Portfolio接入、CLI/v2生命周期报告、诚实README、回归与独立Review形成一致证据。01D初审Medium已封存、修正并由同一独立审查者确认关闭。
+- `scope / non_goals`：本检查点关闭Agent Runtime MVP路线，但不表示作品集release candidate、clean-checkout复现、Runtime Acceptance、production-ready、SEC KEEP或用户批准发布；不创建commit/tag/push，不自动开始`MVP-CLOSE-01D`。
+- `baseline`：`HEAD=origin/main unchanged at 6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; protected dirty paths preserved; TRACE-190 gates PASS; TRACE-191 final independent review APPROVE findings0`
+- `commands`：见TRACE-190/191；最终`git diff --check` exit0、staging empty，Plan29/HANDOFF/README均明确01D完成和`MVP-CLOSE-01D`暂停。
+- `stop_or_rollback_conditions`：未触发；所有审查发现已在完成声明前关闭。
+- `result / effect`：`achieved=yes; MVP-AGENT-RUNTIME-01D=COMPLETED; MVP-AGENT-RUNTIME-01A～01D=COMPLETED; independent review APPROVE findings0; MVP-CLOSE-01D=PAUSED_NOT_STARTED`
+- `artifacts / evidence`：最终文档hash见TRACE-191；实现/report/test/smoke/compile/diff证据见TRACE-185、TRACE-190；初始发现与处置见TRACE-189、最终审查见TRACE-191。
+- `remaining_risks`：无ack/retry/crash redelivery、多进程lane协调、durable Turn Store、in-flight恢复、exactly-once、真实模型/网络/Browser或生产认证；WORKTREE_ONLY且尚无release candidate commit。全部已诚实后置。
+- `review`：`APPROVE / findings=0 / advisory Agent Runtime MVP review only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：停止并等待用户。只有用户明确启动后，才为`MVP-CLOSE-01D`追加新PRE_REGISTER并执行干净检出发布检查；不得自动开始。
+
+### TRACE-20260827-193
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-193 / MVP-AGENT-RUNTIME-01D-DOCS-REGRESSION-REVIEW / CORRECTION / 2026-08-27T18:27:48+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root + /root/01c_spec_review / post-checkpoint full-file HANDOFF freshness correction / TRACE-192 + Plan29 01D`
+- `what / why / expected_effect_or_gate`：TRACE-192后的最终全文件扫描发现HANDOFF深处两个历史HandoffProposal/“下一步”当前态句子仍把Agent Runtime 01D写成下一批，虽顶部已正确但会造成矛盾。只把这两句更新为01A～01D已完成、无活动批次、等待用户另行启动暂停的`MVP-CLOSE-01D`；同一独立审查者随后扫描HANDOFF全文件并确认0 finding。
+- `scope / non_goals`：只修改`HANDOFF.md`两处状态句并追加本CORRECTION；没有改变实现、测试、README、Plan、报告或TRACE-189～192历史，不重跑测试，不进入下一批。
+- `baseline`：`TRACE-192 checkpoint remains valid except its referenced pre-correction HANDOFF hash; pre-correction HANDOFF=0db84ffb8457239812fa7199ef809b3737a1c7642c4bdfcb45161bdbcbe633ce; pre-CORRECTION STEP=45719ade5e70fd4b38172de879a9b7516d74df5a8611f23b0e263687abce5363`
+- `commands`：全文件`rg` stale-state扫描、`git diff --check`、HANDOFF hash核对；独立审查者只读扫描全HANDOFF，未复跑测试。
+- `stop_or_rollback_conditions`：未触发；更正没有改变01D验收或下一批授权边界。
+- `result / effect`：`corrected=yes; HANDOFF final=508efa9d208d451802d9303a35834a967a910310fb04103118a38cd821809b9d; independent full-file freshness review APPROVE findings0`
+- `artifacts / evidence`：原stale位置为修正前HANDOFF约line339和355；最终独立复核确认文件中没有任何当前态指令再把`MVP-AGENT-RUNTIME-01D`描述为pending/unstarted/incomplete/next，其他01D出现仅为历史证据规则或`PROD-01D`路线。
+- `remaining_risks`：与TRACE-192相同；本更正不提供release、Runtime Acceptance、commit/push或下一批授权。
+- `review`：`APPROVE / independent full-file HANDOFF freshness scan / findings=0`
+- `supersedes_entry_id`：`TRACE-20260827-192 only for the final HANDOFF artifact hash; completion decision and all other evidence remain unchanged`
+- `git_checkpoint`：`WORKTREE_ONLY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：停止并等待用户；`MVP-CLOSE-01D`仍暂停，只有用户明确启动后才能PRE_REGISTER。
+
+### TRACE-20260827-194
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-194 / MVP-CLOSE-01D-RELEASE-CHECK / PRE_REGISTER / 2026-08-27T18:44:49+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / portfolio release-candidate commit, clean-checkout reproduction and final independent review / Plan29 MVP-CLOSE-01D + TRACE-193 + user “进行下一批吧”`
+- `what / why / expected_effect_or_gate`：冻结作品集发布候选：把已完成但长期WORKTREE_ONLY的Runtime基础、Agent Runtime 01A～01D、默认Portfolio Demo、测试与权威文档形成一个可识别commit；随后从该commit的独立干净检出运行唯一Quickstart、离线smoke、定向回归、compile/diff门禁并完成独立`review-artifact`。用户在被明确告知下一批包含候选commit且需确认后回复“进行下一批吧”，本条将其视为本批创建本地release-candidate分支/commit的明确授权；不授权push/tag/deploy。
+- `scope / non_goals`：候选manifest仅允许纳入：`HANDOFF.md`、`LEARNING_PATH.md`、`OPTIMIZATION_BACKLOG.md`、`Plan/Plan25.md`、`Plan/Plan26.md`、`Plan/Plan27.md`、`Plan/Plan29.md`、`README.md`、`SecurityProblem.md`、`VerificationReports/PROD-01B.md`、`VerificationReports/SEC-EXEC-01.md`、`VerificationReports/STEP-LOG.md`、`demo/README.md`、`demo/coding_workflow/runtime_persistence/{__init__.py,sqlite.py,agent.py,mailbox.py}`、`demo/coding_workflow/{agent_runtime.py,portfolio_agent_runtime.py}`、`demo/portfolio_demo.py`、`demo/tests/{test_runtime_outbox.py,test_runtime_outbox_adversarial.py,test_runtime_outbox_claim_lifecycle_adversarial.py,test_runtime_sqlite_uow.py,test_agent_runtime.py,test_agent_mailbox.py,test_portfolio_agent_runtime.py,test_portfolio_demo.py}`。明确排除并保持原状：用户保护的`demo/track.md`、`problems.md`、`prombles.md`删除状态、`Plan/Plan28.md`；以及任何未列路径。分支只允许`codex/mvp-close-01d`；不push、不tag、不发布、不改网络/模型/Browser/PROD架构。
+- `baseline`：`HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=main; staging empty; dirty worktree includes candidate + four protected paths; Agent Runtime 01A～01D complete; latest STEP=TRACE-193`
+- `commands`：已完整读取`review-artifact/SKILL.md`和code/architecture/security/handoff检查项；只读检查Plan29、HANDOFF、TRACE-190～193、branch/HEAD/origin、status、tracked/untracked manifest、diff/stat/log及四个保护路径diff；尚未stage/branch/commit或运行候选门禁。
+- `stop_or_rollback_conditions`：若候选必须纳入任一保护路径、manifest缺少运行依赖、staged diff超出冻结清单、提交后原工作树保护改动丢失、clean checkout不能复现、Quickstart/门禁失败、独立Reviewer发现阻塞，停止并如实记录；不得用修改保护路径、降低测试、伪造expected-red或扩大架构解决。
+- `result / effect`：`PENDING — candidate manifest frozen; commit/clean-checkout/tests/review not yet performed`
+- `artifacts / evidence`：`STEP pre=d3c114896d9f5e314e8da3f0a8263c5ee536fbb10b2ccbc2f704ea634e6211bb; HANDOFF pre=508efa9d208d451802d9303a35834a967a910310fb04103118a38cd821809b9d; Plan29 pre=0b06b944bdf4ea7b5aeaf01b4946609dc97be1cd0cc0a3191554ddd18a326744; README=9ff627b0f5bad97e5f0dafda9fb0d960258672919e10b47a59a8ad74269b85ae; demo/README=2d67e5ca1827dbe325241119c9cded643b888d7c7f1967b1eb7a6efc7b1d7981`
+- `remaining_risks`：候选跨越多个已验证但未提交的历史切片，单commit较大；因此必须逐路径staging、比对冻结manifest、从独立worktree复现并让独立Reviewer检查精确commit。四个保护路径继续留在原工作树，不属于候选或作品集声明。
+- `review`：`PENDING — independent reviewer required on exact candidate commit after clean-checkout evidence`
+- `supersedes_entry_id`：`NONE — starts MVP-CLOSE-01D after explicit user authorization`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_DIRTY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
+- `next_action`：审计冻结manifest的依赖、敏感信息和diff边界；更新Plan29/HANDOFF为本批进行中后，显式创建`codex/mvp-close-01d`并只stage冻结清单。

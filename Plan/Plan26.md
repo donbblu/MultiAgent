@@ -6,7 +6,9 @@
 
 ## 当前状态
 
-状态：**PROD-00 文档冻结已完成；实现已推进至 PROD-01B，其中 01B-3A 与 01B-3B-1 已完成/KEEP，完整 01B-3 仍进行中**。
+状态：**PROD-00 文档冻结已完成；实现已推进至 PROD-01B，其中 01B-3A 与 01B-3B-1 已完成/KEEP，完整 01B-3 仍进行中。2026-08-27 起当前实施主线改为 `MVP-CLOSE-01` 项目闭环，生产批次转为后续 Roadmap。**
+
+2026-08-27 用户明确决定不再让“立即达到生产级”阻塞项目完成。当前权威完成口径改为 [`Plan29：项目闭环优先的作品集版收口计划`](./Plan29.md)：先形成一个可运行、可演示、可复现、限制清楚的完整本地项目；`SEC-EXEC-01` 完整安全认证、`PROD-01B-3B-2`、`01C～01E` 与后续 PROD/INC 能力保留为未来增强。本文的领域边界和生产路线继续有效，但不再是当前 MVP 的完成清单。
 
 2026-08-23，项目产品中心由“面向 Coding 的专用 Multi-Model Agent Harness”纠偏为：
 
@@ -280,7 +282,7 @@ VisionForge 当前保持独立 `visionforge:web_visual` Scenario Plugin，并复
 
 ### Harness Evolution Protocol（Evo-Bench-inspired）
 
-Harness 的实现与优化采用评测驱动演进，而不是凭直觉累加 Agent、模型、Memory、Prompt 或协作机制。本文的 Harness Evolution Protocol 指 `Baseline → 失败证据 → 可证伪假设 → 单一实验变更 → Validation → Held-out → KEEP/ROLLBACK/INCONCLUSIVE` 的项目内部开发与证据协议，不是当前插队的新生产子系统，也不等于允许 Agent 自主修改生产。它借鉴 Evo-Bench（<https://github.com/RUCAIBox/Evo-Bench>），但当前没有运行或复现其正式 Benchmark；它也不等于、依赖或授权安装外部 `evo-hq/evo`（<https://github.com/evo-hq/evo>）。后者若未来采用，只能作为外部候选实验执行器。当前生产顺序仍为 `PROD-01B → 01C → 01D → 01E`。
+Harness 的实现与优化采用评测驱动演进，而不是凭直觉累加 Agent、模型、Memory、Prompt 或协作机制。本文的 Harness Evolution Protocol 指 `Baseline → 失败证据 → 可证伪假设 → 单一实验变更 → Validation → Held-out → KEEP/ROLLBACK/INCONCLUSIVE` 的项目内部开发与证据协议，不是当前插队的新生产子系统，也不等于允许 Agent 自主修改生产。它借鉴 Evo-Bench（<https://github.com/RUCAIBox/Evo-Bench>），但当前没有运行或复现其正式 Benchmark；它也不等于、依赖或授权安装外部 `evo-hq/evo`（<https://github.com/evo-hq/evo>）。后者若未来采用，只能作为外部候选实验执行器。未来恢复生产增强时的顺序仍为 `PROD-01B → 01C → 01D → 01E`；当前先执行 Plan29 的 `MVP-CLOSE-01`。
 
 每个会改变 Agent 行为、路由、协作拓扑、Prompt、Context、Memory、重试、停止、工具或 Acceptance 行为的修改，必须建立版本化实验记录并在运行前冻结：
 
@@ -353,6 +355,8 @@ Agent 行为、智能效果和可泛化收益声明必须使用隔离 Held-out�
 
 证据冲突优先级固定为：匹配 SHA-256/commit 的原始 Artifact 与测试输出 > 对应 VerificationReport > Step Log 摘要 > HANDOFF。Step Log 发现冲突时只能追加纠正；不能反向改写已经发生的历史证据。
 
+`MVP-CLOSE-01` 采用 [`Plan29`](./Plan29.md) 的轻量证据例外：每个 01A～01D 批次使用一条批次级 PRE_REGISTER，并在结束时记录 ACTUAL/CHECKPOINT；微小修正、搜索和定向复跑不再各自建立哈希/双审循环。只有安全边界、真实外部副作用和最终发布候选需要独立 Review，最终作品集检查保留一次独立 Review。此例外不适用于恢复 PROD/INC、安全认证、真实 Provider、网络或高风险执行。
+
 ## 生产边界与模块形态
 
 第一阶段保持 self-hosted、单组织/单信任域、单机优先的 production-shaped modular monolith。模块边界按 Thread/Message、Invocation/Session、Event/Incident、Artifact/Context、Capability/Tool、Scenario/Plugin 和 Web/API 划分；SQLite 继续作为本地模式。
@@ -382,7 +386,9 @@ RPO/RTO 的数值目标将在 PROD-01 结合 Journal 和故障注入冻结；当
 - 剩余缺口及后续归属：Journal/Ledger 属 PROD-01/INC-01；PROD-01 只额外建立四组 Observe/Shadow 信号并将 INC-02 标为“部分 Shadow”；完整 Detector、Replay、Learning 和运营按 INC-02～INC-05 推进。
 - 需要同步的文档：`Plan/Plan25.md`、`Plan/闭环覆盖范围.md`、`OPTIMIZATION_BACKLOG.md`、`LEARNING_PATH.md`、`HANDOFF.md`。
 
-## 生产批次
+## 生产批次（后续 Roadmap，当前不阻塞 MVP 闭环）
+
+以下批次继续记录生产级演进方向和历史事实。2026-08-27 起，当前执行顺序以 `Plan29 / MVP-CLOSE-01` 为准；未实施的 PROD 批次保持未完成，不因作品集版收口而自动完成。
 
 ### PROD-00：Harness 产品定位与 Runtime Charter
 
@@ -395,7 +401,7 @@ RPO/RTO 的数值目标将在 PROD-01 结合 Journal 和故障注入冻结；当
 为满足“一次只实施一小批”，PROD-01 固定拆为：
 
 1. **PROD-01A 领域协议与迁移骨架（已完成）**：实现最小 Scope、Thread、Turn、Message、通用 AgentProfile/Role、AgentInstance、AgentSession、Invocation/Attempt、Outcome、AcceptancePolicy/Record 和 RuntimeEvent 协议；明确 Message/Artifact 唯一真相源与 Coding 兼容映射。Invocation 本批冻结 `input_refs + input_digest + policy_snapshot_ref + budget_reservation`，以及 parent/child、执行/清理双状态轴、终止原因、deadline、lease、fencing 和资源引用协议；不假装已经有 PROD-03 的完整 Grant 或 PROD-05 的 ContextManifest。
-2. **PROD-01B 状态 Store、Journal 与 Outbox（进行中）**：`PROD-01B-1` 已完成组件级 SQLite Schema、Migration 与 RuntimeUnitOfWork，`PROD-01B-2` 已完成 concrete Thread current-state 与 append-only RuntimeEvent 的原子纵切，`PROD-01B-3A` 已完成显式 Policy、Schema v3、真实 v2→v3 迁移和 durable Outbox intent 原子三写，`01B-3B-1` 已完成本地 claim/NACK/expiry-reclaim；下一步是 `01B-3B-2` Transport publish/ACK/Receipt。完整 01B 仍要求状态表作为当前业务真相源、Journal 作为不可变审计、Snapshot 作为兼容检查点，并将状态、Event、Outbox 和最小 BudgetLedger 预留/结算同事务提交。Provider/Tool 细分策略分别在 PROD-02/03 扩展，容量分析归 PROD-06。
+2. **PROD-01B 状态 Store、Journal 与 Outbox（技术状态进行中、当前暂缓）**：`PROD-01B-1` 已完成组件级 SQLite Schema、Migration 与 RuntimeUnitOfWork，`PROD-01B-2` 已完成 concrete Thread current-state 与 append-only RuntimeEvent 的原子纵切，`PROD-01B-3A` 已完成显式 Policy、Schema v3、真实 v2→v3 迁移和 durable Outbox intent 原子三写，`01B-3B-1` 已完成本地 claim/NACK/expiry-reclaim；未来恢复本路线时的下一切片是 `01B-3B-2` Transport publish/ACK/Receipt。完整 01B 仍要求状态表作为当前业务真相源、Journal 作为不可变审计、Snapshot 作为兼容检查点，并将状态、Event、Outbox 和最小 BudgetLedger 预留/结算同事务提交。Provider/Tool 细分策略分别在 PROD-02/03 扩展，容量分析归 PROD-06。
 3. **PROD-01C Durable Invocation**：durable enqueue、幂等、claim/lease/heartbeat、fencing、watchdog、孤儿识别、级联取消、幂等 Finalizer/Reaper、重启恢复和取消意图持久化；进程内执行路径只能承诺逻辑失权和拒绝迟到结果，Backend 请求与进程的物理硬取消归 PROD-02。
 4. **PROD-01D 兼容接入与 Web 查询**：把现有 TaskGraph/ScenarioRuntime/Coding 纵向切片作为 Thread 中可选工作接入，保留回归；Web 先支持持久 Thread/Invocation 查询，不在本批实现完整 Agent 泳道。
 5. **PROD-01E INC-01 与首批 Shadow**：完成 INC-01 Observe-only；再建立 false acceptance、消息完整性、Thread/Session 错绑、取消/迟到/孤儿/清理失败四组 Observe/Shadow 信号。消息状态不一致是硬错误，正常离线重试不算事故，只有超过冻结时间窗才是 delivery SLO breach。此时 INC-02 只标记为“部分 Shadow”。
@@ -462,7 +468,7 @@ PROD-01B 的权威 Store 必须在同一事务中校验同 Thread/Turn/AgentSess
 
 确定性 Harness Evolution 轻量记录：`lifecycle_status=COMPLETED`、`decision=KEEP`。保留范围仅是 01B-2 的 Thread+RuntimeEvent 原子纵切；真实模型、Evolver、Validation/Held-out、query budget、样本量和统计效果均为 `N/A`，不能外推为完整 Journal、完整 PROD-01B、模型智能或生产可靠性。
 
-01B-2 收口后的下一动作已经执行：`PROD-01B-3` 的 Event+Outbox InvariantCard 已冻结，结构与显式 Policy 两张 EXPECTED_RED 卡已先建立，随后 `01B-3A` 生产实现与独立挑战、`01B-3B-1` 本地 claim/NACK 生命周期均已完成。下一动作是 `01B-3B-2` Transport publish/ACK/Receipt。
+01B-2 收口后的下一动作已经执行：`PROD-01B-3` 的 Event+Outbox InvariantCard 已冻结，结构与显式 Policy 两张 EXPECTED_RED 卡已先建立，随后 `01B-3A` 生产实现与独立挑战、`01B-3B-1` 本地 claim/NACK 生命周期均已完成。未来恢复生产路线时的下一切片是 `01B-3B-2` Transport publish/ACK/Receipt；当前先完成 `MVP-CLOSE-01`。
 
 #### PROD-01B-3：Event+Outbox 可靠发布边界
 
@@ -500,7 +506,7 @@ PROD-01B 的权威 Store 必须在同一事务中校验同 Thread/Turn/AgentSess
 
 首轮 Review 还发现并修正了测试自身的盲点：最初版本从数据库行读取 Policy 再自证 digest、commit 只数 Outbox、rollback 未证明事务内曾写入 Outbox；修订后明确要求 commit 后 `(Thread, Event, Outbox)=(1,1,1)`、rollback 前同一 UoW 内为 `(1,1,1)`、退出后为 `(0,0,0)`。第二轮 Review 又发现仅删除 Policy 自证仍会让无参数构造暗示隐藏默认值，因此继续冻结上述 `OutboxPolicy`/database binding，并新增 Policy digest 独立复算与缺 Policy typed fail-closed 红测。该历史红卡 `test_runtime_outbox.py` SHA-256=`8452ba5f2add07c3cd30e75b5c3ce26ceb941984d58f15e2ab5d20f5e3ab948a`；当时精确执行 5 项、5 failures，首个线性缺口为公开 `OutboxPolicy` 尚不存在。旧 68 项继续全绿，py_compile/diff-check 与两份生产 hash 不变；这些都是历史 EXPECTED_RED，不是最终状态。
 
-`01B-3A` 最终收口：显式 Policy、Schema v3、真实 v2→v3 cutover、历史 Event suppress 与 Thread+Event+Outbox intent 原子三写已实现。独立挑战在首绿之后实际发现并关闭 10 组产品缺陷；完整哈希、故障/并发矩阵、缺陷与 ReviewArtifact 见 [`VerificationReports/PROD-01B.md`](../VerificationReports/PROD-01B.md)。其后 `01B-3B-1` 已按 7 项 EXPECTED_RED → 首绿 → 独立攻击 → 修复 → 跨进程与 `os._exit` 恢复门禁收口；下一动作固定为 `01B-3B-2` Transport publish/ACK/Receipt。
+`01B-3A` 最终收口：显式 Policy、Schema v3、真实 v2→v3 cutover、历史 Event suppress 与 Thread+Event+Outbox intent 原子三写已实现。独立挑战在首绿之后实际发现并关闭 10 组产品缺陷；完整哈希、故障/并发矩阵、缺陷与 ReviewArtifact 见 [`VerificationReports/PROD-01B.md`](../VerificationReports/PROD-01B.md)。其后 `01B-3B-1` 已按 7 项 EXPECTED_RED → 首绿 → 独立攻击 → 修复 → 跨进程与 `os._exit` 恢复门禁收口；其收口时冻结的生产下一切片是 `01B-3B-2` Transport publish/ACK/Receipt，现已由 Plan29 后置。
 
 ##### PROD-01B-3B-1：Outbox claim / NACK / expiry-reclaim
 
@@ -570,7 +576,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 
 验收证据：`git diff --check` 通过；默认单元回归 213 项通过、4 项真实浏览器测试按设计跳过；Python compileall 通过。无需用户手动检验。
 
-当前仍处于 **PROD-01B：状态 Store、Journal 与 Outbox**；`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 已完成，完整 `PROD-01B-3` 仍进行中，下一动作是 `01B-3B-2` Transport publish/ACK/Receipt。
+技术成熟度仍停在 **PROD-01B 的部分实现**：`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 已完成，完整 `PROD-01B-3` 未完成。当前执行动作不是继续 3B-2，而是 Plan29 的 `MVP-CLOSE-01`；`01B-3B-2` 保留为未来生产增强。
 
 ## 待验证事项
 
@@ -580,14 +586,16 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 
 ## 待办事项
 
-- PROD-01B-3A durable intent 原子三写与 01B-3B-1 本地 claim/NACK lifecycle 已完成；下一步冻结 01B-3B-2 红卡，再推进 Transport publish/ACK/Receipt。之后逐片完成 BudgetLedger、权威关系/Acceptance 和查询恢复协议，已完成切片不重复开发。
-- 随后实施 PROD-01C 的 durable Invocation、Finalizer/Reaper、fencing、取消与恢复。
+- 当前先完成 Plan29 的 `MVP-CLOSE-01A～01D`，形成作品集版项目闭环。
+- 未来恢复生产增强时，再冻结 01B-3B-2 红卡并推进 Transport publish/ACK/Receipt，随后逐片完成 BudgetLedger、权威关系/Acceptance、查询恢复及 PROD-01C；已完成切片不重复开发。
 - 按 PROD/INC 双轨补齐对应事故事件、负向用例、正常对照和覆盖指标。
 - 对每个适用的行为修改同步填写 Harness Evolution 实验模板；PROD-01B 使用确定性轻量轨，只填写 Baseline、单一变更、故障矩阵、正常对照、固定门禁、回归和决策，Evolver/principal、样本量、Validation/Held-out cohort、query budget、统计效果等字段统一标为 `N/A`，不得因此阻塞基础设施开发，也不得把该证据外推为模型智能或 Held-out 效果结论。
 
 ## Plan Amendment：PA-2026-08-25-SEC-EXEC-01-FIRST
 
-状态：**已批准并生效；用户于 2026-08-25 选择方案 A。**
+状态：**历史上已批准并于 2026-08-25 生效；自 2026-08-27 起，当前执行优先级由 [`Plan29`](Plan29.md) 覆盖。**
+
+> 路线状态注记：本 Amendment 保留当时“先 SEC、再 3B-2”的决策和约束。下列顺序是 2026-08-25 的生产路线记录，也是未来恢复该路线时需要重新核对的安全约束；它不是当前作品集闭环的执行顺序。
 
 本 Amendment 只修订近期执行顺序，不重开 `PROD-01B-1/01B-2/01B-3A/01B-3B-1`，不修改其状态、哈希、Verification 或 `KEEP` 决定，不原地修改已发布 Schema v3/checksum，也不删除 `01B-3B-2`。
 
@@ -598,7 +606,7 @@ PROD-01A 是纯领域契约批次。它只保存 Backend、Capability、Context�
 - “PROD-00 验收结论”后的当前下一动作；
 - “待办事项”中立即冻结 `3B-2` 红卡的顺序。
 
-修订后的唯一顺序为：
+当时修订后的生产路线唯一顺序为：
 
 1. 同步本 Amendment、Backlog、HANDOFF、README、Learning Path，并向 `VerificationReports/PROD-01B.md` 追加 3B-1 post-commit clean content checkpoint；
 2. 以 `local_trusted_execution/v1` 已冻结的 A～H 门禁实施 `SEC-EXEC-01`：先保存 EXPECTED_RED，再实现统一 Command/Environment Profile、可信绝对 executable、进程组 Supervisor、清理屏障、输出限长与脱敏，随后完成独立攻击、正常路径回归和独立 Review；
