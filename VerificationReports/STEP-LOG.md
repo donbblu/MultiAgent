@@ -3545,3 +3545,20 @@ ps -axo pid=,ppid=,pgid=,command=
 - `supersedes_entry_id`：`NONE`
 - `git_checkpoint`：`COMMIT_CREATED / 1024e0900693b86316bb7807976a7f2e13667d3f / push=PENDING / KEEP_NOT_ISSUED`
 - `next_action`：只stage HANDOFF与STEP的commit证据，创建第二checkpoint提交；随后重新fetch/divergence核对并普通push。
+
+### TRACE-20260827-155
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-155 / SEC-EXEC-01-COMMIT-AND-PUSH / ACTUAL / 2026-08-27T12:30:32+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / checkpoint commit and initial remote push / TRACE-154`
+- `what / why / expected_effect_or_gate`：只stage HANDOFF/STEP中第一提交SHA与停止点，创建第二checkpoint提交；再次fetch并确认origin没有前进后，以普通非force push发布前两提交，再核本地HEAD与origin/main一致。
+- `scope / non_goals`：第二提交只含两个协调文件；push仅`main→origin/main`。无denylist、功能改动、测试、真实boundary、force或其他分支操作。
+- `baseline`：`first commit=1024e0900693b86316bb7807976a7f2e13667d3f; origin/main before push=0f9e41ad76d7a25deee0a28de42a422707a6f24d; divergence before push=2/0`
+- `commands`：`git add -- HANDOFF.md VerificationReports/STEP-LOG.md`; cached name-status/diff-check/stat/denylist；`git commit -m "docs(sec): record trusted execution checkpoint"`; `git fetch origin`; divergence/status；`git push origin main`; `rev-parse HEAD/origin/main`; final divergence/status。
+- `stop_or_rollback_conditions`：未触发；fetch后remote ahead=0，push为fast-forward，无force，exit0。
+- `result / effect`：`achieved=yes; checkpoint commit=66acb61aea5290c34d90a1533ee9e7b034de4d1e; initial push 0f9e41a..66acb61 main→main; HEAD=origin/main=66acb61aea5290c34d90a1533ee9e7b034de4d1e; divergence=0/0; staged=0`
+- `artifacts / evidence`：push stdout=`0f9e41a..66acb61 main -> main`; postpush status精确剩四项denylist。
+- `remaining_risks`：本entry自身尚未commit/push；需一个仅HANDOFF/STEP的终端记录提交。其最终push结果将由远端SHA和用户交接核对，避免无限自引用提交链。
+- `review`：`mechanical push checks PASS; no new behavior review required`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`REMOTE_CONFIRMED_AT_66acb61 / terminal-record commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：只提交本entry与HANDOFF同步，普通push该终端记录后核远端SHA并停止；不再为最终push递归创建第四记录提交。
