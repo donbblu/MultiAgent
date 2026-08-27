@@ -6,6 +6,9 @@ import tempfile
 import unittest
 from hashlib import sha256
 from pathlib import Path
+from unittest.mock import patch
+
+import core_coding_eval_run as cli
 
 from coding_workflow import (
     FixedCodingEvaluationRunner,
@@ -31,7 +34,9 @@ class FixedCodingEvaluationRuntimeTests(unittest.TestCase):
             ],
         )
 
-        report = FixedCodingEvaluationRunner(suite).run()
+        report = FixedCodingEvaluationRunner(
+            suite, trusted_local_execution=True
+        ).run()
 
         self.assertTrue(report.calibration_passed)
         self.assertEqual(len(report.trials), 6)
@@ -64,7 +69,8 @@ class FixedCodingEvaluationRuntimeTests(unittest.TestCase):
 
     def test_versioned_report_writes_metrics_without_hidden_source(self) -> None:
         report = FixedCodingEvaluationRunner(
-            FixedCodingSuite.load(self.suite_root)
+            FixedCodingSuite.load(self.suite_root),
+            trusted_local_execution=True,
         ).run()
         with tempfile.TemporaryDirectory() as temp:
             output = report.write_json(Path(temp) / "nested" / "report.json")
@@ -122,7 +128,8 @@ class FixedCodingEvaluationRuntimeTests(unittest.TestCase):
             )
 
             report = FixedCodingEvaluationRunner(
-                FixedCodingSuite.load(copied)
+                FixedCodingSuite.load(copied),
+                trusted_local_execution=True,
             ).run()
 
         self.assertFalse(report.calibration_passed)
@@ -133,6 +140,34 @@ class FixedCodingEvaluationRuntimeTests(unittest.TestCase):
             and item.revision is FixedRevision.STARTER
         )
         self.assertEqual(starter_trial.outcome, VerificationOutcome.PASSED)
+
+    def test_local_execution_flag_requires_a_real_bool(self) -> None:
+        with self.assertRaisesRegex(TypeError, "真正的 bool"):
+            FixedCodingEvaluationRunner(
+                FixedCodingSuite.load(self.suite_root),
+                trusted_local_execution=1,  # type: ignore[arg-type]
+            )
+
+    def test_library_default_reports_unknown_without_approval(self) -> None:
+        report = FixedCodingEvaluationRunner(
+            FixedCodingSuite.load(self.suite_root)
+        ).run()
+
+        self.assertFalse(report.calibration_passed)
+        self.assertTrue(all(
+            trial.outcome is VerificationOutcome.UNKNOWN
+            for trial in report.trials
+        ))
+
+    def test_cli_requires_explicit_local_execution_before_evaluation(self) -> None:
+        with patch.object(cli.FixedCodingSuite, "load") as loader:
+            with self.assertRaises(SystemExit) as raised:
+                cli.main([])
+        loader.assert_not_called()
+        self.assertEqual(raised.exception.code, 2)
+        self.assertTrue(cli.parse_args([
+            "--trusted-local-execution",
+        ]).trusted_local_execution)
 
 
 if __name__ == "__main__":

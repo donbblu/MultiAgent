@@ -1,0 +1,50 @@
+{
+  "schema": "sec-exec-batch-result/v1",
+  "batch": 2,
+  "status": "PASS_LIMITED",
+  "real_timeout_cleanup": {
+    "tests_run": 1,
+    "passed": 1,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unittest_duration_seconds": 3.957,
+    "tool_wall_seconds": 4.192818042,
+    "runtime_spawn_count": 1,
+    "target_process_count": 2,
+    "target_topology": "leader + one same-PGID grandchild",
+    "timed_out": true,
+    "term_attempted": true,
+    "kill_attempted": true,
+    "direct_child_reaped": true,
+    "process_group_absent": true,
+    "streams_closed": true,
+    "private_environment_closed": true,
+    "watchdog_clean": true,
+    "watchdog_terminal_reason": "cleanup_control",
+    "retained_batch_roots": 0
+  },
+  "pure_quarantine_fence": {
+    "tests_run": 1,
+    "passed": 1,
+    "cleanup_code": "CLEANUP_FAILED",
+    "quarantine_id_present": true,
+    "positive_generation": true,
+    "first_spawn_count": 1,
+    "same_workspace_second_spawn_count": 0,
+    "second_admission_code": "SANDBOX_REQUIRED",
+    "real_process_or_signal_calls": 0
+  },
+  "default_gate": {
+    "tests_run": 2,
+    "passed": 1,
+    "skipped": 1,
+    "real_boundaries": 0
+  },
+  "limitations": [
+    "The real run proves one trusted fixture timeout cleanup, not a real cleanup failure or quarantine.",
+    "Quarantine and same-workspace fencing are pure-mock control-flow evidence.",
+    "This is not KEEP, Runtime Acceptance, Browser E2E, recovery, or a production sandbox claim.",
+    "A post-run ps check was unavailable inside the sandbox; Guard absence checks and zero retained batch roots are the recorded evidence."
+  ]
+}

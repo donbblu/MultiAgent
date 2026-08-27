@@ -1,0 +1,75 @@
+{
+  "schema": "sec-exec-focused-scorecard/v1",
+  "recorded_at": "2026-08-27T03:49:47+08:00",
+  "status": "FOCUSED_PASS",
+  "totals": {
+    "tests_run": 168,
+    "passed": 163,
+    "skipped": 5,
+    "failures": 0,
+    "errors": 0,
+    "unittest_duration_seconds": 28.879,
+    "tool_wall_seconds": 29.6499225,
+    "new_real_boundaries": 0
+  },
+  "groups": [
+    {
+      "id": "A",
+      "name": "behavior_and_structural_oracles",
+      "tests_run": 25,
+      "passed": 25,
+      "skipped": 0,
+      "unittest_duration_seconds": 28.107,
+      "tool_wall_seconds": 28.373325084
+    },
+    {
+      "id": "B",
+      "name": "approval_and_supervisor",
+      "tests_run": 48,
+      "passed": 48,
+      "skipped": 0,
+      "unittest_duration_seconds": 0.297,
+      "tool_wall_seconds": 0.528706708
+    },
+    {
+      "id": "C",
+      "name": "posix_safety_and_runner_pure",
+      "tests_run": 71,
+      "passed": 71,
+      "skipped": 0,
+      "unittest_duration_seconds": 0.456,
+      "tool_wall_seconds": 0.519816
+    },
+    {
+      "id": "D",
+      "name": "cli_visionforge_and_default_off_smokes",
+      "tests_run": 24,
+      "passed": 19,
+      "skipped": 5,
+      "unittest_duration_seconds": 0.019,
+      "tool_wall_seconds": 0.228074708
+    }
+  ],
+  "skipped_tests": [
+    "tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_watchdog_only",
+    "tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_arm_disarm",
+    "tests.test_local_execution_posix_target_smoke.LocalExecutionPosixTargetSmokeTests.test_stdout_short_real_fixture",
+    "tests.test_project_workspace_production_smoke.ProjectWorkspaceProductionSmokeTests.test_real_python_version",
+    "tests.test_local_execution_timeout_cleanup_smoke.LocalExecutionTimeoutCleanupSmokeTests.test_guarded_real_timeout_cleanup"
+  ],
+  "five_batch_progress": {
+    "batch_1": "CLI visible mock report: 7/7",
+    "batch_2": "one real guarded timeout cleanup pass plus one pure quarantine fence pass",
+    "batch_3": "VisionForge Composition pure: 7/7 after 2/2 red baseline",
+    "batch_4": "current focused regression: 168 run, 163 pass, 5 opt-in skips",
+    "batch_5": "pending scope-isolated content-hash checkpoint"
+  },
+  "excluded": [
+    "full unittest discovery",
+    "the complete tests.test_command_validators module",
+    "Browser E2E and Playwright",
+    "models and network",
+    "new POSIX target execution",
+    "KEEP and Runtime Acceptance"
+  ]
+}

@@ -9,7 +9,6 @@ from pathlib import Path
 from unittest import mock
 
 import coding_workflow
-import coding_workflow.workspace as workspace_module
 from coding_workflow.command_validators import (
     ControlledCommandResult,
     ControlledCommandRunner,
@@ -88,23 +87,16 @@ class LocalTrustedExecutionExpectedRedTests(unittest.TestCase):
                 clear=False,
             ):
                 with mock.patch.object(
-                    workspace_module.subprocess,
+                    subprocess,
                     "run",
                     return_value=completed,
                 ) as run:
                     ProjectWorkspace(root).run(["python3", "-V"])
-                kwargs = run.call_args.kwargs
-                child_env = kwargs.get("env")
-                if child_env is None:
-                    violations.append("legacy workspace implicitly inherits parent env")
-                elif FAKE_SECRET in repr(child_env):
-                    violations.append("legacy workspace forwards parent sentinel")
-                if kwargs.get("stdin") is not subprocess.DEVNULL:
-                    violations.append("legacy workspace does not set stdin=DEVNULL")
-                if kwargs.get("close_fds") is not True:
-                    violations.append("legacy workspace does not set close_fds=True")
-                if kwargs.get("start_new_session") is not True:
-                    violations.append("legacy workspace has no process-group boundary")
+                if run.called:
+                    violations.append(
+                        "legacy workspace reached a process backend without "
+                        "Runtime-owned trusted_local admission"
+                    )
 
                 browser_env = BrowserProcessRunner()._environment()
                 if FAKE_SECRET in repr(browser_env):
@@ -151,14 +143,16 @@ class LocalTrustedExecutionExpectedRedTests(unittest.TestCase):
             fake = root / "python3"
             fake.write_text("not executable\n", encoding="utf-8")
             with mock.patch.object(
-                workspace_module.subprocess,
+                subprocess,
                 "run",
                 return_value=completed,
             ) as run:
                 ProjectWorkspace(root).run(["python3", "-V"])
-            command = run.call_args.args[0]
-            if not Path(command[0]).is_absolute():
-                violations.append("legacy workspace forwards a basename executable")
+            if run.called:
+                violations.append(
+                    "legacy workspace reached basename resolution without "
+                    "Runtime-owned trusted_local admission"
+                )
 
         self.assertEqual(
             violations,

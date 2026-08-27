@@ -44,6 +44,7 @@ from coding_workflow import (
     build_video_perception_registry,
     score_video_events,
 )
+from coding_workflow.local_execution_approval import LocalExecutionApprover
 
 
 MP4 = b"\x00\x00\x00\x18ftypisom" + b"fixed-video-bug-evidence"
@@ -427,6 +428,7 @@ class VideoPerceptionTests(unittest.TestCase):
                     artifacts=artifacts,
                     subject_refs=(subject,),
                     task_id=f"tax-{modality}",
+                    approver_factory=lambda: LocalExecutionApprover(True),
                 )
                 outcomes.append(result.outcome)
                 validator_sets.append(tuple(

@@ -1,0 +1,39 @@
+{
+  "schema": "sec-exec-batch-result/v1",
+  "batch": 3,
+  "status": "PURE_MOCK_PASS",
+  "red_baseline": {
+    "tests_run": 2,
+    "failed": 2,
+    "cli_failure": "load_env_file was called before missing local authority was rejected",
+    "web_failure": "plugin resolution was reached before missing local authority was rejected"
+  },
+  "green_result": {
+    "tests_run": 7,
+    "passed": 7,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 0.016,
+    "real_process_calls": 0,
+    "network_calls": 0,
+    "model_calls": 0
+  },
+  "gates": {
+    "cli_missing_authority_before_env_suite_model": true,
+    "web_missing_authority_before_plugin_model_workspace_runner": true,
+    "budget_only_without_flags_executes_local_commands": false,
+    "budget_only_with_local_approval_executes_local_commands": false,
+    "explicit_approval_is_reported_separately": true,
+    "fresh_runner_per_trial": true,
+    "runner_bound_to_trial_workspace": true,
+    "fresh_one_shot_approver_per_operation": true,
+    "unregistered_reference_renderer_spawn_count": 0
+  },
+  "limitations": [
+    "This is pure-mock Composition Root evidence only.",
+    "No node, pnpm, Playwright, browser, model, network, or Browser E2E was run.",
+    "ReferenceImageRenderer remains deliberately fail-closed pending an explicit Profile decision.",
+    "This is not KEEP or Runtime Acceptance."
+  ]
+}

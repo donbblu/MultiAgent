@@ -285,7 +285,12 @@ class CodingModelWorkerTests(unittest.TestCase):
             clients, usage_source=UsageSource.SCRIPTED
         )
         profiles = default_ablation_profiles(worker_policy_tag="model-eval")
-        runner = CodingAblationRunner(self.suite, registry, profiles)
+        runner = CodingAblationRunner(
+            self.suite,
+            registry,
+            profiles,
+            trusted_local_execution=True,
+        )
 
         with tempfile.TemporaryDirectory() as temp:
             result = runner.run_trial(task, profiles[2], Path(temp))

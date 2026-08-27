@@ -1,12 +1,32 @@
 from __future__ import annotations
 
-import subprocess
 import os
 import tempfile
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
+from .local_execution import (
+    PROFILE_LEGACY,
+    SANDBOX_REQUIRED,
+    LocalExecutionError,
+    prepare_execution,
+    run_prepared,
+)
 from .models import CommandResult, FileChange
+
+
+_RESERVED_TOP_LEVEL_FILES = frozenset({".env", ".env.local"})
+_RESERVED_TOP_LEVEL_DIRECTORIES = frozenset({
+    ".git",
+    ".runtime",
+    ".runs",
+    ".verification",
+    ".harness-hidden-tests",
+})
+_RESERVED_EXACT_PATHS = frozenset({("solution", "reference.py")})
+_LEGACY_COMMAND = ("python3", "-V")
+_LEGACY_EXECUTABLE = "/usr/bin/python3"
+_SPAWN_FAILURE_PREFIX = "local execution spawn failed: "
 
 
 class WorkspaceError(RuntimeError):
@@ -17,14 +37,32 @@ class ProjectWorkspace:
     """只允许在指定项目根目录内读写和执行命令。"""
 
     def __init__(self, root: Path, command_timeout: int = 30) -> None:
+        if (
+            not isinstance(command_timeout, int)
+            or isinstance(command_timeout, bool)
+            or command_timeout <= 0
+            or command_timeout > 60
+        ):
+            raise ValueError("command_timeout 必须是 1..60 秒的整数")
         self.root = root.resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.command_timeout = command_timeout
 
     def _resolve(self, relative_path: str) -> Path:
+        if not isinstance(relative_path, str) or "\0" in relative_path:
+            raise WorkspaceError(f"不安全的项目路径: {relative_path!r}")
         path = PurePosixPath(relative_path)
         if path.is_absolute() or ".." in path.parts or not path.parts:
             raise WorkspaceError(f"不安全的项目路径: {relative_path}")
+
+        parts = tuple(path.parts)
+        if (
+            parts[0] in _RESERVED_TOP_LEVEL_FILES
+            or parts[0] in _RESERVED_TOP_LEVEL_DIRECTORIES
+            or parts in _RESERVED_EXACT_PATHS
+        ):
+            raise WorkspaceError(f"保留的项目路径: {relative_path}")
+
         resolved = (self.root / Path(*path.parts)).resolve()
         if not resolved.is_relative_to(self.root):
             raise WorkspaceError(f"路径越过项目边界: {relative_path}")
@@ -77,7 +115,7 @@ class ProjectWorkspace:
     ) -> dict[str, str]:
         excluded = exclude or set()
         return {
-            path: sha256(self._resolve(path).read_bytes()).hexdigest()
+            path: sha256(self._resolve_for_hash(path).read_bytes()).hexdigest()
             for path in self.list_files()
             if path not in excluded
             and not any(
@@ -88,31 +126,113 @@ class ProjectWorkspace:
             and not path.endswith((".pyc", ".pyo"))
         }
 
-    def run(self, command: list[str]) -> CommandResult:
-        if not command or any(not isinstance(part, str) for part in command):
-            raise WorkspaceError("验证命令必须是非空字符串列表")
+    def _resolve_for_hash(self, relative_path: str) -> Path:
+        """内部快照可见保留文件，但仍不得越过 Workspace。"""
+
+        path = PurePosixPath(relative_path)
+        if path.is_absolute() or ".." in path.parts or not path.parts:
+            raise WorkspaceError(f"不安全的快照路径: {relative_path}")
+        candidate = self.root / Path(*path.parts)
+        resolved = candidate.resolve()
+        if not resolved.is_relative_to(self.root):
+            raise WorkspaceError(f"快照路径越过项目边界: {relative_path}")
+        if candidate.is_symlink():
+            raise WorkspaceError(f"快照路径不能是符号链接: {relative_path}")
+        return resolved
+
+    def run(
+        self,
+        command: list[str],
+        *,
+        trusted_local: object = None,
+    ) -> CommandResult | LocalExecutionError:
+        if (
+            not isinstance(command, (tuple, list))
+            or tuple(command) != _LEGACY_COMMAND
+        ):
+            raise LocalExecutionError(
+                SANDBOX_REQUIRED,
+                "legacy Workspace command is not registered",
+            )
+        requested_command = list(command)
+        prepared = prepare_execution(
+            profile_id=PROFILE_LEGACY,
+            workspace_root=self.root,
+            executable=_LEGACY_EXECUTABLE,
+            command=_LEGACY_COMMAND,
+            wall_deadline_seconds=self.command_timeout,
+            output_limit_chars=10_000,
+            python_profile=True,
+        )
         try:
-            completed = subprocess.run(
-                command,
-                cwd=self.root,
-                capture_output=True,
-                text=True,
-                timeout=self.command_timeout,
-                shell=False,
+            outcome = run_prepared(
+                prepared,
+                trusted_local=trusted_local,
             )
+        except LocalExecutionError as exc:
+            if exc.code == SANDBOX_REQUIRED and not exc.reason.startswith(
+                _SPAWN_FAILURE_PREFIX
+            ):
+                return exc
+            if not (
+                exc.code == SANDBOX_REQUIRED
+                and exc.reason.startswith(_SPAWN_FAILURE_PREFIX)
+            ):
+                raise
             return CommandResult(
-                command=command,
-                exit_code=completed.returncode,
-                stdout=completed.stdout,
-                stderr=completed.stderr,
-            )
-        except subprocess.TimeoutExpired as exc:
-            return CommandResult(
-                command=command,
-                exit_code=124,
-                stdout=exc.stdout or "",
-                stderr=exc.stderr or "",
-                timed_out=True,
+                requested_command,
+                127,
+                "",
+                exc.reason.removeprefix(_SPAWN_FAILURE_PREFIX),
+                profile_manifest=prepared.profile_manifest,
+                cleanup_evidence=getattr(exc, "cleanup_evidence", None),
+                cleanup_evidence_digest=getattr(
+                    exc,
+                    "cleanup_evidence_digest",
+                    "",
+                ),
             )
         except OSError as exc:
-            return CommandResult(command, 127, "", str(exc))
+            return CommandResult(
+                requested_command,
+                127,
+                "",
+                str(exc),
+                profile_manifest=prepared.profile_manifest,
+                cleanup_evidence=getattr(exc, "cleanup_evidence", None),
+                cleanup_evidence_digest=getattr(
+                    exc,
+                    "cleanup_evidence_digest",
+                    "",
+                ),
+            )
+
+        timed_out = outcome.timed_out or outcome.exit_code == 124
+        result = CommandResult(
+            command=requested_command,
+            exit_code=124 if timed_out else outcome.exit_code,
+            stdout=outcome.stdout.text,
+            stderr=outcome.stderr.text,
+            timed_out=timed_out,
+            stdout_chars=outcome.stdout.raw_chars,
+            stderr_chars=outcome.stderr.raw_chars,
+            stdout_sha256=outcome.stdout.raw_sha256,
+            stderr_sha256=outcome.stderr.raw_sha256,
+            stdout_truncated=outcome.stdout.truncated,
+            stderr_truncated=outcome.stderr.truncated,
+            profile_manifest=outcome.profile_manifest,
+            cleanup_evidence=outcome.cleanup_evidence,
+            cleanup_evidence_digest=outcome.cleanup_evidence_digest,
+        )
+        # CommandResult also sanitizes direct construction.  Restore the
+        # supervisor's original-stream metadata after passing only bounded text.
+        for name, value in (
+            ("stdout_chars", outcome.stdout.raw_chars),
+            ("stderr_chars", outcome.stderr.raw_chars),
+            ("stdout_sha256", outcome.stdout.raw_sha256),
+            ("stderr_sha256", outcome.stderr.raw_sha256),
+            ("stdout_truncated", outcome.stdout.truncated),
+            ("stderr_truncated", outcome.stderr.truncated),
+        ):
+            object.__setattr__(result, name, value)
+        return result

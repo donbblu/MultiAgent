@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping
+from typing import Callable, Mapping
 
 from ..artifacts import ArtifactStore
 from ..integration import PatchIntegrator
@@ -23,7 +23,12 @@ from .agents import (
     VisualReviewer,
 )
 from .assets import ImageAssetStore
-from .browser import BrowserProcessRunner, BrowserProjectConfig, PlaywrightBrowserTester
+from .browser import (
+    BrowserProcessRunner,
+    BrowserProjectConfig,
+    PlaywrightBrowserTester,
+    VisionForgeLocalExecutionApprover,
+)
 from .evaluation import (
     EvaluationConfig,
     EvaluationTask,
@@ -127,10 +132,14 @@ class RuntimeEvaluationTrialExecutor:
         *,
         template_root: Path,
         runtime_root: Path,
-        process_runner: BrowserProcessRunner,
+        process_runner: BrowserProcessRunner | None = None,
         text_client: ModelClient,
         vision_client: ModelClient,
         budget: EvaluationModelBudget,
+        runner_factory: Callable[[Path], BrowserProcessRunner] | None = None,
+        approver_factory: (
+            Callable[[], VisionForgeLocalExecutionApprover] | None
+        ) = None,
     ) -> None:
         self.template_root = template_root.resolve()
         self.runtime_root = runtime_root.resolve()
@@ -138,10 +147,25 @@ class RuntimeEvaluationTrialExecutor:
             raise ValueError("VisionForge Vue 模板不存在")
         BrowserProjectConfig.load(self.template_root)
         self.runtime_root.mkdir(parents=True, exist_ok=True)
+        if (
+            process_runner is not None
+            and type(process_runner) is not BrowserProcessRunner
+        ):
+            raise TypeError("process_runner 必须是 BrowserProcessRunner")
+        if runner_factory is not None and not callable(runner_factory):
+            raise TypeError("runner_factory 必须可调用")
+        if process_runner is None and runner_factory is None:
+            raise ValueError("process_runner 和 runner_factory 必须提供一个")
+        if process_runner is not None and runner_factory is not None:
+            raise ValueError("process_runner 和 runner_factory 不能同时提供")
         self.process_runner = process_runner
+        self.runner_factory = runner_factory
         self.text_client = BudgetedModelClient(text_client, budget)
         self.vision_client = BudgetedModelClient(vision_client, budget)
         self.budget = budget
+        if approver_factory is not None and not callable(approver_factory):
+            raise TypeError("approver_factory 必须可调用")
+        self.approver_factory = approver_factory
 
     def execute(
         self,
@@ -163,6 +187,7 @@ class RuntimeEvaluationTrialExecutor:
             raise ValueError(f"评测试验目录已存在: {trial_name}")
         project_root = trial_root / "project"
         self._prepare_project(project_root)
+        process_runner = self._process_runner_for(project_root)
         artifacts = ArtifactStore()
         images = ImageAssetStore(trial_root / "assets")
         reference_ref, _ = images.create_artifact(
@@ -187,10 +212,11 @@ class RuntimeEvaluationTrialExecutor:
             developer=VisionForgeDeveloper(self.text_client, artifacts),
             browser_tester=PlaywrightBrowserTester(
                 project_root,
-                self.process_runner,
+                process_runner,
                 artifacts,
                 images,
-                trial_root / "browser-runtime",
+                project_root / ".runtime" / "visionforge-browser",
+                approver_factory=self.approver_factory,
             ),
             visual_reviewer=VisualReviewer(
                 self.vision_client, artifacts, images
@@ -283,6 +309,28 @@ class RuntimeEvaluationTrialExecutor:
                 repetition=repetition,
                 budget=self.budget.snapshot(),
             )
+
+    def _process_runner_for(self, project_root: Path) -> BrowserProcessRunner:
+        """Create a fresh runner whose authority is bound to this trial only."""
+
+        resolved_root = project_root.resolve()
+        if self.runner_factory is not None:
+            runner = self.runner_factory(resolved_root)
+        else:
+            blueprint = self.process_runner
+            if type(blueprint) is not BrowserProcessRunner:
+                raise TypeError("process_runner 必须是 BrowserProcessRunner")
+            runner = BrowserProcessRunner(
+                allowed_executables=blueprint.allowed_executables,
+                executable_overrides=blueprint.executable_overrides,
+                poll_interval=blueprint.poll_interval,
+                workspace_root=resolved_root,
+            )
+        if type(runner) is not BrowserProcessRunner:
+            raise TypeError("runner_factory 必须返回 BrowserProcessRunner")
+        if runner.workspace_root != resolved_root:
+            raise ValueError("runner_factory 未绑定当前 trial workspace_root")
+        return runner
 
     @staticmethod
     def _safe_name(value: str) -> str:

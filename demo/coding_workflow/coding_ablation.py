@@ -10,7 +10,7 @@ from enum import Enum
 from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping, Protocol
+from typing import Callable, Mapping, Protocol
 from uuid import uuid4
 
 from .artifacts import Artifact, ArtifactDraft, ArtifactStore
@@ -21,6 +21,7 @@ from .harness.registry import (
     WorkerSelectionRequest,
 )
 from .integration import IntegrationError, PatchIntegrator
+from .local_execution_approval import LocalExecutionApprover
 from .models import FileChange, ImplementationPlan
 from .truth import VerificationOutcome
 from .workspace import ProjectWorkspace
@@ -566,6 +567,7 @@ class CodingAblationRunner:
         profiles: tuple[AblationStrategyProfile, ...] | None = None,
         *,
         allow_model_usage: bool = False,
+        trusted_local_execution: bool = False,
     ) -> None:
         self.suite = suite
         self.workers = workers
@@ -573,6 +575,12 @@ class CodingAblationRunner:
         self.allow_model_usage = allow_model_usage
         if not isinstance(allow_model_usage, bool):
             raise ValueError("allow_model_usage 必须是布尔值")
+        if type(trusted_local_execution) is not bool:
+            raise TypeError("trusted_local_execution 必须是真正的 bool")
+        approved = trusted_local_execution
+        self._approver_factory: Callable[[], LocalExecutionApprover] = (
+            lambda: LocalExecutionApprover(approved)
+        )
         if {item.strategy for item in self.profiles} != set(AblationStrategy):
             raise ValueError("Ablation Runner 必须包含三种策略")
         budget_digests = {item.budget.digest for item in self.profiles}
@@ -877,8 +885,8 @@ class CodingAblationRunner:
             artifacts.get(patch_ref),
         ))
 
-    @staticmethod
     def _validate(
+        self,
         task: FixedCodingTask,
         workspace: Path,
         validation_workspace: Path,
@@ -892,6 +900,7 @@ class CodingAblationRunner:
             artifacts=artifacts,
             subject_refs=(subject_ref,),
             task_id=task_id,
+            approver_factory=self._approver_factory,
         )
         outcomes = MappingProxyType({
             item.validator_kind: item.outcome.value

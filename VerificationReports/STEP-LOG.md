@@ -478,3 +478,3053 @@
 - `supersedes_entry_id`：`NONE — TRACE-020 的 milestone checkpoint`
 - `git_checkpoint`：`status=MAIN_COMMIT_RECORDED; main_commit=e65a68caa9d48687beaeb7c39b03582774373fbc; docs_commit=PENDING; push=PENDING`
 - `next_action`：只 stage 本文件，创建 `docs: record SEC checkpoint`；fetch/ancestry 复核后普通 push，禁止 force。
+
+### TRACE-20260826-022
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-022 / SEC-EXEC-01-IMPL-01 / PRE_REGISTER / 2026-08-26T11:04:42+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / local_trusted_execution/v1 first production implementation / Plan26 SEC Amendment + SEC report §6`
+- `what / why / expected_effect_or_gate`：实现统一的版本化 Profile、Runtime-owned admission/confirmation、Supervisor、Workspace 路径、cleanup/quarantine/recovery 与输出限长/脱敏边界，并让 Core Validator、Legacy ProjectWorkspace、VisionForge 前台/后台入口全部委托；原因是 25 项冻结 EXPECTED_RED 已准确证明当前宿主执行缺口，继续运行模型候选代码前必须关闭该 P0 门禁。
+- `scope / non_goals`：允许新增统一本地执行模块并修改 `command_validators.py`、`workspace.py`、`visionforge/browser.py`、必要公开导出/Composition Roots 与兼容测试；冻结的 structural/behavior 红卡不得为迁就实现而修改。保留且不触碰 `demo/track.md`、`problems.md`、`prombles.md` deletion、`Plan/Plan28.md`。不运行真实 POSIX workload、真实 Browser E2E、模型、非 loopback 网络、真实秘密、依赖安装或不可逆副作用；不承诺生产 sandbox。
+- `baseline`：`branch=main; HEAD=origin/main=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty only excluded files before this entry; structural=294c53d8…; behavior=63cb6660…; helper=a00978af…; fixture=034eea96…; POSIX safety=f0a90bb…`
+- `commands`：先只读解析 25 项冻结 Oracle 与现有入口；实现后在 `<repo>/demo` 的 sanitized env 中逐层执行 structural、behavior、combined、POSIX mock safety、相关旧测试与 101 项 baseline，随后 compileall、静态 no-bypass、hash/diff/status 检查；所有产品文件修改使用 `apply_patch`。
+- `stop_or_rollback_conditions`：需要修改冻结红卡或既有安全契约才能变绿；需要真实 workload/外网/秘密/依赖安装；无法保持旧 Result/Artifact 公共字段；新增第二个 raw process owner/`subprocess.run` 旁路；测试出现真实 spawn/network/signal tripwire；或 unrelated dirty 文件发生变化。任一触发即停止并记录 `REVISE/BLOCKED`，不得降低门槛。
+- `result / effect`：`PENDING — PRE_REGISTER 不冒充实现结果`
+- `artifacts / evidence`：冻结契约见 [`SEC-EXEC-01.md`](SEC-EXEC-01.md) §3；当前 checkpoint=`0f9e41a`；预计生产 subject 与实际命令/结果在 ACTUAL 中追加。
+- `remaining_risks`：显式最小环境可能暴露 Python/Node 工具隐式依赖；macOS/Python 3.9 无 pidfd；POSIX fixture 仍有 top-level child ownership 与 watchdog join blocker，mock 变绿不能替代真实生命周期证据。
+- `review`：`disposition=PENDING; frozen Oracle review=APPROVE/blocking 0; production implementation review=NOT_STARTED`
+- `supersedes_entry_id`：`NONE — 新逻辑步骤`
+- `git_checkpoint`：`status=PRE_REGISTERED; base_commit=0f9e41ad76d7a25deee0a28de42a422707a6f24d; implementation_commit=PENDING`
+- `next_action`：并行解析 Oracle/入口/兼容面，冻结最小实现图后开始单一统一边界实现。
+
+### TRACE-20260826-023
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-023 / SEC-EXEC-01-IMPL-01 / ACTUAL / 2026-08-26T11:11:23+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / frozen Oracle compatibility audit / TRACE-20260826-022`
+- `what / why / expected_effect_or_gate`：在生产代码编辑前对 8 项结构卡与 17 项行为卡做同输入可满足性审计；发现结构 B/C 要求无 `trusted_local` 的 `ProjectWorkspace.run(["python3", "-V"])` 必须调用被 patch 的 `subprocess.run`，而行为 A 对同一入口/命令/缺失令牌要求零 Popen/run 且结构化 `SANDBOX_REQUIRED`。目的是在实现前阻止测试专用旁路进入产品。
+- `scope / non_goals`：仅读取冻结测试、现有产品入口与帮助函数；未修改产品代码或冻结约束，未运行测试/真实 process/network/signal。
+- `baseline`：`branch=main; HEAD=origin/main=0f9e41ad76d7a25deee0a28de42a422707a6f24d; structural_sha256=294c53d8194af9e7ae6d6e5324d5fd2bcb0a5bef8ec7547aee4d9fc69baf08da; behavior_sha256=63cb6660e72312e0ee3e085056566966ce3e725e191b6ff79001fa13aaf4474d`
+- `commands`：`rg`/`sed` 只读定位 structural lines 95–107, 158–161 与 behavior lines 1236–1263, 1672–1690, 6678–6722, 7166–7250；未执行 unittest。
+- `stop_or_rollback_conditions`：`TRACE-022` 的“需要修改冻结红卡才能变绿”条件已触发；不得继续原实现步或使用 mock/调用栈识别特判。
+- `result / effect`：`achieved=partial; disposition=REVISE; production_files_changed=0`。已证明 25 项按当前黑盒语义不可同时全绿；及时停止避免了测试感知旁路。
+- `artifacts / evidence`：`demo/tests/test_local_trusted_execution_expected_red.py:95-107,158-161`; `demo/tests/test_local_trusted_execution_behavior_expected_red.py:1236-1263,1672-1690,6678-6722,7166-7250`; 独立只读核对 principal=`/root/oracle_map`。
+- `remaining_risks`：结构卡更正会改变已冻结哈希，必须作为独立 Oracle correction 预登记、保留旧哈希/失败历史、复跑精确 EXPECTED_RED 并重做独立 Review；不得降低 admission 契约。
+- `review`：`disposition=REVISE; reviewer=/root/oracle_map; independence=read-only; blocking_findings=1; finding=structural B/C require spawn while behavioral A forbids it for the same missing-token call`
+- `supersedes_entry_id`：`NONE — 关闭 TRACE-022 的原实现尝试，不抹除 PRE_REGISTER`
+- `git_checkpoint`：`status=WORKTREE_ONLY; base_commit=0f9e41a; implementation_commit=N/A — stopped before production edit`
+- `next_action`：预登记最小 Oracle correction；结构 B/C 改为与 Runtime-owned admission 一致的零 spawn 拒绝/只读结构检查，行为 B/C 继续权威覆盖 token-bearing spawn kwargs 与绝对 executable。
+
+### TRACE-20260826-024
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-024 / SEC-EXEC-01-ORACLE-CORRECTION-01 / PRE_REGISTER / 2026-08-26T11:11:23+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / structural B-C admission consistency correction / TRACE-20260826-023 + SEC report §3`
+- `what / why / expected_effect_or_gate`：最小修订结构卡 B/C，移除“缺失 Runtime confirmation 仍必须 spawn”的矛盾 Oracle，并将其改为零 spawn + 结构化 admission/profile 证据；原因是 Runtime-owned 令牌约束已由 Plan/HANDOFF/行为卡冻结，结构卡不得反向授权。
+- `scope / non_goals`：只允许编辑 `demo/tests/test_local_trusted_execution_expected_red.py` 的 B/C 与为新哈希/理由所必需的 SEC report/HANDOFF/Step Log 交叉引用；行为卡、产品代码、安全契约、POSIX helper/fixture 不改。
+- `baseline`：`base_commit=0f9e41a; old_structural_sha256=294c53d8194af9e7ae6d6e5324d5fd2bcb0a5bef8ec7547aee4d9fc69baf08da; old_result=8F/0E/0S; behavior_sha256=63cb6660...`
+- `commands`：修订后使用 sanitized fresh interpreter 单跑 structural，再 behavior-first combined；执行 `py_compile`、AST test shape/hash、`git diff --check`；全程 mock-only，不运行 POSIX workload。
+- `stop_or_rollback_conditions`：修订使 pre-implementation 结构卡不再精确为 8 项 EXPECTED_RED；改动行为卡/生产代码/契约；删除 B/C 能力覆盖而未由行为卡等价覆盖；出现真实边界调用；或独立 Review 不是 APPROVE/blocking 0。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：矛盾证据见 `TRACE-023`；修订后哈希和精确运行数待 ACTUAL。
+- `remaining_risks`：已发布的 commit `e65a68c` 保留旧 Oracle；新修订必须以 append-only correction 显式 supersede，不能改写历史 Review 或声称旧哈希本来正确。
+- `review`：`disposition=PENDING; required_reviewer=independent read-only agent; acceptance=same security contract, exact 8F/0E/0S before implementation, no production diff`
+- `supersedes_entry_id`：`NONE — 新 Oracle correction 步；ACTUAL 将指向旧 structural freeze entry`
+- `git_checkpoint`：`status=PRE_REGISTERED; commit=PENDING`
+- `next_action`：使用 `apply_patch` 最小修正 B/C，复跑冻结签名并请求独立只读 Review。
+
+### TRACE-20260826-025
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-025 / SEC-EXEC-01-ORACLE-CORRECTION-01 / ACTUAL / 2026-08-26T11:15:30+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / structural B-C admission consistency correction / TRACE-20260826-024`
+- `what / why / expected_effect_or_gate`：删除结构卡对生产 `workspace_module.subprocess` 的直接依赖，把 B/C 的 Legacy 断言改为“缺失 Runtime-owned `trusted_local` 时不得触达 process/basename-resolution backend”。这保留 admission 首缺口，同时让完整 env/FD/HOME/TMP 与 executable/argv/limit 继续由行为 B/C 证明。
+- `scope / non_goals`：只修改 `demo/tests/test_local_trusted_execution_expected_red.py` 的一个 import 和 B/C 两处 backend 断言；同步 SEC report 当前哈希/签名及本 append-only 日志。行为卡、产品代码、POSIX 文件均未改。
+- `baseline`：`branch=main; HEAD=origin/main=0f9e41ad76d7a25deee0a28de42a422707a6f24d; old_structural=294c53d8194af9e7ae6d6e5324d5fd2bcb0a5bef8ec7547aee4d9fc69baf08da; behavior=63cb6660e72312e0ee3e085056566966ce3e725e191b6ff79001fa13aaf4474d`
+- `commands`：`cwd=<repo>/demo`; sanitized fresh `/usr/bin/env -i ... PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_trusted_execution_expected_red -v`; behavior-first combined `... -m unittest tests.test_local_trusted_execution_behavior_expected_red tests.test_local_trusted_execution_expected_red -q`; `PYTHONPYCACHEPREFIX=/private/tmp/... /usr/bin/python3 -m py_compile tests/test_local_trusted_execution_expected_red.py`; `shasum -a 256`; `git diff --check`.
+- `stop_or_rollback_conditions`：未触发：结构仍精确 8F/0E/0S，合并仍 25F/0E/0S，behavior 哈希未变，无生产差异/真实边界/少测/skip。
+- `result / effect`：`achieved=yes`; structural exit=`1`, run=`8`, failures=`8`, errors=`0`, skipped=`0`, duration=`0.013s`; combined exit=`1`, run=`25`, failures=`25`, errors=`0`, skipped=`0`, duration=`15.583s`; py_compile/diff-check exit=`0`。效果：消除不可满足 Oracle，不降低 admission 与行为 B/C 门禁。
+- `artifacts / evidence`：`demo/tests/test_local_trusted_execution_expected_red.py sha256=1e63489f6c33b1bf4ac90b4d1ac4ed4f97f796ac4022d9de8193f4224fcb7bb4`; behavior 仍 `63cb6660...4474d`; [`SEC-EXEC-01.md`](SEC-EXEC-01.md) §3/§4.1。
+- `remaining_risks`：structural B/C 现在只是 admission-dominant 结构卡；不得单独依它们声称环境/绝对 executable 已完成，最终验收必须联合行为卡。
+- `review`：`disposition=PENDING — actual complete, independent review recorded next`
+- `supersedes_entry_id`：`SEC-HIST-004 及 TRACE-019/022 中的 structural current-hash 解释——只更新当前 Oracle，保留历史哈希/运行/批准`
+- `git_checkpoint`：`status=WORKTREE_ONLY; commit=PENDING`
+- `next_action`：锁定新哈希进行独立只读复审。
+
+### TRACE-20260826-026
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-026 / SEC-EXEC-01-ORACLE-CORRECTION-01 / REVIEW / 2026-08-26T11:15:30+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/core_design / corrected structural Oracle / TRACE-20260826-025`
+- `what / why / expected_effect_or_gate`：独立只读复审锁定哈希、差异范围、预实现红签名、等价行为覆盖与无测试专用旁路；用于决定是否可恢复生产实现。
+- `scope / non_goals`：审查人未编辑文件；批准只覆盖 Oracle correction，不批准产品实现、POSIX workload、KEEP 或 Runtime Acceptance。
+- `baseline`：`structural_sha256=1e63489f6c33b1bf4ac90b4d1ac4ed4f97f796ac4022d9de8193f4224fcb7bb4; behavior_sha256=63cb6660e72312e0ee3e085056566966ce3e725e191b6ff79001fa13aaf4474d`
+- `commands`：审查人独立复跑 fresh structural 与 behavior-first combined，并执行 AST parse / `git diff --check -- <structural>`。
+- `stop_or_rollback_conditions`：若审查不是 APPROVE/blocking 0，则不得恢复实现；实际未触发。
+- `result / effect`：`achieved=yes; disposition=APPROVE; blocking_findings=0`; structural=`8F/0E/0S`; combined=`25F/0E/0S`; AST/diff-check 通过；无 skip/expectedFailure/生产差异/测试专用旁路。
+- `artifacts / evidence`：审查回报 principal=`/root/core_design`; 锁定 structural SHA-256=`1e63489f...7bb4`。
+- `remaining_risks`：必须联合 behavior B/C 验收；结构卡不替代真实 POSIX 资源清理证明。
+- `review`：`disposition=APPROVE; reviewer=/root/core_design; independence=read-only; blocking_findings=0; note=structural B/C alone are insufficient`
+- `supersedes_entry_id`：`NONE — 保留旧 Oracle Review 的历史范围`
+- `git_checkpoint`：`status=REVIEWED_WORKTREE_ONLY; commit=PENDING`
+- `next_action`：以新结构哈希重新预登记 `SEC-EXEC-01-IMPL-02`，再进入产品统一边界实现。
+
+### TRACE-20260826-027
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-027 / SEC-EXEC-01-IMPL-02 / PRE_REGISTER / 2026-08-26T11:15:30+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / local_trusted_execution/v1 first production implementation after Oracle correction / Plan26 SEC Amendment + SEC report §6`
+- `what / why / expected_effect_or_gate`：基于已修正并批准的 8+17 Oracle，实现单一 Profile/Admission/Supervisor/Output/Finalizer/Quarantine 边界并迁移 Core、Legacy、VisionForge 五条 profile 路径；原因是真正的实现前置阻塞已关闭。
+- `scope / non_goals`：与 TRACE-022 生产范围相同；冻结 structural=`1e63489f...7bb4` 和 behavior=`63cb6660...4474d` 不再修改。不运行真实 POSIX workload/Browser E2E/模型/外网/真实秘密，不触碰 4 个 unrelated dirty 路径，不声称生产 sandbox。
+- `baseline`：`branch=main; HEAD=origin/main=0f9e41ad76d7a25deee0a28de42a422707a6f24d; structural=1e63489f6c33b1bf4ac90b4d1ac4ed4f97f796ac4022d9de8193f4224fcb7bb4 (8F/0E/0S); behavior=63cb6660e72312e0ee3e085056566966ce3e725e191b6ff79001fa13aaf4474d (17F/0E/0S); combined=25F/0E/0S`
+- `commands`：先实现最小统一模块及三类 adapter，用 fresh sanitized interpreter 按单项违规清单迭代；随后 combined/POSIX mock/定向旧回归/101 baseline/compileall/静态 no-bypass/hash/diff/status。
+- `stop_or_rollback_conditions`：需再改冻结 Oracle/契约；无法保持旧 Result/Artifact 兼容；出现第二 raw owner/run 旁路、真实 tripwire、未登记高层自动授权、unrelated diff；或需 POSIX workload/外网/依赖安装。任一触发就停止并记录 REVISE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：Oracle correction=`TRACE-023`～`026`; implementation artifacts/commands/results 待 ACTUAL。
+- `remaining_risks`：现有高层 Composition Roots 未传 `trusted_local`，会在安全边界上 fail-closed；必须显式决定用户确认如何注入，不得由模型 payload 生成权限。后台 PIPE 读取/持久化和 Python 3.9/macOS cleanup 是最高兼容风险；真实资源证明仍待 POSIX blocker 修复。
+- `review`：`disposition=PENDING; implementation review=NOT_STARTED; frozen Oracle correction=APPROVE/blocking 0`
+- `supersedes_entry_id`：`TRACE-20260826-022 — 只替代因 Oracle 矛盾停止的实现尝试，保留其 REVISE 历史`
+- `git_checkpoint`：`status=PRE_REGISTERED; base_commit=0f9e41a; implementation_commit=PENDING`
+- `next_action`：新建单一 raw Popen owner 的 `local_execution` 模块，实现全局 opaque admission 与 profile digest，然后以 Core adapter 为第一个可执行竖切。
+
+### TRACE-20260826-028
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-028 / SEC-EXEC-01-IMPL-02 / ACTUAL / 2026-08-26T11:48:10+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / first unified-boundary implementation pass and Oracle satisfiability audit / TRACE-20260826-027`
+- `what / why / expected_effect_or_gate`：新增单一 `local_execution` raw Popen owner，并把 Core、Legacy、VisionForge 前台/后台适配到 Runtime-owned admission/Profile/环境/输出/cleanup 边界；同时按 A→D 小步运行冻结红卡。原因是先以最小 mock 证据暴露契约或实现缺口，避免把错误扩散到 Composition Roots 与真实进程。
+- `scope / non_goals`：生产改动限于统一边界、三个适配器、结果 DTO、路径/策略与包根导出；未运行真实 POSIX workload、Browser E2E、模型、外网、真实秘密或依赖安装；4 个 unrelated dirty 路径未触碰。
+- `baseline`：`branch=main; HEAD=origin/main=0f9e41ad76d7a25deee0a28de42a422707a6f24d; structural=1e63489f...7bb4; behavior=63cb6660...4474d; worktree=dirty with owned implementation files plus excluded paths`
+- `commands`：`cwd=<repo>/demo`; sanitized `py_compile`；`rg -n 'subprocess\.(Popen|run)' coding_workflow --glob '*.py'`；fresh structural；fresh behavior A、B、C 定向 unittest。完整环境固定 PATH/LANG/LC_ALL/HOME/TMPDIR、`PYTHONDONTWRITEBYTECODE=1`、`PYTHONUNBUFFERED=1`、`PYTHONWARNINGS=error` 与 `/private/tmp` pycache。
+- `stop_or_rollback_conditions`：已触发“冻结 Oracle 不可同时满足”：C replay control 用默认 Profile digest 签发却用 1 秒执行仍要求 spawn；D 要求识别 external cwd，但 `BrowserProcessRunner` 没有独立 trusted workspace_root 输入。实现步必须停止扩张，不得做测试识别或路径 marker 特判。
+- `result / effect`：`achieved=partial; disposition=REVISE`。静态生产 process calls=`1 Popen/0 run`；structural=`8 run/8 pass/0F/0E/0S, 0.015s`；behavior A=`3/3 pass, 3.777s`；behavior B=`2/2 pass, 2.165s`；behavior C=`0/2 pass, 2F/0E/0S, 4.520s`。C 的一个实现缺口是默认 pnpm executable 尚未冻结；两个契约 blocker 如上。未把局部绿误称 SEC 完成。
+- `artifacts / evidence`：新增 `demo/coding_workflow/local_execution.py`；修改 `command_validators.py`, `workspace.py`, `models.py`, `policy.py`, `visionforge/browser.py`, `coding_workflow/__init__.py`；独立 D 核对 principal=`/root/oracle_map`，finding=`missing workspace_root seam makes external cwd classification impossible`。
+- `remaining_risks`：E–H 尚未执行；cleanup/quarantine/recovery 仅初版；高层 Composition Roots 尚未显式传 confirmation；POSIX workload 禁令仍有效；当前工作树未 Review/未提交。
+- `review`：`disposition=REVISE; reviewer=/root/oracle_map for D only; independence=read-only; blocking_findings=2 total (C deadline mismatch found by root, D workspace-root API gap confirmed independently)`
+- `supersedes_entry_id`：`NONE — 关闭 TRACE-027 当前实现尝试但保留全部局部通过证据`
+- `git_checkpoint`：`status=WORKTREE_ONLY; implementation_commit=N/A — stopped at Oracle gate`
+- `next_action`：预登记最小 Behavior Oracle correction：replay controls 使用其签发时的默认 limits；D 构造器显式传 trusted workspace_root。修订后保持 pre-fix 行为卡仍有准确实现红点，并做 fresh 运行与独立 Review。
+
+### TRACE-20260826-029
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-029 / SEC-EXEC-01-ORACLE-CORRECTION-02 / PRE_REGISTER / 2026-08-26T11:48:10+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / behavior C replay-limit and D workspace-root seam correction / TRACE-20260826-028`
+- `what / why / expected_effect_or_gate`：仅修正两项不可满足输入：C 原始令牌消费控制以 `use_default_limits=True` 执行；D 两个 Browser runner 显式传 `workspace_root=project`。原因是 Profile digest 必须绑定 deadline，而“外部路径”只能相对独立的 Runtime-owned root 定义。
+- `scope / non_goals`：只允许编辑 behavior redcard 对应两处和必要 SEC report/Step Log；不放宽 admission、argv、路径、环境、cleanup、输出、Profile 或单 owner 门禁，不修改 structural 卡。生产实现仅在 Oracle 复审批准后恢复。
+- `baseline`：`behavior_sha256=63cb6660e72312e0ee3e085056566966ce3e725e191b6ff79001fa13aaf4474d; structural_sha256=1e63489f6c33b1bf4ac90b4d1ac4ed4f97f796ac4022d9de8193f4224fcb7bb4; base_commit=0f9e41a`
+- `commands`：`apply_patch` 最小修订；fresh sanitized C/D 定向与完整 behavior；structural；py_compile/AST/hash/diff-check；独立只读 Review。
+- `stop_or_rollback_conditions`：修改超过两处调用参数或削弱负向矩阵；修订后 pre-implementation/当前实现缺陷被假绿；出现 skip/expectedFailure/真实 boundary；独立 Review 非 APPROVE/blocking 0。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：矛盾证据见 `TRACE-028`; reviewer D finding 指向 behavior lines 2481/2694 与 browser workspace-root self-trust。
+- `remaining_risks`：behavior 哈希会变化，必须保留旧 v7 批准历史并以新哈希重冻；新增构造 seam 后 Composition Roots 必须显式提供 root。
+- `review`：`disposition=PENDING; required=independent read-only review`
+- `supersedes_entry_id`：`NONE — Oracle correction 追加历史`
+- `git_checkpoint`：`status=PRE_REGISTERED; commit=PENDING`
+- `next_action`：执行两处最小测试修订并复跑；在批准前不继续 E–H 实现。
+
+### TRACE-20260826-030
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-030 / SEC-EXEC-01-ORACLE-CORRECTION-02 / CORRECTION / 2026-08-26T11:48:10+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / correction to TRACE-20260826-029 scope / independent review finding`
+- `what / why / expected_effect_or_gate`：把 C shadow-executable 正常控制夹具加入本次 Oracle correction：构造 Browser runner 时显式固定 `executable_overrides={"pnpm": "/usr/bin/pnpm"}`。原因是冻结 PATH 在当前宿主没有 pnpm；原夹具既未 override 也未 scoped patch，却要求恰好一次正常 spawn，结果取决于宿主安装状态。
+- `scope / non_goals`：TRACE-029 的“只两处”更正为“三个最小调用参数修订”；仍不改变任何负向命令、admission、digest 或 PATH 约束。禁止让产品在工具不存在时伪造可执行路径。
+- `baseline`：`behavior old hash=63cb6660...4474d; observed C shadow failure=browser expected one normal-control spawn; frozen PATH lookup result=no pnpm`
+- `commands`：`/usr/bin/env -i PATH=<frozen> /usr/bin/which pnpm` 返回非零；独立 reviewer `/root/core_design` 静态/定向复核；修订后 fresh C 定向与全 behavior。
+- `stop_or_rollback_conditions`：override 不是绝对 `/usr/bin/pnpm`；修改产品 executable resolution 以迁就 fixture；或负向 shadow/marker 断言被删弱。
+- `result / effect`：`PENDING — correction scope expanded before edit`
+- `artifacts / evidence`：behavior shadow test around prior lines 2288–2290；review finding principal=`/root/core_design`。
+- `remaining_risks`：`/usr/bin/pnpm` 是 fake-spawn Oracle 路径，不证明宿主真实 pnpm 存在；真实 Composition Root 必须解析并绑定实际受信绝对 wrapper。
+- `review`：`disposition=PENDING — included in correction-02 final review`
+- `supersedes_entry_id`：`TRACE-20260826-029 — only its two-change scope statement; all other fields remain authoritative`
+- `git_checkpoint`：`status=WORKTREE_ONLY`
+- `next_action`：追加第三个最小 fixture override，重冻 behavior hash并通知独立 reviewer。
+
+### TRACE-20260826-031
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-031 / SEC-EXEC-01-ORACLE-CORRECTION-02 / ACTUAL / 2026-08-26T11:54:05+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / behavior C-D satisfiability correction / TRACE-029 + TRACE-030`
+- `what / why / expected_effect_or_gate`：完成三项最小 fixture 修订：replay 正常控制使用签发时默认 limits；shadow Browser 固定 fake `/usr/bin/pnpm`；D 在构造器支持时显式传 `workspace_root=project`。它们消除宿主依赖和无输入却要求路径判定的矛盾，不改变负向安全语义。
+- `scope / non_goals`：behavior redcard 仅 4 个调用夹具 hunk，`22+/8-`；无生产/structural/契约修改。
+- `baseline`：`old behavior=63cb6660e72312e0ee3e085056566966ce3e725e191b6ff79001fa13aaf4474d`
+- `commands`：fresh sanitized C 两项；fresh D browser-path；`py_compile`; `git diff --check`; `shasum -a 256`。
+- `stop_or_rollback_conditions`：未触发：C 两项均绿；D 仍精确暴露 3 个实现红点且 0 error；无 skip/真实 boundary/门槛削弱。
+- `result / effect`：`achieved=yes`; C replay+shadow=`2 run/2 pass/0F/0E/0S, 4.545s`; D=`1 run/1 failure/0E/0S`，violations exact=`missing workspace_root, external-cwd challenge, artifact_prefix escape`; compile/diff-check pass。
+- `artifacts / evidence`：`demo/tests/test_local_trusted_execution_behavior_expected_red.py sha256=fe78dba0394af87f4656fb554906c728cc057e5a3ec8dd13e460efb8574f5986`。
+- `remaining_risks`：共享 Browser challenge helper 尚未显式注入 root；产品 fail-closed 修复前需单独更正，否则会鼓励无登记 root 自签 challenge。
+- `review`：`disposition=PENDING — recorded in next entry`
+- `supersedes_entry_id`：`SEC-HIST-012 only as current behavior Oracle; v7 hash/result/review remain historical`
+- `git_checkpoint`：`status=WORKTREE_ONLY; commit=PENDING`
+- `next_action`：记录独立 Review，并预登记 helper root injection correction。
+
+### TRACE-20260826-032
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-032 / SEC-EXEC-01-ORACLE-CORRECTION-02 / REVIEW / 2026-08-26T11:54:05+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/entrypoint_map / behavior correction fe78dba0 / TRACE-031`
+- `what / why / expected_effect_or_gate`：独立锁 hash 并核对三项修订只恢复同输入可满足性，原 absolute/shadow/marker、external/symlink/no-spawn/no-challenge/canary 门禁均保留。
+- `scope / non_goals`：只批准 Oracle correction，不批准当前产品实现、KEEP、POSIX workload 或 Runtime Acceptance。
+- `baseline`：`subject=fe78dba0394af87f4656fb554906c728cc057e5a3ec8dd13e460efb8574f5986; previous=63cb6660...4474d`
+- `commands`：reviewer fresh C replay、C shadow、D browser-path、py_compile、diff-check、hash freeze。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; disposition=APPROVE; blocking_findings=0`; C controls pass；D exact 3F-signature/0E；hash stable。
+- `artifacts / evidence`：independent ReviewArtifact principal=`/root/entrypoint_map`。
+- `remaining_risks`：`/usr/bin/pnpm` 仅 mock Oracle；真实工具存在性仍由 Composition Root；共享 helper root seam 另见下一 correction。
+- `review`：`APPROVE; independence=read-only; blocking=0`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`status=REVIEWED_WORKTREE_ONLY`
+- `next_action`：预登记 correction-03。
+
+### TRACE-20260826-033
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-033 / SEC-EXEC-01-ORACLE-CORRECTION-03 / PRE_REGISTER / 2026-08-26T11:54:05+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / shared Browser challenge helper root injection / TRACE-031 remaining risk`
+- `what / why / expected_effect_or_gate`：让 behavior `_confirmation_request_for` 构造 Browser runner 时显式传 `workspace_root=root`。原因是合法 challenge 必须由已登记 Runtime root 产生；若无 root 的任意 cwd 也能拿 challenge，D 修复只是表面。
+- `scope / non_goals`：只改 shared helper 的一个构造参数；不改变各测试断言、产品代码或其他 fixture。
+- `baseline`：`behavior=fe78dba0...f5986; correction-02 review=APPROVE/blocking 0`
+- `commands`：apply_patch；fresh A/C/D/G 相关定向、py_compile/hash/diff-check；独立只读 Review。
+- `stop_or_rollback_conditions`：shared helper 不再能产生五 Profile challenge；改动其他测试语义；或 reviewer 非 APPROVE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：behavior helper prior lines 7200ff；D independent registered-root finding。
+- `remaining_risks`：产品 constructor 尚未实现 root seam，修订后当前套件可能继续红但不得 ERROR。
+- `review`：`PENDING`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED`
+- `next_action`：只修改 helper constructor 参数并复核。
+
+### TRACE-20260826-034
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-034 / SEC-EXEC-01-ORACLE-CORRECTION-03 / ACTUAL / 2026-08-26T11:54:05+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / shared Browser challenge helper root injection / TRACE-033`
+- `what / why / expected_effect_or_gate`：shared helper 先检测 `BrowserProcessRunner` 是否公开 `workspace_root` seam；缺失时返回 `_UNSET` 形成明确实现红点，存在时以原 `root` 构造并提取 Runtime challenge。这样无登记 cwd 不再被测试要求获得可签 challenge。
+- `scope / non_goals`：只修改 behavior helper 构造逻辑；无产品/断言/其他 fixture 改动。
+- `baseline`：`previous behavior=fe78dba0394af87f4656fb554906c728cc057e5a3ec8dd13e460efb8574f5986`
+- `commands`：fresh A missing/expiry/drift 定向（当前产品因 seam 未实现精确 1F/0E）；temp-only py_compile；diff-check；hash；独立双桩 NoSeam/WithSeam 验证。
+- `stop_or_rollback_conditions`：未触发：无 seam 时 constructor/spawn 0；有 seam 时原 root 传入、run 1 次、三 digest challenge 可提取；无真实 boundary。
+- `result / effect`：`achieved=yes`; current A method=`1F/0E/0S`，四项 token matrix unavailable 是预期实现红点；py_compile/diff-check pass；双桩 behavior pass。
+- `artifacts / evidence`：`demo/tests/test_local_trusted_execution_behavior_expected_red.py sha256=954c55edd39ed135d66346c998d34560db4da4085b89b65cc49a7f8008fd9b34`。
+- `remaining_risks`：产品必须实现 root seam 且不能 fallback-to-cwd；Composition Roots 仍需显式绑定。
+- `review`：`PENDING — next entry`
+- `supersedes_entry_id`：`TRACE-031 current Oracle hash only; history preserved`
+- `git_checkpoint`：`WORKTREE_ONLY/PENDING`
+- `next_action`：记录独立 Review 后恢复产品实现。
+
+### TRACE-20260826-035
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-035 / SEC-EXEC-01-ORACLE-CORRECTION-03 / REVIEW / 2026-08-26T11:54:05+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/oracle_map / behavior helper correction 954c55ed / TRACE-034`
+- `what / why / expected_effect_or_gate`：独立只读锁 hash，核对 NoSeam/WithSeam 两路径、root provenance、challenge shape 与零真实 spawn。
+- `scope / non_goals`：只批准 correction-03；不批准产品实现、KEEP/POSIX/Runtime Acceptance。
+- `baseline`：`subject=954c55edd39ed135d66346c998d34560db4da4085b89b65cc49a7f8008fd9b34`
+- `commands`：reviewer py_compile、diff-check、hash、temp-only双桩定向。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; disposition=APPROVE; blocking_findings=0`
+- `artifacts / evidence`：ReviewArtifact principal=`/root/oracle_map`; hash stable。
+- `remaining_risks`：advisory 仅覆盖 helper correction。
+- `review`：`APPROVE; independence=read-only; blocking=0`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY`
+- `next_action`：以 behavior=`954c55ed...fd9b34` 新预登记实现小批。
+
+### TRACE-20260826-036
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-036 / SEC-EXEC-01-IMPL-03 / PRE_REGISTER / 2026-08-26T11:54:05+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / D-E lifecycle and registered-root implementation / TRACE-028 + independent implementation review`
+- `what / why / expected_effect_or_gate`：恢复统一边界实现，先关闭 D 的 registered Browser root 与 artifact-prefix、E 的 timeout barrier ordering/readiness evidence，并修 admission/quarantine 线性化与 background 异常清理；这些是当前独立 Review 的 CRITICAL/HIGH blockers。
+- `scope / non_goals`：允许修改 `local_execution.py`, `visionforge/browser.py`, Legacy deadline guard及必要 Composition Root root 绑定；先让 A–E/structural/H mock 通过。不运行真实 workload/外网/模型/秘密，不处理未登记的真实 POSIX fixture blocker。
+- `baseline`：`HEAD=origin/main=0f9e41a; structural=1e63489f...7bb4; behavior=954c55edd39ed135d66346c998d34560db4da4085b89b65cc49a7f8008fd9b34; current implementation review=REVISE; A-C green before correction-03; D/E blockers recorded`
+- `commands`：apply_patch；fresh sanitized A–E逐项；H static/dynamic；structural；随后 F/G与旧回归。所有 process/network/signal由 redcard fake/tripwire 接管。
+- `stop_or_rollback_conditions`：需要 fallback-to-cwd、自动签发授权、伪造 cleanup evidence、跳过 final probe、第二 Popen owner、真实 boundary 或再改冻结 Oracle；任一即 REVISE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：implementation Review principal=`/root/core_design`, disposition=REVISE；10项 finding 见本线程回报，首要为 timeout probe order、root self-trust、artifact escape、quarantine race。
+- `remaining_risks`：macOS/Python3.9无pidfd；mock无法证明真实 descendants；Composition Roots 授权 UX 尚未完成；background handles/recovery证据面复杂。
+- `review`：`PENDING; required final independent review`
+- `supersedes_entry_id`：`TRACE-027 implementation attempt only; prior partial evidence retained`
+- `git_checkpoint`：`PRE_REGISTERED; commit=PENDING`
+- `next_action`：实现 Browser root seam+prefix first，再重构 finalizer 的 signal/wait/probe 顺序与 workspace admission gate。
+
+### TRACE-20260826-037
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-037 / SEC-EXEC-01-ORACLE-CORRECTION-04 / PRE_REGISTER / 2026-08-26T12:02:52+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / FakeManaged cleanup evidence parity / behavior E readiness Oracle`
+- `what / why / expected_effect_or_gate`：为 behavior-only `FakeManaged` 增加与生产 `ManagedProcess` 相同的 `cleanup_evidence`/digest，在其真实 fake signal→wait→probe trace 完成后生成；原因是 readiness 测试要求原异常携带证据，但当前夹具只执行清理、不公开结果，产品若自行合成会是假证据。
+- `scope / non_goals`：只修改 behavior fixture `FakeManaged` 的公开 evidence parity；不删 E 断言、不改变信号 trace、不伪造未执行阶段。生产 `BrowserProjectRuntime` 随后只传播 managed 提供的证据。
+- `baseline`：`behavior=954c55ed...fd9b34; E terminal current=1F/0E, sole violation=browser-readiness-failure cleanup evidence absent; D=2/2 pass`
+- `commands`：apply_patch；fresh E terminal；py_compile/hash/diff-check；独立只读 Review。
+- `stop_or_rollback_conditions`：fixture evidence 与 trace 不一致；没有 final disappearance probe仍标 verified；产品需要识别 FakeManaged 类型；或 reviewer 非 APPROVE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：FakeManaged prior lines 570–607；E readiness prior lines 3205ff。
+- `remaining_risks`：mock evidence不替代真实 PID/PGID/handle proof；POSIX workload禁令不变。
+- `review`：`PENDING`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED`
+- `next_action`：补 fixture evidence并独立复审，然后只在产品异常传播该真实 evidence。
+
+### TRACE-20260826-038
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-038 / SEC-EXEC-01-ORACLE-CORRECTION-04 / ACTUAL / 2026-08-26T12:02:52+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / FakeManaged cleanup evidence parity / TRACE-037`
+- `what / why / expected_effect_or_gate`：FakeManaged 在实际 fake TERM→wait timeout→KILL→wait/reap→poll→PGID probe 之后才生成 cleanup evidence/digest；BrowserProjectRuntime 在 stop 后把 managed 的证据附到原 readiness 异常，不识别 fixture 类型、不合成证据。
+- `scope / non_goals`：fixture 增量 19 行；产品只做通用 managed evidence propagation。无真实进程。
+- `baseline`：`previous behavior=954c55ed...fd9b34; E terminal sole red=readiness evidence absent`
+- `commands`：fresh sanitized E terminal；py_compile；diff-check；hash；反向剔除增量核 previous hash。
+- `stop_or_rollback_conditions`：未触发：evidence 在 trace 前为空，probe/reap 后才赋值；E terminal 变绿；无假合成。
+- `result / effect`：`achieved=yes`; E terminal=`1/1 pass, 0F/0E`; behavior current hash=`78c5174d995aae49693a4831633b0b65aa42b7eb114618d7ba38379042ee1efe`。
+- `artifacts / evidence`：behavior redcard 与 `visionforge/browser.py` 通用传播接口。
+- `remaining_risks`：仅 mock；真实 owned handles/PID/PGID 仍待 POSIX。
+- `review`：`PENDING — next entry`
+- `supersedes_entry_id`：`TRACE-034 current Oracle hash only; history retained`
+- `git_checkpoint`：`WORKTREE_ONLY/PENDING`
+- `next_action`：记录 Review并继续实现。
+
+### TRACE-20260826-039
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-039 / SEC-EXEC-01-ORACLE-CORRECTION-04 / REVIEW / 2026-08-26T12:02:52+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/entrypoint_map / FakeManaged evidence correction / TRACE-038`
+- `what / why / expected_effect_or_gate`：独立锁 hash、核 trace/evidence 时序、反向还原 prior hash，并确认产品只传播证据。
+- `scope / non_goals`：不批准产品实现、真实 cleanup、KEEP 或 Runtime Acceptance。
+- `baseline`：`subject=78c5174d...1efe; previous=954c55ed...fd9b34`
+- `commands`：fresh E terminal、py_compile、diff-check、hash/反向差异。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`APPROVE; blocking_findings=0; E terminal=1 pass/0F/0E`
+- `artifacts / evidence`：ReviewArtifact principal=`/root/entrypoint_map`。
+- `remaining_risks`：批准范围仅 mock correction。
+- `review`：`APPROVE; independent read-only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY`
+- `next_action`：继续 TRACE-036 产品实现；当前 A–E 全部定向转绿后进入 F/G。
+
+### TRACE-20260826-040
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-040 / SEC-EXEC-01-ORACLE-CORRECTION-05 / PRE_REGISTER / 2026-08-26T12:10:57+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / F admission fixture binding correction / behavior A workspace-drift contract`
+- `what / why / expected_effect_or_gate`：修正 F 的两处正常控制输入：Legacy `ProjectWorkspace` 显式使用与令牌相同的 60 秒 deadline；dev token 在 cached-write/recorder probe 对 Workspace 的全部测试写入完成后再签发。原因是 deadline 与签发后 Workspace digest 漂移都必须使旧令牌拒绝，不能为 F 放宽 A。
+- `scope / non_goals`：只改 F 测试的一个 constructor 参数与 dev token 签发位置；不改任何 assertion、生产 digest/admission 或 write-history 门禁。
+- `baseline`：`behavior=78c5174d...1efe; F downstream=ERROR because 60s token used on default-30 runner; F server-log=0 spawn because recorder writes occurred after token`
+- `commands`：apply_patch；fresh F 三项；py_compile/hash/diff-check；独立只读 Review。
+- `stop_or_rollback_conditions`：删除 workspace-mutation拒绝；令牌仍在任一 root 写入前签；或 reviewer 非 APPROVE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：F test around current lines 4410–4585 and 5120ff；A mutation test remains unchanged。
+- `remaining_risks`：server-log canonical output仍可能有产品 reader问题；correction只恢复合法 admission输入。
+- `review`：`PENDING`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED`
+- `next_action`：两处最小 fixture修订并独立复审。
+
+### TRACE-20260826-041
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-041 / SEC-EXEC-01-ORACLE-CORRECTION-05 / ACTUAL / 2026-08-26T12:16:27+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / F admission fixture binding correction / TRACE-040`
+- `what / why / expected_effect_or_gate`：Legacy 下游控制以 `command_timeout=60` 构造，与所签 60 秒 Profile 完全一致；dev server confirmation 移到 recorder/cached-write 对 Workspace 的全部测试写入之后、紧邻 `start_background` 前签发。这样 F 测试不会用 deadline 或 Workspace 漂移的无效令牌误判输出泄漏，同时 A 的签发后变更必须拒绝契约保持不变。
+- `scope / non_goals`：只改 behavior F 的 constructor 参数与 token 签发位置；没有修改 assertion、生产 admission/digest、A 测试或真实边界。
+- `baseline`：`previous behavior=78c5174d995aae49693a4831633b0b65aa42b7eb114618d7ba38379042ee1efe; F downstream prior=ERROR; F server-log prior=zero spawn`
+- `commands`：fresh dedicated interpreter + `PYTHONPATH=.` 运行 F 三项；temp-only `py_compile`；`git diff --check`; `shasum -a 256`；独立静态核对 token 与写入时序。
+- `stop_or_rollback_conditions`：未触发：A 的 post-token Workspace mutation 测试未改；dev token 位于全部 fixture 写入后；没有真实 spawn/INET/signal。
+- `result / effect`：`achieved=yes`; F=`3 run/3 pass/0F/0E/0S, 2.533s`; compile/diff-check pass；current behavior hash=`036d101bfd157e1513b3c0e02994926fbd0f9d95a19f9a6397e3eb7682f9ad19`。
+- `artifacts / evidence`：`demo/tests/test_local_trusted_execution_behavior_expected_red.py sha256=036d101bfd157e1513b3c0e02994926fbd0f9d95a19f9a6397e3eb7682f9ad19`；reviewer line-level observations around current F lines 4560ff/5123ff 与 A mutation line 1606ff。
+- `remaining_risks`：本条只修复 Oracle 的合法 admission 输入，不证明当前生产 background reader、持久 sink 或完整 Runtime Acceptance。
+- `review`：`PENDING — next entry`
+- `supersedes_entry_id`：`TRACE-038 current behavior Oracle hash only; history retained`
+- `git_checkpoint`：`WORKTREE_ONLY/PENDING`
+- `next_action`：记录独立 Review，随后继续 TRACE-036 产品实现收口。
+
+### TRACE-20260826-042
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-042 / SEC-EXEC-01-ORACLE-CORRECTION-05 / REVIEW / 2026-08-26T12:16:27+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/oracle_map / behavior correction 036d101b / TRACE-041`
+- `what / why / expected_effect_or_gate`：独立只读锁定哈希，核对 Legacy deadline 与 confirmation、dev Workspace 写入与签发时序，以及 A 的 post-token mutation 门禁未受影响。
+- `scope / non_goals`：仅批准 correction-05；不批准产品实现、完整 behavior、POSIX workload、`KEEP` 或 Runtime Acceptance。
+- `baseline`：`subject=036d101bfd157e1513b3c0e02994926fbd0f9d95a19f9a6397e3eb7682f9ad19; previous=78c5174d...1efe`
+- `commands`：reviewer fresh F 三项、temp-only py_compile、diff-check、hash freeze与静态时序核对。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`achieved=yes; disposition=APPROVE; blocking_findings=0; F=3 pass/0F/0E/0S`
+- `artifacts / evidence`：ReviewArtifact principal=`/root/oracle_map`; subject hash stable。
+- `remaining_risks`：复审限制为 F 三项与 correction diff；未运行完整行为卡。
+- `review`：`APPROVE; independence=read-only; blocking=0`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY`
+- `next_action`：继续 TRACE-036，先关闭 background quarantine/gate/recovery 资源证明，再运行 behavior-first 25 项与既有回归。
+
+### TRACE-20260826-043
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-043 / SEC-EXEC-01-APPROVAL-EVOLUTION-01 / ACTUAL / 2026-08-26T13:43:02+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + delegated implementers / Composition-owned approval and public ManagedProcess handle / TRACE-036`
+- `what / why / expected_effect_or_gate`：在统一 Runtime challenge/issuer 之上增加一次性、显式布尔授权的 Composition adapter；把任意 callback 改为固定 Core/Workspace/VisionForge typed entrypoint，Runtime challenge 必须有 provenance，retry 后无论成功或异常都 retire token；公开后台句柄不再持有 supervisor/token。原因是用户/模型载荷不得自行铸造、复用、返回或持久化本地执行能力。预期效果是每次明确批准只允许一次固定 retry，默认拒绝且零 spawn。
+- `scope / non_goals`：新增 `local_execution_approval.py` 与 approval mock tests；后续为恢复 Core→Plugin 边界，将 VisionForge typed adapter 移入 `visionforge/browser.py`。不把 exported issuer 当用户输入，不授权真实模型、外网、真实 workload 或生产 sandbox。
+- `baseline`：`HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; initial generic approval candidate sha256=164e64b03199467af2676f93e5144ca5e6cf68ec1ed361bbbf0a7315309843a6; initial review=REVISE`
+- `commands`：`cwd=<repo>/demo; /usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp/multiagent-sec-test-home TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-pycache /usr/bin/python3 -m unittest tests.test_local_execution_approval -v`
+- `stop_or_rollback_conditions`：批准对象可复用；任意 callback 可取得 token；伪造 public error 可触发 issuer；token 可经 result/exception/slot/container/class state 逃逸后继续使用；合法 Managed handle 被误拒；或 Core import VisionForge。
+- `result / effect`：`achieved=partial`; 多轮只读审查先后发现并修正 reusable approval、arbitrary callback、forged challenge、exception args/attrs/slots、opaque container、primitive subclass、Managed handle false-positive、retry 未消费、method capture 与 exception-class state；未保存的中间完整 hash/runner 标记为 `MISSING/UNKNOWN — 不补造`。当前 approval tests=`16/16 pass, 0F/0E/0S`; plugin split 后专项合并=`23 run, 22 pass, 1 E2E skip, 0F/0E`。
+- `artifacts / evidence`：`demo/coding_workflow/local_execution_approval.py sha256=c147d52a143952da822e5af8f668ff926475287fdbdb52c1747c60aad04535d7`; `demo/coding_workflow/visionforge/browser.py sha256=3acc7575aa64c5d18e90836013e99970ae91eeb335a9e5cbe54e7f09ae4d57c2`; `demo/tests/test_local_execution_approval.py sha256=01003a7fb9f5ff4012d62d7518f249bd2a0ae92ca84f3edcb1ab594241d95e43`。
+- `remaining_risks`：最后两次 approval-only reviewer 因并行 plugin split 发现 hash drift 后按规则给 `UNKNOWN/stale`，没有伪造 APPROVE；当前 approval 功能随完整实现进入 TRACE-046 独立 Review，其结论为整体 `REVISE`。
+- `review`：`historical dispositions=multiple REVISE + two UNKNOWN/stale; no final approval claimed`
+- `supersedes_entry_id`：`NONE — 保留每轮失败事实；当前内容只取代候选实现，不抹除历史`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING`
+- `next_action`：与统一 Supervisor、Composition Roots 和完整 A～H 一起冻结复审。
+
+### TRACE-20260826-044
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-044 / SEC-EXEC-01-IMPL-03 / ACTUAL / 2026-08-26T13:43:02+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + delegated implementers / unified Profile-Admission-Supervisor implementation / TRACE-036`
+- `what / why / expected_effect_or_gate`：实现单一 `local_execution.py` raw process owner、五个 frozen Profile、三 digest challenge、opaque global one-shot confirmation、Runtime-sealed PreparedExecution、最小私有环境、前后台结果脱敏/限长、cleanup evidence、Workspace quarantine 与两阶段 recovery；Core、Legacy、VisionForge adapters 全部委托。原因是关闭父环境继承、可变 executable、未登记 argv、路径逃逸、分散终止和 raw output 下游泄漏。
+- `scope / non_goals`：修改统一 Runtime、三 adapter、DTO/path policy及必要测试；不运行真实 POSIX workload、真实浏览器、模型、秘密或外网，不声称容器/VM/多租户 sandbox。
+- `baseline`：`HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; structural=1e63489f6c33b1bf4ac90b4d1ac4ed4f97f796ac4022d9de8193f4224fcb7bb4; behavior=036d101bfd157e1513b3c0e02994926fbd0f9d95a19f9a6397e3eb7682f9ad19; worktree=dirty with unrelated user/parallel files explicitly excluded`
+- `commands`：`cwd=<repo>/demo; /usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp/multiagent-sec-redcard-home TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-redcard-pycache /usr/bin/python3 -W error -m unittest tests.test_local_trusted_execution_behavior_expected_red tests.test_local_trusted_execution_expected_red -q`; `cwd=<repo>/demo; PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-compile-pycache /usr/bin/python3 -m compileall -q coding_workflow tests coding_agent_cli.py web_server.py core_coding_eval_run.py core_coding_ablation_run.py core_coding_model_ablation_run.py visionforge_eval_run.py`; `cwd=<repo>/demo; rg -n 'subprocess\.(Popen|run)|os\.(posix_spawn|spawn|system|popen|fork|exec)' coding_workflow *.py --glob '*.py'`。
+- `stop_or_rollback_conditions`：第二 raw process owner、自动授权、fallback-to-cwd、自述 cleanup、红卡 skip/expectedFailure、真实 boundary、或任何 A～H failure/error。
+- `result / effect`：`achieved=partial`; behavior-first combined=`25/25 pass, 0F/0E/0S, 27.041s`; compileall/diff-check pass；生产静态边界只剩 `local_execution.py:780 subprocess.Popen`，`subprocess.run=0`。A～H mock 从 EXPECTED_RED 转为首绿，但真实 lifecycle 与最终 Review 未通过，故不得写 KEEP。
+- `artifacts / evidence`：`local_execution.py sha256=8e2ca83a6b343b9524be1d192752935ba5f2b7118cf2e9d8b2ac0d30eb76c043`; `command_validators.py sha256=5405aec9b5e2985a0cb23b10843a5a1d69a075b87e6ce83825af9121824a6be8`; `workspace.py sha256=88420c7cea21b75d342848cd3d505c8565fd8fcf2106acdf7bc78b0c24988e5e`。
+- `remaining_risks`：background stream 内存/期限、5 秒 cleanup 真正有界、前台 pipe 关闭、开放 Core Policy、ReferenceImageRenderer、真实 POSIX fixture blocker；见 TRACE-046 Review。
+- `review`：`PENDING at ACTUAL; resolved as REVISE in TRACE-046`
+- `supersedes_entry_id`：`TRACE-036 result only; PRE_REGISTER/history retained`
+- `git_checkpoint`：`content hashes only; commit=PENDING; worktree not clean`
+- `next_action`：接 Composition Roots、跑旧回归并独立复审。
+
+### TRACE-20260826-045
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-045 / SEC-EXEC-01-COMPOSITION-ROOTS-01 / ACTUAL / 2026-08-26T13:43:02+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/entrypoint_map / explicit local-execution authority at Core/DAG/Web/VisionForge roots / TRACE-036`
+- `what / why / expected_effect_or_gate`：为 Core/DAG/eval/ablation/CLI/generic Web/VisionForge Web 增加 keyword-only exact-bool `trusted_local_execution`，每条命令创建 fresh one-shot approver；默认 False 走 challenge→deny，授权不进入 requirement/model/env/public task/persistence；CLI 在加载 suite、env 或模型 client 前检查本地执行授权。原因是低层入口不能自行签发，且无授权时不应先产生模型成本。
+- `scope / non_goals`：Core/DAG/VisionForge composition wiring、CLI/Web 显式字段及兼容测试；不把模型输出或环境变量当授权。`ReferenceImageRenderer` 未注册命令形态保持 fail-closed，不在本条伪装完成。
+- `baseline`：`production issuer call sites before batch=0; default high-level paths could not retry a valid Runtime challenge`
+- `commands`：`cwd=<repo>/demo; sanitized unittest batches for command_validators=9/9, fixed eval+ablation+model workers+execution=32/32, DAG/CLI/modalities=10/10`; `cwd=<repo>/demo; full suite command recorded in TRACE-046`
+- `stop_or_rollback_conditions`：批准值来自 requirement/model/env；复用 approver；默认路径 spawn；无 flag 仍先调用模型；public API positional compatibility破坏；Core AST import VisionForge。
+- `result / effect`：`achieved=partial`; root-specific定向批次与当前全量均通过；plugin split 后 `PluginCoreTests.test_core_modules_do_not_import_visionforge=pass`。早期独立 root review 对当时 blobs=`APPROVE/blocking 0`，但多数文件随后发生实现整合漂移，故该批准只保留为历史、不得覆盖当前 TRACE-046 final Review。
+- `artifacts / evidence`：current examples: `coding_agent_cli.py sha256=0ea0782aff81da64f2f3ee54f4030187463bb97005cc8ecccefcf040625a92eb`; `web_server.py sha256=5655b9394c8da90680b528c85eddcfdd5d077d08e034b31e37e23f25e343e640`; `coding_evaluation_runtime.py sha256=b8eaf0fe57c637b46401af147d74ee2e0e3bfbbde74367efc410371273f75572`。
+- `remaining_risks`：VisionForge evaluation CLI仍使用被禁止的 environment 扩展、缺 registered renderer Profile/root approval；root review未覆盖后续漂移。
+- `review`：`historical APPROVE for earlier exact blobs; current integrated candidate reviewed REVISE in TRACE-046`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY/PENDING`
+- `next_action`：运行完整非永久-audit回归与 final read-only Review。
+
+### TRACE-20260826-046
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-046 / SEC-EXEC-01-IMPL-03 / REVIEW / 2026-08-26T13:43:02+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/sec_exec_final_security_review + /root/sec_exec_final_arch_review / frozen integrated candidate / TRACE-043～045`
+- `what / why / expected_effect_or_gate`：两路独立只读复核当前冻结内容：一路核 admission/seal/quarantine/recovery/cleanup/resource closure，一路核 exact command、Composition Roots、插件边界、兼容和证据声明。原因是 mock 全绿不能替代生命周期与授权正确性判断。
+- `scope / non_goals`：只读源码/测试/纯 mock；未改文件、未运行真实进程/信号/网络；不签 KEEP 或 Runtime Acceptance。
+- `baseline`：`local_execution=8e2ca83a...c043; approval=c147d52a...35d7; browser=3acc7575...57c2; behavior=036d101b...9ad19; structural=1e63489f...7bb4; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d`
+- `commands`：reviewers static source inspection；architecture reviewer fresh mock-only `behavior+structural 25/25`, `approval 16/16`, `plugin boundary 1/1`, `VisionForge browser 6 pass/1 skip`, `git diff --check`。
+- `stop_or_rollback_conditions`：任一 blocking finding、stale hash、真实 boundary 或过度完成声明；本次触发 blocking findings，故不得 checkpoint 为 KEEP。
+- `result / effect`：`achieved=no for final acceptance; disposition=REVISE`。已验证成立：global one-shot/expiry/digest、Prepared seal、workspace gate/quarantine/recovery identity+epoch、explicit root flags、唯一 Popen、旧 DTO/API mock兼容。Blocking：Core public policy可在 `allowed_commands=None` 时运行未登记 argv；前台 wait/OSError与 pipe closure非全路径结构化；background read 非增量且原文内存无界；background 60s deadline/abandoned handle无自主清理；cleanup wait/drain/join共用 5s barrier未真正有界；ReferenceImageRenderer/eval root未注册。Nonblocking：cleanup evidence嵌套可变、Core approval以 module/name string识别 plugin handle。
+- `artifacts / evidence`：ReviewArtifact principals=`/root/sec_exec_final_security_review`, `/root/sec_exec_final_arch_review`; both recommendation=`REVISE`；代码行证据见各 ReviewArtifact。
+- `remaining_risks`：真实 POSIX/Browser仍无证据且4 E2E skip；macOS Python3.9无pidfd；fixture workload禁令不变。
+- `review`：`REVISE; independent read-only; blocking findings > 0`
+- `supersedes_entry_id`：`NONE — 首绿结果保留，但 final disposition不得被首绿覆盖`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：预登记最小 corrective batch；先修 exact Core registry、统一 cleanup absolute deadline/pipe closure、bounded background reader与lease，再重新冻结复审。Renderer另行冻结契约选择。
+
+### TRACE-20260826-047
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-047 / SEC-EXEC-01-IMPL-04 / PRE_REGISTER / 2026-08-26T13:43:02+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / finalizer, streaming, lease and exact-registry corrective batch / TRACE-046`
+- `what / why / expected_effect_or_gate`：只修 TRACE-046 的 Runtime blocking：CommandPolicy默认无 exact registry时 fail closed；所有 finalizer wait/communicate/join/close 共用一个绝对 5 秒 deadline且任何 OSError形成结构化 evidence/quarantine；前台 pipe显式关闭；后台固定块读取、滚动 bounded/redacted output与增量完整 hash/char计数；Supervisor自主 wall deadline并确保 handle放弃不无限保活；cleanup evidence深冻结。预期恢复 mock A～H、旧回归并关闭两路 Review对应 blocker。
+- `scope / non_goals`：允许修改 `policy.py`, `local_execution.py`, `visionforge/browser.py` 与专用纯 mock测试；不运行真实 POSIX workload、不改五 Profile ID、不悄悄注册 renderer、不做真实模型/浏览器/网络。
+- `baseline`：`TRACE-046=REVISE; combined=25/25 mock green; full non-behavior=451/451 with 4 skip; POSIX mock=21/21`
+- `commands`：先新增/修订无真实边界的 regression；运行 approval/finalizer/background/exact-policy定向；再 fresh behavior-first 25、baseline、full non-behavior、compileall/no-bypass/diff-check；独立复审。
+- `stop_or_rollback_conditions`：清理可能超过绝对 5s；lease线程无法 join/可残留；为转绿放宽 admission/expiry/path/output；新增 raw process owner；真实 process/network/signal；或 reviewer非 APPROVE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：TRACE-046 two ReviewArtifacts。
+- `remaining_risks`：Renderer命令形态需单独 contract decision；真实 POSIX fixture仍有登记/join blocker；streaming redaction跨chunk边界需明确测试。
+- `review`：`PENDING`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED; commit=PENDING`
+- `next_action`：先写 pure-mock regression，首项为 default Core Policy不得触达 spawn，以及 foreground wait failure/closable streams。
+
+### TRACE-20260826-048
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-048 / SEC-EXEC-01-IMPL-04 / ACTUAL / 2026-08-26T14:19:27+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/exact_policy_fix / exact registry, bounded streaming and autonomous background lease / TRACE-047`
+- `what / why / expected_effect_or_gate`：默认 Core Policy 没有精确 argv registry 时在 executable resolution/spawn 前 fail closed；foreground 与 background finalizer 共享一个 cleanup start/deadline；后台改为 4096 字符增量读取、脱敏后 bounded head/tail、原文 chars/SHA 增量统计；dev wall deadline 由非 daemon watchdog 自主执行，公开 Managed handle 使用 weak registry/finalizer；cleanup evidence 递归冻结；Core-owned `LocalExecutionManagedResult` 取代按插件模块名识别。原因是关闭 TRACE-046 的开放 argv、原文内存无界、句柄遗弃和 Core→Plugin 私有耦合缺口。
+- `scope / non_goals`：修改 `local_execution.py`, `local_execution_approval.py`, `policy.py`, `visionforge/browser.py` 及纯 mock/兼容测试；没有运行真实 Browser、模型、网络、信号或被禁 POSIX workload；没有注册 ReferenceImageRenderer 第六种命令。
+- `baseline`：`HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; TRACE-046=REVISE; behavior=036d101b...9ad19; structural=1e63489f...7bb4; worktree=dirty with unrelated demo/track.md, problems.md, prombles.md deletion and Plan/Plan28.md excluded`
+- `commands`：`cwd=<repo>/demo; sanitized supervisor pure-mock 7 tests`; `cwd=<repo>/demo; /usr/bin/env -i ... /usr/bin/python3 -W error -m unittest tests.test_local_trusted_execution_behavior_expected_red tests.test_local_trusted_execution_expected_red -q`; `cwd=<repo>/demo; /usr/bin/env -i ... /usr/bin/python3 -W error -c '<discover all test_*.py except permanent-audit behavior module>'`; compileall；生产 process-boundary `rg`；`git diff --check`。
+- `stop_or_rollback_conditions`：触发：独立 reviewer 发现 poll 异常可绕 Finalizer、quoted secret 泄漏、close/private/probe 非硬有界、abandon 强引用、stop/quarantine 快照竞态及 eval root 未接；因此本条不能收口为通过。
+- `result / effect`：`achieved=partial`; supervisor专项=`7/7 pass, 0F/0E/0S, 0.046s`; behavior+structural=`25/25 pass, 0F/0E/0S, 27.835s`; non-behavior full=`run=460, pass=456, skip=4, 0F/0E, 29.797s`; compileall/diff-check pass；生产静态边界只剩 `local_execution.py:1109 subprocess.Popen`。测试首绿没有覆盖 reviewer 反例，故不得提升为安全验收。
+- `artifacts / evidence`：`local_execution.py sha256=9f79e6ea3e0d48a5fd434d2ce6a7ab542299b3efaba079b7c75d6dd1bc527bbc`; `local_execution_approval.py sha256=eeb222a82e0289446e8bae51cf0ad6a5291df2cf7b13dc33bea830cfae1e9ab8`; `policy.py sha256=4ed5833304e61e9645895b5e436e5c2751245e3d4e2957b588ae25aa15cd6bce`; `visionforge/browser.py sha256=c9324522945d30ebfc0466ef154d01f5dda0016ac4330606a81b42465d0f213f`; `test_local_execution_supervisor.py sha256=1b10022e803e5967b7da61f312c96b84b91d580466c3c9afba6b959ecb77b83f`; `test_command_validators.py sha256=7043ed09a41408572c6f465f2e15c7cda2efe520f0f9d2269f9d7346d1439360`。
+- `remaining_risks`：见 TRACE-049；真实 POSIX/Browser生命周期仍无证据，4 E2E skip；ReferenceImageRenderer仍在冻结五 Profile 之外。
+- `review`：`resolved as REVISE in TRACE-049`
+- `supersedes_entry_id`：`TRACE-047 result only; PRE_REGISTER and failed-review history retained`
+- `git_checkpoint`：`WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：记录两路独立 Review，随后预登记第二个最小修正批次。
+
+### TRACE-20260826-049
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-049 / SEC-EXEC-01-IMPL-04 / REVIEW / 2026-08-26T14:19:27+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/sec_exec_correction_review + /root/correction_arch_review / frozen TRACE-048 candidate / TRACE-047～048`
+- `what / why / expected_effect_or_gate`：两路独立只读复审 exact registry、Finalizer、streaming redaction、autonomous lease、abandon、evidence、Core/Plugin边界和正常 Composition Root。原因是 25 项门禁与 460 项回归全绿不能替代反例审查。
+- `scope / non_goals`：哈希锁定、源码/纯 mock 反例；未编辑 subject，未运行真实进程、信号、网络、模型或 Browser/POSIX workload；不签发 KEEP/Runtime Acceptance。
+- `baseline`：`subject local_execution=9f79e6e...7bbc; approval=eeb222a...9ab8; policy=4ed5833...6bce; browser=c932452...213f; hashes stable before/after review`
+- `commands`：reviewer 静态控制流；release-gated close、poll OSError、quoted cross-chunk assignment、compressed barrier/snapshot、long-reader reachability 与 eval-root 纯 mock/无 spawn 反例；既有 pure-mock 定向卡。
+- `stop_or_rollback_conditions`：触发 blocking findings，故 final disposition 必须 REVISE。
+- `result / effect`：`achieved=no for checkpoint; disposition=REVISE`。已验证 exact registry、bounded ring/raw hash、happy-path wall deadline、最终 evidence deep-freeze、Core-owned managed-result interface与唯一 Popen；阻塞为：spawn后 `poll()` OSError绕过 Finalizer；stream close/private cleanup/probe不能形成硬 5s 返回上限；quoted assignment 在空格/逗号处分段泄漏；reader闭包强持有 public handle使长运行 abandon finalizer不可达；barrier超时返回无 quarantine并由 Browser handle错误快照/解绑；运行中 evidence 可变；actions无条件声称 TERM/KILL；VisionForge eval仍传禁止 environment且未绑定 trial workspace/approver。
+- `artifacts / evidence`：ReviewArtifact principals=`/root/sec_exec_correction_review`, `/root/correction_arch_review`; both recommendation=`REVISE`; exact line-level evidence retained in task review messages。
+- `remaining_risks`：真实 POSIX fixture的登记/join blockers仍独立存在；ReferenceImageRenderer contract未选择；OS级 close/kill syscall不可抢占边界需在实现/Review中明确，不得伪称形式化硬实时。
+- `review`：`REVISE; independent read-only; blocking findings > 0`
+- `supersedes_entry_id`：`NONE — TRACE-048 的测试结果保留，但不得覆盖本 Review`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：追加 TRACE-050 PRE_REGISTER，先用纯 mock 固定 reviewer 反例，再修产品；全部复审通过前不更新为实现 checkpoint。
+
+### TRACE-20260826-050
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-050 / SEC-EXEC-01-IMPL-05 / PRE_REGISTER / 2026-08-26T14:19:27+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / finalizer-totality, quoted-redaction, terminal-fence and eval-root correction / TRACE-049`
+- `what / why / expected_effect_or_gate`：先新增 poll OSError、quoted cross-chunk secret、long-running abandon、barrier timeout/quarantine、live evidence mutation和 eval-root 0-spawn regression；随后让所有 spawn 后异常必经 Finalizer，quote-aware redactor持续到匹配 closing quote，reader不再引用 public handle，cleanup超时在返回前发布 quarantine且未终止 supervisor不得快照/解绑，evidence记录实际 phase outcome并始终深冻结；移除 eval 禁止 environment并由 trial root 注入 workspace-bound fresh approver。预期关闭 TRACE-049 的可复现阻塞而不放宽五 Profile/admission。
+- `scope / non_goals`：允许修改统一 Runtime/Browser、`visionforge_eval_run.py`, `evaluation_runtime.py` 及对应纯 mock测试；保持单一 Popen owner。ReferenceImageRenderer 的命令 Profile/预渲染资产选择仍不在本批；不运行真实 POSIX/Browser/模型/网络/信号。
+- `baseline`：`TRACE-049=REVISE; current behavior+structural=25/25 green; full non-behavior=456 pass/4 skip; subject hashes recorded in TRACE-048`
+- `commands`：先跑新增 reviewer反例 pure-mock；再定向 supervisor/approval/policy/eval；fresh behavior-first 25；full non-behavior；compileall/no-bypass/diff-check；独立双路 Review。
+- `stop_or_rollback_conditions`：任何 secret fragment公开；spawn后异常无 typed cleanup/quarantine；barrier失败无 fence或 public handle丢失 live supervisor；reader/watchdog残留；eval授权来自 payload/env/model；第二 raw process owner；真实 boundary；或 reviewer非 APPROVE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：TRACE-049 two ReviewArtifacts。
+- `remaining_risks`：Python/POSIX syscall不是硬实时可抢占原语；只能限制 Runtime自有协议并对无法证明的清理 fail closed/quarantine。Renderer与真实 POSIX仍为后续独立 gate。
+- `review`：`PENDING`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：先新增最小纯 mock回归并验证它们能击中当前候选，再修改生产实现。
+
+### TRACE-20260826-051
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-051 / SEC-EXEC-01-IMPL-05 / ACTUAL / 2026-08-26T15:23:03+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/runtime_correction_05 + /root/browser_eval_correction_05 / cleanup totality, terminal fence and eval-root integration / TRACE-050`
+- `what / why / expected_effect_or_gate`：补齐 post-spawn poll 异常 Finalizer、quoted assignment 的基础跨块脱敏、foreign resource 零 callback、cleanup transient fence/absorbing quarantine、reader与public handle解耦、reader/watchdog terminal gate、durable snapshot绑定、真实phase evidence与深冻结；Browser 只在 Core terminal 后快照解绑；eval 使用逐 trial workspace-bound runner factory、fresh approver和CLI exact-bool授权，移除 caller environment。原因是修复 TRACE-049 的可复现阻塞而不放宽五 Profile或fallback-to-cwd。
+- `scope / non_goals`：统一 Runtime、Browser public handle、VisionForge eval Composition Root及纯 mock测试；未注册 ReferenceImageRenderer 第六Profile，未运行真实process/network/signal/model/Browser/POSIX workload。
+- `baseline`：`TRACE-049=REVISE; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; behavior=036d101b...9ad19; structural=1e63489f...7bb4`
+- `commands`：supervisor pure-mock；approval/Browser/eval定向；fresh sanitized behavior-first 25；fresh non-behavior discovery；compileall；生产 process-boundary scan；diff-check；两路独立 Review。
+- `stop_or_rollback_conditions`：触发新的安全反例：自然退出残留PGID、escaped/JSON secret、UnicodeDecodeError raw bytes；因此不能写实现checkpoint或KEEP。
+- `result / effect`：`achieved=partial`; supervisor=`21/21 pass`; Runtime+approval+Browser=`44 pass/1 real-E2E skip`; VisionForge定向=`82 pass/4 real-E2E skip`; behavior+structural=`25/25 pass, 28.102s`; non-behavior full=`run=481, pass=477, skip=4, 0F/0E, 30.507s`; compileall/diff-check通过；唯一生产进程入口=`local_execution.py:1146 subprocess.Popen`。窄 cleanup reviewer 对本批协议修正=`APPROVE`，但最终安全 reviewer随后复现三项新 blocker。
+- `artifacts / evidence`：`local_execution.py sha256=0e2fc2bc96bff6d039b6dcbe3ef60e209ba8d75157920f3a195a2e034ae2aea9`; `local_execution_approval.py sha256=eeb222a82e0289446e8bae51cf0ad6a5291df2cf7b13dc33bea830cfae1e9ab8`; `policy.py sha256=4ed5833304e61e9645895b5e436e5c2751245e3d4e2957b588ae25aa15cd6bce`; `browser.py sha256=cd2d09c317eeaf6f3ade59272ae885b489dda308f0f11ef051dcfa2f0288b21d`; `evaluation_runtime.py sha256=1e9248b7a3494b58eea9bcdd2bf4f9fb79cdff2ed8028a49a5cdf87c46b874ed`; `visionforge_eval_run.py sha256=286c32570e5a4bf74b0ada92dd6f1d319beb6f765287068e5b22c20934b92730`; `test_local_execution_supervisor.py sha256=366016a572e2320f1e9e50279047764a7fe3605ea573c42f633a65be02054ad5`; `test_visionforge_eval_composition.py sha256=5b0f06177898d167af5979d5c85be717bb57a55840f57eca0f95f5743972f983`。
+- `remaining_risks`：见 TRACE-052；OS syscall非硬抢占；真实POSIX/Browser未证；4个E2E fixture/文档与收紧接口脱节；Renderer契约未决。
+- `review`：`resolved as mixed scope in TRACE-052; overall final acceptance=REVISE`
+- `supersedes_entry_id`：`TRACE-050 result only; PRE_REGISTER/history retained`
+- `git_checkpoint`：`WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：记录双路Review并预登记三项安全反例修正。
+
+### TRACE-20260826-052
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-052 / SEC-EXEC-01-IMPL-05 / REVIEW / 2026-08-26T15:23:03+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/impl05_security_review + /root/impl05_arch_review / frozen TRACE-051 candidate / TRACE-050～051`
+- `what / why / expected_effect_or_gate`：安全线反证 process-group、secret/output exception；架构线核 exact registry、Managed terminal、eval root/approval、API兼容和no-bypass。原因是集成门禁全绿仍可能缺少恶意/异常边界反例。
+- `scope / non_goals`：独立只读、冻结hash、纯mock/静态；未编辑subject、未运行真实process/network/signal/model/Browser/POSIX；不签KEEP/Runtime Acceptance。
+- `baseline`：`subject hashes=TRACE-051; 25/25 gate; full 481/477+4skip; hashes stable before/after both reviews`
+- `commands`：security reviewer supervisor/approval/eval composition 42/42、command validators 11/11及三组纯mock反例；architecture reviewer 14/14 eval/browser/policy、37/37 supervisor/approval、25/25 behavior/structural与静态扫描。
+- `stop_or_rollback_conditions`：安全线出现critical blocker，触发总体REVISE。
+- `result / effect`：`overall disposition=REVISE`。架构 reviewer=`APPROVE`，范围仅当前 mock/structural integrated correction；安全 reviewer=`REVISE`：一，leader自然退出时 Finalizer跳过TERM/KILL，PGID后代仍活只被发现未撤销；二，escaped quote与JSON quoted secret key绕过同一redactor；三，Popen strict text decode与原样post-spawn异常可经 `UnicodeDecodeError.object/args` 公开raw bytes。另架构中等问题：4个真实VisionForge E2E fixture仍用禁止environment且缺root/approver，JS runner浏览器二进制仍依赖被移除env；它阻塞真实Browser gate但不推翻mock修正。
+- `artifacts / evidence`：ReviewArtifact principals=`/root/impl05_security_review`, `/root/impl05_arch_review`; security recommendation=`REVISE`; architecture recommendation=`APPROVE limited`; exact line-level evidence retained in task review messages。
+- `remaining_risks`：foreground仍完整物化输出、无真实POSIX/Browser证据、Renderer/Browser binary Profile未决、OS syscall hard-wall=UNKNOWN。
+- `review`：`REVISE overall; independent read-only; security blocking=3`
+- `supersedes_entry_id`：`NONE — architecture limited approval and security rejection both retained`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：追加TRACE-053，先冻结三项安全反例，再修实现；真实E2E/Renderer另批处理。
+
+### TRACE-20260826-053
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-053 / SEC-EXEC-01-IMPL-06 / PRE_REGISTER / 2026-08-26T15:23:03+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / orphan-group, escaped-secret and invalid-UTF8 correction / TRACE-052`
+- `what / why / expected_effect_or_gate`：新增并先证明三项反例：leader已reap但PGID仍活；escaped closing quote/JSON quoted key/unterminated quote跨chunk；invalid UTF-8 经公开approver异常对象泄漏。随后让任何终态都撤销同PGID后代能力并形成真实phase evidence；redactor对转义和JSON key统一；Popen固定UTF-8 replacement decoding，post-spawn异常不得携带原始output bytes/args/cause/context。预期关闭TRACE-052三个critical而不放宽admission或改变五Profile。
+- `scope / non_goals`：允许修改 `local_execution.py`, `local_execution_approval.py`, Browser脱敏复用点及对应pure-mock tests；保持唯一Popen。暂不迁移4个真实E2E、不选择Renderer/Profile-owned browser binary；不运行真实boundary。
+- `baseline`：`TRACE-052 overall=REVISE; subject hashes and results in TRACE-051`
+- `commands`：先运行新增三组反例确认当前候选红；再定向supervisor/approval/F/E；fresh behavior-first25；full non-behavior；compile/no-bypass/diff-check；双路独立Review。
+- `stop_or_rollback_conditions`：任一secret/raw bytes公开；leader退出后同PGID未TERM/KILL/verify；改变timeout/cancel/旧DTO语义；新增process owner；真实process/network/signal；或reviewer非APPROVE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：TRACE-052 two ReviewArtifacts。
+- `remaining_risks`：真实PGID/PID reuse与OS syscall证据仍待POSIX；E2E/Renderer/Browser binary机制仍待后续契约批次。
+- `review`：`PENDING`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：写三个最小pure-mock反例并确认能击中当前冻结候选，然后修生产实现。
+
+### TRACE-20260826-054
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-054 / SEC-EXEC-01-IMPL-06 / ACTUAL / 2026-08-26T15:51:01+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/impl06_core_security + /root/browser_eval_correction_05 / orphan-group, unified redaction and invalid-UTF8 boundary / TRACE-053`
+- `what / why / expected_effect_or_gate`：自然退出leader已reap后若owned PGID仍活则撤销后代；Core redactor支持JSON quoted key、escaped quote奇偶和unterminated secret，Browser删除独立regex并复用Core；Popen固定UTF-8 replacement，post-spawn异常重建，approval对bytes/bytearray不可证叶子fail-closed。原因是关闭TRACE-052三个critical反例。
+- `scope / non_goals`：Core Runtime/approval、Browser脱敏接线及pure-mock；不迁移E2E/Renderer，不运行获准的真实Browser/POSIX/network/model。
+- `baseline`：`TRACE-052=REVISE; local_execution=0e2fc2bc...aea9; approval=f578db36...6143; browser=d2159829...8d06 before IMPL-06 core changes`
+- `commands`：新增5项首红；supervisor/approval/Browser/eval/exact-policy pure-mock；fresh behavior-first25；compile/static/diff；双路Review。
+- `stop_or_rollback_conditions`：实现代理误跑完整 `tests.test_command_validators`，触发多次真实受信Python workload与timeout cleanup signal，违反本批pure-mock边界；该次10/11全部排除为证据。架构Review另发现TERM grace缺失，因此本条不得checkpoint。
+- `result / effect`：`achieved=partial`; 新反例首跑=`0/5, 2F+3E`; 实现后core pure-mock=`45/45`; Browser接线pure-mock=`70/70 with 1 E2E skip in module aggregate`; 父级登记pure-mock=`56/56`; behavior+structural=`25/25`; compile/diff/static通过；生产唯一Popen=`local_execution.py:1227`。安全Reviewer随后批准三个critical修正；架构Reviewer因TERM grace给REVISE。
+- `artifacts / evidence`：`local_execution.py sha256=fee3278a6c21ef403698b43ea2d6750fa2c043f9b986c5203c7eedd53e3298a1`; `local_execution_approval.py sha256=f578db36aad208b0f0104c94f6ffaba99f2dfe53558e0d59a27505e563066143`; `browser.py sha256=d2159829f6fc0a54bbe1edc9345e422abc8b3805d896aaf7aa68bd6fa5608d06`; `supervisor test sha256=42f593f74980c606a2fed26ac9c927850d5dbdaa104ddf53a2ee19063a01ceca`; `approval test sha256=015b3f785750a5820bb4c2548776d37d5acff0926997e0b4b5c292bb54a3756e`; `browser test sha256=336af05d3cf5d91e201a0e9a0311c707339a60560df9d9e21d6058608ef0b07a`。
+- `remaining_risks`：TERM grace见TRACE-055；误跑真实boundary不作为证据且需在最终报告披露；真实POSIX/E2E/Renderer仍未收口。
+- `review`：`resolved as mixed disposition in TRACE-055; overall=REVISE`
+- `supersedes_entry_id`：`TRACE-053 result only; PRE_REGISTER/history retained`
+- `git_checkpoint`：`WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：记录双路Review并预登记TERM grace修正。
+
+### TRACE-20260826-055
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-055 / SEC-EXEC-01-IMPL-06 / REVIEW / 2026-08-26T15:51:01+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/impl05_security_review + /root/impl05_arch_review / frozen TRACE-054 candidate / TRACE-053～054`
+- `what / why / expected_effect_or_gate`：安全线复验上轮三个critical；架构线核生命周期grace、异常/DTO兼容、Core/Browser依赖与no-bypass。
+- `scope / non_goals`：独立只读、纯函数/纯mock/静态；未运行真实边界、不签KEEP或Runtime Acceptance。
+- `baseline`：`subject hashes=TRACE-054; parent pure-mock=25/25+56/56; hashes stable`
+- `commands`：security独立18/18及反斜线0～5/全split反例；architecture 55/55+25/25及50ms descendant grace反例。
+- `stop_or_rollback_conditions`：架构high blocker触发总体REVISE。
+- `result / effect`：`overall=REVISE`。安全Reviewer=`APPROVE limited`，确认PGID存活撤权、escaped/JSON/unterminated脱敏、UnicodeDecodeError graph清除与bytes fail-closed均成立；架构Reviewer=`REVISE`：leader已reap时TERM后重复wait direct child立即返回，约8微秒后即KILL，没有兑现manifest的1秒grace，50ms内本可退出的后代被强杀。其他兼容/no-bypass无新blocker。
+- `artifacts / evidence`：ReviewArtifacts principals=`/root/impl05_security_review`, `/root/impl05_arch_review`; exact line evidence retained in task messages。
+- `remaining_risks`：真实POSIX时序未知；E2E/Renderer与Browser binary Profile仍为最终KEEP blocker。
+- `review`：`REVISE overall; security approve limited; architecture blocking=1`
+- `supersedes_entry_id`：`NONE — 两种scope结论均保留`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：追加TRACE-056，补bounded PGID disappearance grace卡并修实现。
+
+### TRACE-20260826-056
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-056 / SEC-EXEC-01-IMPL-07 / PRE_REGISTER / 2026-08-26T15:51:01+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / owned-PGID TERM grace correction / TRACE-055`
+- `what / why / expected_effect_or_gate`：先新增两项pure-mock：owned descendant在TERM后50ms内消失则不得KILL；grace满仍活才KILL。随后在同一个cleanup absolute deadline内对PGID做最长1秒bounded disappearance wait/poll，不重复wait已reap leader；phase evidence与实际探测/信号一致。
+- `scope / non_goals`：只改Runtime Finalizer与supervisor pure-mock；不改Profile数、redaction、approval、Browser/eval、E2E/Renderer；不运行真实process/signal/network/model/POSIX。
+- `baseline`：`TRACE-055=REVISE; local_execution=fee3278a...98a1; supervisor test=42f593f7...ceca`
+- `commands`：新增2项首红；supervisor/approval pure-mock；behavior E/structural E；compile/static/diff；独立窄Review。
+- `stop_or_rollback_conditions`：grace内消失仍KILL；grace超过1秒或重置5秒deadline；busy-spin；证据与trace不一致；真实boundary；或reviewer非APPROVE。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：TRACE-055 architecture ReviewArtifact。
+- `remaining_risks`：pure-mock只证明协议；真实signal调度、PID reuse、setsid逃逸仍待POSIX。
+- `review`：`PENDING`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：新增50ms-disappear与grace-expiry两卡，确认当前候选红后最小修Finalizer。
+
+### TRACE-20260826-057
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-057 / SEC-EXEC-01-IMPL-07 / ACTUAL / 2026-08-26T15:59:28+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/impl06_core_security / owned-PGID TERM grace / TRACE-056`
+- `what / why / expected_effect_or_gate`：已reap leader发送TERM后，不再重复wait direct child；改为每50ms bounded poll owned PGID disappearance，最长 `min(1s term grace, cleanup absolute deadline remaining)`，grace内消失跳过KILL，超时仍活才KILL。原因是兑现manifest声明的TERM→grace→KILL，而不是微秒级立即强杀后代。
+- `scope / non_goals`：只改Runtime Finalizer与supervisor pure-mock；未改Profile/redaction/approval/Browser/eval，未运行真实process/signal/network/model/POSIX。
+- `baseline`：`TRACE-055=REVISE; local_execution=fee3278a...98a1; supervisor test=42f593f7...ceca`
+- `commands`：新增2项pure-mock首红；supervisor；behavior+structural；compile/static/diff；原finding reviewer窄复审。
+- `stop_or_rollback_conditions`：未触发：50ms内absent不KILL；1s持续live才KILL；统一deadline不重置；无busy-spin/real sleep。
+- `result / effect`：`achieved=yes for mock/structural correction`; 新卡首红=`0/2,2F`; 终绿=`2/2`; supervisor=`28/28`; 父级supervisor=`28/28,0.236s`; behavior+structural=`25/25,27.758s`; reviewer supervisor+timeout/cancel=`30/30`; compile/diff/static通过。
+- `artifacts / evidence`：`local_execution.py sha256=90be53ffd9df1f5527b343d6ab01166ed2dcbae320b87b0a53356e2758e4320b`; `test_local_execution_supervisor.py sha256=fa04f0750f5164829af1e67954cfe24c6186ada96a8811f909a3caa7aed6e430`。
+- `remaining_risks`：真实POSIX scheduler/PGID reuse/setsid逃逸与OS syscall hard-wall仍未知；pure-mock不构成KEEP。
+- `review`：`APPROVE limited in TRACE-058`
+- `supersedes_entry_id`：`TRACE-056 result only; PRE_REGISTER retained`
+- `git_checkpoint`：`WORKTREE_ONLY; KEEP=NOT_ISSUED; commit=PENDING`
+- `next_action`：记录窄Review并建立当前mock/structural工作树checkpoint。
+
+### TRACE-20260826-058
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-058 / SEC-EXEC-01-IMPL-07 / REVIEW / 2026-08-26T15:59:28+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/impl05_arch_review / frozen TRACE-057 grace correction / TRACE-056～057`
+- `what / why / expected_effect_or_gate`：原finding reviewer只读复验50ms disappearance、1s grace expiry、统一deadline、phase evidence和timeout/cancel兼容。
+- `scope / non_goals`：极窄pure-mock/源码；未运行真实边界、不扩张到KEEP。
+- `baseline`：`local_execution=90be53ff...4320b; supervisor test=fa04f075...e430; hashes stable`
+- `commands`：独立supervisor28项+timeout/cancel2项；scoped diff-check。
+- `stop_or_rollback_conditions`：未触发。
+- `result / effect`：`disposition=APPROVE; blocking=0; 30/30 pass`。Event.wait seam无busy-spin/time.sleep；grace内absent的kill为skipped，持续live完整1s才KILL。
+- `artifacts / evidence`：ReviewArtifact principal=`/root/impl05_arch_review`。
+- `remaining_risks`：批准仅TERM-grace mock/structural correction。
+- `review`：`APPROVE limited; independent read-only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; KEEP=NOT_ISSUED`
+- `next_action`：追加TRACE-059 checkpoint并同步SEC report/HANDOFF。
+
+### TRACE-20260826-059
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-059 / SEC-EXEC-01-MOCK-IMPLEMENTATION-CHECKPOINT-01 / CHECKPOINT / 2026-08-26T15:59:28+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / reviewed mock+structural implementation checkpoint / TRACE-043～058`
+- `what / why / expected_effect_or_gate`：冻结当前统一 Profile/Admission/Supervisor、Composition approval、Core/Legacy/VisionForge adapters、eval root和三轮安全修正的内容哈希；记录所有REVISE→修复→复审链。原因是提供可恢复的工作树里程碑，同时避免把mock证据冒充真实生命周期KEEP。
+- `scope / non_goals`：content-hash checkpoint；未创建Git commit，worktree仍含明确排除的用户文件；不签KEEP/Runtime Acceptance，不解除POSIX workload禁令。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty`
+- `commands`：parent pure-mock/structural `25/25`、登记mock组合`56/56`、supervisor`28/28`；compileall；unique-Popen scan；diff-check；独立Review见TRACE-049/052/055/058。
+- `stop_or_rollback_conditions`：KEEP条件未满足：真实POSIX fixture仍有登记/join blocker；4个真实Browser E2E与收紧接口脱节；ReferenceImageRenderer/Browser binary Profile未决；OS syscall非硬抢占。
+- `result / effect`：`checkpoint_status=MOCK_STRUCTURAL_IMPLEMENTATION_REVIEWED`; `decision=INCONCLUSIVE`; `KEEP=NOT_ISSUED`; 当前所有已复现mock安全blocker均修复并获对应窄Review approve。实现代理误跑真实command-validator（多次受信Python process及cleanup signal）作为合规偏差保留，10/11全部排除为证据；无网络/模型/秘密/仓库外写入。
+- `artifacts / evidence`：`local_execution=90be53ffd9df1f5527b343d6ab01166ed2dcbae320b87b0a53356e2758e4320b`; `approval=f578db36aad208b0f0104c94f6ffaba99f2dfe53558e0d59a27505e563066143`; `policy=4ed5833304e61e9645895b5e436e5c2751245e3d4e2957b588ae25aa15cd6bce`; `browser=d2159829f6fc0a54bbe1edc9345e422abc8b3805d896aaf7aa68bd6fa5608d06`; `evaluation_runtime=1e9248b7a3494b58eea9bcdd2bf4f9fb79cdff2ed8028a49a5cdf87c46b874ed`; `visionforge_eval_run=286c32570e5a4bf74b0ada92dd6f1d319beb6f765287068e5b22c20934b92730`; redcards=`036d101b...9ad19/1e63489f...7bb4`。
+- `remaining_risks`：下一门禁不是继续堆mock：先修POSIX fixture自身两个安全blocker并独立复审，再运行真实adversarial；同时冻结Renderer与Profile-owned browser binary/E2E迁移选择。
+- `review`：`mock/structural corrections reviewed; final security KEEP review=PENDING`
+- `supersedes_entry_id`：`NONE — 历史REVISE与偏差全部保留`
+- `git_checkpoint`：`content_snapshot=WORKTREE_ONLY; commit=PENDING; status=DIRTY; clean release checkpoint=NO`
+- `next_action`：同步VerificationReport/HANDOFF；随后对POSIX fixture修复另行PRE_REGISTER。Renderer/browser binary选择需用户或明确Plan Amendment后再改契约。
+
+### TRACE-20260826-060
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-060 / SEC-EXEC-01-MOCK-IMPLEMENTATION-CHECKPOINT-01 / CORRECTION / 2026-08-26T16:05:43+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / current Step Log gate correction / TRACE-059`
+- `what / why / expected_effect_or_gate`：追加纠正本文件 §0 早期 `current_gate=EXPECTED_RED 已冻结；生产 Profile/Admission/Supervisor 尚未实现` 的当前态解释。该字段在实现与四轮 `REVISE→修复→复审` 后已陈旧；因本账本只允许 EOF 追加，不回写页首。
+- `scope / non_goals`：只替代 §0 `current_gate` 的当前解释；不改写 `SEC-HIST-*` 历史，不签 `KEEP`/Runtime Acceptance，不解除 POSIX workload 禁令。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; STEP-LOG pre-append sha256=26d7f27ea2fbbaa1fe02ebb1c11389ec3cdb54acbacf36a21a0bd1eed624fdf6`
+- `commands`：`cwd=<repo>; rg -n '<stale current-status phrases>' HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md; shasum -a 256 ...; git diff --check -- ...`
+- `stop_or_rollback_conditions`：若纠正会把 mock/structural 证据冒充 POSIX、Browser、`KEEP` 或 Runtime Acceptance，则停止收口并保持 `INCONCLUSIVE`。
+- `result / effect`：`achieved=yes`；权威当前解释改为 `current_gate=MOCK_STRUCTURAL_IMPLEMENTATION_REVIEWED / POSIX_AND_BROWSER_PENDING; decision=INCONCLUSIVE; KEEP=NOT_ISSUED`。
+- `artifacts / evidence`：`TRACE-043～059`; [`SEC-EXEC-01.md`](SEC-EXEC-01.md) §4.4～4.6/6/7；[`HANDOFF.md`](../HANDOFF.md) 顶部 HandoffProposal。
+- `remaining_risks`：真实 POSIX fixture 登记/join blocker、真实 Browser/E2E、Renderer/browser binary 契约、OS syscall hard-wall 与最终 Review 仍未完成。
+- `review`：`disposition=PENDING — 待 TRACE-062 独立文档审计`
+- `supersedes_entry_id`：`本文件 §0 current_gate 字段 — 只替代其当前态解释，不删除原文`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO`
+- `next_action`：记录本次 SEC/HANDOFF 同步的 ACTUAL，然后锁定文档哈希进行独立只读审计。
+
+### TRACE-20260826-061
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-061 / SEC-EXEC-01-MOCK-IMPLEMENTATION-CHECKPOINT-01 / ACTUAL / 2026-08-26T16:05:43+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / SEC-EXEC-01 current evidence and handoff sync / TRACE-059～060`
+- `what / why / expected_effect_or_gate`：将 `SEC-EXEC-01.md` 同步为已实现候选、mock/structural reviewed、真实 POSIX/Browser 待验证；更新 HANDOFF 的状态、completed work、evidence refs、open questions 和两处重复 next action。原因是防止下一任务重做已完成的 Supervisor 实现，或把 mock 检查点误读为最终安全验收。
+- `scope / non_goals`：只改 `HANDOFF.md`、`VerificationReports/SEC-EXEC-01.md` 和本追加式账本；未修改生产/测试，未运行真实 process/network/signal/model/POSIX/Browser，未触及独立 snapshot 实验 worktree或其他用户文件。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; checkpoint=TRACE-059`
+- `commands`：`cwd=<repo>; git status --short; rg/sed/nl 只读定位当前与陈旧表述; apply_patch 定点修改 HANDOFF; shasum -a 256 HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md; git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md`
+- `stop_or_rollback_conditions`：若文档声称当前最终哈希已跑 full regression、POSIX/Browser 已通过、`KEEP`/Runtime Acceptance 已签，或洗掉 TRACE-054 合规偏差，立即停止并保持 `INCONCLUSIVE`。
+- `result / effect`：`achieved=yes`；陈旧“现在实现统一 Profile/Supervisor使25项转绿”表述已从当前 next action 移除；接续动作统一为“先修 POSIX fixture 自身两个 blocker并独立复审”。修改后三文档 scoped `git diff --check` exit=0。
+- `artifacts / evidence`：`HANDOFF.md sha256=519b9a4901c657ebb24715af194a124aedae88a04d129a0615f392f5a11b2023`; `VerificationReports/SEC-EXEC-01.md sha256=31559be2c6ecb873c94de0dc72c8cfb696a647b5d5fe3bb84e8b16d5e7c42919`; `STEP-LOG.md pre-append sha256=26d7f27ea2fbbaa1fe02ebb1c11389ec3cdb54acbacf36a21a0bd1eed624fdf6`。
+- `remaining_risks`：Step Log 自哈希因 EOF 追加由外部 freeze/review 记录；当前仍是 dirty/uncommitted 工作树；POSIX/Browser/Renderer 与最终 `KEEP` 门禁未变。
+- `review`：`disposition=PENDING; reviewer=待新的独立只读文档审计`
+- `supersedes_entry_id`：`TRACE-059 next_action 及 HANDOFF 当前状态表述 — 已完成其文档同步动作；历史证据保留`
+- `git_checkpoint`：`content_snapshot=WORKTREE_ONLY; commit=PENDING; status=DIRTY; clean release checkpoint=NO`
+- `next_action`：锁定当前三文档哈希，进行独立只读 traceability/overclaim 审计；仅审批后才把该文档检查点作为下一任务输入。
+
+### TRACE-20260826-062
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-062 / SEC-EXEC-01-MOCK-IMPLEMENTATION-CHECKPOINT-01 / REVIEW / 2026-08-26T16:13:25+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/sec_docs_checkpoint_review / frozen SEC documentation checkpoint / TRACE-060～061`
+- `what / why / expected_effect_or_gate`：独立只读核对三文档的 append-only 语义、What/Why/Effect 完整性、状态/哈希/链接、合规偏差、剩余门禁与下一动作，目标是防止陈旧操作指令或不完整账本进入下一任务。
+- `scope / non_goals`：只读文档/哈希/链接审计；未编辑，未运行真实 process/network/signal/model/POSIX/Browser，不签 `KEEP` 或 Runtime Acceptance。
+- `baseline`：`HANDOFF=519b9a4901c657ebb24715af194a124aedae88a04d129a0615f392f5a11b2023; SEC=31559be2c6ecb873c94de0dc72c8cfb696a647b5d5fe3bb84e8b16d5e7c42919; STEP-LOG=91dafbcdbd49274d09a472f41a4996f24a0411cdb0e6d15c922e43cbd7074679; hashes stable`
+- `commands`：`reviewer read-only shasum/link/status/source inspection; exact internal command transcript=MISSING/UNKNOWN — reviewer ReviewArtifact 保留结果、行号与哈希，不补造 shell`。
+- `stop_or_rollback_conditions`：发现任一操作性指令会违反冻结停止条件，或 Step Log 不能完整核对实际动作，则 disposition 必须为 `REVISE`。
+- `result / effect`：`disposition=REVISE; blocking/high=1; medium=1`。High：HANDOFF 底部仍直接指示 full discovery 与旧 `VISIONFORGE_BROWSER_EXECUTABLE` E2E 路径，与真实 workload 禁令及已收紧 Browser API 冲突。Medium：TRACE-060/061 使用命令占位/概述，未记录各命令 exit/duration 和实际 dirty scope。其他状态、哈希、链接、合规偏差、POSIX/E2E/Renderer/OS hard-wall 边界与不冒领 `KEEP` 均通过。
+- `artifacts / evidence`：ReviewArtifact principal=`/root/sec_docs_checkpoint_review`；findings 对应 `HANDOFF.md:41,45,682～691`、`SEC-EXEC-01.md:193～197`、`STEP-LOG.md:30～31,1135,1151～1159`。
+- `remaining_risks`：本 Review 未检验任何真实生命周期；待纠正文档需重新 freeze/review。
+- `review`：`REVISE; independent read-only; no KEEP/Runtime Acceptance`
+- `supersedes_entry_id`：`NONE — 保留本次失败审查`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; commit=PENDING; checkpoint not approved`
+- `next_action`：追加纠正命令/工作树证据，将 HANDOFF 验证节改为当前允许的 pure-mock/静态门禁与显式禁止语句，然后请原 reviewer 复核。
+
+### TRACE-20260826-063
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-063 / SEC-EXEC-01-DOC-CORRECTION-01 / PRE_REGISTER / 2026-08-26T16:13:25+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / document operational-safety and trace completeness correction / TRACE-062`
+- `what / why / expected_effect_or_gate`：只修两项审查 finding：(1) HANDOFF 验证节只列当前可运行的 pure-mock/静态命令，并明确 full discovery、command-validator 完整模块、POSIX workload 与 Browser E2E 均需后续单独预注册；(2) 在 EOF CORRECTION 补齐 TRACE-060/061 已保存的精确命令、exit/duration 和 `git status --short` scope，不得倒填未保存数据。
+- `scope / non_goals`：只改 `HANDOFF.md` 当前验证命令节与 `STEP-LOG.md` EOF；不改 SEC report/产品/测试，不实际运行 unittest/full/POSIX/Browser/process/network/signal/model，不触及其他 dirty 文件。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; review=TRACE-062 REVISE`
+- `commands`：计划=`apply_patch HANDOFF.md; apply_patch STEP-LOG.md EOF; shasum -a 256 HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md; git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md; rg -n '<forbidden/stale phrases>' ...`; 实际参数/结果将在 ACTUAL 记录。
+- `stop_or_rollback_conditions`：若修订会恢复 env-based browser executable、允许未预注册真实 workload、将 pure-mock 冒领为 full/KEEP，或无法区分已保存与 MISSING/UNKNOWN 命令证据，则保持 `REVISE`。
+- `result / effect`：`PENDING — PRE_REGISTER`
+- `artifacts / evidence`：TRACE-062 ReviewArtifact；当前 dirty scope 由 `2026-08-26T16:13:25+08:00` 的 `git status --short` 捕获，详情待 ACTUAL。
+- `remaining_risks`：修正只保证 handoff 不误导与 trace 可核；不新增任何实际安全证据。
+- `review`：`PENDING — 修正后由原 reviewer 只读复核`
+- `supersedes_entry_id`：`NONE — 只预注册纠正，不替代 TRACE-062`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; commit=PENDING`
+- `next_action`：先修 HANDOFF 操作节，再以 CORRECTION/ACTUAL 补齐已保存命令与 dirty scope，冻结新哈希复审。
+
+### TRACE-20260826-064
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-064 / SEC-EXEC-01-DOC-SYNC-EVIDENCE / CORRECTION / 2026-08-26T16:13:25+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / command and dirty-scope evidence correction / TRACE-060～061, TRACE-062 issue 2`
+- `what / why / expected_effect_or_gate`：只追加补齐 TRACE-060/061 当时已保存的精确 shell 命令、exit/duration 与 dirty scope；未保存的 `apply_patch` 完整序列化 payload 明确标为 `MISSING/UNKNOWN`，不从结果倒推原始调用。
+- `scope / non_goals`：只替代 TRACE-060/061 的 commands/dirty-scope 不完整表述；不替代其 What/Why/Effect，不删除 TRACE-062 `REVISE`。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; STEP-LOG prefix through TRACE-059 sha256=26d7f27ea2fbbaa1fe02ebb1c11389ec3cdb54acbacf36a21a0bd1eed624fdf6`
+- `commands`：已保存的相关 shell 组如下，均 cwd=`/Users/donbblu/codex/multiAgent`：
+
+```bash
+git status --short && rg -n '下一小批统一|现在实现统一|使这 25 项先转绿|实现统一 Profile|实现单一.*Profile|EXPECTED_RED_ONLY|IMPLEMENTED_CANDIDATE|TRACE-059' HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md
+date '+%Y-%m-%dT%H:%M:%S%z' && shasum -a 256 HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md && git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md
+shasum -a 256 HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md && git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md && rg -n '下一小批统一|现在实现统一|使这 25 项先转绿|代码尚未达到|只冻结契约并重排|current_gate=EXPECTED_RED' HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md || true
+shasum -a 256 demo/tests/test_local_trusted_execution_expected_red.py demo/tests/test_local_trusted_execution_behavior_expected_red.py demo/coding_workflow/local_execution.py demo/coding_workflow/local_execution_approval.py demo/coding_workflow/command_validators.py demo/coding_workflow/workspace.py demo/coding_workflow/policy.py demo/coding_workflow/visionforge/browser.py demo/coding_workflow/visionforge/evaluation_runtime.py demo/coding_agent_cli.py demo/visionforge_eval_run.py demo/tests/test_local_execution_supervisor.py demo/tests/test_local_execution_approval.py demo/tests/test_visionforge_eval_composition.py && git diff --check
+```
+
+  四组工具调用均 exit=`0`、wall=`0.1s`；关键输出是三文档当时哈希 `519b9a49...2023 / 31559be2...2919 / 26d7f27e...fdf6`，后续 EOF 追加后 Step Log 冻结为 `91dafbcd...4679`；14 个 SEC Artifact 哈希与报告表全部匹配，global diff-check exit=0。`sed/nl` 导航与 `apply_patch` 完整序列化 payload/duration=`MISSING/UNKNOWN — 未单独保存原始 Artifact`；修改结果可由 Git diff 和文件哈希核对。
+- `stop_or_rollback_conditions`：任何未保存命令或时间不得从 shell history/结果倒填；发现新 dirty 文件必须在后续 ACTUAL 另行记录。
+- `result / effect`：`achieved=yes`；TRACE-060/061 的可复核命令组、exit/duration 与证据缺口已按 append-only 要求纠正。在 `2026-08-26T16:13:25+08:00` 重新捕获的 `git status --short` 为：
+
+```text
+ M HANDOFF.md
+ M VerificationReports/SEC-EXEC-01.md
+ M VerificationReports/STEP-LOG.md
+ M demo/coding_agent_cli.py
+ M demo/coding_workflow/__init__.py
+ M demo/coding_workflow/agents.py
+ M demo/coding_workflow/coding_ablation.py
+ M demo/coding_workflow/coding_ablation_execution.py
+ M demo/coding_workflow/coding_evaluation.py
+ M demo/coding_workflow/coding_evaluation_runtime.py
+ M demo/coding_workflow/command_validators.py
+ M demo/coding_workflow/dag_runner.py
+ M demo/coding_workflow/models.py
+ M demo/coding_workflow/policy.py
+ M demo/coding_workflow/visionforge/__init__.py
+ M demo/coding_workflow/visionforge/browser.py
+ M demo/coding_workflow/visionforge/evaluation_runtime.py
+ M demo/coding_workflow/visionforge/web_runtime.py
+ M demo/coding_workflow/workspace.py
+ M demo/core_coding_ablation_run.py
+ M demo/core_coding_eval_run.py
+ M demo/core_coding_model_ablation_run.py
+ M demo/tests/test_audio_transcription.py
+ M demo/tests/test_coding_ablation.py
+ M demo/tests/test_coding_ablation_execution.py
+ M demo/tests/test_coding_evaluation_runtime.py
+ M demo/tests/test_coding_model_workers.py
+ M demo/tests/test_command_validators.py
+ M demo/tests/test_image_perception.py
+ M demo/tests/test_local_trusted_execution_behavior_expected_red.py
+ M demo/tests/test_local_trusted_execution_expected_red.py
+ M demo/tests/test_multimodal_intake.py
+ M demo/tests/test_video_perception.py
+ M demo/tests/test_visionforge_browser.py
+ M demo/tests/test_workflow.py
+ M demo/track.md
+ M demo/visionforge_eval_run.py
+ M demo/web_server.py
+ M problems.md
+ D prombles.md
+?? Plan/Plan28.md
+?? demo/coding_workflow/local_execution.py
+?? demo/coding_workflow/local_execution_approval.py
+?? demo/tests/test_local_execution_approval.py
+?? demo/tests/test_local_execution_supervisor.py
+?? demo/tests/test_visionforge_eval_composition.py
+```
+
+  其中 `demo/track.md`、`problems.md`、`prombles.md` 删除、`Plan/Plan28.md` 是明确排除的其他/用户改动；本任务不编辑、不清理、不 stage。独立 snapshot experiment 已移到另一 worktree，本状态中不存在该目录。
+- `artifacts / evidence`：TRACE-060/061；上述精确 shell 与 status 输出；TRACE-062 issue 2。
+- `remaining_risks`：工作树仍 dirty/uncommitted；工具对话未形成独立 raw log Artifact，因此未保存字段继续明确为 `MISSING/UNKNOWN`。
+- `review`：`PENDING — 由原 reviewer 在新哈希上复核`
+- `supersedes_entry_id`：`TRACE-060.commands/baseline 与 TRACE-061.commands/baseline/git_checkpoint — 仅替代不完整部分`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; actual dirty scope captured above`
+- `next_action`：记录 HANDOFF 操作安全修正的 ACTUAL，冻结新哈希并请原 reviewer 复核 TRACE-062 两项 finding。
+
+### TRACE-20260826-065
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-065 / SEC-EXEC-01-DOC-CORRECTION-01 / ACTUAL / 2026-08-26T16:13:25+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / safe verification handoff correction / TRACE-062～064`
+- `what / why / expected_effect_or_gate`：将 HANDOFF 验证节改为两组当前获准的 mock/structural unittest、compileall 和 no-bypass 静态扫描；明确 full discovery/完整 command-validator/POSIX workload 在单独预注册前禁止，且旧 `VISIONFORGE_BROWSER_EXECUTABLE` E2E 路径不再可用。原因是防止下一任务按陈旧命令重复 TRACE-054 合规偏差。
+- `scope / non_goals`：只改 `HANDOFF.md:682～697` 当前操作说明及本 EOF 记录；SEC report/生产/测试未改，声明的 unittest/compile/static 命令本次也没有实际运行。
+- `baseline`：`TRACE-062=REVISE; pre-correction HANDOFF=519b9a4901c657ebb24715af194a124aedae88a04d129a0615f392f5a11b2023; SEC=31559be2c6ecb873c94de0dc72c8cfb696a647b5d5fe3bb84e8b16d5e7c42919; STEP-LOG before TRACE-062/063=91dafbcdbd49274d09a472f41a4996f24a0411cdb0e6d15c922e43cbd7074679`
+- `commands`：`apply_patch HANDOFF.md` 目标是替换“验证命令”中 full discovery 和 env-based E2E 文案；完整序列化 patch payload=`MISSING/UNKNOWN — 未单独保存raw tool artifact`。修正后精确验证命令（cwd=`/Users/donbblu/codex/multiAgent`）：
+
+```bash
+git status --short && shasum -a 256 HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md && git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md && rg -n '^(python3 -m unittest discover|真实浏览器测试需要先安装)|现在实现统一 Profile|使这 25 项先转绿' HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md || true
+```
+
+  结果 exit=`0`、wall=`0.1s`；scoped diff-check 无输出；旧直接指示不再出现在 HANDOFF（`rg` 唯一命中为 STEP-LOG 对陈旧句的历史描述）。
+- `stop_or_rollback_conditions`：未触发；新文案没有恢复 env-based executable，没有授权真实 workload，并明确 mock 不等于 POSIX/Browser 证据。
+- `result / effect`：`achieved=yes`；`HANDOFF.md sha256=b2ff1561b7bf98ce74704cced9e1c77ea4ae1e403446fb19d1f7f3202d5ac6ef`; `SEC-EXEC-01.md sha256=31559be2c6ecb873c94de0dc72c8cfb696a647b5d5fe3bb84e8b16d5e7c42919` 未改；`STEP-LOG.md pre-TRACE-064/065 sha256=378382d5f9ea22bf76bebdfb6e43df8491fbc1b002db868156a6817cc2146196`。TRACE-062 high finding 的操作冲突已移除。
+- `artifacts / evidence`：[`HANDOFF.md`](../HANDOFF.md) “验证命令”；TRACE-062 issue 1；上述哈希/diff/rg 输出。
+- `remaining_risks`：列出命令仅说明下一任务可运行的子集，本次未重跑；真实 full/POSIX/Browser 仍待后续预注册和安全证据。
+- `review`：`PENDING — 原 reviewer 需在新哈希上复核 TRACE-062 two findings`
+- `supersedes_entry_id`：`TRACE-063 result only; PRE_REGISTER retained; TRACE-062 REVISE retained`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO`
+- `next_action`：重算三文档哈希，请 `/root/sec_docs_checkpoint_review` 只读复核新增 EOF 与 HANDOFF 验证节。
+
+### TRACE-20260826-066
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-066 / SEC-EXEC-01-DOC-CORRECTION-01 / REVIEW / 2026-08-26T16:19:30+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/sec_docs_checkpoint_review / frozen correction checkpoint / TRACE-062～065`
+- `what / why / expected_effect_or_gate`：原 finding reviewer 只读复核 HANDOFF 当前验证命令、TRACE-064/065 的命令/status 纠正、append-only 前缀哈希、历史 `REVISE` 保留与不冒领状态；目标是确认 TRACE-062 两项 finding 真正关闭。
+- `scope / non_goals`：只读文档/静态边界；未编辑、未运行真实 process/network/signal/model/POSIX/Browser，不签 `SEC-EXEC-01 KEEP` 或 Runtime Acceptance。
+- `baseline`：`HANDOFF=b2ff1561b7bf98ce74704cced9e1c77ea4ae1e403446fb19d1f7f3202d5ac6ef; SEC=31559be2c6ecb873c94de0dc72c8cfb696a647b5d5fe3bb84e8b16d5e7c42919; STEP-LOG=eeb07fd19160badd1ef465ba362646d9ada2b6b9ac534d813c2b6b2c0a2f8ef4; hashes stable`
+- `commands`：`reviewer read-only shasum, git diff/prefix hash, status and source inspection; exact internal shell transcript=MISSING/UNKNOWN — ReviewArtifact 保留行号、哈希与结果`。
+- `stop_or_rollback_conditions`：未触发；新命令不启动真实 workload，命令/status 证据可核，历史 `REVISE` 仍存在。
+- `result / effect`：`disposition=APPROVE; blocking_findings=0`。TRACE-062 High/Medium 均关闭；HANDOFF 只列获准 mock/structural/compile/static 子集，full/command-validator/POSIX/Browser 禁令与迁移门禁保留；TRACE-064/065 完整记录可证命令、exit/wall、dirty scope 与 `MISSING/UNKNOWN`。
+- `artifacts / evidence`：ReviewArtifact principal=`/root/sec_docs_checkpoint_review`；行号参考 `HANDOFF.md:686～695`、`STEP-LOG.md:1196～1294`；prefix hashes through TRACE-059/061/063 均重算一致。
+- `remaining_risks`：该批准仅覆盖文档纠正；没有新的 Runtime/POSIX/Browser 证据，工作树仍 dirty/uncommitted。
+- `review`：`APPROVE; independent read-only; blocking=0; no KEEP/Runtime Acceptance`
+- `supersedes_entry_id`：`NONE — TRACE-062 REVISE 作为历史保留，本条只审批其修正`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO`
+- `next_action`：以该审批文档作为下一任务输入；在任何夹具修改前追加 POSIX fixture repair PRE_REGISTER，且修复获批前不运行真实 workload。
+
+### TRACE-20260826-067
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-067 / SEC-EXEC-01-POSIX-FIXTURE-REPAIR-01 / PRE_REGISTER / 2026-08-26T16:20:55+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + pending implementer / POSIX fixture ownership handshake and terminal watchdog barrier / TRACE-059, TRACE-066`
+- `what / why / expected_effect_or_gate`：只修 POSIX 测试夹具自身两个 blocker。第一，test-side spawn wrapper 在底层 `Popen` 返回后持有强 handle，发布独立 `spawn-observed` 并等待 watchdog 对 token/owner/PID/PGID/SID 的匹配 ACK，只有 ACK 后才向 Runtime/caller 返回；fixture leader 在 ACK 前不得创建 descendant。第二，watchdog 正常 join 与 emergency stop 均失败时，`close()` 进入不可逃逸 terminal wait，活 watchdog 时既不返回也不抛错。原因是目前 arm-only 协议在 child self-registration 前无 stable PID，且双失败路径可带活 watchdog 逃逸。
+- `scope / non_goals`：只允许修改 `demo/tests/_local_execution_posix.py`、`demo/tests/fixtures/local_execution_process.py`、`demo/tests/test_local_execution_posix_safety.py`；只运行 pure-mock/direct safety、compile/static/diff。不改生产 `local_execution.py`，不运行 watchdog/target/真实 process/signal/network/port/workload，不使用 `preexec_fn`/pidfd/cgroup/`ps`/`/proc`/native broker。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; STEP-LOG pre-entry=c622f7fd7b618f8d79491dfd4fdc182e5dd51c777fc12c139274b095b56087ab; helper=a00978afa4df611fe20df30abea4cb6d106583c6c555c3ca944cebbfadbc3451; fixture=034eea969031f6493e9d5dba5537673a491a50232e2d94ca42e327d33e65077f; safety=f0a90bb1a67d26e602986b2d05e334bfa2639818af03742064c1482b08290080`
+- `commands`：预计 cwd=`<repo>/demo`；`PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-repair /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -v`；`PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-repair /usr/bin/python3 -m py_compile tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py`；对三文件 `git diff --check`、SHA-256 与独立只读 Review。上述测试命令在实现前不运行，ACTUAL 记录实际精确命令/结果。
+- `stop_or_rollback_conditions`：任一 wrapper 可在 matching ACK 前返回；registration failure 可在 owned child 尚活时抛出；`disarmed_no_spawn` 与 spawn observation 共存；leader 与 observation 身份不一致；未知/漂移身份到达 `killpg`；emergency-stop+join 双失败可从 `close()` 逃逸；修复需越出 scope 或独立 reviewer 非 `APPROVE`。
+- `result / effect`：`PENDING — PRE_REGISTER`。预期效果只是“不存在 caller-visible successful spawn without watchdog ownership”与“活 watchdog 不能从 close 逃逸”，不声称 syscall 指令级零窗口或 bounded 灾难返回。
+- `artifacts / evidence`：`/root/posix_fixture_repair_map` 只读 ReviewArtifact；[`SEC-EXEC-01.md`](SEC-EXEC-01.md) §4.3；`TRACE-059/066`。
+- `remaining_risks`：底层 `Popen` 返回到原子发布 observation 间仍有极短父进程骤死窗口，但不对 Runtime/caller 可见；`getpgid/getsid→killpg` 仍有 PID reuse TOCTOU；Python 不能硬抢占 `killpg/waitpid/filesystem`；灾难 terminal wait 可能永久阻塞；协议只适用于 hash-pinned 可信 fixture，不是敌对 workload sandbox。
+- `review`：`PENDING — 实现后由未编辑候选的独立 reviewer 锁哈希复核`
+- `supersedes_entry_id`：`NONE — 不改写 SEC-HIST-016/TRACE-059 的 REVISE 历史`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：先以 pure-mock 加入 observation/ACK、candidate identity、ACK-before-descendant 和 terminal-no-escape 反例，确认当前夹具达不到新门禁；然后仅修三个允许文件并运行 pure-mock 验证。
+
+### TRACE-20260826-068
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-068 / SEC-EXEC-01-POSIX-FIXTURE-REPAIR-01 / ACTUAL / 2026-08-26T16:37:04+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / POSIX fixture ownership handshake and terminal barrier / TRACE-067`
+- `what / why / expected_effect_or_gate`：在 helper 增加独立 spawn observation/ACK 路径、强 `Popen` handle 和 caller-return gate；watchdog 对 token/owner/PID/PGID/SID 精确核对后才 ACK，可在 leader manifest 前持有 candidate，leader 到达后必须与 observation 一致；fixture 在 ACK 前不进入 workload/不创建 descendant。`close()` 的 normal/emergency join 失败改为 terminal-no-escape barrier，BaseException 延后到 watchdog terminal 后处理。原因是关闭 caller-visible unowned spawn 与带活 watchdog 返回/抛错两个夹具 blocker。
+- `scope / non_goals`：精确只修 `demo/tests/_local_execution_posix.py`、`demo/tests/fixtures/local_execution_process.py`、`demo/tests/test_local_execution_posix_safety.py`，diff=`1284 insertions / 26 deletions`。未改生产/docs/其他测试；全部执行只是 pure-mock/direct，未启动 watchdog/target/真实 process/signal/network/port/workload。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; pre-entry STEP-LOG=f6ae5b81a7cec846e1b88fcf9da864212bcb65511dc64c92abd6d6cb2a93416c; input hashes=TRACE-067`
+- `commands`：实现代理与父级在 cwd=`<repo>/demo` 执行：
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-repair /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -v
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-repair /usr/bin/python3 -m py_compile tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-parent /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -q
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-parent /usr/bin/python3 -m py_compile tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+shasum -a 256 tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+git diff --check -- tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+rg -n 'subprocess\.(Popen|run)|os\.killpg' tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+```
+
+- `stop_or_rollback_conditions`：未触发；没有 ACK 前返回、活 child 时 registration error 逃逸、observation+disarm 共存、身份不明 `killpg`、ACK 前 descendant、活 watchdog 时 close 返回/抛错、范围外修改或真实边界。
+- `result / effect`：`achieved=yes for pure-mock candidate; review=PENDING`。首红：`run=33; pass=23; failures=4; errors=6; skip=0; exit=1; wall=1.1607s`，10 个签名为缺 observation wrapper/candidate validator、disarm 未拒绝 observation、ACK 前到达 `os.pipe`、KeyboardInterrupt 未延后、identity drift 后 join thread 逃逸。最终代理：`35/35 OK; exit=0; exec wall=0.2582s; unittest=0.333s`。父级独立重跑：`35/35 OK; exit=0; exec wall=0.515s; unittest=0.419s`。两次 py_compile exit=0；三文件 diff-check exit=0。static 命中仅为已登记 test-only watchdog/fixture boundary 及其安全 signal helper，生产边界未变。
+- `artifacts / evidence`：`_local_execution_posix.py sha256=db2d77ecc64422d5dc5c6ab398a8e98d34072895edda9bac177aecce4b0ff766`; `fixtures/local_execution_process.py sha256=f33368c1a6dad99839272ae85f69068a4372f0e06a1832f3813ebd8fd4cb2e6b`; `test_local_execution_posix_safety.py sha256=4488184f1d8b0a230166ab4c15e4cc4a80a105b3da3a23e3a9454421da162e45`。
+- `remaining_risks`：只证明脚本化 pure-mock 协议；底层 `Popen`返回→observation 仍有不对 caller 可见的极短骤死窗口，`getpgid/getsid→killpg` 有 reuse TOCTOU，灾难 terminal wait 可能永久阻塞，OS syscall 无硬实时保证，协议不是敌对 workload sandbox。
+- `review`：`PENDING — 候选冻结，需未编辑三文件的独立 reviewer 锁哈希复核`
+- `supersedes_entry_id`：`TRACE-067 result only; PRE_REGISTER retained; SEC-HIST-016/TRACE-059 REVISE retained until review`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; real workload prohibition remains`
+- `next_action`：由独立 reviewer 对三哈希、35 项 pure-mock、observation/ACK identity、terminal-no-escape 与残余 TOCTOU 措辞做只读复审；非 `APPROVE` 不运行任何真实 smoke。
+
+### TRACE-20260826-069
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-069 / SEC-EXEC-01-POSIX-FIXTURE-REPAIR-01 / REVIEW / 2026-08-26T16:45:07+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/posix_fixture_repair_map + /root/posix_fixture_counterreview / frozen TRACE-068 candidate / TRACE-067～068`
+- `what / why / expected_effect_or_gate`：两名未编辑候选的 reviewer 分别检查 spawn observation/ACK 身份与 freshness、candidate-only cleanup、ACK-before-descendant、terminal-no-escape、identity drift、测试假绿与残余 TOCTOU；目标是在真实 smoke 前对夹具本身做安全审查。
+- `scope / non_goals`：独立只读；仅 pure-mock/py_compile/static/diff，未编辑、未启动真实 watchdog/target/process/signal/network/port/workload，不批准 smoke/`KEEP`/Runtime Acceptance。
+- `baseline`：`helper=db2d77ecc64422d5dc5c6ab398a8e98d34072895edda9bac177aecce4b0ff766; fixture=f33368c1a6dad99839272ae85f69068a4372f0e06a1832f3813ebd8fd4cb2e6b; safety=4488184f1d8b0a230166ab4c15e4cc4a80a105b3da3a23e3a9454421da162e45; hashes stable`
+- `commands`：两路独立运行 `tests.test_local_execution_posix_safety` pure-mock，其中一路报告 `35/35 OK, 0.295s`；py_compile/scoped diff-check 通过；另行 deterministic fake-clock 直接调用构造 expired ACK 反例。完整 reviewer shell transcript=`MISSING/UNKNOWN — ReviewArtifacts 保留反例、行号和结果`。
+- `stop_or_rollback_conditions`：命中：过期 arm/spawn ACK 可被 helper/watchdog/workload 消费，因此 disposition 必须 `REVISE`。
+- `result / effect`：`overall=REVISE; independent reviewers=2; blocking high=1; nonblocking medium=1`。两路均复现：helper 只比 deadline 数值/相等而不验证 `monotonic < deadline`；watchdog 先处理 observation/写 ACK 后才判 hard deadline；workload ACK predicate 也可在 deadline 后放行 `os.pipe/Popen`。现有正常卡用已过期绝对值 `10.0` 仍变绿，属假绿。其他 identity/candidate/reap/terminal-no-escape 检查未见 blocker。Medium：TRACE-068“ACK前不进入workload”过宽；准确语义是 ACK 前只做control-plane leader登记，不进入 mode-specific side effect/不创建 pipe/descendant。
+- `artifacts / evidence`：ReviewArtifacts principals=`/root/posix_fixture_repair_map`, `/root/posix_fixture_counterreview`；blocking refs=`_local_execution_posix.py:879,1202～1244`; `fixtures/local_execution_process.py:326～344,376,403,976～1044`; `test_local_execution_posix_safety.py:981～1045,1346～1393`。
+- `remaining_risks`：底层 spawn→observation、PID reuse TOCTOU、灾难阻塞和 OS syscall hard-wall 残余不变；当前 35/35 不能用于放行真实 smoke。
+- `review`：`REVISE; blocking=1 high; two independent read-only reviewers; no smoke/KEEP/Runtime Acceptance`
+- `supersedes_entry_id`：`NONE — 保留 TRACE-068 候选与假绿证据`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; candidate rejected; commit=PENDING`
+- `next_action`：追加 TRACE-070；以 deterministic clock 增加 spawn前已过期、ACK等待中过期、watchdog迟到observation不ACK、fixture迟到ACK不达pipe/Popen/mode 四卡，再修三侧 freshness gate。
+
+### TRACE-20260826-070
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-070 / SEC-EXEC-01-POSIX-FIXTURE-REPAIR-02 / PRE_REGISTER / 2026-08-26T16:45:07+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + pending implementer / monotonic ACK freshness correction / TRACE-069`
+- `what / why / expected_effect_or_gate`：新增四类 deterministic fake-clock 红卡，然后在 helper arm consumer、spawn consumer/return gate、watchdog ACK producer 与 fixture ACK consumer 统一要求 `time.monotonic() < deadline`，恰好等于 deadline 也拒绝。watchdog 在 deadline 后可保留已验 candidate 用于 cleanup，但绝不写 ACK；wrapper 在调 factory 前与收到 ACK 后返回前都复核 freshness；fixture predicate 自身复核 freshness。原因是防止过期租约启动 direct child 或放行 descendant。
+- `scope / non_goals`：继续只允许 TRACE-067 三个 fixture/test 文件与 pure-mock/compile/static/diff；不改生产/docs其他内容，不运行真实边界，不放宽 identity 复验或硬 deadline。
+- `baseline`：`TRACE-069=REVISE; helper=db2d77ec...f766; fixture=f33368c1...2e6b; safety=4488184f...2e45; STEP-LOG pre-review append=f7b7d14658b4483dc471d47b495bbe9bc48e717650064eae230e349488d481e0`
+- `commands`：先定向运行新增 expired-ACK 红卡确认旧候选失败；再运行完整 `PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-repair2 /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -v`、py_compile、scoped diff-check/hash；新哈希重请双路只读 Review。精确结果待 ACTUAL。
+- `stop_or_rollback_conditions`：过期/恰好到期 ACK 任一侧仍接受；watchdog deadline 后仍写 ACK；fixture 迟到ACK达到 mode-specific side effect；修 freshness 破坏 exact identity/candidate cleanup/terminal-no-escape；任一真实边界或范围外修改；reviewer 非 `APPROVE`。
+- `result / effect`：`PENDING — PRE_REGISTER`。同时纠正 TRACE-068 当前解释：ACK 前 fixture 可写必要 control-plane leader manifest，但不得进入 mode-specific side effect，不得创建 pipe/descendant。
+- `artifacts / evidence`：TRACE-069 two ReviewArtifacts 与行号/反例。
+- `remaining_risks`：底层 `Popen→observation` 极短骤死窗口、PID reuse TOCTOU、灾难永久阻塞与 OS syscall hard-wall 保留；这些不由 ACK freshness 冒领关闭。
+- `review`：`PENDING — 修正后由两名原 reviewer 锁新哈希复核`
+- `supersedes_entry_id`：`TRACE-068 — 仅替代其 ACK 前行为措辞与候选结果；TRACE-068/069 历史保留`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; rejected hashes retained; real workload prohibited`
+- `next_action`：由原 implementer 只加 expired-ACK 反例与三侧 freshness gate，首红后最小修复，不扩张其他协议。
+
+### TRACE-20260826-071
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-071 / SEC-EXEC-01-POSIX-FIXTURE-REPAIR-02 / ACTUAL / 2026-08-26T16:51:47+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / monotonic ACK freshness correction / TRACE-069～070`
+- `what / why / expected_effect_or_gate`：新增四类 deterministic fake-clock 卡，并将 helper 的 arm ACK consumer、factory 前/收 ACK 后 return gate、watchdog spawn ACK producer、fixture spawn ACK predicate 统一为严格 `time.monotonic() < deadline`；恰好到期也拒绝。watchdog 对迟到 observation 仍保留已验 candidate 供 cleanup，但绝不写 ACK。原因是关闭 TRACE-069 的过期租约启动 direct child/放行 descendant 竞态。
+- `scope / non_goals`：仍只改同三个 fixture/test 文件；只运行 deterministic pure-mock、完整 safety、py_compile 和 scoped diff/hash；未改生产/docs其他内容，未启动真实 process/signal/network/port/workload。
+- `baseline`：`TRACE-069=REVISE; helper=db2d77ec...f766; fixture=f33368c1...2e6b; safety=4488184f...2e45; STEP-LOG pre-entry=7d7e4c3cda1fdbbb1721baea53ab9191e22299d7c3fca29b492530834f2322ce`
+- `commands`：实现代理在 cwd=`<repo>/demo` 先定向运行新增 4 卡，再运行 `PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-repair2 /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -v`、py_compile 与 scoped diff/hash；父级执行：
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-parent2 /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -q
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-parent2 /usr/bin/python3 -m py_compile tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+shasum -a 256 tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+git diff --check -- tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+```
+
+- `stop_or_rollback_conditions`：未触发；过期/恰好到期 ACK 四侧均拒绝，watchdog 不迟到签 ACK，fixture 不到 mode-specific side effect，identity/candidate/terminal-no-escape 卡仍绿，无真实边界或范围外修改。
+- `result / effect`：`achieved=yes for pure-mock candidate; review=PENDING`。新卡首红=`run=4; pass=0; fail=4; error=0; skip=0; exit=1; exec wall=0.102985s`：过期 arm ACK 仍调 factory、ACK 等待到 deadline 仍 return、watchdog `now==deadline` 仍写 ACK、fixture equal-deadline ACK 到 marker/mode side effect。修复后定向 `4/4 OK`；实现代理完整 safety=`39/39 OK; exit=0; exec wall=0.360377s; unittest=0.403s`；父级重跑=`39/39 OK; exit=0; exec wall=0.489s; unittest=0.392s`；py_compile/diff-check exit=0。
+- `artifacts / evidence`：`_local_execution_posix.py sha256=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999`; `fixtures/local_execution_process.py sha256=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8`; `test_local_execution_posix_safety.py sha256=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd`。
+- `remaining_risks`：底层 `Popen→observation` 不对 caller 可见的极短骤死窗口、PID reuse TOCTOU、灾难 terminal wait 可能永久阻塞、OS syscall hard-wall 和可信 fixture 假设均保留。准确语义为：ACK 前允许必要身份校验/control-plane leader manifest，不允许 marker、pipe、descendant、listener、output 或其他 mode-specific side effect。
+- `review`：`PENDING — 两名原 reviewer 需锁新哈希复核 TRACE-069 high blocker`
+- `supersedes_entry_id`：`TRACE-070 result only; PRE_REGISTER retained; TRACE-068/069 rejected history retained`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; real workload prohibition remains`
+- `next_action`：双路独立只读复核 freshness 四卡、完整39项、identity/candidate/terminal 不回归及残余风险措辞；非双路 `APPROVE` 不运行真实 smoke。
+
+### TRACE-20260826-072
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-072 / SEC-EXEC-01-POSIX-FIXTURE-REPAIR-02 / REVIEW / 2026-08-26T16:56:09+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/posix_fixture_repair_map + /root/posix_fixture_counterreview / frozen TRACE-071 candidate / TRACE-069～071`
+- `what / why / expected_effect_or_gate`：两名原 finding reviewer 独立只读复核严格 freshness、四张 fake-clock 反例、watchdog late-candidate cleanup-only 顺序、fixture side-effect gate，并回归 identity/candidate/terminal-no-escape。目标是确认 TRACE-069 high 关闭且无新假绿。
+- `scope / non_goals`：独立只读；只运行 39 项 pure-mock、py_compile/scoped diff/static，未编辑、未启动真实 watchdog/target/process/signal/network/port/workload。不批准真实 smoke、`KEEP` 或 Runtime Acceptance。
+- `baseline`：`helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; safety=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd; hashes stable`
+- `commands`：两路各自运行 `tests.test_local_execution_posix_safety` pure-mock，报告分别 `39/39 OK, unittest=0.409s, exec=0.478s` 与 `39/39 PASS`；py_compile/scoped diff/static exit=0；代码+反例直接检查行号见 ReviewArtifacts。完整 reviewer shell transcript=`MISSING/UNKNOWN`。
+- `stop_or_rollback_conditions`：未触发；`now==deadline` 四侧均拒绝，late observation 只留 candidate cleanup 不 ACK，identity/terminal 无回归，哈希无漂移。
+- `result / effect`：`overall=APPROVE limited; independent reviewers=2; blocking=0`。helper factory 前与 return 前都复核 `< deadline`；watchdog 先保存 verified candidate，到期则不写 ACK 而进 cleanup；fixture predicate 与 wait 后都复核 freshness，equal/late ACK 不到 marker/pipe/Popen/mode。上一候选 TRACE-069 `REVISE` 保留。
+- `artifacts / evidence`：ReviewArtifacts principals=`/root/posix_fixture_repair_map`, `/root/posix_fixture_counterreview`；主要 refs=`helper:897,1207～1251`; `fixture:329～365,558,662,1003～1019`; `safety:1059,1104,1395,1571`。
+- `remaining_risks`：底层 `Popen→spawn-observed` 骤死窗口、同数字 PID reuse/identity-check→killpg TOCTOU、terminal 永久阻塞、filesystem/signal/wait 无硬实时与可信 fixture 假设均保留。ACK 文件写入可跨 deadline，但 consumer 会按当前 monotonic 拒绝；不宣称文件系统硬时限。
+- `review`：`APPROVE limited; two independent read-only reviewers; blocking=0; no real smoke/KEEP/Runtime Acceptance`
+- `supersedes_entry_id`：`NONE — TRACE-069 REVISE 与旧哈希保留，本条只批准 TRACE-071 修正`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; commit=PENDING; fixture candidate approved for separately pre-registered narrow smoke only`
+- `next_action`：不直接运行 target；先为 watchdog-only 与 arm→ACK→disarm_no_spawn 追加独立 PRE_REGISTER，冻结精确脚本/停止条件并只证明 `target_spawn=0`。两者通过后再单独预注册 `success_orphan`。
+
+### TRACE-20260826-073
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-073 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-ARTIFACT-01 / PRE_REGISTER / 2026-08-26T17:08:58+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + pending artifact implementer / reviewed no-target smoke module / TRACE-072`
+- `what / why / expected_effect_or_gate`：先创建可哈希、可 py_compile/静态审查的 `demo/tests/test_local_execution_posix_smoke.py`，只定义两个默认 skip、必须精确 opt-in 的真实 smoke：watchdog-only；arm ACK→`disarm_no_spawn`且 `target_spawn=0`。原因是 inline `python -c` 缺稳定哈希/编译/静态审查，容易因 quoting/异常/finally 顺序误执行 target 或提前删根。预期只形成待审执行工件，本条不运行任何 smoke。
+- `scope / non_goals`：只允许新增 `demo/tests/test_local_execution_posix_smoke.py`；不改 helper/fixture/生产/docs其他内容。允许 py_compile、AST/static、SHA/diff，以及在没有 opt-in env 时运行精确模块确认 `2 skipped / target constructor=0`；不设 opt-in，不启动 watchdog/target/process/signal/network/port/workload。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; helper/fixture/safety=TRACE-072 approved hashes; smoke file absent; STEP-LOG pre-entry=08636d5252c21b983ae58c8c58761a19c5dc82edab86fdb2541ab26b94893855`
+- `commands`：计划 cwd=`<repo>/demo`；`PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-smoke-artifact /usr/bin/python3 -m py_compile tests/test_local_execution_posix_smoke.py`；禁止边界静态扫描；默认无 opt-in 的 exact module 运行必须只返回 2 skip；scoped diff/hash；独立只读 Review。实际结果待 ACTUAL。
+- `stop_or_rollback_conditions`：文件含直接 `Popen/run/kill/killpg/socket`、调用 spawn wrapper/执行 workload tuple；无环境时不 skip；两 case 不是精确独立 opt-in；使用 `TemporaryDirectory` 隐式先删根；constructor/close 不能证明 terminal 时仍删根；异常掩盖原错；断言前 watchdog 尚活；修改范围外文件或实际启动任何子进程。
+- `result / effect`：`PENDING — PRE_REGISTER`。工件设计：`tempfile.mkdtemp`+显式 `try/finally`，只有 guard terminal/clean 与所有断言通过后才删精确根；失败/超时保留根。watchdog-only 不 arm/不取command/不wrapper；arm/disarm 只取 `workload_command("stdout_short")` 并立即丢弃，不使用 `success_orphan`。
+- `artifacts / evidence`：TRACE-072；`/root/posix_fixture_counterreview` 与 `/root/posix_fixture_repair_map` 只读 smoke-plan findings。
+- `remaining_risks`：执行前仍缺 reviewed declarative outer 25s timeout/失败保根协议，因此即使模块通过静态审查也不自动授权运行。该工件只证无 target 路径，不证明子孙清理。
+- `review`：`PENDING — 工件哈希冻结后由两名未编辑者复核；execution authorization=NOT_ISSUED`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; smoke execution forbidden`
+- `next_action`：只编写默认 skip 的 smoke module，先做 static/default-skip 验证并冻结哈希；未获双路审查与外层 timeout 批准前不设 opt-in env。
+
+### TRACE-20260826-074
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-074 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-ARTIFACT-01 / ACTUAL / 2026-08-26T17:16:21+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / default-skip no-target smoke artifact / TRACE-073`
+- `what / why / expected_effect_or_gate`：仅新增 `demo/tests/test_local_execution_posix_smoke.py`，定义两个必须同时匹配精确环境 selector 与 fully-qualified unittest ID 才可进入的 case：watchdog-only；arm ACK 后 `disarm_no_spawn`。文件默认 discovery 全部 skip；arm case 只取得 `stdout_short` 命令 tuple、检查 ACK、立即丢弃 tuple，既不调用 wrapper也不执行 tuple。原因是把未来的窄 smoke 固化为可哈希、可编译、可静态审查的工件，避免 inline shell/Python 在 quoting、selector 或 finally 顺序上误启动 target。预期效果只是在执行授权前形成冻结候选；不授权或证明任何真实 watchdog/target 生命周期。
+- `scope / non_goals`：精确只新增上述 smoke 文件；未修改 helper/fixture/生产/其他测试。只运行无 opt-in 的默认-skip模块、纯 import/mock constructor 探针、py_compile、static/hash/whitespace 检查；未设置 `SEC_EXEC_POSIX_SMOKE_CASE`，未构造 `ExternalProcessGuard`，未启动 watchdog/target/process/signal/network/port/workload。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; related pre-status="M VerificationReports/STEP-LOG.md; ?? demo/tests/test_local_execution_posix_smoke.py"; STEP-LOG pre-entry=d5851bce18a4248dcc6704a4b6b08af357eec440427c1ebe46f2d39ffbaa4bd0; helper/fixture/safety=TRACE-072 approved hashes`
+- `commands`：cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-smoke-parent /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-smoke-parent /usr/bin/python3 -m py_compile tests/test_local_execution_posix_smoke.py
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPATH=. PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-smoke-parent /usr/bin/python3 -c 'import io, unittest; from unittest import mock; import tests.test_local_execution_posix_smoke as m; factory=mock.Mock(side_effect=AssertionError("constructor reached")); suite=unittest.defaultTestLoader.loadTestsFromModule(m); sink=io.StringIO(); p=mock.patch.object(m,"ExternalProcessGuard",factory); p.start(); result=unittest.TextTestRunner(stream=sink,verbosity=0).run(suite); p.stop(); print("run=%d skipped=%d failures=%d errors=%d constructor_calls=%d" % (result.testsRun,len(result.skipped),len(result.failures),len(result.errors),factory.call_count)); assert result.wasSuccessful() and len(result.skipped)==2 and factory.call_count==0'
+```
+
+  cwd=`<repo>`：
+
+```bash
+git diff --no-index --check /dev/null demo/tests/test_local_execution_posix_smoke.py
+shasum -a 256 demo/tests/test_local_execution_posix_smoke.py VerificationReports/STEP-LOG.md
+rg -n 'subprocess\.(Popen|run)|os\.(kill|killpg)|socket\.|spawn_observing_popen|success_orphan' demo/tests/test_local_execution_posix_smoke.py
+git status --short -- VerificationReports/STEP-LOG.md demo/tests/test_local_execution_posix_smoke.py
+```
+
+- `stop_or_rollback_conditions`：未触发。默认模块 `run=2/skipped=2` 且 constructor mock `calls=0`；文件无直接 process/signal/network、spawn wrapper 或 `success_orphan`；命令 tuple 未被执行；没有范围外修改或 opt-in。注意 `git diff --no-index --check` 对新增文件的 exit=`1` 表示存在预期 diff，输出为空表示无 whitespace error；禁止误记为命令失败。
+- `result / effect`：`achieved=yes for artifact-only candidate; execution authorization=NOT_ISSUED; review=PENDING`。默认模块 `run=2; pass=0; fail=0; error=0; skip=2; exit=0; unittest=0.000s`；constructor 探针 `run=2/skipped=2/failures=0/errors=0/constructor_calls=0; exit=0`；py_compile exit=0；forbidden-string `rg` exit=1/无命中；新增文件 no-index whitespace 输出为空；scoped status 如 baseline。工具 wall telemetry 对这些短命令近似零，未作为性能证据。
+- `artifacts / evidence`：`demo/tests/test_local_execution_posix_smoke.py sha256=12cdb3a955c853cada47e943d9a0cfb4625039d8d5ed8ddece4e66d218e25a5e`；两项 exact test、default skip decorators、`mkdtemp`+explicit finally、terminal assertions与 absent-target paths；实现代理 AST 报告=`2 tests; one constructor site only in opted-in runner; workload_command stdout_short=1; disarm=1; direct boundary=0; tuple execution=0`。
+- `remaining_risks`：候选尚未获独立 Review；selector/argv 语义、异常与根目录删除顺序、terminal 证明和外层 hard timeout 仍需审查。模块内部成功后删除根，失败保留根；尚无外部 receipt/runner timeout。即使工件获批也不自动授权设置 opt-in；真实 smoke、`success_orphan`、`KEEP` 与 Runtime Acceptance 均未签发。
+- `review`：`PENDING — 两名未编辑候选的 reviewer 锁定 12cdb3a...25a5e；scope=artifact only`
+- `supersedes_entry_id`：`TRACE-073 result only; PRE_REGISTER retained`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO`
+- `next_action`：由 `/root/posix_fixture_counterreview` 与 `/root/posix_fixture_repair_map` 只读复核冻结文件，尤其 exact selector 是否可绕过、默认 discovery/constructor 零触达、tuple 不执行、异常/close/root 删除顺序及是否必须在执行前补外部 receipt+25s timeout；非双路 `APPROVE` 不设置 opt-in。
+
+### TRACE-20260826-075
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-075 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-ARTIFACT-01 / REVIEW / 2026-08-26T17:21:19+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/posix_fixture_repair_map + /root/posix_fixture_counterreview / frozen smoke artifact / TRACE-073～074`
+- `what / why / expected_effect_or_gate`：两名未编辑候选的 reviewer 按 `review-artifact` 独立复核 exact selector、默认零触达、两条 no-target 控制流、异常/close/root 删除次序、terminal/join证据与外部 timeout/receipt 责任边界。目标是决定该工件是否可进入单独的执行包装设计，而不是授权执行。
+- `scope / non_goals`：独立只读；仅 py_compile、AST/static、默认无 opt-in unittest/mock 与 Python 3.9 argv 语义检查。未编辑、未设置 opt-in、未构造 guard、未启动 watchdog/target/process/signal/network/port，不批准 execution/`success_orphan`/`KEEP`/Runtime Acceptance。
+- `baseline`：`subject=test_local_execution_posix_smoke.py sha256=12cdb3a955c853cada47e943d9a0cfb4625039d8d5ed8ddece4e66d218e25a5e; hash stable before/after both reviews; STEP-LOG pre-entry=18231ee4c3ebcda8d6fe9541682d8c677258b5891db5062a0096fe8d9c8a13ac`
+- `commands`：父级额外在 cwd=`<repo>/demo` 执行 `/usr/bin/python3 -m unittest -h`，exit=0，确认 Python 3.9 CLI 支持 `-k TESTNAMEPATTERNS`；两名 reviewer 的完整内部 shell transcript=`MISSING/UNKNOWN — ReviewArtifacts 保存精确哈希、行号、py_compile/default-skip/static结果，不补造未保存命令`。
+- `stop_or_rollback_conditions`：触发。任一非 positional option value 可伪装成唯一 FQ selector 即须 `REVISE`；独立意见不以多数票覆盖可复现 high finding。
+- `result / effect`：`overall=REVISE; blocking=1 high`。共同通过：无 opt-in `2 skipped/constructor 0`、py_compile/AST/static、watchdog-only不arm、arm/disarm只取并删除 tuple且无 wrapper、失败保根、terminal/clean/join与成功后删除顺序。`/root/posix_fixture_repair_map=APPROVE artifact-only`。`/root/posix_fixture_counterreview=REVISE`：源码把所有不以 `-` 开头的 argv 收入 `_REQUESTED_TEST_NAMES`，故 `-k <FQ_ID>` 的 option value 可形成恰好一个 FQ ID；在 matching env 下可无需 positional selector 通过 decorator与 `self.id()`，扩大导入面并构造真实 guard。
+- `artifacts / evidence`：ReviewArtifacts principals=`/root/posix_fixture_repair_map`, `/root/posix_fixture_counterreview`；finding refs=`smoke.py:40～50,56～59`; Python 3.9.6 unittest help 的 `-k TESTNAMEPATTERNS`；subject hash稳定。
+- `remaining_risks`：外部 receipt 和 reviewed 25s timeout不是默认-skip artifact blocker，但仍是任何 opt-in execution 的硬前置；primary+fallback 双失败的 fallback traceback只保留类型/消息是非阻塞诊断限制。
+- `review`：`REVISE; one independent high blocker; execution authorization remains NOT_ISSUED`
+- `supersedes_entry_id`：`NONE — TRACE-074 artifact result保留，当前版本不得执行`
+- `git_checkpoint`：`REVIEWED_REJECTED_WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：先追加 selector correction PRE_REGISTER；只把 gate 改为原始 argv 精确等于单个 positional FQ ID，并增加 pure selector table 覆盖 `-k/discover/module/duplicate/extra option-value`；不设置 opt-in。
+
+### TRACE-20260826-076
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-076 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-ARTIFACT-02 / PRE_REGISTER / 2026-08-26T17:21:19+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + pending artifact implementer / exact raw unittest selector correction / TRACE-075`
+- `what / why / expected_effect_or_gate`：把 selector 从“过滤 flags 后收集非 option argv”改为“原始 `tuple(sys.argv[1:])` 必须精确等于 `(FQ_TEST_ID,)`”；新增一个始终安全的 pure selector table test，覆盖两个合法 case及 `-k FQ`、discover、module/class、重复/额外 positional、flags/option-value、wrong/missing env。原因是关闭 `-k` value 伪装 positional ID 的 high blocker，并把反例作为 checked-in 回归而非只留 reviewer 推理。
+- `scope / non_goals`：只允许修改 `demo/tests/test_local_execution_posix_smoke.py`；允许 py_compile、pure selector test、无 opt-in default module/mock constructor、AST/static/hash/diff。不改 helper/fixture/生产/docs其他内容，不设置 opt-in，不构造 guard/启动 watchdog/target/process/signal/network/port/workload。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; rejected subject=12cdb3a955c853cada47e943d9a0cfb4625039d8d5ed8ddece4e66d218e25a5e; STEP-LOG pre-TRACE-075/076=18231ee4c3ebcda8d6fe9541682d8c677258b5891db5062a0096fe8d9c8a13ac`
+- `commands`：计划 cwd=`<repo>/demo`；运行新增 pure selector fully-qualified test、无 opt-in完整模块（预期 `1 pass + 2 skip`、constructor=0）、py_compile；cwd=`<repo>` 运行 no-index whitespace、AST/forbidden APIs、SHA与独立双路 review。ACTUAL 保存实际精确命令/结果。
+- `stop_or_rollback_conditions`：`-k FQ`、discover、module/class、duplicate、extra positional或任一 flag仍可进入 target test；合法原始 `(FQ_ID,)` 被拒；默认无 env 构造 guard；pure card本身触达 boundary；修改范围外文件；需要运行 opt-in 才能证明修复。
+- `result / effect`：`PENDING — PRE_REGISTER`。预期默认模块从历史 `2 skip`变为`1 pure pass + 2 skip`，这是有意的新证据形状；未来真实 case仍必须用不带任何 flag的唯一 positional FQ ID，并由外层 wrapper另行证明 `testsRun=1/skipped=0`。
+- `artifacts / evidence`：TRACE-075 high finding；Python 3.9.6 `unittest -h`；rejected subject hash。
+- `remaining_risks`：本批只修 selector；external receipt、sanitized env、25s timeout、专属TMPDIR/失败保根和非skip机器证据仍留给后续 execution wrapper，且即使本批双路批准也不授权执行。
+- `review`：`PENDING — 新hash需原两名reviewer复核 TRACE-075 finding`
+- `supersedes_entry_id`：`TRACE-075 result only; rejected version and REVISE history retained`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; smoke execution forbidden`
+- `next_action`：只修改 smoke selector和pure table，先捕获旧实现的 pure red，再修到 default `1 pass/2 skip`；冻结新hash后双路独立只读复核。
+
+### TRACE-20260826-077
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-077 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-ARTIFACT-02 / ACTUAL / 2026-08-26T17:26:12+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / raw unittest selector correction / TRACE-075～076`
+- `what / why / expected_effect_or_gate`：只在 smoke 文件新增可注入的纯 selector helper 与 checked-in table；先让 helper保留旧“过滤 option”语义并捕获 `-k FQ`/`--locals FQ` 两项首红，再改为 `raw_arguments == (TEST_IDS[case_name],)`。decorator与测试体运行时复核共用该 helper。原因是不能让 unittest option value冒充唯一 positional FQ ID；效果是未来两个 opt-in 都只接受不带任何 flag的单元素原始 argv。
+- `scope / non_goals`：精确只修改 `demo/tests/test_local_execution_posix_smoke.py`。全程显式移除 `SEC_EXEC_POSIX_SMOKE_CASE`；只运行 pure selector、默认模块、constructor mock、py_compile/AST/static/hash/whitespace。未构造 guard，未启动 watchdog/target/process/signal/network/port/workload，未执行两个 opt-in case。
+- `baseline`：`rejected subject=12cdb3a955c853cada47e943d9a0cfb4625039d8d5ed8ddece4e66d218e25a5e; branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; related status="M VerificationReports/STEP-LOG.md; ?? demo/tests/test_local_execution_posix_smoke.py"; STEP-LOG pre-entry=86895be7eea4c7989782024ea3bdb5c174ccefcd2d1013718d7e88c61f69f0b2`
+- `commands`：实现代理首红（cwd=`<repo>/demo`）：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-selector-red /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_selector_requires_exact_raw_fully_qualified_id -v
+```
+
+  修复后实现代理与父级分别使用 `...selector-green`/`...selector-parent` 重跑同一 FQ pure test；父级另执行：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-selector-parent /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPATH=. PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-selector-parent /usr/bin/python3 -c 'import io, unittest; from unittest import mock; import tests.test_local_execution_posix_smoke as m; factory=mock.Mock(side_effect=AssertionError("constructor reached")); suite=unittest.defaultTestLoader.loadTestsFromModule(m); sink=io.StringIO(); p=mock.patch.object(m,"ExternalProcessGuard",factory); p.start(); result=unittest.TextTestRunner(stream=sink,verbosity=0).run(suite); p.stop(); print("run=%d skipped=%d failures=%d errors=%d constructor_calls=%d" % (result.testsRun,len(result.skipped),len(result.failures),len(result.errors),factory.call_count)); assert result.wasSuccessful() and result.testsRun==3 and len(result.skipped)==2 and factory.call_count==0'
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-selector-parent /usr/bin/python3 -m py_compile tests/test_local_execution_posix_smoke.py
+```
+
+  cwd=`<repo>`：`shasum -a 256 demo/tests/test_local_execution_posix_smoke.py VerificationReports/STEP-LOG.md`；forbidden API `rg`；`git diff --no-index --check /dev/null demo/tests/test_local_execution_posix_smoke.py`；scoped status。实现代理还运行 Python AST scanner；首次 scanner shell one-liner 因 scanner 自身 f-string 转义产生 `SyntaxError`，精确 raw command=`MISSING/UNKNOWN — 未保存`，纠正后的 scanner exit=0；项目文件没有因此执行失败或变化。
+- `stop_or_rollback_conditions`：未触发。`-k FQ`/`--locals FQ`及其他负向 table均拒绝；两个合法 raw tuple接受；默认无 env constructor=0；pure test不触达 boundary；修改范围未越界。
+- `result / effect`：`achieved=yes for corrected artifact candidate; review=PENDING; execution authorization=NOT_ISSUED`。首红 exact pure test=`run=1; pass=0; failures=2; errors=0; exit=1`，subtests `-k option plus fully qualified ID` 与 `--locals option plus fully qualified ID` 均为 `True is not False`。修后同一 pure test `1/1 OK`；默认模块=`run=3; pass=1; skip=2; failure/error=0; exit=0`；constructor harness=`run=3; skip=2; constructor_calls=0`；py_compile exit=0。AST=`3 tests; helper calls=4; guard constructor sites=1; workload_command=1; disarm=1; forbidden calls/imports=[]; command tuple callsites=0`。forbidden `rg`无命中；no-index whitespace无输出（exit 1仅因新增 diff）。
+- `artifacts / evidence`：`demo/tests/test_local_execution_posix_smoke.py sha256=bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f`；old=`12cdb3...25a5e`; selector table覆盖2 positive+9 negative；Python=`3.9.6`。
+- `remaining_risks`：本批仍仅是默认-safe artifact；真实 opt-in未执行。外部 reviewed timeout、sanitized env、专属TMPDIR/失败保根、机器可核 `testsRun=1/skipped=0` receipt仍是execution前置；底层 fixture残余TOCTOU保持TRACE-072披露。
+- `review`：`PENDING — 原两名reviewer需锁 bca89a4f...d44f 复核 high blocker与无过冻`
+- `supersedes_entry_id`：`TRACE-076 result only; PRE_REGISTER retained; TRACE-075 REVISE retained`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO`
+- `next_action`：两路独立只读复核新hash、selector table、默认1+2skip/constructor0与异常/root语义无回归；非双路 `APPROVE` 不设计或运行 opt-in wrapper。
+
+### TRACE-20260826-078
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-078 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-ARTIFACT-02 / REVIEW / 2026-08-26T17:32:05+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/posix_fixture_repair_map + /root/posix_fixture_counterreview / corrected smoke artifact / TRACE-075～077`
+- `what / why / expected_effect_or_gate`：两名原审查者独立只读复核 corrected raw-argv gate、2 positive+9 negative table、decorator/runtime共同检查、合法输入不过冻、默认 constructor零触达与原 close/terminal/root语义。目标是确认 TRACE-075 high真正关闭，并仅允许进入下一批 execution-wrapper 工件设计。
+- `scope / non_goals`：只读、artifact-only；只运行 pure selector/default mock/pycompile/AST/static。未设置 opt-in、未构造 guard、未执行 smoke或真实 boundary，不批准 execution/`KEEP`/Runtime Acceptance。
+- `baseline`：`subject=bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f; rejected predecessor=12cdb3a...25a5e; subject hash stable before/after both reviews; STEP-LOG pre-entry=bc8212f0017b0e92f50263c69dc3f9011ce13c988e39a2ce8e267527ec214ada`
+- `commands`：两 reviewer分别重跑 pure selector/default module/constructor mock、Python3.9 py_compile与AST/static；精确完整内部 shell transcript=`MISSING/UNKNOWN — ReviewArtifacts保存结果、行号、哈希及两次 reviewer 自身静态脚本修正说明，不补造未保存命令`。
+- `stop_or_rollback_conditions`：未触发。`-k/discover/module/class/duplicate/extra/--locals/wrong/missing env`均拒绝；两个精确 case均接受；default constructor=0；候选哈希稳定且无新 boundary。
+- `result / effect`：`overall=APPROVE artifact-only; independent reviewers=2; blocking=0`。raw `tuple(sys.argv[1:])` 必须精确等于单元素 FQ ID；decorator与runtime assert共享helper，runtime另核 `self.id()`。默认=`3 run/1 pass/2 skip`，constructor mock=0，pure selector=1/1，pycompile/AST/static通过。原 watchdog-only、arm/disarm tuple不执行、BaseException/close失败保根、terminal clean/join与成功后删除次序无回归。TRACE-075 high关闭，拒绝历史保留。
+- `artifacts / evidence`：ReviewArtifacts principals=`/root/posix_fixture_repair_map`, `/root/posix_fixture_counterreview`; refs=`smoke.py:39～148,168～327`; subject hash=`bca89a4f...d44f`; dependency hashes仍为TRACE-072 `a87/80ec/266b`。
+- `remaining_risks`：解释器在 `-m unittest` 之前的参数不进入 `sys.argv[1:]`，故未来wrapper仍须冻结完整解释器命令与sanitized env。缺 reviewed 25s timeout、专属TMPDIR/失败保根与机器可核 `testsRun=1/skipped=0` receipt；这些是execution硬前置。真实 opt-in/POSIX仍无证据。
+- `review`：`APPROVE artifact-only; two independent read-only reviewers; blocking=0; execution authorization=NOT_ISSUED`
+- `supersedes_entry_id`：`NONE — TRACE-075 REVISE及旧hash保留，本条只批准TRACE-077 corrected artifact`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO`
+- `next_action`：在任何 opt-in 前，先预注册并创建可哈希的 execution wrapper工件，冻结完整Python命令、sanitized env、25s alarm、专属TMPDIR/失败保根和非skip receipt；wrapper独立review通过后才分别预注册 watchdog-only与arm/disarm执行。
+
+### TRACE-20260826-079
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-079 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-01 / PRE_REGISTER / 2026-08-26T17:47:26+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + pending runner implementer / checked-in same-process no-target smoke runner / TRACE-078`
+- `what / why / expected_effect_or_gate`：只新增一个私有 checked-in Python runner 与一张 pure safety卡。runner用 canonical `/usr/bin/python3 -I -B -u <absolute-runner> <single-FQ-ID>` 同进程运行唯一 smoke，不启动 child unittest CLI，也不修改 `sys.argv`；全部 invocation/env/interpreter/hash 验证后创建并公布专属 `/private/tmp` 0700 scope，再用 `SIGALRM=SIG_DFL + ITIMER_REAL=25s` 覆盖延迟 import、测试、post-hash、scope清理与receipt写出。原因是同时补齐 hard stop、default fail-closed、非skip机器证据和失败保根，又不引入第二个需要身份/信号回收的 runner进程。
+- `scope / non_goals`：只允许新增 `demo/tests/_local_execution_posix_smoke_runner.py` 与 `demo/tests/test_local_execution_posix_smoke_runner.py`，以及本Step Log后续记录。不改 helper/fixture/safety/smoke/生产/其他测试。本批只运行 pure-mock/direct、pycompile/AST/static/hash/diff；不得设置真实 opt-in、不得调用runner正向main、不得构造 guard、启动 watchdog/target/process/signal/network/port/workload。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; STEP-LOG pre-entry=46456f68959cf61d6bc414df8ec829d589d0e0a16e90e2e69b0d84a252df1dd1; runner/test absent; smoke=bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; safety=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd`
+- `commands`：计划 cwd=`<repo>/demo`：只运行 `tests.test_local_execution_posix_smoke_runner` pure suite、现有 smoke默认无env模块、两新文件 pycompile；cwd=`<repo>`：新文件no-index whitespace、AST禁止边界、SHA与双路独立Review。实际精确命令/首红/终绿待ACTUAL。
+- `stop_or_rollback_conditions`：runner需要 `subprocess`/shell/child unittest、`Popen/run/kill/killpg/terminate/socket`、后台timer thread或未知PID操作；默认 import/invalid env/argv/hash可创建scope或import smoke；不是 `/usr/bin/python3 -I -B -u` 或raw单一FQ仍可运行；已有timer/ignored或blocked SIGALRM仍arm；任一 pre/post hash漂移、0/2 tests、skip/failure/error/expectedFailure/unexpectedSuccess仍产生receipt；失败/timeout会删除scope；成功在target logs/unknown entry/inode漂移时删除；pure card触达真实boundary或修改范围外文件。
+- `result / effect`：`PENDING — PRE_REGISTER; execution authorization=NOT_ISSUED`。预期成功receipt只声明本次唯一test确已运行且clean assertion通过；timeout只表示失败、无receipt并保scope，不宣称异常watchdog一定terminal。
+- `artifacts / evidence`：两路只读设计输入：`/root/posix_fixture_repair_map` 提议同进程、exact env/hash/root/receipt；`/root/posix_fixture_counterreview` 挑战并建议去掉Perl/child，以同进程默认SIGALRM硬终止。冻结env keys=`PATH,LANG,LC_ALL,HOME,TMPDIR,SEC_EXEC_POSIX_SMOKE_CASE,SEC_EXEC_POSIX_SMOKE_RUN_ID,SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256`；PATH使用fixture frozen值，HOME/TMPDIR bootstrap=`/private/tmp`，run_id=32 lowerhex，runner hash=64 lowerhex。
+- `remaining_risks`：POSIX interval timer不随watchdog fork/exec继承仍是待真实验证的平台假设；alarm命中terminal-no-escape可杀owner但不保证异常watchdog立即terminal；root删除与stdout receipt非事务；pre/post hash无法消除运行中改后恢复TOCTOU。未来只以exit0+单条完整canonical receipt联合接受；timeout不发未知信号、不签clean。
+- `review`：`PENDING — artifact实现后双路独立只读review；design review不能替代artifact review`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; real smoke forbidden`
+- `next_action`：实现两文件及pure矩阵：default/env/selector/interpreter/hash/import-order/alarm/false-green/stdout-spoof/root/receipt/failure sweep/static；先证明当前缺runner红，再只做artifact验证并冻结哈希，不运行正向main。
+
+### TRACE-20260826-080
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-080 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-01 / ACTUAL / 2026-08-26T18:16:38+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / first checked-in same-process runner candidate / TRACE-079`
+- `what / why / expected_effect_or_gate`：新增私有runner与pure卡，实现exact env/raw FQ/interpreter/hash/scope/alarm/fd隔离/programmatic unittest/false-green拒绝/known-empty cleanup/canonical receipt的可注入状态机。原因是先把未来真实执行包装固化为可静态审查的默认拒绝工件；效果是pure模型下能区分1 test/0 skip成功与所有失败形态，但仍需独立安全复审。
+- `scope / non_goals`：只新增 `demo/tests/_local_execution_posix_smoke_runner.py`、`demo/tests/test_local_execution_posix_smoke_runner.py`；未改其余文件。全程无opt-in、未调用runner正向main、未构造guard、未执行真实signal/scope/fd/process/network/workload。
+- `baseline`：`runner/test absent; STEP-LOG pre-entry=23ca63748684e5ae1f757717ec2dfecbf2cce44fa52dc10f322161f517ebf516; dependencies=TRACE-079`
+- `commands`：首红 cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-runner-red /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner -v
+```
+
+  父级冻结复跑（cache改为 `...runner-parent`，`-q`）=`14/14 OK`；同环境 pycompile两文件；cwd=`<repo>` SHA、forbidden `rg` 与两文件 no-index whitespace。实现代理另运行AST harness/default smoke constructor mock。
+- `stop_or_rollback_conditions`：实现阶段未触发真实boundary或越界修改；但独立Review随后触发四项artifact blocker，故本候选不得进入execution。
+- `result / effect`：首红=`run=1; errors=1; exit=1`，签名 `_FailedTest / ImportError: cannot import name '_local_execution_posix_smoke_runner' from 'tests'`。终态pure=`14/14 OK; parent wall=0.031s`；pycompile exit=0；default smoke=`1 pass+2 skip/constructor0`；forbidden rg无命中；no-index whitespace输出为空。中间非产品失误：TestCase helper `_outcome` 撞unittest内部属性，出现 `TypeError: '_Outcome' object is not callable`，改名后全绿；后续static旧规则把mock内 `_emit_receipt` 两调用误报为真实boundary，收窄为“未mock调用”后通过，候选逻辑未因误报放宽。
+- `artifacts / evidence`：runner sha256=`b28e6d4603e16f91dc28b75e35542ee7c662a24df32e682fd77fdafaa847671c`; pure card=`773309057392b540f04fea727d1969a68a3ca2a776668d68f577591d27ffd6d9`; AST/rg无subprocess/Popen/run/kill/socket/rmtree/workload wrapper；failure sweep使用注入Scope/cleanup，无真实删除。
+- `remaining_risks`：candidate内部name import、pyc读取、cleanup→receipt窗口和解释器extra flags尚未被pure门识别；真实alarm/watchdog继承与hash/identity TOCTOU仍未知。
+- `review`：`PENDING at ACTUAL; subsequently REVISE in TRACE-081`
+- `supersedes_entry_id`：`TRACE-079 result only; PRE_REGISTER retained`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; real smoke forbidden`
+- `next_action`：冻结b28/773并由未编辑候选的reviewer检查import provenance、pyc、receipt事务窗口与literal interpreter flags。
+
+### TRACE-20260826-081
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-081 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-01 / REVIEW / 2026-08-26T18:16:38+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/posix_fixture_repair_map / frozen b28/773 artifact / TRACE-079～080`
+- `what / why / expected_effect_or_gate`：独立只读复核source/import provenance、字节码、cleanup/receipt failure窗、runtime flag完整性与scope identity。目标是挑战14项pure绿是否存在假绿。
+- `scope / non_goals`：只读/pure/static；未编辑、未运行真实boundary，不授权execution/KEEP/Runtime Acceptance。
+- `baseline`：`runner=b28e6d4603e16f91dc28b75e35542ee7c662a24df32e682fd77fdafaa847671c; card=773309057392b540f04fea727d1969a68a3ca2a776668d68f577591d27ffd6d9; hashes stable`
+- `commands`：reviewer运行14项pure、pycompile、source/stdlib importlib检查与注入反例；完整内部shell transcript=`MISSING/UNKNOWN — ReviewArtifact保留精确行号、反例结果与CPython3.9 importlib refs`。
+- `stop_or_rollback_conditions`：触发四项high；单一可复现high即足以REVISE，不以pure14/14覆盖。
+- `result / effect`：`REVISE; high=4`。H1：`demo/tests`是namespace，先name-import后path-check，`-I`保留system site，外部regular `tests`包可先执行。H2：只hash `.py`后普通import仍可读timestamp/unchecked-hash `.pyc`；`-B`仅禁写不禁读。H3：live alarm下先删scope再stdout receipt，partial-write/timeout反例均出现`root_deleted=true, complete_receipt=0`，违反失败保根。H4：RuntimeSnapshot遗漏extra flags，纯`-O`仍通过，不能自证literal命令。另有medium：snapshot到pathname delete的同UID identity TOCTOU。
+- `artifacts / evidence`：ReviewArtifact `/root/posix_fixture_repair_map`; refs=`runner:259～282,438～462,490～532,593～604,816～828`; CPython3.9 `_bootstrap_external.py:930～995`; pure反例。
+- `remaining_risks`：当前机器find_spec恰好指向本地namespace且tree无pyc只是瞬时事实，不是工件保证；cleanup/stdout与hash/import仍非原子。
+- `review`：`REVISE artifact-only; blocking=4 high; execution authorization=NOT_ISSUED`
+- `supersedes_entry_id`：`NONE — TRACE-080候选与14/14证据保留但不得执行`
+- `git_checkpoint`：`REVIEWED_REJECTED_WORKTREE_ONLY; commit=PENDING`
+- `next_action`：预注册runner correction：受控source-bytes namespace、禁普通import/pyc、run成功保留atomic receipt并把删除移到独立verify-clean、补material flags/warnoptions/xoptions。
+
+### TRACE-20260826-082
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-082 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-02 / PRE_REGISTER / 2026-08-26T18:16:38+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / source-only loader and retained-receipt correction / TRACE-081`
+- `what / why / expected_effect_or_gate`：只修两文件并加四组首红。第一，导入前拒绝任何已载`tests`/`tests.*`，安装仅指向`<demo>/tests`的受控package；对已核SHA的helper/smoke source bytes直接`compile/exec`同一bytes，禁止普通name import与pyc。第二，run-mode成功把atomic `PASS_NO_TARGET_SCOPE_RETAINED` receipt留在scope，失败/timeout不删；另设默认拒绝的`--verify-clean`模式，重验receipt/hash/root dev+ino/known entries后才用dirfd unlink/rmdir并输出cleanup receipt。第三，RuntimeSnapshot补material flags、`warnoptions`与`_xoptions`，拒绝`-O/-i/-S/-W/-X/-v/-b/-q`等；literal argv最终仍由execution transcript证明。
+- `scope / non_goals`：仍只允许修改两runner文件；pure/static/pycompile/hash，不运行正向main/verify-clean，不触发真实signal/scope/fd/guard/process/network。receipt cleanup的第二进程只作为未来工件API，本批不执行。
+- `baseline`：`TRACE-081=REVISE; runner=b28e6d46...671c; card=77330905...6d9; dependencies unchanged`
+- `commands`：先新增四类pure反例并对b28/773捕获RED：system `tests` shadow/source execution顺序；pyc/name-import禁令；partial stdout/timeout仍须保root+atomic receipt；`-O`及material flags。随后最小修并运行完整pure/default/compile/static/hash；实际命令与结果待ACTUAL。
+- `stop_or_rollback_conditions`：任何unhashed module/pyc/importlib path可执行；compiled bytes与hashed bytes不是同一对象；run成功前删scope或失败无保留receipt；verify-clean不核atomic receipt/root identity/精确entries即删除；extra material flag仍通过；修复需普通import、rmtree、subprocess/kill/socket或真实boundary。
+- `result / effect`：`PENDING — PRE_REGISTER; real smoke remains forbidden`。预期把test PASS证据与scope清理解耦，关闭run-mode root-deleted/no-receipt窗；verify-clean后的stdout非事务只影响cleanup audit，不倒写原atomic PASS receipt，须继续披露。
+- `artifacts / evidence`：TRACE-081四high；受控loader设计；依赖hash仍bca/a87/80ec/266b。
+- `remaining_risks`：同UID路径替换TOCTOU、verify-clean删除后stdout失败、source pre/post改后恢复、alarm/watchdog继承与timeout异常watchdog均保留；未来execution必须排他/冻结工作树且只对run+cleanup双receipt联合陈述。
+- `review`：`PENDING — corrected hashes需双路independent review`
+- `supersedes_entry_id`：`TRACE-081 result only; rejected history retained`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; execution=NOT_AUTHORIZED`
+- `next_action`：捕获四类pure red后修source-only loader、retained receipt/verify-clean和flags；冻结新hash并双路审查，非双approve不执行。
+
+### TRACE-20260826-083
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-083 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-02 / ACTUAL / 2026-08-26T18:49:46+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / corrected source-only retained-receipt runner candidate / TRACE-081～082`
+- `what / why / expected_effect_or_gate`：只修改两项尚未跟踪的 runner 工件，按 TRACE-081 的四项 HIGH 完成修订。其一，拒绝预载 `tests`/`tests.*`，建立空 `tests.__path__` 的受控 namespace，并直接 `compile(..., optimize=0)/exec` 已核 SHA 的同一份 helper/smoke source bytes，移除普通 name import、`importlib` 与 pyc loader。其二，run-mode 只在唯一测试精确成功、post-hash 与 scope 空树验证后原子发布保留型 PASS receipt，不删除 scope；清理由独立默认拒绝的 verify-clean 模式重验 producer hash、receipt、root dev/ino/uid、精确 entries、零长度日志和稳定 identity 后以 dirfd 删除。其三，RuntimeSnapshot 补齐 material interpreter flags、`warnoptions`、`xoptions` 与预载 tests 模块。原因是关闭 unhashed code/pyc 执行、失败删根无 receipt、额外解释器 flag 四类假绿；效果是把未来真实执行与清理分成两段机器可核、默认 fail-closed 的工件，但本条不授权任一段执行。
+- `scope / non_goals`：实现范围仅 `demo/tests/_local_execution_posix_smoke_runner.py` 与 `demo/tests/test_local_execution_posix_smoke_runner.py`；本记录只追加 Step Log。全程未设置 opt-in，未调用 runner `main`/verify-clean，未构造 guard，未启动 watchdog/target/process/signal/network/port/workload，未执行真实 filesystem delete；不批准真实 smoke、`success_orphan`、`KEEP` 或 Runtime Acceptance。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; rejected runner=b28e6d4603e16f91dc28b75e35542ee7c662a24df32e682fd77fdafaa847671c; rejected card=773309057392b540f04fea727d1969a68a3ca2a776668d68f577591d27ffd6d9; STEP-LOG pre-entry=a21a6d4e0f7d445556fc1fe3903b68ce54d8f8a28fa5e30b24319db02874a89a; related dirty scope="M VerificationReports/STEP-LOG.md; ?? demo/tests/_local_execution_posix_smoke_runner.py; ?? demo/tests/test_local_execution_posix_smoke_runner.py"; unrelated pre-existing dirty files remain outside this slice`
+- `commands`：四类首红均在 cwd=`<repo>/demo`、显式移除 `SEC_EXEC_POSIX_SMOKE_CASE`, `SEC_EXEC_POSIX_SMOKE_RUN_ID`, `SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256` 后，以单个 fully-qualified pure test 运行；精确四个 FQ shell transcript=`MISSING/UNKNOWN — 实现回报仅保留每项 Ran 1/exit 1 与签名，禁止补造`。父级冻结复跑：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-runner2-parent /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-runner2-parent /usr/bin/python3 -m py_compile tests/_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke_runner.py
+```
+
+  cwd=`<repo>`：
+
+```bash
+shasum -a 256 demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py VerificationReports/STEP-LOG.md
+git status --short -- VerificationReports/STEP-LOG.md demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py
+git diff --no-index --check /dev/null demo/tests/_local_execution_posix_smoke_runner.py
+git diff --no-index --check /dev/null demo/tests/test_local_execution_posix_smoke_runner.py
+rg -n 'subprocess|Popen|killpg|os\.kill|socket|shutil\.rmtree|workload_command|spawn_observing_popen' demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py
+```
+
+  默认 smoke constructor=0、AST 与最坏 receipt-size 的完整 inline harness=`MISSING/UNKNOWN — 实现与父级保存了结果/哈希，未保存可复制完整命令；不得补造`。
+- `stop_or_rollback_conditions`：未在实现/父级验证阶段触发真实边界、越界修改或候选哈希漂移。四项旧设计 pure 首红均已捕获；若最终任一独立 reviewer 复现 unhashed/name/pyc execution、material flag 绕过、失败删除 scope/无完整 PASS receipt、未充分验证即 cleanup，或发现任一新 HIGH，则本候选立即回到 `REVISE`，不得执行。
+- `result / effect`：`achieved=yes for corrected artifact candidate; review=PENDING; execution authorization=NOT_ISSUED`。四类首红分别为：缺 source-only API=`Ran 1/errors=1/AttributeError`；name/pyc 禁令=`Ran 1/failures=1/'importlib' unexpectedly found`；失败保根=`Ran 1/failures=1/cleanup_calls实际6而期望0`；material flags=`Ran 1/failures=1/缺 optimize,ignore_environment,no_site,quiet,utf8_mode,no_user_site,verbose,inspect,debug,xoptions,interactive,bytes_warning,warnoptions,dev_mode,hash_randomization,loaded_tests_modules`。修后 pure=`28/28 OK; parent wall=0.058s; exit=0`；默认 smoke=`run=3; pass=1; skip=2; failure/error=0; constructor_calls=0`；两文件 Python 3.9 py_compile exit=0；AST/forbidden boundary静态检查通过；两项 no-index whitespace 输出为空（exit1仅表示 untracked文件相对`/dev/null`有diff）。最坏模型 receipt=`PASS 503B; cleanup 486B; both <512B`。
+- `artifacts / evidence`：runner `demo/tests/_local_execution_posix_smoke_runner.py sha256=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598`；pure card `demo/tests/test_local_execution_posix_smoke_runner.py sha256=43e2140744a7e2bf4e83a4ab71f6df468e65afd9731a19070567af3ac4179a23`；依赖 smoke/helper/fixture/safety=`bca89a4f...d44f / a87ed9f8...2999 / 80ecd65d...06d8 / 266b8a32...9bdd`。预冻结只读审查已确认同 source bytes、temp/final inode与exact bytes、producer runner hash、verify-clean stable log binding；该预审不替代当前双路最终Review。
+- `remaining_risks`：SIGALRM若落在 final hard-link 与 temp unlink之间，可能留下同inode的final+temp，verify-clean会因unknown temp fail closed并要求人工恢复；same-UID stat→unlink/rmdir仍有pathname TOCTOU；source pre/post hash无法排除改后恢复；verify-clean删除后stdout失败仍非事务但不倒写已存在PASS receipt；literal `/usr/bin/python3 -I -B -u` 命令仍须未来execution transcript证明；alarm/watchdog timer继承、timeout后watchdog terminal与真实macOS行为均未验证。成功工件只证明mock/static，不证明真实POSIX。
+- `review`：`PENDING — /root/trace082_final_review_a 与第二名未参与实现的 reviewer 已锁 1c9/43e；按 review-artifact 独立只读复核，任何 REVISE 阻止执行`
+- `supersedes_entry_id`：`TRACE-082 result only; PRE_REGISTER retained; TRACE-080/081 rejected predecessor与REVISE历史保留`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO; runner/card仍untracked`
+- `next_action`：等待两份冻结哈希 ReviewArtifact；若双路无blocking，再单独追加 REVIEW，并在任何真实运行前为 watchdog-only execution 追加新的 PRE_REGISTER、literal run_id/env-i命令、停止条件和后续独立 verify-clean；本条不得直接运行。
+
+### TRACE-20260826-084
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-084 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-02 / REVIEW / 2026-08-26T18:58:10+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/trace082_final_review_a + /root/browser_eval_correction_05 / frozen corrected runner artifact / TRACE-082～083`
+- `what / why / expected_effect_or_gate`：两名未参与实现的 reviewer 按 `review-artifact` 分别审查 source-only loader/pyc、真实平台启动形状、material flags、raw argv、atomic retained receipt、verify-clean dirfd删除、失败保根与 pure-card 假绿。目标是确认旧四项 HIGH 是否关闭且未来两个正常 smoke 是否可达；任一独立可复现 HIGH 即阻止执行。
+- `scope / non_goals`：只读 artifact review。允许 pure mock unittest、pycompile、AST/static和不导入项目runner的解释器启动形状探针；未编辑候选、未调用 runner main/opt-in/verify-clean，未启动 guard/watchdog/target、未发信号/联网/删除scope，不批准 execution/`KEEP`/Runtime Acceptance。
+- `baseline`：`subject runner=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598; card=43e2140744a7e2bf4e83a4ab71f6df468e65afd9731a19070567af3ac4179a23; hashes stable before/after both reviews; STEP-LOG pre-entry=880090d8b38e4d31c18dffbcf1ffb7968eb490e9e9b8c619b4c412fc9e79e5da`
+- `commands`：两 reviewer 均重跑 pure 28项与两文件 pycompile；reviewer A另对 `/usr/bin/python3 -I -B -u` 与额外 `-E -s -R --check-hash-based-pycs never` 做无项目代码的启动状态探针；reviewer B运行纯 RuntimeSnapshot counterexample。精确完整内部 shell transcript=`MISSING/UNKNOWN — ReviewArtifacts保存参数类别、结果、行号与哈希，禁止补造未保存命令`。
+- `stop_or_rollback_conditions`：已触发。正常 frozen 命令在 scope/hash 前误拒、material启动选项漏检、或具有删除能力的verify-clean未核exact argv0，任一均为 HIGH；mock 28/28不能覆盖这些反例。
+- `result / effect`：`overall=REVISE; independent reviewers=2; high blockers=4; execution authorization=NOT_ISSUED`。共同确认旧H1/H2/H3主体关闭：同一hashed bytes直接compile/exec且无name/pyc loader；run先原子留PASS receipt且不删root；verify-clean绑定dirfd/identity/known tree并最后删receipt/root；receipt schema/hash/size与失败传播基本成立。新H1：`/usr/bin/python3`启动的`sys.executable`实为`/Library/Developer/CommandLineTools/usr/bin/python3`，与常量不等，两个合法case均误拒。新H2：`env -i`八键经Apple launcher后仍出现`CPATH,LIBRARY_PATH,MANPATH,SDKROOT,__CF_USER_TEXT_ENCODING`；直接CLT binary仍出现`__CF_USER_TEXT_ENCODING`，exact八键不可达。新H3：额外`--check-hash-based-pycs never`不反映在`sys.flags/warnoptions/_xoptions/argv`，但`_imp.check_hash_based_pycs`由`default`变`never`；material option漏检。新H4：verify-clean分支只核`argv[1:3]`，错误`argv[0]`仍被接受；`self_path=RUNNER_PATH`是常量赋值，不能补足provenance。
+- `artifacts / evidence`：ReviewArtifacts principals=`/root/trace082_final_review_a`, `/root/browser_eval_correction_05`; refs=`runner:36,82～91,114～146,228～313,710～752,862～978,1206～1330,1458～1588`; card=`51～99,204ff,383ff,1813～1851`; pure=`28/28 OK`; pycompile exit=0；subject hashes稳定。
+- `remaining_risks`：literal interpreter token序列仍只能由可信execution transcript证明；系统启动注入键的值/稳定性尚未冻结；atomic receipt尚无每个link/fsync/unlink中断点的完整矩阵；真实dirfd/macOS watchdog行为未运行；same-UID pathname TOCTOU及temp+final人工恢复限制继续保留。
+- `review`：`REVISE; reviewer A=3 HIGH; reviewer B=1 HIGH; blocking=4; artifact不得执行`
+- `supersedes_entry_id`：`NONE — TRACE-083 ACTUAL与28/28证据保留，但当前hash被拒绝`
+- `git_checkpoint`：`REVIEWED_REJECTED_WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：追加runner correction PRE_REGISTER；先用不导入项目代码的精确启动形状探针冻结launcher→canonical executable与系统注入环境，再只改runner/card：统一核argv0、补`_imp.check_hash_based_pycs`、增加平台正向形状与四项反例；非新hash双路APPROVE不执行。
+
+### TRACE-20260826-085
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-085 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-03 / PRE_REGISTER / 2026-08-26T18:58:10+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + pending runner implementer / macOS launcher-shape, argv0 and hash-pyc correction / TRACE-084`
+- `what / why / expected_effect_or_gate`：先运行两个不导入项目代码的只读Python启动探针，分别经`/usr/bin/python3` launcher与其当前CLT canonical binary，在同一`env -i`八键、`-I -B -u`下记录`sys.executable`、完整环境键/值、material flags与`_imp.check_hash_based_pycs`。基于证据选择唯一可达launcher/canonical关系与最小系统自动注入环境契约。随后只修runner/card：所有模式先核raw `argv[0]`；RuntimeSnapshot补hash-pyc策略并要求`default`；为canonical executable/自动环境键增加首红与正向卡。原因是不能用人工RuntimeSnapshot掩盖真实macOS启动形状，也不能把冗余/不可见material option当作literal transcript已证明。
+- `scope / non_goals`：探针只启动系统Python并打印JSON，不导入runner/helper/smoke，不构造guard、不发信号、不联网、不写项目/删除文件。实现只允许修改 `demo/tests/_local_execution_posix_smoke_runner.py`、`demo/tests/test_local_execution_posix_smoke_runner.py`；本Step Log可追加。不得设置opt-in、调用runner main/verify-clean或真实POSIX smoke；不得放宽receipt/dirfd/source-only门禁。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; rejected runner=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598; rejected card=43e2140744a7e2bf4e83a4ab71f6df468e65afd9731a19070567af3ac4179a23; STEP-LOG pre-entry=880090d8b38e4d31c18dffbcf1ffb7968eb490e9e9b8c619b4c412fc9e79e5da`
+- `commands`：计划 cwd=`<repo>/demo`，以`/usr/bin/env -i`显式传`PATH/LANG/LC_ALL/HOME/TMPDIR/CASE/RUN_ID/RUNNER_HASH`，分别执行`/usr/bin/python3 -I -B -u -c <JSON snapshot>`与`/Library/Developer/CommandLineTools/usr/bin/python3 -I -B -u -c <same snapshot>`；实际完整命令/输出/exit写入ACTUAL。实现后只运行新增pure FQ红绿、完整runner pure suite、默认smoke constructor=0、pycompile/AST/static/hash/whitespace；不运行runner main。
+- `stop_or_rollback_conditions`：探针导入项目代码或触发写/网络/信号；canonical路径不存在/非regular owned executable；系统自动注入环境含不稳定或用户秘密值，无法形成最小可审计契约；错误argv0仍可进入verify；hash-pyc非`default`仍通过；修复需wrapper/shell subprocess或触达真实runner；修改范围越界。
+- `result / effect`：`PENDING — PRE_REGISTER; diagnostic probe only, then artifact correction; real smoke forbidden`。预期把“launcher path”“进程内canonical executable”“启动后env”分开记录；进程内只能证明material状态，完整literal token仍由未来execution transcript证明。
+- `artifacts / evidence`：TRACE-084四HIGH；冻结旧hash；目标平台=`macOS, CPython 3.9.6`。探针输出若包含本机路径，仅记录必要的非秘密contract字段；不把完整环境扩散到其他文档。
+- `remaining_risks`：Apple launcher/CLT位置可能随Xcode更新而漂移，届时应fail closed并重审；`__CF_USER_TEXT_ENCODING`可能与uid/locale相关，需决定精确派生或改用canonical binary+显式启动shim，禁止未经证据宽松allowlist；literal redundant flags仍不能由`sys.flags`完全反推；receipt/POSIX残余不在本批关闭。
+- `review`：`PENDING — 新hash需两名未编辑候选的 reviewer 复核四项TRACE-084 finding及平台正向可达性`
+- `supersedes_entry_id`：`TRACE-084 result only; rejected history retained`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; execution=NOT_AUTHORIZED`
+- `next_action`：执行两条只读启动探针并记录actual；若契约可冻结，先捕获四项pure red，再最小修改runner/card、冻结新hash、双路独立review；任何不稳定/秘密环境注入则停止并重新设计launcher层。
+
+### TRACE-20260826-086
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-086 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-03 / ACTUAL / 2026-08-26T19:00:15+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / macOS Python launcher and environment diagnostic / TRACE-084～085`
+- `what / why / expected_effect_or_gate`：在完全不导入项目代码的 `-c` 进程中比较 `/usr/bin/python3`、CLT `usr/bin/python3` 与最终realpath `python3.9` 的启动后 `sys.executable`、环境、核心flags和`_imp.check_hash_based_pycs`；再以`readlink/realpath/stat`确认launcher层级与owner/type。原因是先用真实平台证据决定可达的最小契约，不能把人工Snapshot写回测试。效果是明确停止使用Apple `/usr/bin/python3` launcher及其4个SDK path注入，只保留直接root-owned real binary与单个可冻结的CoreFoundation环境键；尚未修改runner/card。
+- `scope / non_goals`：只读诊断；三个Python命令仅导入stdlib `_imp/json/os/sys`并打印JSON，不导入runner/helper/smoke、不创建scope、不构造guard、不发信号/联网/删除或写项目。另运行`readlink/stat`。未设置真实opt-in或运行任何项目测试边界。
+- `baseline`：`rejected runner=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598; card=43e2140744a7e2bf4e83a4ab71f6df468e65afd9731a19070567af3ac4179a23; STEP-LOG pre-entry=45d0a13a52a386ed29ab94715239f50cf912ebf66bb428d239629d11855a7192; runner/card hashes stable; worktree otherwise unchanged by probes`
+- `commands`：cwd=`<repo>/demo`；三条probe共用以下literal八键：`PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=00000000000000000000000000000000 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598`。执行：
+
+```bash
+/usr/bin/env -i <literal-eight-keys-above> /usr/bin/python3 -I -B -u -c 'import _imp,json,os,sys; print(json.dumps({"argv":sys.argv,"check_hash_based_pycs":_imp.check_hash_based_pycs,"environ":dict(sorted(os.environ.items())),"executable":sys.executable,"flags":{"isolated":sys.flags.isolated,"dont_write_bytecode":sys.flags.dont_write_bytecode,"ignore_environment":sys.flags.ignore_environment,"no_user_site":sys.flags.no_user_site,"hash_randomization":sys.flags.hash_randomization}},sort_keys=True,separators=(",",":")))'
+/usr/bin/env -i <literal-eight-keys-above> /Library/Developer/CommandLineTools/usr/bin/python3 -I -B -u -c '<same JSON probe>'
+/usr/bin/env -i <literal-eight-keys-above> /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u -c '<same JSON probe>'
+readlink /Library/Developer/CommandLineTools/usr/bin/python3
+/Library/Developer/CommandLineTools/usr/bin/python3 -I -B -u -c 'import os,sys; print(os.path.realpath(sys.executable))'
+stat -f '%N|%HT|%Su|%Sp|%d|%i' /usr/bin/python3 /Library/Developer/CommandLineTools/usr/bin/python3 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9
+```
+
+  注：`<literal-eight-keys-above>`与`<same JSON probe>`在本日志为已在同条中完整展开的去重复记法；原始工具调用使用完整literal字符串，无shell变量/placeholder。
+- `stop_or_rollback_conditions`：TRACE-085 的“canonical CLT usr/bin path非regular则停”被触发：该路径是root-owned symlink。实现没有开始。随后只读解析到最终root-owned regular `.../bin/python3.9`，为新的显式launcher设计提供证据；未宽松接受symlink或Apple launcher注入。
+- `result / effect`：`diagnostic achieved; original implementation plan stopped; artifact correction not started`。三条Python探针均exit=0。`/usr/bin/python3`产生`sys.executable=/Library/Developer/CommandLineTools/usr/bin/python3`并增加`CPATH=/usr/local/include, LIBRARY_PATH=/usr/local/lib, MANPATH=<three CLT paths>, SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk, __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34`。CLT symlink与最终real binary均只比八键多`__CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34`；最终binary的`sys.executable`精确等于其绝对路径。三者`_imp.check_hash_based_pycs=default`且核心flags符合`-I -B`。`readlink`目标=`../../Library/Frameworks/Python3.framework/Versions/3.9/bin/python3`；realpath=`.../bin/python3.9`；最终target=`Regular File|root|-rwxr-xr-x`。
+- `artifacts / evidence`：工具输出含三份canonical JSON与stat；无新代码artifact。冻结旧runner/card hash未漂移。必要平台contract字段仅为最终real binary绝对路径、root-owned regular identity、九键环境与hash-pyc=`default`；未记录其他本机环境或秘密。
+- `remaining_risks`：最终binary路径/identity可随CommandLineTools升级漂移；`__CF_USER_TEXT_ENCODING`与uid/用户区域设置相关；直接冻结当前值会牺牲可移植性但fail closed。单次stat不能证明未来执行时identity，runner现阶段也未核binary stat；literal argv仍需execution transcript。
+- `review`：`NOT_REQUESTED for diagnostic; raw observations only; implementation remains blocked until next PRE_REGISTER`
+- `supersedes_entry_id`：`TRACE-085 planned launcher choice only; PRE_REGISTER及stop history retained`
+- `git_checkpoint`：`NO CODE CHANGE; WORKTREE_ONLY; execution=NOT_AUTHORIZED`
+- `next_action`：预注册直接real-binary契约；用exact九键（八键+当前`__CF_USER_TEXT_ENCODING`）与exact`sys.executable`修runner/card，补hash-pyc和verify argv0；若平台字段改变则fail closed并重审，不回退到allowlist。
+
+### TRACE-20260826-087
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-087 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-04 / PRE_REGISTER / 2026-08-26T19:00:15+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + pending runner implementer / direct regular Python binary and nine-key contract / TRACE-084～086`
+- `what / why / expected_effect_or_gate`：只修runner/card。将未来literal launcher与`FROZEN_EXECUTABLE`统一为root-owned regular `/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9`；环境精确冻结为原八键加`__CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34`，不接受Apple `/usr/bin/python3`注入的CPATH/LIBRARY_PATH/MANPATH/SDKROOT；所有mode统一要求`argv[0]==str(RUNNER_PATH)`；RuntimeSnapshot新增`check_hash_based_pycs`并精确要求`default`。原因是以TRACE-086真实可达形状关闭四项HIGH，同时维持fail-closed而非宽松allowlist。
+- `scope / non_goals`：只允许修改 `demo/tests/_local_execution_posix_smoke_runner.py`、`demo/tests/test_local_execution_posix_smoke_runner.py` 及后续Step Log。只运行pure red/green、无项目runner的同形平台probe、默认smoke constructor=0、pycompile/AST/static/hash/whitespace；不得调用runner main/verify-clean、设置opt-in或触发真实guard/watchdog/process/signal/network/delete。不得修改helper/fixture/smoke/production/docs其他内容。
+- `baseline`：`TRACE-084=REVISE high4; TRACE-086 direct-binary probe exit0; runner=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598; card=43e2140744a7e2bf4e83a4ab71f6df468e65afd9731a19070567af3ac4179a23; branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty`
+- `commands`：先以pure tests对旧候选捕获至少三类RED：真实平台九键+real executable的positive snapshot被拒；verify-clean错误argv0被接受；hash-pyc=`never`未被拒/字段缺失。修后运行各FQ与完整runner pure suite、默认smoke constructor mock、两文件pycompile、AST禁止边界/name loader、SHA/no-index whitespace；复跑TRACE-086最终real-binary `-c` probe并与新constants逐字段比对。ACTUAL保存精确命令/结果。
+- `stop_or_rollback_conditions`：`__CF_USER_TEXT_ENCODING`实际值与冻结值不同；direct target不再是root-owned regular executable或版本不是CPython3.9.6；九键外任一键出现；错误/相对/symlink wrapper argv0可进入verify；hash-pyc非default可通过；pure test需运行项目runner main或改动范围外文件；修复放宽source/receipt/cleanup门禁。
+- `result / effect`：`PENDING — PRE_REGISTER; expected normal-path artifact reachability only; real smoke remains forbidden`。平台依赖是刻意fail-closed的narrow smoke限制，不推广为产品Runtime可移植契约。
+- `artifacts / evidence`：TRACE-084两份ReviewArtifact；TRACE-086三启动探针与root-owned regular target stat；old rejected hashes。
+- `remaining_risks`：literal冗余flag仍不能由进程内状态完全反推，未来可信transcript必须保持exact command；binary更新/用户文本编码变化会要求重审；runner尚未核binary file identity/hash；receipt、same-UID TOCTOU和真实POSIX风险不在本批关闭。
+- `review`：`PENDING — 修后新hash双路独立review，需逐项关闭TRACE-084四HIGH并验证正常shape可达`
+- `supersedes_entry_id`：`TRACE-086 diagnostic result only; TRACE-084 REVISE retained`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; execution=NOT_AUTHORIZED`
+- `next_action`：让实现代理先捕获三类pure red，再最小修改两文件并冻结；父级重跑exact platform probe/pure/static；双路APPROVE前不执行任何smoke。
+
+### TRACE-20260826-088
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-088 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-03 / CORRECTION / 2026-08-26T19:01:35+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / exact diagnostic command preservation / TRACE-086`
+- `what / why / expected_effect_or_gate`：纠正 TRACE-086 `commands` 中为了去重而使用的`<literal-eight-keys-above>`与`<same JSON probe>`展示。Step Log协议不允许可复制命令留placeholder，因此本条以append-only方式保存三条实际Python探针和随后解析命令的完整literal形式；不修改旧条目或技术结论。
+- `scope / non_goals`：仅纠正审计记录；未重新运行命令、未改代码、未触达任何项目Runtime/boundary。
+- `baseline`：`STEP-LOG pre-entry=0f2b12b4c98ee418453f25dc7e09d2cae65b556601c6bad6e26c6a471b1e6056; TRACE-086 raw tool outputs retained in session; runner/card unchanged`
+- `commands`：TRACE-086实际cwd=`<repo>/demo`命令为：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=00000000000000000000000000000000 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598 /usr/bin/python3 -I -B -u -c 'import _imp,json,os,sys; print(json.dumps({"argv":sys.argv,"check_hash_based_pycs":_imp.check_hash_based_pycs,"environ":dict(sorted(os.environ.items())),"executable":sys.executable,"flags":{"isolated":sys.flags.isolated,"dont_write_bytecode":sys.flags.dont_write_bytecode,"ignore_environment":sys.flags.ignore_environment,"no_user_site":sys.flags.no_user_site,"hash_randomization":sys.flags.hash_randomization}},sort_keys=True,separators=(",",":")))'
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=00000000000000000000000000000000 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598 /Library/Developer/CommandLineTools/usr/bin/python3 -I -B -u -c 'import _imp,json,os,sys; print(json.dumps({"argv":sys.argv,"check_hash_based_pycs":_imp.check_hash_based_pycs,"environ":dict(sorted(os.environ.items())),"executable":sys.executable,"flags":{"isolated":sys.flags.isolated,"dont_write_bytecode":sys.flags.dont_write_bytecode,"ignore_environment":sys.flags.ignore_environment,"no_user_site":sys.flags.no_user_site,"hash_randomization":sys.flags.hash_randomization}},sort_keys=True,separators=(",",":")))'
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=00000000000000000000000000000000 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u -c 'import _imp,json,os,sys; print(json.dumps({"argv":sys.argv,"check_hash_based_pycs":_imp.check_hash_based_pycs,"environ":dict(sorted(os.environ.items())),"executable":sys.executable},sort_keys=True,separators=(",",":")))'
+stat -f '%N|%HT|%Su|%Sp|%d|%i' /usr/bin/python3 /Library/Developer/CommandLineTools/usr/bin/python3
+readlink /Library/Developer/CommandLineTools/usr/bin/python3
+/Library/Developer/CommandLineTools/usr/bin/python3 -I -B -u -c 'import os,sys; print(os.path.realpath(sys.executable))'
+stat -f '%N|%HT|%Su|%Sp|%d|%i' /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3
+stat -f '%N|%HT|%Su|%Sp|%d|%i' /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9
+```
+
+- `stop_or_rollback_conditions`：不适用；这是已知原始命令的记录修正。若命令与TRACE-086结果不一致，应以raw tool output为准并另追加CORRECTION；当前未发现不一致。
+- `result / effect`：`achieved=yes; TRACE-086 command provenance now copyable without placeholder`。本条不改变TRACE-086的exit/result/effect。
+- `artifacts / evidence`：TRACE-086 raw outputs；本Step Log追加内容。
+- `remaining_risks`：命令输出仍只是一时平台快照，不是未来binary稳定性或真实smoke证据。
+- `review`：`NOT_REQUESTED — provenance correction only`
+- `supersedes_entry_id`：`TRACE-086 commands field only; all other TRACE-086 fields retained`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING`
+- `next_action`：继续TRACE-087的两文件pure-red→minimal-fix→double-review；不得执行smoke。
+
+### TRACE-20260826-089
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-089 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-04 / ACTUAL / 2026-08-26T19:08:08+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root + /root/posix_fixture_repair_impl / direct regular Python, nine-key env, argv0 and hash-pyc correction / TRACE-084～088`
+- `what / why / expected_effect_or_gate`：严格只改runner/card。把冻结`sys.executable`改为TRACE-086验证的root-owned regular CLT `python3.9`真实路径；环境从不可达八键改为精确九键并固定`__CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34`，明确拒绝Apple launcher注入的CPATH/LIBRARY_PATH/MANPATH/SDKROOT；在run/verify分支前统一核raw argv0；RuntimeSnapshot读取live `_imp.check_hash_based_pycs`并只接受`default`。原因是关闭TRACE-084的四项正常路径/material/provenance HIGH；效果是pure model与独立无项目platform probe均能达到同一冻结形状，而旧wrapper/symlink、额外SDK env、错误argv0和非default pyc策略均fail closed。source-only、receipt与cleanup逻辑未放宽。
+- `scope / non_goals`：仅修改 `demo/tests/_local_execution_posix_smoke_runner.py` 与 `demo/tests/test_local_execution_posix_smoke_runner.py`；本条追加Step Log。未改helper/fixture/smoke/production/docs其他内容；未调用runner main/verify-clean/opt-in，未启动真实guard/watchdog/target、未发signal/network/delete。父级唯一非mock进程是无项目代码的direct-binary `-c`平台JSON探针。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty; rejected runner=1c9d53a27af77bab2f9346196f29756dc0328359c62b26bf69b4e87197d13598; rejected card=43e2140744a7e2bf4e83a4ab71f6df468e65afd9731a19070567af3ac4179a23; STEP-LOG pre-entry=077b4de736f638260efa2677589b47d86ced1e742cfa7b96cf94ec031fde5f81; related status="M VerificationReports/STEP-LOG.md; ?? runner; ?? card"`
+- `commands`：实现代理三项首红，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-trace087-red /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner.LocalExecutionPosixSmokeRunnerSafetyTests.test_platform_snapshot_accepts_frozen_launcher_shape -v
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-trace087-red /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner.LocalExecutionPosixSmokeRunnerSafetyTests.test_verify_clean_rejects_wrong_raw_argv0 -v
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-trace087-red /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner.LocalExecutionPosixSmokeRunnerSafetyTests.test_hash_based_pyc_policy_is_explicit_and_never_rejected -v
+```
+
+  父级冻结复跑，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-runner4-parent /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-runner4-parent /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-runner4-parent /usr/bin/python3 -m py_compile tests/_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke_runner.py
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPATH=. PYTHONPYCACHEPREFIX=/private/tmp/multiagent-sec-posix-runner4-parent /usr/bin/python3 -c 'import io, unittest; from unittest import mock; import tests.test_local_execution_posix_smoke as m; factory=mock.Mock(side_effect=AssertionError("constructor reached")); suite=unittest.defaultTestLoader.loadTestsFromModule(m); sink=io.StringIO(); p=mock.patch.object(m,"ExternalProcessGuard",factory); p.start(); result=unittest.TextTestRunner(stream=sink,verbosity=0).run(suite); p.stop(); print("run=%d skipped=%d failures=%d errors=%d constructor_calls=%d" % (result.testsRun,len(result.skipped),len(result.failures),len(result.errors),factory.call_count)); assert result.wasSuccessful() and result.testsRun==3 and len(result.skipped)==2 and factory.call_count==0'
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=00000000000000000000000000000000 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u -c 'import _imp,json,os,sys; print(json.dumps({"argv":sys.argv,"check_hash_based_pycs":_imp.check_hash_based_pycs,"environ":dict(sorted(os.environ.items())),"executable":sys.executable,"implementation":sys.implementation.name,"version":[sys.version_info.major,sys.version_info.minor,sys.version_info.micro]},sort_keys=True,separators=(",",":")))'
+```
+
+  cwd=`<repo>`：
+
+```bash
+shasum -a 256 demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py VerificationReports/STEP-LOG.md
+rg -n 'subprocess|Popen|killpg|os\.kill|socket|shutil\.rmtree|workload_command|spawn_observing_popen|importlib|SourceFileLoader|SourcelessFileLoader|runpy' demo/tests/_local_execution_posix_smoke_runner.py
+git diff --no-index --check /dev/null demo/tests/_local_execution_posix_smoke_runner.py
+git diff --no-index --check /dev/null demo/tests/test_local_execution_posix_smoke_runner.py
+git status --short -- VerificationReports/STEP-LOG.md demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py
+```
+
+- `stop_or_rollback_conditions`：未触发。真实probe的executable/version/九键/CF/hash-pyc均与新constants一致；wrong argv0、`never`策略、额外SDK keys、`/usr/bin`及CLT symlink形状均被pure卡拒绝；没有越界修改或真实项目boundary。
+- `result / effect`：`achieved=yes for corrected artifact candidate; review=PENDING; execution authorization=NOT_ISSUED`。三项首红均`Ran 1; exit=1`：platform shape=`ERROR RunnerRejected: environment keys are not the exact frozen set`；wrong argv0=`FAIL RunnerRejected not raised`；hash-pyc=`FAIL field not found in RuntimeSnapshot.__dataclass_fields__`。修后实现代理与父级pure均=`32/32 OK`；父级wall=`0.077s`, unittest=`0.044s`。default smoke=`run=3; pass=1; skip=2; failure/error=0`；constructor=`calls=0`；pycompile exit0；forbidden rg无命中exit1；两no-index whitespace无输出，exit1仅因untracked diff。父级direct-binary probe exit0，精确输出为`executable=<real python3.9>; implementation=cpython; version=3.9.6; check_hash_based_pycs=default; exact nine env keys/values`。
+- `artifacts / evidence`：runner `sha256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b`; card `sha256=bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02`; dependencies unchanged=`bca89a4f...d44f / a87ed9f8...2999 / 80ecd65d...06d8 / 266b8a32...9bdd`; predecessor=`1c9d/43e`。
+- `remaining_risks`：进程内Snapshot不证明literal launcher token或启动前已消费的环境；可信execution transcript仍必需。`sys.executable`只核字符串，binary root-owner/regular身份沿用TRACE-086时点stat，未在runner内hash/inode绑定。CLT path/Python3.9.6/CF值变化会fail closed并需重审。`_imp.check_hash_based_pycs=default`本身不禁stdlib pyc；reviewed helper/smoke仍由source-only bytes门保护。hard-link中断、same-UID TOCTOU、verify-clean后stdout失败和真实POSIX残余不变。
+- `review`：`PENDING — 原TRACE-084两名reviewer需锁20da/bd0并独立逐项复核；平台预审不替代final review`
+- `supersedes_entry_id`：`TRACE-087 result only; PRE_REGISTER retained; TRACE-084 REVISE和旧hash保留`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; runner/card untracked; KEEP=NOT_ISSUED`
+- `next_action`：双路只读复核新hash、三首红、真实probe与四HIGH关闭；非双APPROVE不得执行watchdog-only。
+
+### TRACE-20260826-090
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-090 / SEC-EXEC-01-POSIX-NO-TARGET-SMOKE-RUNNER-04 / REVIEW / 2026-08-26T19:13:50+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root/trace082_final_review_a + /root/browser_eval_correction_05 / frozen direct-binary runner correction / TRACE-084～089`
+- `what / why / expected_effect_or_gate`：两名原 HIGH 发现者重新按`review-artifact`只读复核新冻结hash，分别重放direct-binary平台shape、九键环境、Apple launcher反例、default/never hash-pyc、run/verify统一argv0，并检查source-only/atomic receipt/dirfd cleanup无回归。目标是只决定runner artifact能否进入单独的真实watchdog-only预注册，不签发执行或Runtime接受。
+- `scope / non_goals`：artifact-only独立Review；只运行pure/compile/static及不导入项目代码的`-c`启动probe。未编辑、未调用runner main/verify/opt-in，未启动真实guard/watchdog/target、未发signal/network/delete，不批准`KEEP`/Runtime Acceptance。
+- `baseline`：`runner=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b; card=bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02; both hashes stable before/after reviews; STEP-LOG pre-entry=b6cd9cd5a84f98c58cfe302093705d31d8bb54af57eb665b130ce1d98e075519`
+- `commands`：两reviewer重跑32项pure、pycompile、hash/static；分别运行exact九键direct-real-binary `-I -B -u -c`探针、`/usr/bin/python3`反例、`--check-hash-based-pycs never`反例及binary双lstat。完整内部shell transcript=`MISSING/UNKNOWN — ReviewArtifacts保存关键参数/结果/行号，TRACE-086/088/089已保存可复制主probe，禁止补造未保存命令`。
+- `stop_or_rollback_conditions`：未触发。任一原HIGH残留或新blocking会阻止执行；两reviewer均无blocking且hash稳定。
+- `result / effect`：`overall=APPROVE artifact-only; independent reviewers=2; blocking=0; execution authorization still NOT_ISSUED by this entry`。原四HIGH逐项关闭：真实regular python3.9/CPython3.9.6形状可达；exact九键可达且Apple launcher SDK键被拒；live hash-pyc只接受default；run/verify在分流前统一exact argv0且wrong absolute/relative/symlink-wrapper拒绝。source-only exact bytes、retained PASS receipt和verify-clean dirfd顺序无回归。两路pure=`32/32 OK`，pycompile/static/hash通过。
+- `artifacts / evidence`：ReviewArtifact principals=`/root/trace082_final_review_a`, `/root/browser_eval_correction_05`; refs=`runner:37,88,121～130,236～301,699,726～764,879,1223,1475`; card=`208,244,263,303,426,448`; frozen hashes above。
+- `remaining_risks`：literal token sequence仍须可信execution transcript；runner只核executable字符串/实现/版本，binary regular/root-owned identity是审查时点证据；CLT/CF变化会fail closed。真实runner main/guard/watchdog、hard alarm、dirfd cleanup仍无运行证据；hard-link中断、same-UID TOCTOU和cleanup后stdout失败保持披露。
+- `review`：`APPROVE artifact-only; double independent; execution/verify-clean/KEEP/Runtime Acceptance not included`
+- `supersedes_entry_id`：`NONE — TRACE-084 REVISE与旧hash历史保留，本条只批准20da/bd0工件`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY; commit=PENDING; clean release checkpoint=NO`
+- `next_action`：为唯一watchdog-only真实执行单独PRE_REGISTER exact literal command、run_id、binary identity/hash、receipt/stop规则；运行成功也保留scope，并在新ACTUAL后再单独预注册verify-clean。
+
+### TRACE-20260826-091
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-091 / SEC-EXEC-01-POSIX-WATCHDOG-ONLY-SMOKE-01 / PRE_REGISTER / 2026-08-26T19:13:50+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / first reviewed real POSIX boundary: watchdog-only, no arm/no target / TRACE-071,078,090`
+- `what / why / expected_effect_or_gate`：在冻结worktree上只运行一个exact fully-qualified `test_watchdog_only`，使用审查通过的same-process runner、direct root-owned regular Python3.9.6、literal `-I -B -u`、exact九键与固定run_id。该case只构造ExternalProcessGuard/watchdog后立即close，绝不arm、不调用`workload_command`、不产生target observation/ACK/leader/grandchild/marker。原因是用最小真实边界先验证watchdog自身ready→idle close→terminal/join与无target证据，不跳到arm/disarm或success_orphan。成功后scope和atomic PASS receipt必须保留，清理另行预注册。
+- `scope / non_goals`：允许启动唯一runner进程和其watchdog进程；不允许target/workload、port/network、signal未知PID/PGID、arm/spawn wrapper、success_orphan。runner hard alarm=25s；失败/timeout不运行verify-clean、不删除scope、不发额外信号。不得同时运行其他POSIX测试或full discovery。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=dirty but frozen related files; runner=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b; card=bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02; smoke=bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; safety=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd; direct binary stat at TRACE-090=regular/root/0755; run_id=c0dec0de000000000000000000000001`
+- `commands`：执行前 cwd=`<repo>`重核六hash与binary stat、scoped status。唯一授权执行命令，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=c0dec0de000000000000000000000001 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u /Users/donbblu/codex/multiAgent/demo/tests/_local_execution_posix_smoke_runner.py tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_watchdog_only
+```
+
+- `stop_or_rollback_conditions`：执行前任一hash/stat/status相关文件漂移；binary非root-owned regular0755/版本漂移；命令不能保持exact literal；运行exit非0/被alarm；输出不是exact一条scope-created+一条canonical PASS；receipt字段/runner hash/run_id/test_id/root identity不匹配；scope缺/多unknown entry、日志非空；watchdog/target证据异常。任一触发即停止，保留scope，不执行cleanup/下一case，不发送任何手工signal。
+- `result / effect`：`PENDING — real watchdog-only execution explicitly authorized by this PRE_REGISTER only`。成功要求`tests_run=1, skipped/failures/errors/expected_failures/unexpected_successes=0, post_hash=true, status=PASS_NO_TARGET_SCOPE_RETAINED`，且disk receipt与stdout exact bytes一致；这仍只证明watchdog-only，不证明target lifecycle。
+- `artifacts / evidence`：TRACE-071 fixture doubleReview；TRACE-078 smoke selector doubleReview；TRACE-090 runner doubleReview；literal command与run_id本条冻结。
+- `remaining_risks`：alarm撞terminal-no-escape可能杀owner且不能证明watchdog立即terminal；OS/PID/PGID hard-wall与TOCTOU保持；工具合并stdout/stderr需按JSON `event/status`区分并对disk receipt复核；成功后的scope在verify-clean前有同UID外部变化风险。
+- `review`：`PRE-REGISTERED EXECUTION — only watchdog-only; not arm-disarm/target/KEEP/Runtime Acceptance`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY; commit=PENDING; execution evidence will be appended before cleanup`
+- `next_action`：重核hash/binary后运行唯一literal命令；无论成功失败先记录ACTUAL和scope/receipt，再决定是否单独PRE_REGISTER verify-clean。
+
+### TRACE-20260826-092
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-092 / SEC-EXEC-01-POSIX-WATCHDOG-ONLY-SMOKE-01 / ACTUAL / 2026-08-26T19:15:13+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / first real watchdog-only retained-scope execution / TRACE-090～091`
+- `what / why / expected_effect_or_gate`：先重核runner/card/smoke/helper/fixture/safety六hash、direct binary root-owned regular0755 identity与相关dirty scope，再运行TRACE-091唯一literal命令。runner创建隔离scope、启动且关闭watchdog-only guard、执行精确一个non-skipped test，post-hash并原子保留PASS receipt；随后父级只读核scope树、节点identity/mode/size、空日志与disk receipt。原因是用最小无arm/no-target真实边界验证watchdog自身生命周期，并把成功证据与后续删除分离。效果是首次得到当前冻结hash下的真实watchdog-only PASS；scope尚未删除。
+- `scope / non_goals`：真实边界仅runner进程+watchdog进程；test没有调用`workload_command`或spawn wrapper，不arm、不启动target/grandchild/port/network。未运行arm-disarm/success_orphan/full discovery；未发手工signal；父级未执行cleanup/delete。
+- `baseline`：`six hashes exact TRACE-091; binary=/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9|Regular File|root|-rwxr-xr-x|dev16777233|ino501650; related status="M STEP-LOG/helper/fixture/safety; ?? runner/card/smoke"; STEP-LOG pre-entry=dd81d305c3b3b2a18f169a3508053eee7165275b1915262139e6fbccdf44ec83; run_id=c0dec0de000000000000000000000001`
+- `commands`：执行前cwd=`<repo>`：
+
+```bash
+shasum -a 256 demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke.py demo/tests/_local_execution_posix.py demo/tests/fixtures/local_execution_process.py demo/tests/test_local_execution_posix_safety.py
+stat -f '%N|%HT|%Su|%Sp|%d|%i' /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9
+git status --short -- VerificationReports/STEP-LOG.md demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke.py demo/tests/_local_execution_posix.py demo/tests/fixtures/local_execution_process.py demo/tests/test_local_execution_posix_safety.py
+```
+
+  唯一真实执行，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=c0dec0de000000000000000000000001 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u /Users/donbblu/codex/multiAgent/demo/tests/_local_execution_posix_smoke_runner.py tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_watchdog_only
+```
+
+  成功后只读核验：
+
+```bash
+find /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_ -maxdepth 3 -print
+stat -f '%N|%HT|%Su|%Sp|%z|%d|%i' /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_ /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/home /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/tmp /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+shasum -a 256 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+sed -n '1p' /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+wc -c /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+```
+
+- `stop_or_rollback_conditions`：未触发。六hash/binary/status符合预注册；runner未alarm且exit0；输出精确一条scope-created与一条PASS。父级未发现unknown entry、非空日志、identity/mode/owner漂移或receipt不一致，因此允许单独预注册verify-clean；没有自动删除或下一case。
+- `result / effect`：`achieved=yes for watchdog-only real smoke; cleanup=PENDING; target lifecycle remains untested`。真实命令exit=`0`, tool wall=`0.153947709s`。scope-created=`root=/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_; dev=16777233; ino=3174971; uid=501; mode=0700`。PASS=`case=watchdog_only; tests_run=1; skipped/failures/errors/expected_failures/unexpected_successes=0; post_hash=true; runner_sha256=20da...448b; schema=2; status=PASS_NO_TARGET_SCOPE_RETAINED`。disk receipt与stdout canonical JSON逐字一致，size=`477B`, sha256=`8a4d0ecb236c2760d2d974e19e4a76d1872bc26b0fcce826ee7f887f866e45f4`。scope精确含home/tmp/logs、两项0B/0600日志与receipt；目录均0700、owner donbblu、同device且inode唯一。
+- `artifacts / evidence`：保留scope=`/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_`; stdout/disk receipt above；runner内部test assertions证明guard terminal/join/clean、target_pids空/target_pgid0且所有launch/arm/spawn/leader/grandchild/marker absent；父级树复核未见target artifact。
+- `remaining_risks`：这是单次当前主机watchdog-only证据，不证明arm ACK、target cleanup、PID/PGID reuse、timeout或failure paths。工具未额外枚举进程；terminal结论来自reviewed test assertions/receipt。scope在cleanup前可能被同UID改变，verify-clean会fail closed。OS hard-wall/TOCTOU残余不变。
+- `review`：`PENDING — execution artifact尚未独立复核；本条不是KEEP/Runtime Acceptance`
+- `supersedes_entry_id`：`TRACE-091 result only; PRE_REGISTER retained`
+- `git_checkpoint`：`REAL_EVIDENCE_RETAINED_SCOPE; worktree only; commit=PENDING`
+- `next_action`：单独PRE_REGISTER exact verify-clean；重核hash、binary、scope inode/tree/receipt后才调用runner `--verify-clean`。任何漂移即保留root并停止。
+
+### TRACE-20260826-093
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-093 / SEC-EXEC-01-POSIX-WATCHDOG-ONLY-CLEANUP-01 / PRE_REGISTER / 2026-08-26T19:15:13+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / exact retained watchdog-only scope verify-clean / TRACE-092`
+- `what / why / expected_effect_or_gate`：在不改变run_id/case/runner hash/九键/binary的条件下，先重核六hash、binary stat、root dev16777233/ino3174971/uid501/mode0700、精确entries、两项0B日志和477B canonical PASS receipt sha256；再只调用reviewed runner的`--verify-clean <exact-root>`。该模式用dirfd重新验证producer hash/receipt/root/tree/identity，按已知日志→logs/home/tmp→receipt→root顺序删除，并在完成后输出CLEANUP_COMPLETE。原因是删除必须与执行证据分开授权且fail closed。
+- `scope / non_goals`：唯一删除目标是精确root `/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_`及其已知空树；禁止rmtree/glob/手工unlink/其他root、信号或进程操作。失败时不补救删除、不改名、不执行下一case。
+- `baseline`：`TRACE-092 PASS; root dev=16777233 ino=3174971 uid=501 mode=0700; receipt sha256=8a4d0ecb236c2760d2d974e19e4a76d1872bc26b0fcce826ee7f887f866e45f4 size=477; logs=0+0; runner/deps hashes=TRACE-092; run_id=c0dec0de000000000000000000000001`
+- `commands`：重核使用TRACE-092的六hash/stat/find/sed/wc/shasum命令。唯一授权cleanup，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=c0dec0de000000000000000000000001 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u /Users/donbblu/codex/multiAgent/demo/tests/_local_execution_posix_smoke_runner.py --verify-clean /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_
+```
+
+- `stop_or_rollback_conditions`：任一hash/binary/root identity/tree/log/receipt bytes或sha漂移；unknown/temp entry；cleanup exit非0/alarm；输出不是exact单条CLEANUP_COMPLETE或ids/hash不匹配；root仍存在。触发即停止，不做手工补救、不运行arm-disarm。
+- `result / effect`：`PENDING — destructive scope-local verify-clean explicitly authorized only for exact root above`。预期cleanup receipt含`retained_receipt_sha256=8a4d...45f4`, root identity、runner hash/run_id/case/test_id/schema2/status=CLEANUP_COMPLETE；成功后root不存在。
+- `artifacts / evidence`：TRACE-092 stdout+disk receipt、scope read-only snapshot；TRACE-090 artifact doubleReview。
+- `remaining_risks`：delete完成后stdout失败无法恢复root，但原PASS receipt在删除前已审计；same-UID bind→unlink TOCTOU仍为残余；cleanup alarm中断可能留下partial known tree，届时禁止手工假装成功。
+- `review`：`PRE-REGISTERED CLEANUP — exact root only; not next smoke/KEEP/Runtime Acceptance`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`WORKTREE_ONLY; cleanup evidence will be appended`
+- `next_action`：重新执行只读preflight；完全匹配才运行唯一cleanup命令并记录ACTUAL/cleanup receipt/root absence。
+
+### TRACE-20260826-094
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-094 / SEC-EXEC-01-POSIX-WATCHDOG-ONLY-CLEANUP-01 / ACTUAL / 2026-08-26T19:16:56+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / exact watchdog-only retained scope verify-clean and removal / TRACE-092～093`
+- `what / why / expected_effect_or_gate`：重新核对六hash、binary identity、root与所有子节点identity/mode/size、精确树、0B日志和PASS receipt SHA后，调用唯一reviewed `--verify-clean`命令。runner以dirfd重验并删除已知空树，输出canonical CLEANUP_COMPLETE；父级再以path不存在和run/dependency hash未变验证结束。原因是只允许producer-bound、identity-bound的精确删除，不用rmtree/手工补救。效果是TRACE-092保留scope已完整移除，cleanup receipt与原PASS receipt/root identity绑定。
+- `scope / non_goals`：只删除 `/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_` 内已知7节点；未操作其他temp root、未发signal、未启动新watchdog/target、未运行下一case。该删除已完成且不可恢复，但原PASS/cleanup canonical输出与Step Log保留。
+- `baseline`：`root dev=16777233 ino=3174971 uid=501 mode=0700; receipt sha=8a4d0ecb236c2760d2d974e19e4a76d1872bc26b0fcce826ee7f887f866e45f4 size=477; logs=0+0; exact tree and six hashes rechecked immediately before delete; STEP-LOG pre-entry=ea3f76c0594cb943e5f4354658aaccc675428bfe96e9680980eb2e6b4f5d2d1d`
+- `commands`：preclean read-only复核使用TRACE-092所列六hash、binary stat、find、7节点stat、receipt shasum与wc命令，结果逐项相同。唯一cleanup，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=watchdog_only SEC_EXEC_POSIX_SMOKE_RUN_ID=c0dec0de000000000000000000000001 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u /Users/donbblu/codex/multiAgent/demo/tests/_local_execution_posix_smoke_runner.py --verify-clean /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_
+```
+
+  post-clean：
+
+```bash
+/usr/bin/test ! -e /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_
+find /private/tmp -maxdepth 1 -name 'sec-exec-posix-smoke-c0dec0de000000000000000000000001-*' -print
+test ! -e /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_
+shasum -a 256 demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke.py demo/tests/_local_execution_posix.py demo/tests/fixtures/local_execution_process.py demo/tests/test_local_execution_posix_safety.py
+```
+
+- `stop_or_rollback_conditions`：preclean未触发。cleanup exit0、未alarm且receipt exact；root不存在。一次post-clean诊断路径错误：macOS无`/usr/bin/test`，该命令exit127/`no such file or directory`；它不参与删除也不改变状态。随后`find`无输出且shell builtin `test ! -e` exit0，关闭诊断错误。未手工补删。
+- `result / effect`：`achieved=yes; exact scope removed; cleanup evidence=PENDING independent review`。cleanup exit=`0`, tool wall=`0.000727167s`；唯一JSON=`case=watchdog_only, post_hash=true, retained_receipt_sha256=8a4d...45f4, root_device=16777233, root_inode=3174971, root_uid=501, run_id=c0de...0001, runner_sha256=20da...448b, schema=2, status=CLEANUP_COMPLETE, exact test_id`。corrected root-absence test exit0，run/dependency hashes未漂移。
+- `artifacts / evidence`：TRACE-092 scope-created+PASS JSON与disk receipt hash；本条CLEANUP_COMPLETE JSON；root absence；六hash。物理scope已删除，不能再次直接审查其文件，故审查依赖删除前保存的identity/tree/receipt命令输出。
+- `remaining_risks`：cleanup后stdout成功不证明所有中断路径；same-UID TOCTOU与OS hard-wall仍存在。`/usr/bin/test`诊断失败说明平台命令路径也须冻结；已用shell builtin纠正并透明记录。单次watchdog-only+cleanup不证明arm/disarm或target。
+- `review`：`PENDING — 两名独立reviewer需核TRACE-091～094 transcript、receipt绑定、无过度结论与root absence`
+- `supersedes_entry_id`：`TRACE-093 result only; PRE_REGISTER retained`
+- `git_checkpoint`：`REAL_WATCHDOG_ONLY_EVIDENCE + CLEANUP_COMPLETE; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：双路只读复核watchdog-only执行/cleanup证据；非双APPROVE不预注册arm-disarm。
+
+### TRACE-20260826-095
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-095 / SEC-EXEC-01-POSIX-WATCHDOG-ONLY-EVIDENCE-01 / CORRECTION / 2026-08-26T19:18:55+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / verbatim tool output preservation / TRACE-092～094 review finding`
+- `what / why / expected_effect_or_gate`：独立counterreview指出scope已删后仅凭TRACE-092/094字段摘要无法独立逐字核`stdout=disk receipt`、7节点tree/stat、preclean重核、cleanup JSON与root absence。本条不改历史结论，只append保存当时已返回给父级的原始tool output文本；原因是把producer摘要升级为可逐字审计证据，效果是reviewer可在不重跑真实boundary的前提下重算/交叉核对。
+- `scope / non_goals`：只追加已有输出；未重跑runner/cleanup、未编辑代码、未启动process/signal/network/delete。tool将stdout/stderr合并到同一output，JSON的`event`/`status`用于区分；本条不伪造分离流。
+- `baseline`：`STEP-LOG pre-entry=7fb0f1405cd3dfc279273cf8766172d3ecedbe99c5b52399e208de01654e761e; raw outputs still present in parent tool-call transcript; deleted scope cannot be reread`
+- `commands`：命令全文已在TRACE-091～094保存；本条保存其逐字结果。执行前六hash：
+
+```text
+20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b  demo/tests/_local_execution_posix_smoke_runner.py
+bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02  demo/tests/test_local_execution_posix_smoke_runner.py
+bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f  demo/tests/test_local_execution_posix_smoke.py
+a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999  demo/tests/_local_execution_posix.py
+80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8  demo/tests/fixtures/local_execution_process.py
+266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd  demo/tests/test_local_execution_posix_safety.py
+```
+
+  binary stat：
+
+```text
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9|Regular File|root|-rwxr-xr-x|16777233|501650
+```
+
+  watchdog-only runner原始tool output：
+
+```text
+exit=0 wall=0.153947709
+{"device":16777233,"event":"scope-created","inode":3174971,"kind":"directory","mode":"0700","root":"/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_","run_id":"c0dec0de000000000000000000000001","uid":501}
+{"case":"watchdog_only","errors":0,"expected_failures":0,"failures":0,"post_hash":true,"root_device":16777233,"root_inode":3174971,"root_uid":501,"run_id":"c0dec0de000000000000000000000001","runner_sha256":"20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b","schema":2,"skipped":0,"status":"PASS_NO_TARGET_SCOPE_RETAINED","test_id":"tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_watchdog_only","tests_run":1,"unexpected_successes":0}
+```
+
+  首次retained tree `find`：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/home
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/tmp
+```
+
+  首次retained `stat`：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_|Directory|donbblu|drwx------|192|16777233|3174971
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/home|Directory|donbblu|drwx------|64|16777233|3174972
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/tmp|Directory|donbblu|drwx------|64|16777233|3174973
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs|Directory|donbblu|drwx------|128|16777233|3174974
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log|Regular File|donbblu|-rw-------|0|16777233|3174975
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log|Regular File|donbblu|-rw-------|0|16777233|3174976
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json|Regular File|donbblu|-rw-------|477|16777233|3174984
+```
+
+  首次disk receipt SHA、逐字bytes与`wc`：
+
+```text
+8a4d0ecb236c2760d2d974e19e4a76d1872bc26b0fcce826ee7f887f866e45f4  /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+{"case":"watchdog_only","errors":0,"expected_failures":0,"failures":0,"post_hash":true,"root_device":16777233,"root_inode":3174971,"root_uid":501,"run_id":"c0dec0de000000000000000000000001","runner_sha256":"20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b","schema":2,"skipped":0,"status":"PASS_NO_TARGET_SCOPE_RETAINED","test_id":"tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_watchdog_only","tests_run":1,"unexpected_successes":0}
+       0 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log
+       0 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log
+     477 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+     477 total
+```
+
+  cleanup前第二次`find`：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/home
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/tmp
+```
+
+  cleanup前第二次`stat`：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_|Directory|donbblu|drwx------|192|16777233|3174971
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/home|Directory|donbblu|drwx------|64|16777233|3174972
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/tmp|Directory|donbblu|drwx------|64|16777233|3174973
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs|Directory|donbblu|drwx------|128|16777233|3174974
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log|Regular File|donbblu|-rw-------|0|16777233|3174975
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log|Regular File|donbblu|-rw-------|0|16777233|3174976
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json|Regular File|donbblu|-rw-------|477|16777233|3174984
+```
+
+  cleanup前第二次receipt SHA与`wc`：
+
+```text
+8a4d0ecb236c2760d2d974e19e4a76d1872bc26b0fcce826ee7f887f866e45f4  /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+       0 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stdout.log
+       0 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/logs/test.stderr.log
+     477 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000001-zeur1vm_/pass-receipt.json
+     477 total
+```
+
+  cleanup原始tool output：
+
+```text
+exit=0 wall=0.000727167
+{"case":"watchdog_only","post_hash":true,"retained_receipt_sha256":"8a4d0ecb236c2760d2d974e19e4a76d1872bc26b0fcce826ee7f887f866e45f4","root_device":16777233,"root_inode":3174971,"root_uid":501,"run_id":"c0dec0de000000000000000000000001","runner_sha256":"20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b","schema":2,"status":"CLEANUP_COMPLETE","test_id":"tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_watchdog_only"}
+```
+
+  post-clean原始输出：
+
+```text
+POSTCLEAN1 exit=127
+zsh:1: no such file or directory: /usr/bin/test
+POSTCLEAN2 exit=0
+<empty output from find>
+POSTCLEAN3 exit=0
+20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b  demo/tests/_local_execution_posix_smoke_runner.py
+bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02  demo/tests/test_local_execution_posix_smoke_runner.py
+bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f  demo/tests/test_local_execution_posix_smoke.py
+a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999  demo/tests/_local_execution_posix.py
+80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8  demo/tests/fixtures/local_execution_process.py
+266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd  demo/tests/test_local_execution_posix_safety.py
+corrected shell-builtin test: exit=0
+<empty output>
+```
+
+- `stop_or_rollback_conditions`：不适用；本条只补证据。若逐字输出与TRACE-092/094摘要冲突，则以本条raw output优先并追加新CORRECTION；当前核对无冲突。
+- `result / effect`：`achieved=yes; independent review can now verify stdout=disk bytes, repeated preclean identity/tree, cleanup binding and root absence without rerun`。raw输出说明`/usr/bin/test`失败仅为不存在的诊断binary；它发生在cleanup成功后且未改变文件，空find+builtin exit0关闭root absence。
+- `artifacts / evidence`：本Step Log entry是删除后raw transcript的持久副本；对应producer tool calls与TRACE-091～094 exact commands。
+- `remaining_risks`：tool stdout/stderr合流无法证明两JSON各自FD，仅能由`event/status`与runner源码确认；scope已删除，raw transcript不可用磁盘复取；未保存外部签名的独立raw log文件。未来真实执行应在删除前把原始tool output同时写入专用evidence artifact并hash。
+- `review`：`PENDING — reviewers must lock updated STEP-LOG hash and cite TRACE-095; no rerun authorized`
+- `supersedes_entry_id`：`TRACE-092/094 evidence detail only; their conclusions and commands retained`
+- `git_checkpoint`：`WORKTREE_ONLY; append-only raw evidence; commit=PENDING`
+- `next_action`：通知两名reviewer读取TRACE-095并完成只读Review；非双APPROVE不预注册arm-disarm。
+
+### TRACE-20260826-096
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-096 / SEC-EXEC-01-POSIX-WATCHDOG-ONLY-EVIDENCE-01 / CORRECTION / 2026-08-26T19:20:24+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / cleanup wall telemetry interpretation / TRACE-094～095 review finding`
+- `what / why / expected_effect_or_gate`：TRACE-094/095逐字保存的cleanup tool metadata为`wall=0.000727167`，独立reviewer正确指出该值短于可信的Python启动+双hash+dirfd cleanup耗时。父级核原始tool-call返回后确认数值并非误抄后续`test`命令，而是该工具返回的telemetry；因此本条把它降级为“不可靠原始metadata”，禁止作为性能、deadline或cleanup完成速度证据。
+- `scope / non_goals`：只纠正证据解释；不改exit/output/receipt/root absence技术事实，不重跑命令、不编辑代码、不触达boundary。
+- `baseline`：`TRACE-095 preserved raw metadata; STEP-LOG pre-entry=2d404c110fc7ff92032bb05c762e4ed6bfe8302e098224668732db8465025c03`
+- `commands`：无新增命令；对话内回看原始cleanup tool result=`exit=0, wall_time_seconds=0.000727167, output=<CLEANUP_COMPLETE JSON>`与随后独立post-clean tool call。
+- `stop_or_rollback_conditions`：若exit/output也无法对应原始tool result，则技术结论须REVISE；当前只发现wall telemetry不可信，exit/JSON/pre-post证据一致。
+- `result / effect`：`achieved=yes; wall telemetry excluded from acceptance evidence`。TRACE-094中“tool wall=0.000727167s”只表示工具返回的原始字段，不表示真实耗时；watchdog-only的`0.153947709s`同样仅保留raw telemetry，不作为性能门。
+- `artifacts / evidence`：TRACE-095 raw output；reviewer finding。
+- `remaining_risks`：没有独立单调时钟/外部timestamp原始日志，故本次不能给cleanup wall-duration结论；runner自身25s hard alarm仍在，但本次仅凭未被alarm+exit0陈述完成。
+- `review`：`PENDING — reviewers lock updated STEP-LOG hash; technical evidence unchanged`
+- `supersedes_entry_id`：`TRACE-094/095 wall-duration interpretation only; raw value retained`
+- `git_checkpoint`：`WORKTREE_ONLY; append-only correction`
+- `next_action`：重算STEP-LOG hash并通知reviewers；继续只读review，非双APPROVE不进入arm-disarm。
+
+### TRACE-20260826-097
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-097 / SEC-EXEC-01-POSIX-WATCHDOG-ONLY-EVIDENCE-01 / REVIEW / 2026-08-26T19:24:08+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / double independent review of watchdog-only execution and exact cleanup / TRACE-091～096`
+- `what / why / expected_effect_or_gate`：记录两名独立只读reviewer对冻结STEP-LOG与六个POSIX工件的最终处置。两人均重算/交叉核对literal command、exact九键环境、direct Python、单一FQ test、PASS canonical bytes/hash、两轮retained tree/stat、producer-bound cleanup receipt与root absence，并给出`APPROVE, blocking=0`。原因是进入下一档真实窄验证前必须由非执行者审查原始证据、删除边界与过度声明；效果是watchdog-only这一档正式收口，可预登记arm→ACK→disarm，但不扩大为target、KEEP或Runtime Acceptance。
+- `scope / non_goals`：仅批准run_id `c0dec0de000000000000000000000001`的一次watchdog-only执行与其exact cleanup证据。未批准arm-disarm、target/workload、timeout/failure真实路径、OS hard-wall、SEC-EXEC-01 KEEP或Runtime Acceptance；reviewer未重跑真实process/signal/network/delete。
+- `baseline`：`reviewed STEP-LOG sha256=460ec50e0c81f9388866edd5f99c8aa9d9595b3d1a45ea82677ea1097542f4f0; runner=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b; card=bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02; smoke=bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; safety=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd`
+- `commands`：两名reviewer均为只读审查；核对STEP-LOG/raw transcript、当前六hash、runner/smoke源码与root absence，未执行opt-in runner或cleanup。完整review文本保存在本task的`/root/trace082_final_review_a`与`/root/browser_eval_correction_05` final artifacts。
+- `stop_or_rollback_conditions`：任一review为REVISE/PENDING、hash漂移、raw transcript无法闭合或root仍存在时不得进入arm-disarm；均未触发。
+- `result / effect`：`achieved=yes; disposition=APPROVE; independent_reviews=2; blocking_findings=0`。两名reviewer独立确认PASS stdout与477B disk receipt SHA=`8a4d0ecb236c2760d2d974e19e4a76d1872bc26b0fcce826ee7f887f866e45f4`一致；retained七节点/权限/空日志两次snapshot无漂移；cleanup receipt绑定原PASS/root identity；空find与shell builtin absence probe关闭`/usr/bin/test` exit127诊断缺口。
+- `artifacts / evidence`：TRACE-091～096；review principals `/root/trace082_final_review_a`、`/root/browser_eval_correction_05`；冻结STEP-LOG与六hash。
+- `remaining_risks`：物理scope已删除，只能依赖TRACE-095保存的producer transcript而非外部签名raw artifact；stdout/stderr合流；binary cleanup前无第二份独立签名stat；单次测试观测到无arm/target不等于系统级全进程枚举；wall telemetry不提供性能/deadline保证。
+- `review`：`APPROVE — reviewer_1=/root/trace082_final_review_a; reviewer_2=/root/browser_eval_correction_05; independence=read-only/non-executor/non-cleanup; scope=artifact-only; blocking=0`
+- `supersedes_entry_id`：`NONE — closes PENDING review fields in TRACE-092, TRACE-094, TRACE-095 and TRACE-096 without rewriting them`
+- `git_checkpoint`：`REVIEWED_REAL_WATCHDOG_ONLY_EVIDENCE; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：预登记单次arm→ACK→disarm窄验证；仍禁止执行command tuple与任何target workload。
+
+### TRACE-20260826-098
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-098 / SEC-EXEC-01-POSIX-ARM-DISARM-01 / PRE_REGISTER / 2026-08-26T19:24:08+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / real arm acknowledgment then disarm without target / TRACE-097`
+- `what / why / expected_effect_or_gate`：在与已批准watchdog-only相同的direct Python、exact九键环境、冻结runner/dependency hashes和单一FQ selector下，执行`test_arm_disarm`一次。测试只让guard生成但绝不执行`stdout_short` command tuple，等待watchdog arm ACK，删除tuple引用，调用`disarm_no_spawn()`并关闭guard。原因是用最小真实边界验证arm lease/ACK/disarm状态收敛而不进入target生命周期；预期效果是watchdog terminal clean/join，launch最终为`disarmed_no_spawn`，arm ACK存在，spawn observation/ACK、leader、grandchild、marker全部缺失。
+- `scope / non_goals`：允许启动一个fixture watchdog及其控制文件；禁止执行returned command tuple、禁止target Popen/workload、禁止target signal/network/port、禁止success_orphan、禁止手工kill/cleanup、禁止其他测试/discovery。成功scope先保留审查，不在本step删除。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=DIRTY with SEC-EXEC implementation/tests/docs plus unrelated demo/track.md, problems.md, deleted prombles.md and Plan/Plan28.md preserved; STEP-LOG pre-entry sha256=460ec50e0c81f9388866edd5f99c8aa9d9595b3d1a45ea82677ea1097542f4f0; runner=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b; card=bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02; smoke=bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; safety=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd; run_id=c0dec0de000000000000000000000002`
+- `commands`：preflight，cwd=`<repo>`：
+
+```bash
+git status --short
+shasum -a 256 VerificationReports/STEP-LOG.md demo/tests/_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke_runner.py demo/tests/test_local_execution_posix_smoke.py demo/tests/_local_execution_posix.py demo/tests/fixtures/local_execution_process.py demo/tests/test_local_execution_posix_safety.py
+stat -f '%N|%HT|%Su|%Sp|%d|%i' /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9
+find /private/tmp -maxdepth 1 -name 'sec-exec-posix-smoke-c0dec0de000000000000000000000002-*' -print
+```
+
+  唯一授权执行，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=arm_disarm SEC_EXEC_POSIX_SMOKE_RUN_ID=c0dec0de000000000000000000000002 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u /Users/donbblu/codex/multiAgent/demo/tests/_local_execution_posix_smoke_runner.py tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_arm_disarm
+```
+
+- `stop_or_rollback_conditions`：preflight任一hash/binary identity漂移、同run-id已有scope、STEP-LOG无法append或selector/env/command不精确则执行前停止。执行若非exit0、alarm/timeout、非exact两个JSON、tests_run!=1、任一fail/error/skip、post_hash!=true、无canonical receipt、target相关文件出现或terminal不clean，则立即以ACTUAL记录`achieved=no`，保留scope，不运行verify-clean、不手工删除、不发送任何PID/PGID signal；只允许后续独立诊断。
+- `result / effect`：`TBD — /root must append ACTUAL immediately after the single command and before any cleanup or next state change`
+- `artifacts / evidence`：预期保存逐字tool output、scope-created identity、canonical PASS bytes/hash、exact retained tree/stat/modes/log sizes、disk receipt bytes/hash、执行前后六hash；不得仅保留摘要。
+- `remaining_risks`：即使成功也只证明一次arm/ACK/disarm零target路径；不证明target spawn、timeout/failure、PID reuse、OS hard-wall或SEC KEEP。runner alarm与same-UID/filesystem TOCTOU限制继续存在。
+- `review`：`NOT_REQUESTED — execution evidence尚不存在；成功后需双路独立只读review`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：严格按preflight与唯一literal command执行一次；先追加ACTUAL并保留scope，未经预登记不得cleanup。
+
+### TRACE-20260826-099
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-099 / SEC-EXEC-01-POSIX-ARM-DISARM-01 / ACTUAL / 2026-08-26T19:25:49+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / real arm acknowledgment then disarm without target / TRACE-098`
+- `what / why / expected_effect_or_gate`：在全部preflight通过后逐字执行TRACE-098唯一literal命令。runner加载exact `test_arm_disarm`；该测试取得但不执行`stdout_short` command tuple，确认watchdog arm ACK与token/watchdog PID/state绑定，删除tuple引用，调用`disarm_no_spawn()`，随后关闭并断言terminal clean/join、launch最终为`disarmed_no_spawn`、arm ACK存在、spawn observation/ACK、leader、grandchild与marker缺失。原因是验证从未arm向已arm但零spawn收敛的下一条真实控制面路径；效果是单测1/1成功并保留producer-bound scope供独立复核。
+- `scope / non_goals`：实际边界仅fixture watchdog与control/arm-ACK文件；测试源码没有调用returned tuple。未授权或执行target workload/success_orphan，未运行其他测试/discovery，未清理retained scope，未手工signal/network/port操作。
+- `baseline`：`TRACE-098 preflight all exit0; STEP-LOG pre-execution sha256=1a15dcde22c1252decb1a2c62874cb04770fe86af5bb801eaa9cdeeafa730d60; same six frozen hashes; direct binary=/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9|Regular File|root|-rwxr-xr-x|dev16777233|ino501650; matching preexisting run-id scope find output empty; worktree dirty scope preserved`
+- `commands`：preflight全文在TRACE-098；唯一执行，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=arm_disarm SEC_EXEC_POSIX_SMOKE_RUN_ID=c0dec0de000000000000000000000002 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u /Users/donbblu/codex/multiAgent/demo/tests/_local_execution_posix_smoke_runner.py tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_arm_disarm
+```
+
+  执行后只读取证，cwd=`<repo>/demo`：
+
+```bash
+find /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb -print
+stat -f '%N|%HT|%Su|%Sp|%z|%d|%i' /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/home /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/tmp /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+shasum -a 256 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+sed -n '1p' /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+wc -c /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+shasum -a 256 tests/_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke.py tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+```
+
+- `stop_or_rollback_conditions`：无stop条件触发：preflight hashes/binary/root absence全部精确；runner exit0、无alarm/timeout；输出恰一条scope-created与一条PASS；tests_run=1且fail/error/skip/expectedFailure/unexpectedSuccess全0；post_hash=true；retained receipt可读且六hash未漂移。scope按预注册保留，未执行verify-clean。
+- `result / effect`：`achieved=yes; execution exit=0; tests=1 pass / 0 fail / 0 error / 0 skip; status=PASS_NO_TARGET_SCOPE_RETAINED; independent_review=PENDING`。tool raw wall metadata=`0.18214575`，仅保存原始字段，不作为performance/deadline证据。scope=`/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb`，identity=`dev16777233/ino3175553/uid501/mode0700`。
+- `artifacts / evidence`：执行原始tool output：
+
+```text
+exit=0 wall=0.18214575
+{"device":16777233,"event":"scope-created","inode":3175553,"kind":"directory","mode":"0700","root":"/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb","run_id":"c0dec0de000000000000000000000002","uid":501}
+{"case":"arm_disarm","errors":0,"expected_failures":0,"failures":0,"post_hash":true,"root_device":16777233,"root_inode":3175553,"root_uid":501,"run_id":"c0dec0de000000000000000000000002","runner_sha256":"20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b","schema":2,"skipped":0,"status":"PASS_NO_TARGET_SCOPE_RETAINED","test_id":"tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_arm_disarm","tests_run":1,"unexpected_successes":0}
+```
+
+  retained tree：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/home
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/tmp
+```
+
+  retained stat：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb|Directory|donbblu|drwx------|192|16777233|3175553
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/home|Directory|donbblu|drwx------|64|16777233|3175554
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/tmp|Directory|donbblu|drwx------|64|16777233|3175555
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs|Directory|donbblu|drwx------|128|16777233|3175556
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log|Regular File|donbblu|-rw-------|0|16777233|3175557
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log|Regular File|donbblu|-rw-------|0|16777233|3175558
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json|Regular File|donbblu|-rw-------|471|16777233|3175569
+```
+
+  receipt与sizes：
+
+```text
+d2b2d9084194ed74b5fac7e4befb9adfdf19582d8c133e5779b1cf70e6d29e85  /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+{"case":"arm_disarm","errors":0,"expected_failures":0,"failures":0,"post_hash":true,"root_device":16777233,"root_inode":3175553,"root_uid":501,"run_id":"c0dec0de000000000000000000000002","runner_sha256":"20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b","schema":2,"skipped":0,"status":"PASS_NO_TARGET_SCOPE_RETAINED","test_id":"tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_arm_disarm","tests_run":1,"unexpected_successes":0}
+       0 .../logs/test.stdout.log
+       0 .../logs/test.stderr.log
+     471 .../pass-receipt.json
+     471 total
+```
+
+  post-run六hash仍为`20da45a…448b / bd0d2654…1d02 / bca89a4f…d44f / a87ed9f8…2999 / 80ecd65d…06d8 / 266b8a32…9bdd`。
+- `remaining_risks`：PASS依赖冻结测试源码断言而不是保留guard内部manifest（成功测试root已由其自身删除）；因此只能证明测试观测到ACK/disarm/no-target，不能全局枚举系统进程。scope transcript未外部签名；stdout/stderr合流；single-run、same-UID TOCTOU与OS hard-wall限制不变。
+- `review`：`PENDING — 两名独立reviewer须在scope仍存在时核execution transcript、receipt、tree/stat、test semantics与无过度声明；未双APPROVE不得cleanup或进入target`
+- `supersedes_entry_id`：`TRACE-098 result only; PRE_REGISTER retained`
+- `git_checkpoint`：`REAL_ARM_DISARM_EVIDENCE_RETAINED; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：锁STEP-LOG hash并启动双路只读复核；只在双APPROVE后单独PRE_REGISTER producer-bound verify-clean。
+
+### TRACE-20260826-100
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-100 / SEC-EXEC-01-POSIX-ARM-DISARM-01 / CORRECTION / 2026-08-26T19:30:38+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / verbatim external preflight and post-run hashes / TRACE-098～099 review note`
+- `what / why / expected_effect_or_gate`：第二名独立reviewer指出TRACE-099把执行前`git status`、preflight hash和post-run六hash部分保留为摘要/缩写。本条不改变执行结论，只逐字保存仍在父级tool transcript中的原始输出；原因是满足TRACE-098“不得只保留摘要”的证据要求，效果是外部dirty scope、binary identity、run-ID absence、STEP-LOG与六文件hash可直接审计。
+- `scope / non_goals`：仅追加已有只读输出；未重跑runner、未写retained scope、未cleanup、未signal/network/target。空输出以`<empty>`明确表示。
+- `baseline`：`reviewed STEP-LOG subject=1e074fb7bd7151e21b4369407b067cc84b4bfe929deb8d313a2de537c4f706a4; raw preflight/post-run results still present in parent tool transcript; retained scope still present`
+- `commands`：命令全文已在TRACE-098～099；本条保存逐字结果。执行前`git status --short`：
+
+```text
+ M HANDOFF.md
+ M VerificationReports/SEC-EXEC-01.md
+ M VerificationReports/STEP-LOG.md
+ M demo/coding_agent_cli.py
+ M demo/coding_workflow/__init__.py
+ M demo/coding_workflow/agents.py
+ M demo/coding_workflow/coding_ablation.py
+ M demo/coding_workflow/coding_ablation_execution.py
+ M demo/coding_workflow/coding_evaluation.py
+ M demo/coding_workflow/coding_evaluation_runtime.py
+ M demo/coding_workflow/command_validators.py
+ M demo/coding_workflow/dag_runner.py
+ M demo/coding_workflow/models.py
+ M demo/coding_workflow/policy.py
+ M demo/coding_workflow/visionforge/__init__.py
+ M demo/coding_workflow/visionforge/browser.py
+ M demo/coding_workflow/visionforge/evaluation_runtime.py
+ M demo/coding_workflow/visionforge/web_runtime.py
+ M demo/coding_workflow/workspace.py
+ M demo/core_coding_ablation_run.py
+ M demo/core_coding_eval_run.py
+ M demo/core_coding_model_ablation_run.py
+ M demo/tests/_local_execution_posix.py
+ M demo/tests/fixtures/local_execution_process.py
+ M demo/tests/test_audio_transcription.py
+ M demo/tests/test_coding_ablation.py
+ M demo/tests/test_coding_ablation_execution.py
+ M demo/tests/test_coding_evaluation_runtime.py
+ M demo/tests/test_coding_model_workers.py
+ M demo/tests/test_command_validators.py
+ M demo/tests/test_image_perception.py
+ M demo/tests/test_local_execution_posix_safety.py
+ M demo/tests/test_local_trusted_execution_behavior_expected_red.py
+ M demo/tests/test_local_trusted_execution_expected_red.py
+ M demo/tests/test_multimodal_intake.py
+ M demo/tests/test_video_perception.py
+ M demo/tests/test_visionforge_browser.py
+ M demo/tests/test_workflow.py
+ M demo/track.md
+ M demo/visionforge_eval_run.py
+ M demo/web_server.py
+ M problems.md
+ D prombles.md
+?? Plan/Plan28.md
+?? demo/coding_workflow/local_execution.py
+?? demo/coding_workflow/local_execution_approval.py
+?? demo/tests/_local_execution_posix_smoke_runner.py
+?? demo/tests/test_local_execution_approval.py
+?? demo/tests/test_local_execution_posix_smoke.py
+?? demo/tests/test_local_execution_posix_smoke_runner.py
+?? demo/tests/test_local_execution_supervisor.py
+?? demo/tests/test_visionforge_eval_composition.py
+```
+
+  执行前hash：
+
+```text
+1a15dcde22c1252decb1a2c62874cb04770fe86af5bb801eaa9cdeeafa730d60  VerificationReports/STEP-LOG.md
+20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b  demo/tests/_local_execution_posix_smoke_runner.py
+bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02  demo/tests/test_local_execution_posix_smoke_runner.py
+bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f  demo/tests/test_local_execution_posix_smoke.py
+a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999  demo/tests/_local_execution_posix.py
+80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8  demo/tests/fixtures/local_execution_process.py
+266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd  demo/tests/test_local_execution_posix_safety.py
+```
+
+  binary stat与run-ID scope absence：
+
+```text
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9|Regular File|root|-rwxr-xr-x|16777233|501650
+find matching run-id output: <empty>
+STEP-LOG diff-check output: <empty>
+```
+
+  执行后六hash：
+
+```text
+20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b  tests/_local_execution_posix_smoke_runner.py
+bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02  tests/test_local_execution_posix_smoke_runner.py
+bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f  tests/test_local_execution_posix_smoke.py
+a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999  tests/_local_execution_posix.py
+80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8  tests/fixtures/local_execution_process.py
+266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd  tests/test_local_execution_posix_safety.py
+```
+
+- `stop_or_rollback_conditions`：不适用；只补只读输出。若与TRACE-098～099摘要冲突则追加新CORRECTION并暂停cleanup；当前无冲突。
+- `result / effect`：`achieved=yes; reviewer low evidence-detail note resolved before cleanup`。raw状态同时显示用户/其他任务文件`demo/track.md`、`problems.md`、`prombles.md`删除、`Plan/Plan28.md`仍未触碰/未清理/未stage。
+- `artifacts / evidence`：本条逐字输出、parent tool transcript、TRACE-098～099。
+- `remaining_risks`：输出仍由producer所在tool transcript复制而非外部签名artifact；这不改变single-run/TOCTOU/OS hard-wall限制。
+- `review`：`PENDING — correction itself may be checked with final cleanup review; original execution disposition recorded next`
+- `supersedes_entry_id`：`TRACE-099 evidence detail only; execution result retained`
+- `git_checkpoint`：`WORKTREE_ONLY; append-only evidence correction; commit=PENDING`
+- `next_action`：记录双APPROVE，然后单独PRE_REGISTER exact verify-clean。
+
+### TRACE-20260826-101
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-101 / SEC-EXEC-01-POSIX-ARM-DISARM-01 / REVIEW / 2026-08-26T19:30:38+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / double independent review of retained arm-disarm evidence / TRACE-098～100`
+- `what / why / expected_effect_or_gate`：记录两名独立只读reviewer对冻结执行证据的处置。两人均核literal command、direct binary/exact env、raw PASS、独立重构471B canonical receipt及SHA、当前七节点scope/stat/空日志、冻结tuple-never-executed与ACK→disarm/no-target/terminal源码路径，并给出`APPROVE, blocking=0`。原因是删除现场前须证明证据闭合且结论不过界；效果是允许另起PRE_REGISTER执行producer-bound exact verify-clean。
+- `scope / non_goals`：批准范围仅run_id `c0dec0de000000000000000000000002`单次arm→ACK→disarm execution retained evidence。不批准cleanup结果（尚未发生）、target/workload、KEEP、Runtime Acceptance或后续执行。
+- `baseline`：`reviewed STEP-LOG sha256=1e074fb7bd7151e21b4369407b067cc84b4bfe929deb8d313a2de537c4f706a4; six frozen hashes unchanged; scope=/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb; receipt=471B sha256=d2b2d9084194ed74b5fac7e4befb9adfdf19582d8c133e5779b1cf70e6d29e85`
+- `commands`：reviewers只读检查STEP-LOG/代码/hashes/scope/tree/stat/receipt，未运行runner/verify-clean/opt-in，未删除/写入/signal/network/target。完整ReviewArtifact保存在`/root/trace082_final_review_a`与`/root/browser_eval_correction_05` final outputs。
+- `stop_or_rollback_conditions`：任一review REVISE/PENDING、hash/scope/receipt漂移或blocking>0则不得cleanup；均未触发。第二reviewer的唯一low“外部preflight/posthash未逐字展开”已由TRACE-100在cleanup前补齐。
+- `result / effect`：`achieved=yes; independent_reviews=2; disposition=APPROVE; blocking=0; low=1 resolved by TRACE-100`。两人确认scope仍存在、七节点/权限/inodes/0B日志稳定，receipt bytes/hash与PASS一致；冻结test只构造tuple、验ACK、del tuple、disarm并核terminal/no-target。
+- `artifacts / evidence`：review principals `/root/trace082_final_review_a`、`/root/browser_eval_correction_05`；TRACE-098～100；冻结STEP-LOG与六hash。
+- `remaining_risks`：成功测试已删除内部guard root，manifest事实由冻结源码断言+exact success绑定；transcript非外部签名且stdout/stderr合流；单次测试非系统级进程枚举；same-UID TOCTOU/OS hard-wall继续存在。
+- `review`：`APPROVE — reviewer_1=/root/trace082_final_review_a; reviewer_2=/root/browser_eval_correction_05; independence=read-only/non-producer/non-executor; blocking=0; approval_scope=retained execution evidence only`
+- `supersedes_entry_id`：`NONE — closes TRACE-099 PENDING review without rewriting it`
+- `git_checkpoint`：`REVIEWED_REAL_ARM_DISARM_EVIDENCE_RETAINED; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：PRE_REGISTER exact producer-bound verify-clean；清理后保存raw JSON/root absence并再次独立复核。
+
+### TRACE-20260826-102
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-102 / SEC-EXEC-01-POSIX-ARM-DISARM-CLEANUP-01 / PRE_REGISTER / 2026-08-26T19:30:38+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / exact producer-bound verify-clean for reviewed arm-disarm scope / TRACE-099～101`
+- `what / why / expected_effect_or_gate`：在双review APPROVE后，先重验六hash、direct binary、root与七节点identity/mode/size、0B日志、471B PASS receipt exact bytes/SHA，再用同runner、同direct binary、exact九键、case/run-id/hash和exact root调用唯一reviewed `--verify-clean`。原因是只允许producer-bound、identity-bound、known-tree dirfd cleanup；预期效果是runner输出唯一canonical `CLEANUP_COMPLETE`，随后exact root与同run-id scope均不存在，六hash不漂移。
+- `scope / non_goals`：唯一可删除scope=`/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb`的已知七节点；禁止rmtree/手工补删、禁止其他temp root、禁止signal/network/target、新watchdog或其他测试。删除成功不可恢复，故raw preclean与cleanup输出必须在ACTUAL逐字保存。
+- `baseline`：`STEP-LOG pre-entry sha256=05a004d0996fa64e1138e329004a3b7aeb65c59524d8a3b18ba51bd872c98b03; double execution review=APPROVE/blocking0; root dev=16777233 ino=3175553 uid=501 mode=0700; receipt size=471 sha256=d2b2d9084194ed74b5fac7e4befb9adfdf19582d8c133e5779b1cf70e6d29e85; logs=0+0; six frozen hashes as TRACE-101`
+- `commands`：preclean，cwd=`<repo>/demo`：
+
+```bash
+shasum -a 256 tests/_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke.py tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+stat -f '%N|%HT|%Su|%Sp|%d|%i' /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9
+find /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb -print
+stat -f '%N|%HT|%Su|%Sp|%z|%d|%i' /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/home /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/tmp /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+shasum -a 256 /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+sed -n '1p' /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+wc -c /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+```
+
+  唯一cleanup，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp __CF_USER_TEXT_ENCODING=0x1F5:0x19:0x34 SEC_EXEC_POSIX_SMOKE_CASE=arm_disarm SEC_EXEC_POSIX_SMOKE_RUN_ID=c0dec0de000000000000000000000002 SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256=20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9 -I -B -u /Users/donbblu/codex/multiAgent/demo/tests/_local_execution_posix_smoke_runner.py --verify-clean /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb
+```
+
+  post-clean只读诊断，cwd=`<repo>/demo`：
+
+```bash
+find /private/tmp -maxdepth 1 -name 'sec-exec-posix-smoke-c0dec0de000000000000000000000002-*' -print
+test ! -e /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb
+shasum -a 256 tests/_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke.py tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py
+```
+
+- `stop_or_rollback_conditions`：preclean任一hash/binary/root/child identity、tree、mode、log size、receipt bytes/SHA漂移则执行前停止并保留scope。cleanup非exit0、alarm/timeout、JSON非唯一/exact、producer/root/receipt绑定不符或post-clean仍存在则不得手工补删/重跑；立即追加ACTUAL `achieved=no`并只做只读诊断。删除一旦成功不可回滚。
+- `result / effect`：`TBD — /root must append ACTUAL immediately after exact cleanup and post-clean diagnostics`
+- `artifacts / evidence`：预期逐字保存preclean tree/stat/receipt、cleanup raw JSON、empty matching find、builtin absence exit、post-clean六hash。
+- `remaining_risks`：same-UID pathname/identity TOCTOU、OS syscalls hard-wall、cleanup stdout非外部签名仍存在；本step只清理证据scope，不扩大技术验收。
+- `review`：`NOT_REQUESTED — cleanup尚未发生；完成后须双路独立只读review`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED_DESTRUCTIVE_EXACT_SCOPE; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：按顺序完成preclean；全部精确后执行唯一verify-clean与post-clean诊断；立即追加ACTUAL。
+
+### TRACE-20260826-103
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-103 / SEC-EXEC-01-POSIX-ARM-DISARM-CLEANUP-01 / ACTUAL / 2026-08-26T19:32:34+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / exact producer-bound verify-clean for reviewed arm-disarm scope / TRACE-102`
+- `what / why / expected_effect_or_gate`：逐项重验六hash、direct binary、root/七节点identity与权限、0B日志、471B PASS receipt bytes/SHA后，逐字执行TRACE-102唯一`--verify-clean`。runner返回canonical `CLEANUP_COMPLETE`并绑定原PASS receipt SHA、root identity、run/case/test/runner；随后matching find为空、shell builtin absence probe exit0、六hash未漂移。原因是只以reviewed producer/dirfd协议删除精确known tree；效果是arm-disarm retained scope已完整移除且无手工补删。
+- `scope / non_goals`：实际删除仅`/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb`已知七节点；未操作其他temp root、未启动watchdog/target、未发signal/network、未运行测试或rmtree。删除已完成且不可恢复；本条逐字保存删除前与cleanup后证据。
+- `baseline`：`STEP-LOG pre-cleanup-entry sha256=b220b3dfd999776f1774de78a408af803533e5b6cad223037d6a74df612ac443; root dev=16777233 ino=3175553 uid=501 mode=0700; receipt sha256=d2b2d9084194ed74b5fac7e4befb9adfdf19582d8c133e5779b1cf70e6d29e85 size=471; logs=0+0; exact seven-node tree; six hashes frozen`
+- `commands`：preclean与cleanup/post-clean完整命令在TRACE-102；均按该顺序逐字执行，无额外删除命令。
+- `stop_or_rollback_conditions`：无stop条件触发。preclean所有identity/tree/mode/size/receipt/hash精确；cleanup exit0且输出唯一exact JSON；matching find与builtin absence probe均exit0/空输出。未重跑或手工补删。
+- `result / effect`：`achieved=yes; cleanup exit=0; status=CLEANUP_COMPLETE; exact scope removed; independent_cleanup_review=PENDING`。tool返回raw wall metadata=`0.000002917`，明显不足以作为Python启动/hash/dirfd cleanup真实耗时，故只原样保留并明确排除出performance、deadline及security结论；技术结论仅依赖exit、canonical output、pre/post state与hash。
+- `artifacts / evidence`：preclean六hash：
+
+```text
+20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b  tests/_local_execution_posix_smoke_runner.py
+bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02  tests/test_local_execution_posix_smoke_runner.py
+bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f  tests/test_local_execution_posix_smoke.py
+a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999  tests/_local_execution_posix.py
+80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8  tests/fixtures/local_execution_process.py
+266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd  tests/test_local_execution_posix_safety.py
+```
+
+  preclean binary：
+
+```text
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9|Regular File|root|-rwxr-xr-x|16777233|501650
+```
+
+  preclean tree：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/home
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/tmp
+```
+
+  preclean stat：
+
+```text
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb|Directory|donbblu|drwx------|192|16777233|3175553
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/home|Directory|donbblu|drwx------|64|16777233|3175554
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/tmp|Directory|donbblu|drwx------|64|16777233|3175555
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs|Directory|donbblu|drwx------|128|16777233|3175556
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stdout.log|Regular File|donbblu|-rw-------|0|16777233|3175557
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/logs/test.stderr.log|Regular File|donbblu|-rw-------|0|16777233|3175558
+/private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json|Regular File|donbblu|-rw-------|471|16777233|3175569
+```
+
+  preclean receipt SHA/bytes/sizes：
+
+```text
+d2b2d9084194ed74b5fac7e4befb9adfdf19582d8c133e5779b1cf70e6d29e85  /private/tmp/sec-exec-posix-smoke-c0dec0de000000000000000000000002-pc8ygwrb/pass-receipt.json
+{"case":"arm_disarm","errors":0,"expected_failures":0,"failures":0,"post_hash":true,"root_device":16777233,"root_inode":3175553,"root_uid":501,"run_id":"c0dec0de000000000000000000000002","runner_sha256":"20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b","schema":2,"skipped":0,"status":"PASS_NO_TARGET_SCOPE_RETAINED","test_id":"tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_arm_disarm","tests_run":1,"unexpected_successes":0}
+       0 .../logs/test.stdout.log
+       0 .../logs/test.stderr.log
+     471 .../pass-receipt.json
+     471 total
+```
+
+  cleanup原始tool output：
+
+```text
+exit=0 wall=0.000002917
+{"case":"arm_disarm","post_hash":true,"retained_receipt_sha256":"d2b2d9084194ed74b5fac7e4befb9adfdf19582d8c133e5779b1cf70e6d29e85","root_device":16777233,"root_inode":3175553,"root_uid":501,"run_id":"c0dec0de000000000000000000000002","runner_sha256":"20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b","schema":2,"status":"CLEANUP_COMPLETE","test_id":"tests.test_local_execution_posix_smoke.LocalExecutionPosixSmokeTests.test_arm_disarm"}
+```
+
+  post-clean原始结果：
+
+```text
+matching find: exit=0, output=<empty>
+shell builtin test ! -e exact-root: exit=0, output=<empty>
+20da45a18465a753a83c8388b0dd48863a0b7dbffdd8fdbb1eb83a782083448b  tests/_local_execution_posix_smoke_runner.py
+bd0d2654870c9b59ec11e4e2bf73de49b5b47cb213d13050c732ed788b831d02  tests/test_local_execution_posix_smoke_runner.py
+bca89a4f92d329477927972a58f1f3ac7139940e53fb79edfbceb5322812d44f  tests/test_local_execution_posix_smoke.py
+a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999  tests/_local_execution_posix.py
+80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8  tests/fixtures/local_execution_process.py
+266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd  tests/test_local_execution_posix_safety.py
+```
+
+- `remaining_risks`：scope已删除，不能直接重读；本条是producer tool transcript的append-only副本而非外部签名raw artifact。tool wall字段不可信；same-UID TOCTOU和OS hard-wall继续存在。cleanup只关闭证据scope，不证明target/异常路径或SEC KEEP。
+- `review`：`PENDING — 两名独立reviewer须核TRACE-102～103命令、preclean重复identity、cleanup receipt绑定、root absence、hash与wall解释；不重跑删除`
+- `supersedes_entry_id`：`TRACE-102 result only; PRE_REGISTER retained`
+- `git_checkpoint`：`REAL_ARM_DISARM_EVIDENCE + CLEANUP_COMPLETE; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：锁STEP-LOG hash并做双路只读cleanup evidence review；非双APPROVE不将本档标记收口，不进入任何target smoke。
+
+### TRACE-20260826-104
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-104 / SEC-EXEC-01-POSIX-ARM-DISARM-CLEANUP-01 / REVIEW / 2026-08-26T19:36:18+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / double independent final review of arm-disarm execution and exact cleanup / TRACE-098～103`
+- `what / why / expected_effect_or_gate`：记录两名独立只读reviewer对TRACE-100～103的最终处置。两人均验证append-only prefix hash chain、TRACE-100原始preflight补录、两轮七节点现场一致、471B PASS receipt、exact verify-clean命令、454B cleanup canonical bytes、producer/root/receipt绑定、post-clean absence、六hash与wall telemetry降级，结论均为`APPROVE, blocking=0`。原因是物理scope删除后必须由非producer复核保留证据和声明边界；效果是arm-disarm执行+cleanup证据正式收口，可更新handoff，但不授权target。
+- `scope / non_goals`：批准run_id `c0dec0de000000000000000000000002`的一次arm→ACK→disarm零target执行及其exact cleanup evidence。未批准target/workload、timeout/failure真实路径、success_orphan、KEEP、Runtime Acceptance或任何后续真实执行。
+- `baseline`：`reviewed STEP-LOG sha256=834bcc60638e561127fdd99f5d26bef6b7aae9c32af55c9f27e51458fd882985; six artifact hashes frozen; PASS receipt=471B sha256=d2b2d9084194ed74b5fac7e4befb9adfdf19582d8c133e5779b1cf70e6d29e85; cleanup canonical=454B sha256=fb586152ab326a0ebffd3f306cc88fd3b071b57863fd4efbac7f7a0f2be3dff6; exact root absent`
+- `commands`：reviewers只读核STEP-LOG、current hashes、runner/smoke源码和root absence；未重跑runner/verify-clean/opt-in，未写删/signal/network/target。完整ReviewArtifact保存在`/root/trace082_final_review_a`与`/root/browser_eval_correction_05` final outputs。
+- `stop_or_rollback_conditions`：任一review REVISE/PENDING、hash chain断裂、root仍存在、receipt绑定不闭合或blocking>0则不得收口；均未触发。
+- `result / effect`：`achieved=yes; disposition=APPROVE; independent_reviews=2; blocking=0; cleanup_scope_absent=true`。两名reviewer独立重构cleanup canonical为454B/SHA `fb5861…dff6`并与TRACE-103逐字一致；确认TRACE-100关闭上一轮唯一low，TRACE-103不依赖不可信wall字段。
+- `artifacts / evidence`：TRACE-098～103；review principals `/root/trace082_final_review_a`与`/root/browser_eval_correction_05`；reviewed STEP-LOG/六hash；current empty run-ID prefix find。
+- `remaining_risks`：scope已删且raw evidence非外部签名；same-UID TOCTOU、OS syscall hard-wall、single-run、stdout/stderr合流、内部guard manifest未保留等限制仍在。该证据不证明target或异常生命周期。
+- `review`：`APPROVE — reviewer_1=/root/trace082_final_review_a; reviewer_2=/root/browser_eval_correction_05; independence=read-only/non-producer/non-executor/non-cleanup; blocking=0; scope=arm-disarm execution+exact cleanup artifact only`
+- `supersedes_entry_id`：`NONE — closes TRACE-103 PENDING review without rewriting history`
+- `git_checkpoint`：`REVIEWED_REAL_ARM_DISARM_EVIDENCE + CLEANUP_COMPLETE; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：同步SEC report与HANDOFF；target smoke继续禁止，先明确/关闭target进入前的剩余平台与协议门槛，再决定下一安全批次。
+
+### TRACE-20260826-105
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-105 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-00 / PRE_REGISTER / 2026-08-26T19:43:26+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / pure-static target-entry gate preparation / TRACE-104 independent gate review`
+- `what / why / expected_effect_or_gate`：只在测试/文档层关闭进入任何target前的三项确定性门槛：①行为H卡的test-only Popen manifest从旧helper/fixture行号`697/345`同步到当前AST实体`709/410`，捕获确定性首红后转绿；②HANDOFF与SEC报告同步当前六hash、39项pure safety、两档双Review零target真实证据与`POSIX_NO_TARGET_NARROW_REVIEWED`状态；③冻结未来首个`stdout_short` target artifact的receipt、retained evidence、stop/cleanup与平台残余接受标准，但不实现/运行它。原因是当前Oracle/权威文档漂移且no-target runner不能作为target证据；预期效果是pure/static门禁自洽、下一窗口不能误把窄通过解释成target授权。
+- `scope / non_goals`：允许修改`demo/tests/test_local_trusted_execution_behavior_expected_red.py`仅两个test-only manifest整数，以及`HANDOFF.md`、`VerificationReports/SEC-EXEC-01.md`、本Step Log；禁止修改helper/fixture/safety/smoke/runner/production，禁止执行任何returned tuple、target Popen、workload、success_orphan、port/crash/timeout/background、Browser E2E、full discovery或完整`tests.test_command_validators`。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; worktree=DIRTY; STEP-LOG=defef02ef5f8f69ae9e98ba986c508a4af5e9c9e762e34063643bd179382c53d; HANDOFF=b2ff1561b7bf98ce74704cced9e1c77ea4ae1e403446fb19d1f7f3202d5ac6ef; SEC=31559be2c6ecb873c94de0dc72c8cfb696a647b5d5fe3bb84e8b16d5e7c42919; behavior=036d101bfd157e1513b3c0e02994926fbd0f9d95a19f9a6397e3eb7682f9ad19; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; safety=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd; production=90be53ffd9df1f5527b343d6ab01166ed2dcbae320b87b0a53356e2758e4320b`
+- `commands`：首红与修后H，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-h PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_trusted_execution_behavior_expected_red.LocalTrustedExecutionBehaviorExpectedRedTests.test_h_static_scan_allows_one_supervised_popen_owner_and_no_run tests.test_local_trusted_execution_behavior_expected_red.LocalTrustedExecutionBehaviorExpectedRedTests.test_h_all_existing_entrypoints_delegate_to_one_raw_spawn_owner -v
+```
+
+  修后pure/static gates，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-combined PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_trusted_execution_behavior_expected_red tests.test_local_trusted_execution_expected_red -q
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-posix PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -v
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-runner /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-smoke /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke -q
+```
+
+  另执行Python3.9 `py_compile`（仅touched/冻结test artifacts）、AST核当前Popen实体与唯一production owner、default-smoke constructor=0 harness、`git diff --check`、SHA256；不得运行任何opt-in smoke或真实target。
+- `stop_or_rollback_conditions`：首红若不是H manifest旧行号或出现error/skip/tripwire/真实boundary则停止；修改超出两个manifest整数或三份文档则停止；任何pure gate出现真实process/signal/network、错误线程、hash非预期漂移或target scope出现则停止。不得为转绿放宽scanner、删除断言或修改helper/fixture/production。
+- `result / effect`：`TBD — ACTUAL must preserve exact red/green counts, hashes, doc What/Why/Effect and target contract; no target execution`
+- `artifacts / evidence`：预期行为卡新hash、两整数diff、H首红/终绿、combined25、safety39、runner pure32、default smoke 1 pass+2 skip/constructor0、compile/AST/diff/hash；HANDOFF/SEC/STEP完整hash。
+- `remaining_risks`：即使本批全绿，仍没有受审target runner/receipt/retained known-tree contract实现或target真实证据；Popen→observation parent-crash窗口、无pidfd的PID reuse TOCTOU、OS syscall hard-wall、same-UID TOCTOU与host sandbox缺失只能显式登记，不能形式化关闭。
+- `review`：`NOT_REQUESTED — candidate尚未形成；完成后需两名独立reviewer，blocking=0才可结束本gate-preparation批次`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED_PURE_STATIC_TARGET_GATE; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：先执行H首红；只修两个manifest整数并转绿；再同步文档/冻结未来target contract，运行纯门禁并双Review。
+
+### TRACE-20260826-106
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-106 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-00 / ACTUAL / 2026-08-26T19:49:46+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / pure-static target-entry gate preparation / TRACE-105`
+- `what / why / expected_effect_or_gate`：完成三项零target修正。①先运行H两卡，精确得到静态H因helper/fixture test-only manifest旧行号`697/345`而失败、动态H通过；随后只改两个整数为当前AST实体`709/410`，H两卡转为2/2通过。②同步HANDOFF与SEC报告，把已关闭的fixture缺陷、39项pure safety、watchdog-only和arm→ACK→disarm双Review证据写成`POSIX_NO_TARGET_NARROW_REVIEWED`，并删除“fixture修完即可运行adversarial”的陈旧next_action。③在SEC报告冻结future `sec-exec-posix-target-evidence/v1`的exact launch、target retained known-tree、canonical PASS、fail/stop、producer cleanup和平台残余标准。原因是H/权威文档漂移会导致false red与错误执行授权，而no-target schema不能冒充target证据；效果是pure/static门禁自洽且target继续fail-closed。
+- `scope / non_goals`：本批实际只改behavior卡两个manifest整数、HANDOFF、SEC报告和Step Log；helper/fixture/safety/smoke/runner/production hashes未变。未执行returned tuple、target `Popen`、workload、opt-in smoke、Browser、full discovery、完整validator、真实signal/network/delete。
+- `baseline`：`STEP-LOG pre-entry=6f6a0d4840da430467c86e4e84dd022f9d006c6267b0310efbea6f7aade9ba5f; HANDOFF pre=b2ff1561b7bf98ce74704cced9e1c77ea4ae1e403446fb19d1f7f3202d5ac6ef; SEC pre=31559be2c6ecb873c94de0dc72c8cfb696a647b5d5fe3bb84e8b16d5e7c42919; behavior pre=036d101bfd157e1513b3c0e02994926fbd0f9d95a19f9a6397e3eb7682f9ad19; helper/fixture/safety/production unchanged`
+- `commands`：精确命令均已在TRACE-105预登记。首红H raw summary：
+
+```text
+test_h_static_scan_allows_one_supervised_popen_owner_and_no_run ... FAIL
+test_h_all_existing_entrypoints_delegate_to_one_raw_spawn_owner ... ok
+Ran 2 tests in 5.394s
+FAILED (failures=1)
+violations only:
+- tests/_local_execution_posix.py actual subprocess.Popen line 709 vs manifest 697
+- tests/fixtures/local_execution_process.py actual subprocess.Popen line 410 vs manifest 345
+```
+
+  修后H：
+
+```text
+Ran 2 tests in 5.355s
+OK
+```
+
+  修后pure/static门禁：
+
+```text
+behavior-first combined: Ran 25 tests in 28.521s; OK
+POSIX safety: Ran 39 tests in 0.373s; OK
+runner pure card: Ran 32 tests in 0.047s; OK
+default smoke: Ran 3 tests; OK (skipped=2)
+constructor harness: tests=3 skipped=2 failures=0 errors=0 constructor_calls=0
+Python 3.9 py_compile: exit=0
+git diff --check scoped: exit=0, output=<empty>
+production boundary: coding_workflow/local_execution.py:1229 subprocess.Popen only
+test-only boundaries: tests/_local_execution_posix.py:709 subprocess.Popen; tests/fixtures/local_execution_process.py:410 subprocess.Popen
+```
+
+- `stop_or_rollback_conditions`：无stop条件触发。首红仅为预期两manifest漂移，0 error/skip/tripwire；修订未改scanner/断言/helper/fixture/production；全部pure gate exit0，默认smoke constructor0。各tool返回的异常短wall metadata不作为performance/deadline证据，以上仅保留unittest自身结果/耗时与exit/output。
+- `result / effect`：`achieved=yes; target_execution=0; H red=1F+1P -> green=2P; combined=25/25; safety=39/39; runner=32/32; default_smoke=1P+2S/constructor0; review=PENDING`。future target契约明确首候选仅`stdout_short`，但需独立default-skip target runner/card实现和双审后才可能PRE_REGISTER执行。
+- `artifacts / evidence`：`HANDOFF.md sha256=4023d3d709729d52e3dccafd9f22ee61219c066a9abd20a398fcff0e75f23b68`; `VerificationReports/SEC-EXEC-01.md sha256=803aed8895b272435d61b181c1021691d497507df84bdea04b9cde8c43e45dbf`; `behavior sha256=d97f8c52dfb3429b0ef680273fe34c0ae33738599a2a74a3f065ebf2723b9b65`; unchanged runner/card/smoke/helper/fixture/safety/production=`20da45a…448b / bd0d2654…1d02 / bca89a4f…d44f / a87ed9f8…2999 / 80ecd65d…06d8 / 266b8a32…9bdd / 90be53ff…4320b`。
+- `remaining_risks`：没有target artifact实现或target真实证据；no-target runner不保留target manifests且cleanup schema不适用target。`Popen`返回至observation发布窗、无pidfd PID reuse TOCTOU、OS syscall hard-wall、same-UID文件替换、setsid/double-fork、host sandbox/网络/资源隔离继续明确不承诺。
+- `review`：`PENDING — 两名独立reviewer须核两整数diff、首红/终绿、pure gate、文档一致性、future target contract充分性及无过度授权；blocking=0前不结束本gate、不实现target artifact`
+- `supersedes_entry_id`：`NONE — updates current status while preserving old candidate/review history`
+- `git_checkpoint`：`PURE_STATIC_TARGET_ENTRY_GATE_CANDIDATE; WORKTREE_ONLY; commit=PENDING; KEEP=NOT_ISSUED`
+- `next_action`：冻结当前hash并启动双路独立Review；不运行target。若双APPROVE，再单独PRE_REGISTER未来target artifact实现批次。
+
+### TRACE-20260826-107
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-107 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-00 / REVIEW / 2026-08-26T19:59:18+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / double independent review of pure-static target-entry gate candidate / TRACE-105～106`
+- `what / why / expected_effect_or_gate`：如实记录分歧review。reviewer `/root/trace082_final_review_a` 给`APPROVE/blocking=0`并提出future cleanup receipt逐字段冻结的low；reviewer `/root/browser_eval_correction_05`独立重跑pure gates后给`REVISE/blocking=2 HIGH`，另有1 MEDIUM/1 LOW。原因是future target contract虽已阻止当前执行，但failure scope释放和success evidence来源仍可能不可达/fake-green；效果是本gate保持未收口、target继续禁止，必须先append-only修订再复审。
+- `scope / non_goals`：review只覆盖冻结test/doc candidate，未运行target/opt-in/真实process/signal/network/delete，不签KEEP或Runtime Acceptance。
+- `baseline`：`reviewed STEP=142757ffd714cb5ac1b4567ff75128c1b066ea130f8b2026de39996ae778b548; HANDOFF=4023d3d709729d52e3dccafd9f22ee61219c066a9abd20a398fcff0e75f23b68; SEC=803aed8895b272435d61b181c1021691d497507df84bdea04b9cde8c43e45dbf; behavior=d97f8c52dfb3429b0ef680273fe34c0ae33738599a2a74a3f065ebf2723b9b65; other frozen hashes stable`
+- `commands`：两reviewer只读/纯门禁复核；第二reviewer独立安全重跑combined25、safety39、runner32、default smoke 1 pass+2 skip，均exit0/零target。完整ReviewArtifact保存在对应agent final outputs。
+- `stop_or_rollback_conditions`：任何HIGH或REVISE都阻止gate收口与target artifact实现；已触发，故未进入下一批。
+- `result / effect`：`achieved=no; disposition=REVISE; blocking=2 HIGH; target_authorized=false`。已验证且保留的子结论：behavior相对036d仅两整数、pure gates全绿、HANDOFF无误授权。阻塞为：①pre-scope/post-scope/terminal-unknown failure retention与cleanup协议不完整；②success receipt缺少actual handle/wait/output/marker/cleanup evidence的权威来源，可常量fake-green。MEDIUM：H仍以绝对行号作为安全事实；LOW：constructor0 exact harness命令未逐字入账。
+- `artifacts / evidence`：两ReviewArtifact；TRACE-105～106；冻结hash。
+- `remaining_risks`：future target artifact不存在，不能评价target行为；当前REVISE不否定纯门禁子结果，但不得据此实现/执行target。
+- `review`：`REVISE — reviewer_1=APPROVE/blocking0+low1; reviewer_2=REVISE/blocking2HIGH+1MEDIUM+1LOW; controlling disposition=REVISE`
+- `supersedes_entry_id`：`NONE — preserves candidate and mixed review history`
+- `git_checkpoint`：`REVISE / PURE_STATIC_GATE_NOT_CLOSED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：PRE_REGISTER contract+semantic-manifest correction；仍只运行pure/static门禁。
+
+### TRACE-20260826-108
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-108 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-01 / PRE_REGISTER / 2026-08-26T19:59:18+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / close target-contract evidence provenance and semantic H manifest / TRACE-107`
+- `what / why / expected_effect_or_gate`：在零target范围内修四项review finding。①将target failure分成pre-scope canonical rejection、post-scope retained failure、terminal-unknown quarantine与terminal-absent reviewed cleanup，并冻结failure/cleanup receipt字段。②冻结success evidence唯一来源：实际guard/Popen handle、wait/returncode、raw manifests/logs、PGID probe、固定marker quiet samples；明确首artifact只验证fixture/guard，不冒充production Runtime。③把H test-only manifest从绝对行号改为`path+API+owner+occurrence`语义相等，行号只用于诊断。④逐字补录constructor0 pure harness命令。原因是阻止不可达失败清理、常量receipt假绿和注释行漂移false-red；预期效果是future artifact仍未实现但其验收合同可执行且抗fake-green。
+- `scope / non_goals`：只允许修改behavior H manifest/comparison、SEC 4.3.2、Step Log；必要时仅同步HANDOFF next_action文字。禁止修改helper/fixture/safety/smoke/runner/production，禁止新增target runner/test、执行target/opt-in/full/validator/Browser或真实signal/network/delete。
+- `baseline`：`STEP pre-entry=current TRACE-107 append-only state; candidate hashes from TRACE-107; fixture stdout_short exact stdout=b'fixture-short-stdout\n' len21 sha256=31a4f97e50dcaff8cf73da9e16143f07598f4d51623e76b96eeb11e290a052bd; stderr=b'fixture-short-stderr\n' len21 sha256=52f9ffd3b99c00ced3109c306dd52f58be09c814f312759532cb4f7d05da6f21; current marker defaults tick=0.05s/quiet=0.15s/poll=0.02s/timeout=2.0s`
+- `commands`：先做纯AST/bytes诊断证明绝对行号随前置空行漂移而`path/API/owner/occurrence`不变；再修semantic manifest并运行H两卡。补录并重跑constructor0 literal：
+
+```bash
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-constructor /usr/bin/python3 -c 'import importlib, unittest; from unittest import mock; module=importlib.import_module("tests.test_local_execution_posix_smoke"); patcher=mock.patch.object(module, "ExternalProcessGuard"); constructor=patcher.start(); suite=unittest.defaultTestLoader.loadTestsFromModule(module); result=unittest.TestResult(); suite.run(result); patcher.stop(); print(f"tests={result.testsRun} skipped={len(result.skipped)} failures={len(result.failures)} errors={len(result.errors)} constructor_calls={constructor.call_count}"); assert result.testsRun == 3 and len(result.skipped) == 2 and not result.failures and not result.errors and constructor.call_count == 0'
+```
+
+  随后重跑TRACE-105的H、combined25、safety39、runner32、default smoke、py_compile、AST/唯一Popen、scoped diff/hash；全程pure/static。
+- `stop_or_rollback_conditions`：语义manifest若放宽path/API/owner/occurrence、无法检出新增第二call或需要修改scanner解析核心则停止；contract若仍允许常量evidence、失败scope无受控释放、terminal unknown可删除或把fixture证据冒充production则停止；任何target/真实boundary触达立即停止。
+- `result / effect`：`TBD — correction ACTUAL must give exact semantic diff, contract fields/sources, pure results and hashes`
+- `artifacts / evidence`：预期behavior/SEC/STEP hashes、semantic line-shift diagnostic、H/combined/safety/runner/default/constructor/compile/static/diff results；两路独立re-review。
+- `remaining_risks`：contract修订仍不等于target artifact实现；真实wait/reap、marker、PGID、failure/quarantine只在future artifact与另行execution中验证。平台残余不消失。
+- `review`：`NOT_REQUESTED — correction尚未形成；完成后须原两reviewer复核，blocking=0才收口`
+- `supersedes_entry_id`：`TRACE-106 candidate only; TRACE-107 review retained`
+- `git_checkpoint`：`PRE_REGISTERED_CORRECTION / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：修semantic manifest与SEC contract，运行纯门禁，append ACTUAL并双复审；不实现/执行target。
+
+### TRACE-20260826-109
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-109 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-01 / ACTUAL / 2026-08-26T20:07:52+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / close target-contract evidence provenance and semantic H manifest / TRACE-108`
+- `what / why / expected_effect_or_gate`：完成四项零target修订。①test-only process manifest从`path/API/line/owner`改为每文件`API/owner/occurrence`，比较仍先用原scanner提取所有call，行号只在失败diagnostics保留；内部把每个实际call行号统一平移100再重算semantic manifest，结果必须不变，新增第二call则occurrence从1变2并失败。②future target合同明确首工件只证明fixture/guard，production hash仅作静态兼容；成功字段只能由同一实际强Popen handle、wait/returncode、原始manifests、真实signal/probe/output/marker trace重构，禁止DTO、自报布尔、预填digest或常量作authority。③冻结`stdout_short`精确两路bytes/length/SHA和marker的tick/quiet/poll/timeout、至少9个相同样本/跨度；四phase记录真实attempted/outcome。④把失败拆成`REJECTED_PRE_SCOPE`、`FAIL_TARGET_SCOPE_RETAINED`、`QUARANTINED_TARGET_SCOPE_RETAINED`，并为success/failure scope分别冻结producer-bound cleanup receipt字段/状态。原因是关闭TRACE-107的2 HIGH、1 MEDIUM、1 LOW，阻止常量fake-green、无scope却声称保留、terminal unknown被删除及注释行漂移false-red；效果是future合同可实现/可负测，但当前仍无target artifact或execution授权。
+- `scope / non_goals`：实际只修改`demo/tests/test_local_trusted_execution_behavior_expected_red.py`的manifest/comparison/helper、`VerificationReports/SEC-EXEC-01.md` 4.2/4.3.2/4.5与本Step Log。`HANDOFF.md`未改；helper/fixture/safety/smoke/runner/production未改。未设置opt-in、未执行returned tuple/target Popen/workload/full/validator/Browser，未触发真实signal/network/delete，不签KEEP或Runtime Acceptance。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; STEP pre-ACTUAL=4900e99828f4822f2a2bb268c22c930c2ba8d58de76adc6d5d31b64941168e20; HANDOFF=4023d3d709729d52e3dccafd9f22ee61219c066a9abd20a398fcff0e75f23b68; behavior pre-correction=d97f8c52dfb3429b0ef680273fe34c0ae33738599a2a74a3f065ebf2723b9b65; worktree relevant status exact=M HANDOFF.md, M SEC-EXEC-01.md, M STEP-LOG.md, M helper, M fixture, M safety, M behavior, ?? production local_execution.py, ?? smoke runner/card/smoke; unrelated dirty scope remains excluded`
+- `commands`：H与combined，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-h-semantic PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_trusted_execution_behavior_expected_red.LocalTrustedExecutionBehaviorExpectedRedTests.test_h_static_scan_allows_one_supervised_popen_owner_and_no_run tests.test_local_trusted_execution_behavior_expected_red.LocalTrustedExecutionBehaviorExpectedRedTests.test_h_all_existing_entrypoints_delegate_to_one_raw_spawn_owner -v
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-combined-semantic PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_trusted_execution_behavior_expected_red tests.test_local_trusted_execution_expected_red -q
+```
+
+  POSIX/runner/default smoke/constructor，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-posix-semantic PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -v
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-runner-semantic /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-smoke-semantic /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-constructor /usr/bin/python3 -c 'import importlib, unittest; from unittest import mock; module=importlib.import_module("tests.test_local_execution_posix_smoke"); patcher=mock.patch.object(module, "ExternalProcessGuard"); constructor=patcher.start(); suite=unittest.defaultTestLoader.loadTestsFromModule(module); result=unittest.TestResult(); suite.run(result); patcher.stop(); print(f"tests={result.testsRun} skipped={len(result.skipped)} failures={len(result.failures)} errors={len(result.errors)} constructor_calls={constructor.call_count}"); assert result.testsRun == 3 and len(result.skipped) == 2 and not result.failures and not result.errors and constructor.call_count == 0'
+```
+
+  compile/static/diff，cwd分别为`<repo>/demo`与`<repo>`：
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-pycompile-semantic /usr/bin/python3 -m py_compile tests/test_local_trusted_execution_behavior_expected_red.py tests/test_local_trusted_execution_expected_red.py tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py tests/_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke.py tests/test_local_execution_posix_smoke_runner.py
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-static PYTHONWARNINGS=error /usr/bin/python3 -c 'from pathlib import Path; import tests.test_local_trusted_execution_behavior_expected_red as m; cls=m.LocalTrustedExecutionBehaviorExpectedRedTests; print("manifest:"); [print(path, cls._semantic_process_boundary_manifest(tuple(cls._process_boundary_calls(m.ROOT / path)))) for path in m.TEST_ONLY_PROCESS_BOUNDARY_MANIFEST]; production={str(p.relative_to(m.ROOT)): cls._process_boundary_calls(p) for p in sorted(m.ROOT.rglob("*.py")) if "tests" not in p.parts and cls._process_boundary_calls(p)}; print("production=", production); assert production == {"coding_workflow/local_execution.py": [("coding_workflow/local_execution.py", "subprocess.Popen", 1229, "_spawn")]}'
+git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md demo/tests/test_local_trusted_execution_behavior_expected_red.py
+```
+
+- `stop_or_rollback_conditions`：无stop条件触发。H semantic未改scanner解析核心且实际六文件manifest分别为expected单call/empty；combined/audit、safety、runner/default/constructor均0 failure/error/tripwire/真实target。contract明确拒绝常量authority、terminal-unknown cleanup及fixture冒充production。外层tool wall telemetry不作为deadline/performance证据。
+- `result / effect`：`achieved=yes; target_execution=0; review=PENDING`。H=`2/2 OK`（unittest `5.329s`）；combined=`25/25 OK`（`27.465s`）；POSIX safety=`39/39 OK`（`0.381s`）；runner pure=`32/32 OK`（`0.044s`）；default smoke=`3 run / 1 pass / 2 skip`；constructor=`3 run / 2 skip / 0 failure/error / constructor_calls=0`；py_compile/static/diff-check exit0。semantic output逐文件为manifest中exact `API/owner/1`，生产boundary仅`coding_workflow/local_execution.py:1229 subprocess.Popen`。
+- `artifacts / evidence`：`behavior sha256=5d8b92b66db1e0a810762e411e4cb9424fbe82c2819609c1237bea1a99098885`; `SEC report sha256=dab61e3694d591a1ec535921f5e634102e2f3743ff2de4fbd7587bf560495030`; `HANDOFF sha256=4023d3d709729d52e3dccafd9f22ee61219c066a9abd20a398fcff0e75f23b68`; unchanged helper/fixture/safety/runner/card/smoke/production=`a87ed9f8…2999 / 80ecd65d…06d8 / 266b8a32…9bdd / 20da45a1…448b / bd0d2654…1d02 / bca89a4f…d44f / 90be53ff…4320b`；本entry追加后STEP hash在Review请求中冻结。
+- `remaining_risks`：本合同尚无target runner/pure card/receipt实现；actual wait/reap、PGID absence、output、marker、failure/quarantine与cleanup均未真实验证。平台Popen→observation骤死窗、PID reuse TOCTOU、OS syscall hard-wall、same-UID替换及host sandbox缺失保持不变；首fixture artifact未来通过也不证明production Runtime。
+- `review`：`PENDING — 须由TRACE-107两名原reviewer核原2 HIGH+1 MEDIUM+1 LOW全部关闭，blocking=0才可收口`
+- `supersedes_entry_id`：`TRACE-106 candidate；TRACE-107 REVISE历史保留，不改写`
+- `git_checkpoint`：`PURE_STATIC_CORRECTION_CANDIDATE / WORKTREE_ONLY / commit=PENDING / KEEP=NOT_ISSUED`
+- `next_action`：冻结behavior/SEC/STEP/HANDOFF与六依赖hash，交原两reviewer独立复核；复核前不实现target artifact、不执行target。
+
+### TRACE-20260826-110
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-110 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-01 / CORRECTION / 2026-08-26T20:09:09+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / late in-scope HANDOFF next_action synchronization / TRACE-108～109`
+- `what / why / expected_effect_or_gate`：TRACE-109追加后发现HANDOFF两处仍把当前步骤称为已被TRACE-107判REVISE的Gate-00。TRACE-108已明确允许“必要时仅同步HANDOFF next_action文字”，因此只把两处current next_action改为Gate-01，并写明semantic H manifest、actual-handle/output/marker/failure/quarantine/cleanup合同已形成pure/static候选且正等待双review。原因是避免下一窗口按旧gate续接；效果仅为状态同步，不扩大target权限。
+- `scope / non_goals`：只改`HANDOFF.md`两处next_action bullet；未改代码、test、SEC合同或其他HANDOFF内容，未运行测试/target/真实boundary。
+- `baseline`：`TRACE-109 statement said HANDOFF unchanged and artifact hash=4023d3d709729d52e3dccafd9f22ee61219c066a9abd20a398fcff0e75f23b68; this correction supersedes only those two facts; behavior=5d8b92b6…098885 and SEC=dab61e36…95030 unchanged`
+- `commands`：文件修改使用`apply_patch`精确替换两处`next_action`；随后cwd=`<repo>`执行：
+
+```bash
+shasum -a 256 HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md demo/tests/test_local_trusted_execution_behavior_expected_red.py
+git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md demo/tests/test_local_trusted_execution_behavior_expected_red.py
+```
+
+- `stop_or_rollback_conditions`：若修改除两处next_action外的HANDOFF内容、放宽target禁令或改变冻结test/SEC合同则停止；均未触发。
+- `result / effect`：`achieved=yes; HANDOFF current gate=01; target_authorized=false; tests_not_rerun because code/test/contract unchanged after TRACE-109`；diff-check exit0/output empty。
+- `artifacts / evidence`：`HANDOFF sha256=9dd69daa6b527fc6a8d22528d98ab512803a034dba9a13299c37a2d99049bd5c`; `SEC=dab61e3694d591a1ec535921f5e634102e2f3743ff2de4fbd7587bf560495030`; `behavior=5d8b92b66db1e0a810762e411e4cb9424fbe82c2819609c1237bea1a99098885`; STEP hash须在本entry追加后冻结。
+- `remaining_risks`：与TRACE-109相同；HANDOFF同步不是Review或target artifact实现。
+- `review`：`PENDING — 纳入同一Gate-01双review subject`
+- `supersedes_entry_id`：`TRACE-20260826-109 scope/non_goals中的“HANDOFF未改”及artifacts中的旧HANDOFF hash；其余TRACE-109保持有效`
+- `git_checkpoint`：`WORKTREE_ONLY / commit=PENDING / KEEP=NOT_ISSUED`
+- `next_action`：计算最终subject hashes并交两名原reviewer；不运行target。
+
+### TRACE-20260826-111
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-111 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-01 / REVIEW / 2026-08-26T20:15:16+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / controlling record of two independent Gate-01 reviews / TRACE-108～110`
+- `what / why / expected_effect_or_gate`：如实保存双审分歧。`/root/trace082_final_review_a`给`APPROVE/blocking=0`；`/root/browser_eval_correction_05`给`REVISE/blocking=2 HIGH + 1 MEDIUM`。严格门禁取REVISE。两个HIGH为：①合同同时记录`(monotonic,size,mtime_ns)`又要求九个tuple“相同”，真实monotonic不可能相同；②cleanup receipt未显式列`schema`、删除后parent-dirfd absence trace/digest/`scope_absent`与再次双Review，也未唯一冻结quarantine→terminal-proven→cleanup的append-only source chain。MEDIUM为H owner只用裸`FunctionDef.name`，同文件另一class的同名method可保持manifest不变。原因是任一HIGH都使future artifact无法确定实现或可表面完成cleanup；效果是Gate-01不收口、target继续禁止。
+- `scope / non_goals`：两review均只读；只运行已登记pure/static门禁，无opt-in/target/真实project process/signal/network/delete，不签KEEP/Runtime Acceptance。
+- `baseline`：`review subject behavior=5d8b92b66db1e0a810762e411e4cb9424fbe82c2819609c1237bea1a99098885; SEC=dab61e3694d591a1ec535921f5e634102e2f3743ff2de4fbd7587bf560495030; STEP=cb40e5a080fad5d48a8ebd985e3b6178ce1ccf6c927624caae76038642b51366; HANDOFF=9dd69daa6b527fc6a8d22528d98ab512803a034dba9a13299c37a2d99049bd5c; dependencies stable`
+- `commands`：两reviewer独立执行TRACE-109登记的H/combined/safety/runner/default/constructor/py_compile/static/diff命令；第一review结果H2/2、combined25/25、safety39/39、runner32/32、default1P+2S、constructor0；第二review结果相同，且hash前后稳定。完整命令已逐字保存在TRACE-109，不补造reviewer未返回的额外shell transcript。
+- `stop_or_rollback_conditions`：任一review为REVISE/HIGH即禁止gate关闭和target artifact实现；已触发。
+- `result / effect`：`achieved=no; controlling_disposition=REVISE; blocking=2 HIGH; target_authorized=false`。已关闭并保留的子项：failure三分主体、actual strong handle/output authority、fixture≠production、constructor literal、绝对行号依赖；尚须修marker表述、cleanup absence/recovery chain与qualified owner。
+- `artifacts / evidence`：两份独立ReviewArtifact；TRACE-108～110；冻结subject hashes。
+- `remaining_risks`：future target artifact不存在；本review不证明真实wait/reap/marker/cleanup。平台残余不变。
+- `review`：`REVISE — reviewer_1=APPROVE/blocking0; reviewer_2=REVISE/2HIGH+1MEDIUM; controlling=REVISE`
+- `supersedes_entry_id`：`NONE — candidate与分歧review历史均保留`
+- `git_checkpoint`：`REVISE / PURE_STATIC_GATE_NOT_CLOSED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：另行PRE_REGISTER最小合同/qualified-owner修订，仍只运行pure/static。
+
+### TRACE-20260826-112
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-112 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-02 / PRE_REGISTER / 2026-08-26T20:15:16+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / close Gate-01 marker-cleanup-owner review findings / TRACE-111`
+- `what / why / expected_effect_or_gate`：只做三项最小修订。①marker样本改为monotonic严格递增，而`(size,mtime_ns,sha256)`在至少9个连续样本中相同，首尾跨度`>=0.15s`；负卡冻结时间不递增/样本不足/跨度不足/snapshot漂移。②cleanup receipt显式冻结schema、origin/release append-only chain、preclean known-tree、delete trace、post-clean parent-dirfd absence trace/digest、`scope_absent=true`与删除后再次双Review；quarantine只能先发布独立`TARGET_TERMINAL_RECOVERY_PROVEN`再成为cleanup release source。③H owner改为AST ancestry形成qualified owner，manifest冻结class+method；增加把call移动到另一同名method时semantic不相等的纯自检。原因是关闭TRACE-111的2HIGH+1MEDIUM；预期效果是合同可实现、cleanup可重构、owner迁移不可假绿。
+- `scope / non_goals`：只允许修改behavior H owner qualification/manifest/comparison自检、SEC 4.3.2对应两段、本Step Log，必要时同步HANDOFF current gate文字。禁止改helper/fixture/safety/smoke/runner/production；禁止target/opt-in/full/validator/Browser或真实signal/network/delete。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; behavior=5d8b92b6…098885; SEC=dab61e36…95030; HANDOFF=9dd69daa…bd5c; STEP pre-entry=TRACE-111 append-only state; dependencies unchanged`
+- `commands`：先以纯AST mutation构造同文件两个class的同名`__init__`并证明旧bare owner不能区分，捕获RED；修复后运行H两卡与mutation转绿。再重跑TRACE-109的combined25、safety39、runner32、default/constructor0、py_compile/static/diff/hash；所有exact命令在ACTUAL逐字保存。
+- `stop_or_rollback_conditions`：qualified owner若依赖行号、漏掉module function/nested owner、放宽API/path/occurrence或改变restricted scanner语义则停止；cleanup若无post-delete raw absence authority、允许quarantine直接删除或再次Review缺失则停止；任何target/真实boundary立即停止。
+- `result / effect`：`TBD — ACTUAL must preserve owner RED/green, exact contract fields, pure results and hashes`
+- `artifacts / evidence`：预期behavior/SEC/STEP/HANDOFF hashes、owner mutation red/green、H/combined/safety/runner/default/constructor/compile/static/diff结果、两路原reviewer再审。
+- `remaining_risks`：修订仍只是future contract与Oracle；target artifact/execution和真实lifecycle继续未知。
+- `review`：`NOT_REQUESTED — candidate尚未形成；须两名原reviewerblocking=0`
+- `supersedes_entry_id`：`TRACE-109 candidate only; TRACE-111 REVISE retained`
+- `git_checkpoint`：`PRE_REGISTERED_CORRECTION / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：先捕获qualified-owner旧语义反例，再最小修复三项并运行pure/static；不执行target。
+
+### TRACE-20260826-113
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-113 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-02 / ACTUAL / 2026-08-26T20:20:09+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / close marker-cleanup-qualified-owner findings / TRACE-112`
+- `what / why / expected_effect_or_gate`：完成三项pure/static修订。①`_process_boundary_calls`利用AST ancestry把owner从裸函数名改为qualified scope；manifest现冻结`ExternalProcessGuard.__init__`及三个test class method，module function仍为`_workload`。H内新增两个class同名`__init__` mutation，必须得到不同semantic manifest；line统一+100与occurrence=2门保持。②marker合同改为每个样本记录monotonic与snapshot，monotonic严格递增，而至少9个连续`(size,mtime_ns,sha256)` snapshot相同且跨度`>=0.15s`。③cleanup冻结exact schema与origin/release/source receipt chain；quarantine只能追加`TARGET_TERMINAL_RECOVERY_PROVEN`并先双审；cleanup receipt绑定preclean tree、delete trace、parent-dirfd post-clean absence digest与`scope_absent=true`，完成后raw absence/receipt/root absence再次双审。原因是关闭TRACE-111的2HIGH+1MEDIUM；效果是同名owner迁移不可假绿，marker条件可满足，quarantine释放和删除后absence可重构。仍未实现/运行target。
+- `scope / non_goals`：实际只改behavior H manifest/scanner owner qualification/pure mutation、SEC 4.2/4.3.2/4.5、HANDOFF两处current gate和本Step Log。未改restricted import scanner、helper/fixture/safety/smoke/runner/production；无opt-in/target/full/validator/Browser/真实signal/network/delete。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; STEP pre-ACTUAL=34ca88af1321fcb76ef24969acb97476252777cc99b5691ad42700796ab9eb81; behavior pre=5d8b92b66db1e0a810762e411e4cb9424fbe82c2819609c1237bea1a99098885; SEC pre=dab61e3694d591a1ec535921f5e634102e2f3743ff2de4fbd7587bf560495030; HANDOFF pre=9dd69daa6b527fc6a8d22528d98ab512803a034dba9a13299c37a2d99049bd5c; dependencies unchanged; worktree remains dirty with unrelated scope excluded`
+- `commands`：qualified-owner首红与修后纯探针，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-owner-red PYTHONWARNINGS=error /usr/bin/python3 -c 'from pathlib import Path; import tempfile; import tests.test_local_trusted_execution_behavior_expected_red as m; cls=m.LocalTrustedExecutionBehaviorExpectedRedTests; source=lambda name: f"import subprocess\nclass {name}:\n    def __init__(self):\n        subprocess.Popen([])\n"; temp=tempfile.TemporaryDirectory(); root=Path(temp.name); a=root/"a.py"; b=root/"b.py"; a.write_text(source("AllowedOwner")); b.write_text(source("ReplacementOwner")); left=cls._semantic_process_boundary_manifest(tuple(cls._process_boundary_calls(a))); right=cls._semantic_process_boundary_manifest(tuple(cls._process_boundary_calls(b))); print("allowed=", left); print("replacement=", right); assert left != right, "bare owner cannot distinguish same-named methods in different classes"'
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-owner-green PYTHONWARNINGS=error /usr/bin/python3 -c 'from pathlib import Path; import tempfile; import tests.test_local_trusted_execution_behavior_expected_red as m; cls=m.LocalTrustedExecutionBehaviorExpectedRedTests; source=lambda name: f"import subprocess\nclass {name}:\n    def __init__(self):\n        subprocess.Popen([])\n"; temp=tempfile.TemporaryDirectory(); root=Path(temp.name); a=root/"a.py"; b=root/"b.py"; a.write_text(source("AllowedOwner")); b.write_text(source("ReplacementOwner")); left=cls._semantic_process_boundary_manifest(tuple(cls._process_boundary_calls(a))); right=cls._semantic_process_boundary_manifest(tuple(cls._process_boundary_calls(b))); print("allowed=", left); print("replacement=", right); assert left != right; temp.cleanup()'
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate-h-qualified PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_trusted_execution_behavior_expected_red.LocalTrustedExecutionBehaviorExpectedRedTests.test_h_static_scan_allows_one_supervised_popen_owner_and_no_run tests.test_local_trusted_execution_behavior_expected_red.LocalTrustedExecutionBehaviorExpectedRedTests.test_h_all_existing_entrypoints_delegate_to_one_raw_spawn_owner -v
+```
+
+  full pure gates，cwd=`<repo>/demo`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate02-combined PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_trusted_execution_behavior_expected_red tests.test_local_trusted_execution_expected_red -q
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate02-posix PYTHONWARNINGS=error /usr/bin/python3 -m unittest tests.test_local_execution_posix_safety -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate02-runner /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke_runner -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate02-smoke /usr/bin/python3 -m unittest tests.test_local_execution_posix_smoke -q
+/usr/bin/env -u SEC_EXEC_POSIX_SMOKE_CASE -u SEC_EXEC_POSIX_SMOKE_RUN_ID -u SEC_EXEC_POSIX_SMOKE_RUNNER_SHA256 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate02-constructor /usr/bin/python3 -c 'import importlib, unittest; from unittest import mock; module=importlib.import_module("tests.test_local_execution_posix_smoke"); patcher=mock.patch.object(module, "ExternalProcessGuard"); constructor=patcher.start(); suite=unittest.defaultTestLoader.loadTestsFromModule(module); result=unittest.TestResult(); suite.run(result); patcher.stop(); print(f"tests={result.testsRun} skipped={len(result.skipped)} failures={len(result.failures)} errors={len(result.errors)} constructor_calls={constructor.call_count}"); assert result.testsRun == 3 and len(result.skipped) == 2 and not result.failures and not result.errors and constructor.call_count == 0'
+PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate02-pycompile /usr/bin/python3 -m py_compile tests/test_local_trusted_execution_behavior_expected_red.py tests/test_local_trusted_execution_expected_red.py tests/_local_execution_posix.py tests/fixtures/local_execution_process.py tests/test_local_execution_posix_safety.py tests/_local_execution_posix_smoke_runner.py tests/test_local_execution_posix_smoke.py tests/test_local_execution_posix_smoke_runner.py
+```
+
+  static/diff，cwd分别为`<repo>/demo`与`<repo>`：
+
+```bash
+/usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPYCACHEPREFIX=/private/tmp/multiagent-target-gate02-static PYTHONWARNINGS=error /usr/bin/python3 -c 'import tests.test_local_trusted_execution_behavior_expected_red as m; cls=m.LocalTrustedExecutionBehaviorExpectedRedTests; print("manifest:"); [print(path, cls._semantic_process_boundary_manifest(tuple(cls._process_boundary_calls(m.ROOT / path)))) for path in m.TEST_ONLY_PROCESS_BOUNDARY_MANIFEST]; production={str(p.relative_to(m.ROOT)): cls._process_boundary_calls(p) for p in sorted(m.ROOT.rglob("*.py")) if "tests" not in p.parts and cls._process_boundary_calls(p)}; print("production=", production); assert production == {"coding_workflow/local_execution.py": [("coding_workflow/local_execution.py", "subprocess.Popen", 1229, "_spawn")]}'
+git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md demo/tests/test_local_trusted_execution_behavior_expected_red.py
+```
+
+- `stop_or_rollback_conditions`：无安全stop触发。qualified-owner首红exit1，输出两者均`(('subprocess.Popen','__init__',1),)`；修后green输出`AllowedOwner.__init__`与`ReplacementOwner.__init__`且exit0。第一次修后纯探针尝试因`python -c`字符串中错误保留字面`\nwith`而在项目import前SyntaxError/exit1；这是命令harness错误，无项目执行/修改，随即以上述exact green命令纠正，未作为代码证据。首红临时目录在解释器退出时触发ResourceWarning式implicit cleanup；无target/真实process/signal/network。restricted scanner、helper/fixture/production未变。
+- `result / effect`：`achieved=yes; target_execution=0; review=PENDING`。H=`2/2 OK`（`5.899s`）；combined=`25/25 OK`（`29.140s`）；safety=`39/39 OK`（`0.361s`）；runner=`32/32 OK`（`0.045s`）；default smoke=`1 pass + 2 skip`；constructor_calls=0；compile/static/diff exit0。semantic manifest为`ExternalProcessGuard.__init__`、module `_workload`与三个qualified test class methods；production仍只`local_execution.py:1229 _spawn`。
+- `artifacts / evidence`：`behavior sha256=1ce0cc46136ffc8970304c7f1c3dede0205b97fd010602a1c6924561518f03a0`; `SEC sha256=d85b8551214ffb5ef0b5407781f2c5fea237e25303f601fc122797e1a5f91dcd`; `HANDOFF sha256=4602385ff982f24b2b2021308002d1475071b7293743eefa9c70f3d934222364`; unchanged structural/helper/fixture/safety/runner/card/smoke/production hashes；本entry追加后的STEP hash在review request冻结。
+- `remaining_risks`：target artifact/receipt/runner不存在；真实wait/reap/output/marker/failure/quarantine/cleanup未验证。platform residual和fixture≠production边界不变。
+- `review`：`PENDING — 原两reviewer须复核TRACE-111的2HIGH+1MEDIUM均关闭且hash稳定`
+- `supersedes_entry_id`：`TRACE-109 candidate only; TRACE-111 review retained`
+- `git_checkpoint`：`PURE_STATIC_GATE02_CANDIDATE / WORKTREE_ONLY / commit=PENDING / KEEP=NOT_ISSUED`
+- `next_action`：冻结最终hash并交两名原reviewer；复核前不实现/执行target。
+
+### TRACE-20260826-114
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-114 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-02 / CORRECTION / 2026-08-26T20:26:01+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / qualified-owner probe-shape wording correction / TRACE-112～113 + independent review low`
+- `what / why / expected_effect_or_gate`：纠正TRACE-112“同文件两个class”和TRACE-113“H内同名method mutation”的过度描述：producer首红/终绿命令与checked-in H实际使用**两个class、两份临时fixture文件**，不是把同一文件内的call原地移动。qualified AST ancestry实现本身同样适用于同文件场景；独立reviewer另以真正同文件move pure probe验证通过，但该独立命令完整原始transcript未由producer保存，不能倒填成TRACE-113命令。原因是保持What/证据形状精确；效果不改变代码、合同、hash或Gate结论。
+- `scope / non_goals`：只追加本CORRECTION；不编辑旧entry、不改artifact、不运行命令/target。
+- `baseline`：`reviewed subject STEP=d8212a915d1ff581be2e9de46fca5ca93a1d1e7d194cc3cf3449c8bd76beceb4; behavior=1ce0cc46…8f03a0; SEC=d85b8551…91dcd; HANDOFF=4602385f…22364`
+- `commands`：`N/A — 基于reviewer对checked-in源码与TRACE-113逐字命令的只读对照；未补造其独立same-file probe命令`
+- `stop_or_rollback_conditions`：不得把未保存reviewer命令倒填成producer证据；未触发。
+- `result / effect`：`achieved=yes; documentation wording corrected append-only; artifact hashes unchanged`
+- `artifacts / evidence`：TRACE-113命令；checked-in H qualified-owner fixture；`/root/trace082_final_review_a` Gate-02 ReviewArtifact low finding。
+- `remaining_risks`：无新增；future target仍未实现/授权。
+- `review`：`N/A — correction directly implements nonblocking reviewer wording request`
+- `supersedes_entry_id`：`TRACE-112 what中的“同文件两个class”及TRACE-113 what中暗示same-file move的措辞；其余保持有效`
+- `git_checkpoint`：`WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：记录Gate-02双审结论。
+
+### TRACE-20260826-115
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-115 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-02 / REVIEW / 2026-08-26T20:26:01+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / controlling record of two independent Gate-02 reviews / TRACE-111～114`
+- `what / why / expected_effect_or_gate`：两名原reviewer均对冻结Gate-02给`APPROVE/blocking=0`。`/root/browser_eval_correction_05`确认marker条件、cleanup recovery/absence chain和qualified owner三项全部关闭且无issue；`/root/trace082_final_review_a`同样APPROVE，仅给1 LOW：producer命令是two-file fixtures而非日志早先写的same-file move，已由TRACE-114 append-only纠正。原因是只有双审零blocking才可关闭pure/static target-entry contract gate；效果是Gate-02合同/Oracle获批，可以进入另行PRE_REGISTER的**默认禁用target artifact实现**，但仍不授权target执行。
+- `scope / non_goals`：review只覆盖behavior qualified manifest、future target合同、Step/HANDOFF状态和pure/static证据。未运行target/opt-in/真实project process/signal/network/delete，不批准production integration/cleanup execution/KEEP/Runtime Acceptance。
+- `baseline`：`reviewed behavior=1ce0cc46136ffc8970304c7f1c3dede0205b97fd010602a1c6924561518f03a0; SEC=d85b8551214ffb5ef0b5407781f2c5fea237e25303f601fc122797e1a5f91dcd; STEP=d8212a915d1ff581be2e9de46fca5ca93a1d1e7d194cc3cf3449c8bd76beceb4; HANDOFF=4602385ff982f24b2b2021308002d1475071b7293743eefa9c70f3d934222364; dependencies stable`
+- `commands`：两reviewer独立重跑qualified-owner/H/combined/safety/runner/default/constructor/compile/static/diff；均exit0。返回计数分别为H2/2、combined25/25、safety39/39、runner32/32、default1P+2S、constructor0；完整producer命令在TRACE-113，reviewer没有报告任何target/opt-in触达。
+- `stop_or_rollback_conditions`：任一reviewer HIGH/MEDIUM blocking、hash drift、权限扩大或pure门失败即REVISE；均未触发。LOW wording已由TRACE-114关闭。
+- `result / effect`：`achieved=yes; disposition=APPROVE; blocking=0; PURE_STATIC_TARGET_ENTRY_CONTRACT_GATE=CLOSED; target_artifact_implemented=false; target_execution_authorized=false`
+- `artifacts / evidence`：两份Gate-02 ReviewArtifact；TRACE-112～114；冻结subject hashes。
+- `remaining_risks`：target runner/pure card/receipt尚不存在；真实wait/reap/output/marker/failure/quarantine/cleanup未知。platform残余与fixture≠production边界保持。
+- `review`：`APPROVE — reviewer_1=/root/browser_eval_correction_05 blocking0; reviewer_2=/root/trace082_final_review_a blocking0+LOW1(corrected TRACE-114)`
+- `supersedes_entry_id`：`TRACE-111 controlling REVISE for prior candidate only; historical review retained`
+- `git_checkpoint`：`PURE_STATIC_TARGET_ENTRY_CONTRACT_REVIEWED / WORKTREE_ONLY / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：先同步HANDOFF/SEC reviewed status；随后必须另行PRE_REGISTER默认禁用、hash-pinned、producer-bound target artifact与pure mutation card。不得直接执行target。
+
+### TRACE-20260826-116
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-116 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-02-CHECKPOINT / PRE_REGISTER / 2026-08-26T20:26:01+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / synchronize reviewed Gate-02 checkpoint / TRACE-115`
+- `what / why / expected_effect_or_gate`：仅同步HANDOFF与SEC报告，把“候选等待review”改为“双独立Review APPROVE/blocking0、pure/static contract gate已关闭”，并把next action限定为另行PRE_REGISTER默认禁用target artifact/pure card，继续明确无execution授权。原因是避免下一窗口重复Gate-02或直接跳到target；预期效果是权威文档与TRACE-115一致。
+- `scope / non_goals`：只允许修改HANDOFF current next_action/status及SEC 4.2/4.3.2/4.5 current review文字、本Step Log；禁止代码/test/合同字段变化，禁止实现/运行target。
+- `baseline`：`STEP pre-entry=a7fe43bb0f8f37f2cdd18a3d0c2e1f51eeec40046d95dfa0e24d9b92dced9348; HANDOFF=4602385f…22364; SEC=d85b8551…91dcd; behavior=1ce0cc46…8f03a0`
+- `commands`：修改后只运行`shasum -a 256`、scoped `git diff --check`与`rg`状态核对；不重跑测试，因为reviewed code/contract不变。
+- `stop_or_rollback_conditions`：若同步文字暗示artifact已实现、target可执行、production/KEEP/Runtime已批准或改变合同字段则停止。
+- `result / effect`：`TBD — ACTUAL records exact hashes and no-overclaim checks`
+- `artifacts / evidence`：预期HANDOFF/SEC/STEP hashes及TRACE-115双review。
+- `remaining_risks`：target artifact/execution仍不存在。
+- `review`：`NOT_REQUESTED — status-only checkpoint sync; tail must be independently checked if any ambiguity`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED_STATUS_SYNC / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：同步两份权威文档，append ACTUAL；不实现target。
+
+### TRACE-20260826-117
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-117 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-02-CHECKPOINT / ACTUAL / 2026-08-26T20:29:51+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / synchronize reviewed Gate-02 checkpoint / TRACE-115～116`
+- `what / why / expected_effect_or_gate`：同步HANDOFF与SEC current status：Gate-02双独立Review=`APPROVE/blocking=0`；下一步只可另行PRE_REGISTER默认禁用target artifact/pure card；artifact/receipt/execution仍不存在，target/full/Browser E2E/KEEP仍禁止。原因是形成可安全续接且不重复旧gate的检查点；效果不改变reviewed代码/合同。
+- `scope / non_goals`：只改HANDOFF current target_role/next_action/resource scope/standing prohibition和SEC当前Review/next-step文字；未改behavior或合同字段，未实现/运行target，未跑Browser/full/KEEP。
+- `baseline`：`STEP pre-ACTUAL=19b0b8b5210fd8e58044793067f876d77f244df6fcceb2a2c88f58d0feff88db; HANDOFF pre=4602385f…22364; SEC pre=d85b8551…91dcd; behavior=1ce0cc46…8f03a0 unchanged`
+- `commands`：cwd=`<repo>`：
+
+```bash
+shasum -a 256 HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md demo/tests/test_local_trusted_execution_behavior_expected_red.py
+git diff --check -- HANDOFF.md VerificationReports/SEC-EXEC-01.md VerificationReports/STEP-LOG.md demo/tests/test_local_trusted_execution_behavior_expected_red.py
+rg -n "Gate-02|target artifact|未实现/未授权|KEEP_NOT_ISSUED|禁止" HANDOFF.md VerificationReports/SEC-EXEC-01.md
+```
+
+- `stop_or_rollback_conditions`：无过度声明。rg确认future合同标题仍为`未实现/未授权`，HANDOFF明确“本轮不进入下一步”，SEC仍`INCONCLUSIVE/KEEP_NOT_ISSUED`；diff-check exit0/output empty。
+- `result / effect`：`achieved=yes; reviewed_gate_status_synchronized=true; target_artifact=false; target_execution=false; KEEP=false`
+- `artifacts / evidence`：`HANDOFF sha256=90d472f7c635239cc69b47690bcca3f7337655323bc2c7932f36527f6c9c546c`; `SEC sha256=889427bd4fb1df686ef2681488d1ea7b5277380be100a08bbe7796ef1dc90dee`; `behavior sha256=1ce0cc46136ffc8970304c7f1c3dede0205b97fd010602a1c6924561518f03a0`; STEP hash在CHECKPOINT冻结。
+- `remaining_risks`：target artifact/execution、production integration、Browser E2E、完整回归与最终Review均未做；平台残余不变。
+- `review`：`N/A — status-only sync of already double-approved subject; no contract/code change`
+- `supersedes_entry_id`：`HANDOFF/SEC中“Gate-02候选等待review”的current-status文字；历史entry不改写`
+- `git_checkpoint`：`STATUS_SYNC_COMPLETE / WORKTREE_ONLY / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：本轮立即收尾；未来另行PRE_REGISTER target artifact实现，禁止直接执行target。
+
+### TRACE-20260826-118
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-118 / SEC-EXEC-01-POSIX-TARGET-ENTRY-GATE-02-CHECKPOINT / CHECKPOINT / 2026-08-26T20:29:51+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / safe resumable Gate-02 checkpoint / TRACE-115～117`
+- `what / why / expected_effect_or_gate`：冻结本轮可安全续接点：Gate-02 pure/static合同与qualified-owner Oracle双审`APPROVE/blocking=0`；HANDOFF/SEC已同步；future target artifact/target execution未开始。原因是按用户要求收缩范围并立即收尾；效果是下一窗口不会把合同批准误读成target授权。
+- `scope / non_goals`：checkpoint只记录当前工作树，不stage/commit/push，不清理或纳入无关用户改动；不运行target/Browser/full/KEEP。
+- `baseline`：`STEP content snapshot through TRACE-117=7a2d9bab418724f8987a66d08c61865fb1d2ec90de8fd7970336fcbb64311c70; HANDOFF=90d472f7c635239cc69b47690bcca3f7337655323bc2c7932f36527f6c9c546c; SEC=889427bd4fb1df686ef2681488d1ea7b5277380be100a08bbe7796ef1dc90dee; behavior=1ce0cc46136ffc8970304c7f1c3dede0205b97fd010602a1c6924561518f03a0; branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d`
+- `commands`：cwd=`<repo>`：
+
+```bash
+shasum -a 256 VerificationReports/STEP-LOG.md HANDOFF.md VerificationReports/SEC-EXEC-01.md demo/tests/test_local_trusted_execution_behavior_expected_red.py
+git status --short
+```
+
+  `git status --short`原始范围为：
+
+```text
+ M HANDOFF.md
+ M VerificationReports/SEC-EXEC-01.md
+ M VerificationReports/STEP-LOG.md
+ M demo/coding_agent_cli.py
+ M demo/coding_workflow/__init__.py
+ M demo/coding_workflow/agents.py
+ M demo/coding_workflow/coding_ablation.py
+ M demo/coding_workflow/coding_ablation_execution.py
+ M demo/coding_workflow/coding_evaluation.py
+ M demo/coding_workflow/coding_evaluation_runtime.py
+ M demo/coding_workflow/command_validators.py
+ M demo/coding_workflow/dag_runner.py
+ M demo/coding_workflow/models.py
+ M demo/coding_workflow/policy.py
+ M demo/coding_workflow/visionforge/__init__.py
+ M demo/coding_workflow/visionforge/browser.py
+ M demo/coding_workflow/visionforge/evaluation_runtime.py
+ M demo/coding_workflow/visionforge/web_runtime.py
+ M demo/coding_workflow/workspace.py
+ M demo/core_coding_ablation_run.py
+ M demo/core_coding_eval_run.py
+ M demo/core_coding_model_ablation_run.py
+ M demo/tests/_local_execution_posix.py
+ M demo/tests/fixtures/local_execution_process.py
+ M demo/tests/test_audio_transcription.py
+ M demo/tests/test_coding_ablation.py
+ M demo/tests/test_coding_ablation_execution.py
+ M demo/tests/test_coding_evaluation_runtime.py
+ M demo/tests/test_coding_model_workers.py
+ M demo/tests/test_command_validators.py
+ M demo/tests/test_image_perception.py
+ M demo/tests/test_local_execution_posix_safety.py
+ M demo/tests/test_local_trusted_execution_behavior_expected_red.py
+ M demo/tests/test_local_trusted_execution_expected_red.py
+ M demo/tests/test_multimodal_intake.py
+ M demo/tests/test_video_perception.py
+ M demo/tests/test_visionforge_browser.py
+ M demo/tests/test_workflow.py
+ M demo/track.md
+ M demo/visionforge_eval_run.py
+ M demo/web_server.py
+ M problems.md
+ D prombles.md
+?? Plan/Plan28.md
+?? demo/coding_workflow/local_execution.py
+?? demo/coding_workflow/local_execution_approval.py
+?? demo/tests/_local_execution_posix_smoke_runner.py
+?? demo/tests/test_local_execution_approval.py
+?? demo/tests/test_local_execution_posix_smoke.py
+?? demo/tests/test_local_execution_posix_smoke_runner.py
+?? demo/tests/test_local_execution_supervisor.py
+?? demo/tests/test_visionforge_eval_composition.py
+```
+
+- `stop_or_rollback_conditions`：未stage/commit/push；`demo/track.md`、`problems.md`、删除`prombles.md`、`Plan/Plan28.md`明确为无关/用户范围，保持原状。未进入target artifact。
+- `result / effect`：`checkpoint=SAFE_TO_RESUME; Gate-02=APPROVE/blocking0; target_artifact=false; target_execution=false; INCONCLUSIVE; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：TRACE-115双Review、TRACE-117状态同步、上述四hash与完整status。
+- `remaining_risks`：真实target lifecycle、Browser E2E、full regression与最终安全Review仍未完成；所有已登记平台残余继续有效。
+- `review`：`APPROVE scope inherited from TRACE-115; checkpoint文字未改变reviewed合同/code`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`CONTENT_HASH_CHECKPOINT_ONLY / WORKTREE_DIRTY / commit=PENDING / push=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：未来若继续，先读本entry，再另行PRE_REGISTER target artifact实现；不得直接执行target。本轮结束。
+
+### TRACE-20260826-119
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-119 / SEC-EXEC-01-STDOUT-SHORT-SMALL-BATCH / PRE_REGISTER / 2026-08-26T22:08:40+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / one minimal real stdout_short smoke / user instruction: 进行下一批`
+- `what / why / expected_effect_or_gate`：新增一个默认禁用、只能精确选择的`stdout_short`测试入口；先做默认安全与mock/static检查，再只执行一次真实fixture，核对exact stdout/stderr、exit/reap、guard clean/join和零残留。原因是从pure/mock跨到第一个真实场景，同时纠正此前范围膨胀；预期只回答“最小真实路径是否跑通”，不做生产级认证。
+- `scope / non_goals`：仅允许新增一个target smoke测试文件、必要的本日志/当前handoff状态记录，并执行一次该test；不改production、helper、fixture或既有Oracle，不做Browser E2E、全量回归、双人Review、cleanup认证、KEEP/Runtime Acceptance、stage/commit/push。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; STEP=740d834c49d7a445fa43b48cd4f089928618beb1f6af091ece3b52d8cb9c1751; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; worktree=dirty with unrelated/user changes preserved`
+- `commands`：`TBD — ACTUAL记录默认禁用检查、精确test命令、exit/count/duration及残留核对；不记录秘密`
+- `stop_or_rollback_conditions`：任何guard cleanup不clean、watchdog未join、direct child未reap、PID/PGID身份不确定、test timeout、输出不精确或发现残留资源时立即停止；保留诊断现场，不自动开启修订Gate或扩大测试集合。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期新target smoke文件hash、一次exact运行结果和guard原始cleanup字段摘要。
+- `remaining_risks`：单次可信fixture成功不证明异常矩阵、敌对代码、生产Runtime、OS hard-wall或最终安全性。
+- `review`：`PENDING — one brief scoped review only; no dual-review loop`
+- `supersedes_entry_id`：`NONE — starts a deliberately smaller development batch after TRACE-118`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：实现默认禁用入口并先验证默认0 target；只有静态/默认检查通过才执行一次exact stdout_short。
+
+### TRACE-20260826-120
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-120 / SEC-EXEC-01-STDOUT-SHORT-SMALL-BATCH / ACTUAL / 2026-08-26T22:13:57+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / one minimal real stdout_short smoke / TRACE-119`
+- `what / why / expected_effect_or_gate`：新增默认禁用、要求exact env selector+FQ unittest ID的开发smoke；通过Guard的spawn-observing wrapper只启动一次可信`stdout_short`，保留同一强Popen handle，capture/reap后无条件close，再核输出、spawn observation/ACK、leader/grandchild身份、watchdog join与target absence。原因是以正常开发批次跨过“只有mock/no-target”状态；效果是首次证明这一条真实fixture happy path，但不外推为生产认证。
+- `scope / non_goals`：实际只新增`demo/tests/test_local_execution_posix_target_smoke.py`并同步HANDOFF/STEP；未改production/helper/fixture/既有Oracle，未运行其他target、Browser、full regression或KEEP。
+- `baseline`：`STEP pre-entry=740d834c49d7a445fa43b48cd4f089928618beb1f6af091ece3b52d8cb9c1751; helper=a87ed9f8…2999; fixture=80ecd65d…06d8; existing target temp roots=0`
+- `commands`：cwd=`<repo>/demo`：
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-target-smoke-pycache /usr/bin/python3 -m py_compile tests/test_local_execution_posix_target_smoke.py
+/usr/bin/env -u SEC_EXEC_POSIX_TARGET_SMOKE PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-target-smoke-default /usr/bin/python3 -m unittest tests.test_local_execution_posix_target_smoke -v
+/usr/bin/env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONPATH=. PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-target-smoke-h /usr/bin/python3 -m unittest tests.test_local_trusted_execution_behavior_expected_red.LocalTrustedExecutionBehaviorExpectedRedTests.test_h_static_scan_allows_one_supervised_popen_owner_and_no_run
+/usr/bin/perl -e 'alarm 25; exec @ARGV or die "exec failed: $!"' /usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 SEC_EXEC_POSIX_TARGET_SMOKE=stdout_short /usr/bin/python3 -B -u -m unittest tests.test_local_execution_posix_target_smoke.LocalExecutionPosixTargetSmokeTests.test_stdout_short_real_fixture
+find /private/tmp -maxdepth 1 -type d -name 'sec-exec-posix-target-stdout-short-*' -print
+ps -axo pid=,ppid=,pgid=,command=
+```
+
+- `stop_or_rollback_conditions`：未触发。真实test正常返回；未超时、未重试。初次组合检查因cwd后仍写`demo/tests/...`而exit2，另一次H命令误写class名而在test加载前exit1；两者均未触发测试或boundary，随后用正确路径/FQ完成。sandbox内`pgrep/ps`无进程列表权限，按工具要求仅升级为一次只读`ps`，未执行signal。
+- `result / effect`：`achieved=yes; real target executions=1; unittest=1 pass/0 fail/0 error/0 skip; unittest duration=0.614s; command exit=0; stdout=fixture-short-stdout\\n; stderr=fixture-short-stderr\\n; direct child return/wait=0; guard clean=true/errors=(); watchdog exit/poll=0+joined; target group/pids gone=true; retained target roots=0; escalated read-only ps fixture matches=0; default-after=1 pass+1 skip`
+- `artifacts / evidence`：`demo/tests/test_local_execution_posix_target_smoke.py sha256=ab3164d3d6f6142e76702545b8884288eb21190137883feda276a2e4a799227c`; py_compile exit0；H static 1/1；no-index whitespace输出空（exit1仅因untracked diff）；单次轻量只读review未见正常路径blocker并要求capture/reap→close→assert顺序，已采纳。
+- `remaining_risks`：只覆盖可信fixture happy path；未证明异常/超时矩阵、真实production adapter、敌对代码、OS hard-wall、Browser或最终安全性。`ps`仅是执行后的瞬时旁证，主要cleanup authority仍是同一test内Guard/handle断言。
+- `review`：`APPROVE_WITH_NOTES — /root/trace082_final_review_a; one scoped read-only review; no hash-freeze or dual-review loop; notes incorporated before execution`
+- `supersedes_entry_id`：`NONE — TRACE-119 scope achieved`
+- `git_checkpoint`：`WORKTREE_ONLY / new file untracked / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：追加本批CHECKPOINT并停止；不得在本轮重复target或自动扩张。
+
+### TRACE-20260826-121
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-121 / SEC-EXEC-01-STDOUT-SHORT-SMALL-BATCH / CHECKPOINT / 2026-08-26T22:15:11+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / small-batch stop point / TRACE-119～120`
+- `what / why / expected_effect_or_gate`：冻结一个正常开发批次的停止点：默认禁用入口已落盘，一次且仅一次真实`stdout_short`通过，cleanup与残留核对通过，HANDOFF已同步。原因是遵守用户要求避免继续扩张；效果是下一批可直接从一个已跑通的最小真实happy path继续，而无需重做认证循环。
+- `scope / non_goals`：不再运行target或测试；只记录hash/status，不stage/commit/push，不触碰无关用户改动。
+- `baseline`：`STEP through TRACE-120=34a9a9ac2bfad98869125e9cf11c3db82cb3c1d52d1ea94978e06fe5e2d181c7; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main`
+- `commands`：`shasum -a 256 HANDOFF.md VerificationReports/STEP-LOG.md demo/tests/test_local_execution_posix_target_smoke.py demo/tests/_local_execution_posix.py demo/tests/fixtures/local_execution_process.py`; scoped`git diff --check`; scoped`git status --short`。
+- `stop_or_rollback_conditions`：diff-check无输出/exit0；新文件no-index check无输出（exit1仅因untracked diff）；helper/fixture hashes保持冻结值。
+- `result / effect`：`checkpoint=SMALL_REAL_SMOKE_PASS; target_runs=1; repeats=0; cleanup_proven_for_this_run=true; retained_scope=0; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：`HANDOFF=faf1a2146a4cb4900bf098a56192d2d1b2c8f463f0741ef8f212d58c7bed6eba`; `target smoke=ab3164d3d6f6142e76702545b8884288eb21190137883feda276a2e4a799227c`; `helper=a87ed9f8…2999`; `fixture=80ecd65d…06d8`; final STEP hash在本entry后计算。
+- `remaining_risks`：本结果不是Gate-02完整证据工件、production Runtime验收、Browser验证或KEEP；工作树仍含大量既有未提交及用户改动。
+- `review`：`one scoped review complete; no second reviewer requested by design`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`CONTENT_HASH_ONLY / WORKTREE_DIRTY / commit=PENDING / push=PENDING`
+- `next_action`：本轮结束。未来下一批只选一个普通开发目标，重新PRE_REGISTER并设90分钟硬上限。
+
+### TRACE-20260826-122
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-122 / SEC-EXEC-01-WORKSPACE-PRODUCTION-HAPPY-PATH / PRE_REGISTER / 2026-08-26T22:18:41+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / one ProjectWorkspace python3 -V production-path smoke / user instruction: 来吧`
+- `what / why / expected_effect_or_gate`：新增一个默认禁用的最小集成测试，先以mock证明未批准的`ProjectWorkspace.run(["python3","-V"])`零spawn，再通过`LocalExecutionApprover(True).run_workspace`执行一次真实challenge→one-shot token→retry→统一Popen→结果/cleanup链。原因是上一批只证明fixture+Guard，本批只回答最简单production adapter happy path是否可用。
+- `scope / non_goals`：仅新增一个workspace production-path smoke、必要的STEP/HANDOFF记录，并执行一次真实`/usr/bin/python3 -V`；不改production，不跑timeout/crash/quarantine/Browser/full regression/KEEP，不重跑上一批target，不stage/commit/push。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; STEP=cab7fcd7c21df783c06beac19fa2305c2015ebc87ef16713cf73619ed99a804c; workspace=88420c7c…e5e; local_execution=90be53ff…320b; approval=f578db36…6143; models=1a49decd…2b3; worktree dirty/user changes preserved`
+- `commands`：`TBD — ACTUAL记录默认/mocked零spawn、exact真实test、exit/count/duration、result/cleanup与残留核对`
+- `stop_or_rollback_conditions`：默认未授权若触达spawn、真实命令非exact`python3 -V`、spawn多于一次、exit/output/profile/cleanup异常、private root或进程残留、test timeout时立即停止且不重试、不扩到修订Gate。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期新smoke hash与一次exact真实结果；production files保持上述hash。
+- `remaining_risks`：单次Legacy happy path不证明Core/Browser、异常/timeout、敌对输入或最终生产安全。
+- `review`：`PENDING — one brief scoped read-only review only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：实现默认关闭的test，先运行纯mock/default检查；只有两者通过才真实执行一次。
+
+### TRACE-20260826-123
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-123 / SEC-EXEC-01-WORKSPACE-PRODUCTION-HAPPY-PATH / ACTUAL / 2026-08-26T22:22:51+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / one ProjectWorkspace python3 -V production-path smoke / TRACE-122`
+- `what / why / expected_effect_or_gate`：新增默认禁用的`test_project_workspace_production_smoke.py`。默认pure测试用mock断言无批准时返回三digest challenge且`_spawn`零调用；exact opt-in真实测试通过Composition-owned approver完成challenge→issuer→token retry，并用不保留token的计数wrapper确认issuer=1、真实`_spawn`=1。结果核Legacy Profile、完整输出metadata、四阶段cleanup、streams/private environment关闭及one-shot拒绝复用。原因是以最小真实命令验证production adapter，而不是继续扩充认证矩阵。
+- `scope / non_goals`：只新增该test并同步HANDOFF/STEP；未改production，未运行timeout/crash/quarantine/Core/Browser/full/KEEP，也未重复上一批fixture target。
+- `baseline`：`STEP pre-batch=cab7fcd7c21df783c06beac19fa2305c2015ebc87ef16713cf73619ed99a804c; workspace=88420c7c…e5e; local_execution=90be53ff…320b; approval=f578db36…6143; models=1a49decd…2b3; pre-existing /private/tmp/local-trusted-execution-* count=100; batch workspace roots=0`
+- `commands`：cwd=`<repo>/demo`：
+
+```bash
+PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-workspace-smoke-pycache /usr/bin/python3 -m py_compile tests/test_project_workspace_production_smoke.py
+/usr/bin/env -u SEC_EXEC_WORKSPACE_REAL_SMOKE PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-workspace-smoke-default /usr/bin/python3 -m unittest tests.test_project_workspace_production_smoke -v
+/usr/bin/perl -e 'alarm 25; exec @ARGV or die "exec failed: $!"' /usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 SEC_EXEC_WORKSPACE_REAL_SMOKE=python_version /usr/bin/python3 -B -u -m unittest tests.test_project_workspace_production_smoke.ProjectWorkspaceProductionSmokeTests.test_real_python_version
+find /private/tmp -maxdepth 1 -type d -name 'local-trusted-execution-*' -print
+find /private/tmp -maxdepth 1 -type d -name 'sec-exec-workspace-python-version-*' -print
+ps -axo pid=,ppid=,pgid=,command=
+```
+
+- `stop_or_rollback_conditions`：未触发；真实命令一次成功且未重试。历史100个private目录明确冻结为运行前集合，不删除；运行后仍exact 100、added=[]、removed=[]。本批workspace root前后均0。只读`ps`经已批准prefix在sandbox外执行，目标匹配0；未发送signal。
+- `result / effect`：`achieved=yes; real production commands=1; unittest=1 pass/0 fail/0 error/0 skip; unittest duration=0.014s; command exit=0; challenge/issuer=1; spawn=1; result=CommandResult; argv=[python3,-V]; stdout="Python 3.9.6\\n"; stderr=""; exit=0; timed_out=false; output chars/sha/truncation exact; profile=legacy_workspace_verify,/usr/bin/python3,current root; cleanup status=terminal,reaped=true,verified=true,streams=closed,private_environment=closed,digest valid; approver reuse rejected before spawn; post-run target process matches=0; default-after=2 pass+1 skip`
+- `artifacts / evidence`：`demo/tests/test_project_workspace_production_smoke.py sha256=59dc5b4b57f6e6be251d62f4cb0cf926dd874c52d7dcfb1502e7143039a2414e`; py_compile exit0；no-index whitespace输出空（exit1仅因untracked diff）；production四hash与baseline完全相同。
+- `remaining_risks`：单次Legacy happy path；历史100个private目录不归因本批且未审查来源。未证明异常/timeout/quarantine、用户可见Composition Root、Core/Browser或最终安全性。
+- `review`：`APPROVE_WITH_NOTES — /root/trace082_final_review_a; scoped read-only call-sequence review; no blocker; suggested exact output/profile/cleanup assertions and single-count instrumentation incorporated`
+- `supersedes_entry_id`：`NONE — TRACE-122 achieved`
+- `git_checkpoint`：`WORKTREE_ONLY / new test untracked / production unchanged / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：追加CHECKPOINT并停止；本轮不再运行真实命令。
+
+### TRACE-20260826-124
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260826-124 / SEC-EXEC-01-WORKSPACE-PRODUCTION-HAPPY-PATH / CHECKPOINT / 2026-08-26T22:24:03+08:00 / 2026-08-26`
+- `principal / slice / plan_ref`：`/root / small production-path stop point / TRACE-122～123`
+- `what / why / expected_effect_or_gate`：冻结本批停止点：默认拒绝零spawn、一次真实Legacy production happy path、cleanup与残留差分均通过，HANDOFF已同步。原因是按用户要求保持普通开发节奏；效果是从fixture smoke推进到一个production adapter真实调用，同时没有扩张测试矩阵。
+- `scope / non_goals`：只记录hash/status；不再运行命令，不stage/commit/push，不处理历史100个private目录或其他用户改动。
+- `baseline`：`STEP through TRACE-123=d2c32f67cf001dbd75cc7c1350fd85763fd88f7c49c53bc9f786316e83b660ca; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main`
+- `commands`：artifact/production/HANDOFF/STEP `shasum -a 256`; scoped `git diff --check`; scoped `git status --short`。
+- `stop_or_rollback_conditions`：diff-check exit0/output empty；untracked test no-index check output empty（exit1 only because file differs from `/dev/null`）；production hashes unchanged。
+- `result / effect`：`checkpoint=WORKSPACE_PRODUCTION_HAPPY_PATH_PASS; real_commands=1; repeats=0; cleanup_verified_for_this_run=true; new_private_dirs=0; retained_batch_workspace=0; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：`HANDOFF=01a4e423b35b8d17382f5da5ebc28bf98979b51d14372131b25773fceaa360e1`; `test=59dc5b4b57f6e6be251d62f4cb0cf926dd874c52d7dcfb1502e7143039a2414e`; production hashes见TRACE-123；final STEP hash在本entry后计算。
+- `remaining_risks`：该结果不覆盖用户可见root、失败/timeout/quarantine、Core/Browser、历史残留来源、full regression或KEEP。
+- `review`：`one scoped review complete; no second review requested`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`CONTENT_HASH_ONLY / WORKTREE_DIRTY / commit=PENDING / push=PENDING`
+- `next_action`：本轮结束；下一批若继续，只验证一个Composition Root默认拒绝/显式批准传递，优先mock、不运行新真实workload。
+
+### TRACE-20260827-125
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-125 / SEC-EXEC-01-CLI-VISIBLE-COMPOSITION / PRE_REGISTER / 2026-08-27T02:53:22+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 1 of user-authorized five sequential batches / HANDOFF current next_action`
+- `what / why / expected_effect_or_gate`：只为`coding_agent_cli`增加一个用户可见的本地执行摘要：默认未批准时在模型、Workspace与process前明确拒绝并显示`spawn=0`；显式批准路径把最终受控结果投影为不含token的text/JSON/Markdown报告。原因是把已存在但不可见的Composition Root门禁变成可直接观察的数据；预期用pure mock证明exact-bool传递、默认零副作用和报告字段，而不启动新真实workload。
+- `scope / non_goals`：预计只改`demo/coding_agent_cli.py`、新增一份聚焦pure test及本批JSON/Markdown证据摘要，并追加STEP/HANDOFF；不改Supervisor/Profile/admission协议，不调用模型、真实Popen、signal、network或Browser，不跑full discovery，不修本批之外缺陷，不stage/commit/push/KEEP。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; STEP=a02c61dd5195ced37b440cd61b50647c97213c324817c822e9f5af17c4dd456b; HANDOFF=01a4e423b35b8d17382f5da5ebc28bf98979b51d14372131b25773fceaa360e1; coding_agent_cli=0ea0782aff81da64f2f3ee54f4030187463bb97005cc8ecccefcf040625a92eb; worktree=dirty with unrelated/user changes preserved`
+- `commands`：`TBD — ACTUAL保存精确pure unittest、py_compile、静态process/network tripwire、格式检查、结果计数与duration；不得把真实边界结果写入本批`
+- `stop_or_rollback_conditions`：任何测试触达ModelClient、真实process/signal/network、默认拒绝仍创建Workspace/输出目录、token进入报告、报告含未脱敏命令数据、需要改Runtime核心或超过本批文件范围时立即停止并记录blocker；不自动开启修订Gate。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期CLI/report helper、pure test、JSON/Markdown可见样例及其SHA256。
+- `remaining_risks`：mock可见性不证明真实Composition业务流程、timeout/quarantine、Browser或最终production安全。
+- `review`：`PENDING — one brief scoped inspection only; no dual-review/hash loop`
+- `supersedes_entry_id`：`NONE — starts batch 1 after TRACE-124`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：实现CLI默认拒绝和安全report投影，先运行pure mock，再记录ACTUAL并停止本批。
+
+### TRACE-20260827-126
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-126 / SEC-EXEC-01-CLI-VISIBLE-COMPOSITION / ACTUAL / 2026-08-27T03:17:43+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 1 implementation / TRACE-125`
+- `what / why / expected_effect_or_gate`：`coding_agent_cli.main(argv)`新增模型/Workspace/process之前的默认拒绝，并从单一normalized payload渲染text/JSON/Markdown；批准结果只投影public CommandResult/Profile/cleanup，不暴露token。默认路径明确`spawn_count=0/preflight_zero`；批准mock路径因没有边界计数而诚实输出`spawn_count=null/not_instrumented`，另列`terminal_execution_count`。原因是让用户直接看到准入状态与数据，同时避免用Profile/cleanup元数据冒充真实spawn。
+- `scope / non_goals`：实际只改`demo/coding_agent_cli.py`、新增`demo/tests/test_coding_agent_cli_local_execution_report.py`与两份可见报告；未改Runtime核心、approval/Profile/DAG/Workspace/Browser，未调用模型、真实target、signal、network或Browser。
+- `baseline`：`TRACE-125; CLI old=0ea0782aff81da64f2f3ee54f4030187463bb97005cc8ecccefcf040625a92eb; worktree remained dirty and unrelated changes were preserved`
+- `commands`：cwd=`<repo>/demo`：`PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-cli-report-final-pycache /usr/bin/python3 -m py_compile coding_agent_cli.py tests/test_coding_agent_cli_local_execution_report.py`；`/usr/bin/env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 /usr/bin/python3 -m unittest tests.test_coding_agent_cli_local_execution_report -q`；同env直接运行`/usr/bin/python3 coding_agent_cli.py 'visible default deny' --local-execution-report json`；`/usr/bin/python3 -m json.tool ../VerificationReports/SEC-EXEC-CLI-VISIBLE-DEMO.json`；scoped`git diff --check`与`shasum -a 256`。
+- `stop_or_rollback_conditions`：未触发。初版review侦察发现Profile+cleanup不能冒称spawn、JSON/Markdown会被普通前缀污染、逐argv脱敏漏跨元素secret；三项均在本批内最小修正并加回归，没有扩到Runtime。
+- `result / effect`：`achieved=yes; focused tests=7 pass/0 fail/0 error/0 skip, 0.003s; py_compile=0; json.tool=0; diff-check=0; default direct CLI exit=2 with valid JSON, task_outcome=not_started, spawn_count=0; explicit approval=fake CodingRun only, exact True forwarded, two fresh approvers, terminal_execution_count=1, spawn_count=UNKNOWN/not instrumented`
+- `artifacts / evidence`：`demo/coding_agent_cli.py sha256=e31378a4c45accaa7b54f52724c9dd1a7a69b9e66dea717ed352df380f8fe28b`; `demo/tests/test_coding_agent_cli_local_execution_report.py sha256=2321ceaabeeab7b7472fb604781382c52c4b624457912788a07adb727007cebe`; `VerificationReports/SEC-EXEC-CLI-VISIBLE-DEMO.json sha256=0d4cd2eb8c268bd524eb99a48b24d4f70fdb2fb102f238acf9242758db6f8d2c`; Markdown `8b28aab6a54df86b0dd389d61780ab2d424a9bbad902df75216e2b37e5f63f2a`。
+- `remaining_risks`：批准场景仍是pure mock；没有证明真实模型、spawn、timeout/quarantine、Browser或完整CLI业务链。报告不把terminal DTO当实际spawn authority。
+- `review`：`PENDING — next entry records one scoped read-only inspection`
+- `supersedes_entry_id`：`NONE — TRACE-125 achieved`
+- `git_checkpoint`：`WORKTREE_ONLY / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：记录快检Review与CHECKPOINT；然后进入用户授权的批次2，仅一条真实timeout→cleanup→quarantine路径。
+
+### TRACE-20260827-127
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-127 / SEC-EXEC-01-CLI-VISIBLE-COMPOSITION / REVIEW / 2026-08-27T03:17:43+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/browser_eval_correction_05 / four-artifact static quick review / TRACE-126`
+- `what / why / expected_effect_or_gate`：只读锁定CLI、test、JSON与Markdown，复核中途指出的三项false-green是否关闭；不重跑测试、不外推真实执行。
+- `scope / non_goals`：仅审查spawn措辞、机器可读stdout、跨argv脱敏与fresh approver factory；不签Runtime Acceptance/KEEP。
+- `baseline`：`CLI=e31378a4…fe28b; test=2321ceaa…cebe; JSON=0d4cd2eb…f8d2c; Markdown=8b28aab6…3f2a; hashes stable before/after review`
+- `commands`：`N/A — independent static read-only inspection; producer test commands remain TRACE-126 evidence`
+- `stop_or_rollback_conditions`：未触发hash漂移；无blocking finding。
+- `result / effect`：`recommendation=APPROVE; blocking=0; spawn not overclaimed; JSON/Markdown stdout control-flow pure; cross-argv secret regressions and fresh factory present`
+- `artifacts / evidence`：review消息绑定上述四hash；限制为批准场景fake CodingRun、Markdown主要renderer级、7/7由producer运行而非reviewer复跑。
+- `remaining_risks`：不证明真实spawn、模型、network、signal、Browser或cleanup lifecycle。
+- `review`：`APPROVE / blocking=0 / scoped only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：更新HANDOFF当前摘要并追加批次1CHECKPOINT。
+
+### TRACE-20260827-128
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-128 / SEC-EXEC-01-CLI-VISIBLE-COMPOSITION / CHECKPOINT / 2026-08-27T03:19:03+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-authorized batch 1 stop point / TRACE-125～127`
+- `what / why / expected_effect_or_gate`：停止CLI可见性小批并冻结可安全续接点；原因是目标、聚焦测试和一次快检均完成，不继续扩成报告框架或真实执行认证。
+- `scope / non_goals`：只记录hash/status并把HANDOFF当前动作推进到批次2；不再运行本批测试，不stage/commit/push。
+- `baseline`：`STEP through TRACE-127=e8ea6a9cbd6be65dcff68cd8d90212ca91a974a3605de05b119462831c2f8e3d; HANDOFF=7c98cb9a28fe36cc4a84a19e1164ce764b5d5c6e948d786cbb2027ceb65c1ef9; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d`
+- `commands`：scoped artifact/HANDOFF/STEP`shasum -a 256`；scoped`git diff --check`。
+- `stop_or_rollback_conditions`：diff-check exit0/output empty；四reviewed artifact hash保持TRACE-127值。
+- `result / effect`：`checkpoint=CLI_VISIBLE_MOCK_PASS; focused=7/7; default_spawn=0; approved_spawn=UNKNOWN/not instrumented; review=APPROVE/blocking0; real_workloads=0; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：CLI/test/JSON/Markdown见TRACE-126；`HANDOFF=7c98cb9a…c1ef9`; final STEP hash在本entry后计算。
+- `remaining_risks`：真实CLI业务、model、timeout/quarantine与Browser仍未证明；当前worktree dirty/uncommitted。
+- `review`：`one scoped review complete; no second review requested`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`CONTENT_HASH_ONLY / WORKTREE_DIRTY / commit=PENDING / push=PENDING`
+- `next_action`：进入批次2；先PRE_REGISTER一条可信fixture的真实timeout→cleanup→quarantine路径，禁止并行扩到其他场景。
+
+### TRACE-20260827-129
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-129 / SEC-EXEC-01-REAL-TIMEOUT-QUARANTINE / PRE_REGISTER / 2026-08-27T03:21:14+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 2 of user-authorized five sequential batches / TRACE-128 next_action`
+- `what / why / expected_effect_or_gate`：新增一份最小可信Python sleep fixture与默认禁用的exact-FQ smoke。真实执行只允许一次Core Profile timeout；Finalizer必须先真实TERM/wait-reap/PGID absence/stream close/private-root removal，再由测试在已完成真实private cleanup后把该resource outcome降为失败，从而安全地产生`CLEANUP_FAILED`与quarantine。随后同Workspace新鲜批准必须在spawn前拒绝。原因是同时观察真实timeout清理和quarantine fence，而不通过故意遗留进程制造失败。
+- `scope / non_goals`：只允许新增`demo/tests/fixtures/local_execution_timeout.py`、一份timeout/quarantine smoke及STEP/HANDOFF记录；不改production/Supervisor/Profile/approval，不运行其他target、Browser、network、model、full discovery或完整validator集合，不做recovery clear/KEEP，不stage/commit/push。
+- `baseline`：`branch=main; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; STEP=6db5514b92dfe1772b4fed192710db6981c38d69d32cdc10998cc2d4e32d26fa; local_execution=90be53ffd9df1f5527b343d6ab01166ed2dcbae320b87b0a53356e2758e4320b; approval=f578db36aad208b0f0104c94f6ffaba99f2dfe53558e0d59a27505e563066143; validators=5405aec9b5e2985a0cb23b10843a5a1d69a075b87e6ce83825af9121824a6be8; policy=4ed5833304e61e9645895b5e436e5c2751245e3d4e2957b588ae25aa15cd6bce; worktree dirty/unrelated changes preserved`
+- `commands`：`TBD — ACTUAL保存默认skip/pure selector、Python3.9 compile/static、唯一exact opt-in test命令、outer 25s alarm、exit/count/duration、process/PGID/private-root/streams/quarantine/fence与残留核对`
+- `stop_or_rollback_conditions`：任何真实spawn多于1、命令不是冻结fixture、目标访问network/secret/repo写、TERM后direct child未reap、PGID仍活、stream/private root未闭合、cleanup注入发生在真实close之前、quarantine无id/generation/evidence、同Workspace再次spawn、runner timeout或外部残留时立即停止并保留诊断现场；不得重试或自动修production。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期fixture/smoke hash、一次exact真实timeout结果与执行后只读absence证据。
+- `remaining_risks`：单次可信direct-child timeout不证明孙进程、OS hard-wall、Browser、敌对代码或recovery；测试注入的private outcome failure不等于自然发生的真实FS故障。
+- `review`：`PENDING — one brief pre-execution safety inspection; no dual-review loop`
+- `supersedes_entry_id`：`NONE — starts batch 2 after TRACE-128`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：实现默认禁用fixture/smoke；先跑pure/default/static，安全检查通过后只执行一次exact timeout case。
+
+### TRACE-20260827-130
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-130 / SEC-EXEC-01-REAL-TIMEOUT-QUARANTINE / CORRECTION / 2026-08-27T03:24:42+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 2 pre-execution design correction / TRACE-129`
+- `what / why / expected_effect_or_gate`：在任何真实boundary执行前撤回新建sleep fixture与尚未运行的timeout/quarantine smoke；改为两条证据：A）现有`ExternalProcessGuard + hang_ignore_term`只证明一次真实timeout后TERM→KILL→reap→PGID absence和Guard clean/join；B）纯mock使Finalizer真实得出`clean=false`，证明`CLEANUP_FAILED`/quarantine id+generation/同Workspace二次spawn=0。原因是裸sleep子进程在Runtime自身cleanup失败或outer alarm时没有独立cleanup owner；“真实清理成功后篡改outcome”也只能称synthetic injection，不能冒称真实quarantine。
+- `scope / non_goals`：撤回的两个文件从未执行；新范围只允许复用已reviewed POSIX helper/fixture，新增一个默认禁用的Guard-backed real smoke和一个pure quarantine回归。不改production，不执行Browser/model/network/full/recovery/KEEP。
+- `baseline`：`TRACE-129 STEP=a2023c064a2752df397f5736478a1b0d590b278b855b35072e2b8a85b8506ece; rejected unrun fixture=5c0036467f3b55ed8ec3c2bc04f885037da619eddf8233c6aec1d2d2ad3a1615; rejected unrun smoke=9a6f210a3828f3ba6ffb8611e6ce77272c52ccc5324629c63d764e3efdc7c331; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8`
+- `commands`：只读`rg/sed`审查Guard/fixture/Runtime/supervisor pure tests；`shasum -a 256`锁定被撤回工件。未运行测试、guard、process、signal或network。
+- `stop_or_rollback_conditions`：真实路径必须先通过default/pure/static与一次窄范围pre-execution review；Runtime `_spawn` 必须精确1次（不把watchdog/fixture descendant冒称总OS spawn=1）；任一timeout/KILL/reap/absence/Guard clean/join不成立即停止、保留现场、不重试。pure case任一真实Popen/killpg触达即失败。
+- `result / effect`：`achieved=partial; unsafe pre-execution design withdrawn; real boundaries=0; rejected files never executed; corrected evidence split accepted for implementation`
+- `artifacts / evidence`：`/root/browser_eval_correction_05 ReviewArtifact recommendation=REVISE before execution, blocking=2 high; exact reviewed helper/fixture hashes above`。
+- `remaining_risks`：真实case只能证明可信fixture的一次timeout cleanup；pure case只能证明编排控制流，二者不是一次真实quarantine，也不等于real failure/recovery/Runtime Acceptance。
+- `review`：`REVISE / blocking=2 high / pre-execution design only; no runtime execution`
+- `supersedes_entry_id`：`TRACE-20260827-129 design only; PRE history retained`
+- `git_checkpoint`：`CORRECTED_BEFORE_EXECUTION / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：实现Guard-backed real timeout smoke与pure quarantine-specific fence回归；先只运行pure/default/static，再请一次窄范围执行前快检。
+
+### TRACE-20260827-131
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-131 / SEC-EXEC-01-REAL-TIMEOUT-QUARANTINE / ACTUAL / 2026-08-27T03:38:35+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 2 corrected implementation and one real run / TRACE-129～130`
+- `what / why / expected_effect_or_gate`：新增默认禁用的Guard-backed Runtime timeout smoke；复用`hang_ignore_term`而非裸sleep。真实case只产生clean verified outcome，不制造quarantine；另在supervisor pure测试中让scripted timeout后PGID probe返回PermissionError，使真实Finalizer生成`CLEANUP_FAILED`并立即验证同Workspace新确认在第二次spawn前被拒。原因是分别回答“真实进程是否清干净”和“清理无法证明时控制面是否封锁”，不混写证据来源。
+- `scope / non_goals`：真实运行exact一次；无网络、模型、Browser、秘密、recovery或full discovery。production/helper/fixture未改。撤回的TRACE-129两文件从未执行且已删除。
+- `baseline`：`smoke pre-execution=e29d8ca9cb0f1920a7d6bfac03e039b1d09f70dc42c98982d074ab4f489375ce; supervisor=b74504c1a32613eed63406143d13eacb54cd5e784fa35b7bbde45b64ecb7f315; helper=a87ed9f82e93877cb473f7c47120a2e73cc18fc75c82e3437c8878f75b002999; fixture=80ecd65de830f5d61c3e2e9a1dd6948e8207cada79001a418910b57330d206d8; Runtime=90be53ffd9df1f5527b343d6ab01166ed2dcbae320b87b0a53356e2758e4320b; pre-existing batch roots=0`
+- `commands`：cwd=`<repo>/demo`：`/usr/bin/env -u SEC_EXEC_REAL_TIMEOUT_CLEANUP PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-batch2-pycompile-3 /usr/bin/python3 -m py_compile tests/test_local_execution_timeout_cleanup_smoke.py tests/test_local_execution_supervisor.py`；同样移除selector后运行`/usr/bin/python3 -m unittest tests.test_local_execution_timeout_cleanup_smoke -v`；sanitized `env -i ... PYTHONPATH=. /usr/bin/python3 -m unittest tests.test_local_execution_supervisor.LocalExecutionSupervisorTests.test_quarantine_fences_same_workspace_before_second_spawn -v`；真实exact命令为`/usr/bin/perl -e 'alarm 25; exec @ARGV or die "exec failed: $!"' /usr/bin/env -i PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 SEC_EXEC_REAL_TIMEOUT_CLEANUP=guarded_hang_ignore_term /usr/bin/python3 -B -u -m unittest tests.test_local_execution_timeout_cleanup_smoke.LocalExecutionTimeoutCleanupSmokeTests.test_guarded_real_timeout_cleanup`；前后`find /private/tmp -maxdepth 1 -type d -name 'sec-exec-runtime-timeout-*' -print`。
+- `stop_or_rollback_conditions`：未触发。中途两个独立pre-execution review分别发现canonical object identity、disarm/close、12s deadline和method-entry selector四项阻塞，均在真实执行前修复；修后两review均APPROVE。真实命令只执行一次、exit0。执行后`ps`只读诊断被sandbox拒绝，未提权、未把它列作证据；batch root前后均0。
+- `result / effect`：`achieved=yes; default=1 pass+1 skip/0F/0E; pure quarantine=1/1 pass, first spawn=1, same-workspace second spawn=0, CLEANUP_FAILED+id+positive generation; real=1/1 pass, unittest=3.957s, tool wall=4.192818042s; Runtime _spawn=1; target topology=leader+one same-PGID grandchild=2 PIDs; timed_out=true; TERM and KILL attempted; direct child reaped; final PGID absent; streams/private root closed; watchdog clean/join reason=cleanup_control; retained batch roots=0`
+- `artifacts / evidence`：`demo/tests/test_local_execution_timeout_cleanup_smoke.py sha256=e29d8ca9cb0f1920a7d6bfac03e039b1d09f70dc42c98982d074ab4f489375ce`; `demo/tests/test_local_execution_supervisor.py sha256=b74504c1a32613eed63406143d13eacb54cd5e784fa35b7bbde45b64ecb7f315`; `VerificationReports/SEC-EXEC-BATCH2-TIMEOUT-CLEANUP.json`与`.md`保存可见数据，hash在CHECKPOINT记录。
+- `remaining_risks`：真实case不是cleanup failure/quarantine；pure case不是OS实故障。未证明recovery、敌对代码、Browser、OS hard-wall、production sandbox或Runtime Acceptance；额外`ps`证据缺失。
+- `review`：`APPROVE before execution / blocking=0 — /root/browser_eval_correction_05 and /root/trace082_final_review_a; actual producer run passed once; no independent real rerun requested`
+- `supersedes_entry_id`：`TRACE-129 design superseded by TRACE-130; corrected implementation achieved here`
+- `git_checkpoint`：`WORKTREE_ONLY / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：记录review/checkpoint，进入用户授权批次3的VisionForge/Browser Composition Root pure-mock前置验证。
+
+### TRACE-20260827-132
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-132 / SEC-EXEC-01-REAL-TIMEOUT-QUARANTINE / REVIEW / 2026-08-27T03:38:35+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/browser_eval_correction_05 + /root/trace082_final_review_a / corrected execution candidate / TRACE-131`
+- `what / why / expected_effect_or_gate`：两名只读reviewer在真实执行前核Popen wrapper、Guard ownership、selector、deadline、finally和pure boundary；早期REVISE均在执行前修复，最终锁同一候选并给APPROVE。原因是这一次会触发真实signal/target，必须先关闭确定性残留窗；不再要求post-run重复真实执行。
+- `scope / non_goals`：只批准一次exact opt-in timeout smoke的执行前候选与pure regression；不批准KEEP/Runtime Acceptance/Browser/recovery。
+- `baseline`：`smoke=e29d8ca9…375ce; supervisor=b74504c1…f315; helper/fixture/Runtime hashes见TRACE-131`
+- `commands`：reviewer独立只读/纯检查；其中Sagan复跑default `2 run/1 skip`、boundary traps `Guard=0/_spawn=0/killpg=0`、focused pure `2/2`和py_compile；Dewey执行静态快检。二者均未运行真实boundary。
+- `stop_or_rollback_conditions`：最终无blocking；实际opt-in结果与reviewed assertions一致，未请求重跑。
+- `result / effect`：`recommendation=APPROVE; blocking=0; hashes stable; actual once=PASS`
+- `artifacts / evidence`：两份ReviewArtifact消息绑定`e29d8ca9…375ce/b74504c1…f315`；TRACE-131保存真实run输出/限制。
+- `remaining_risks`：批准范围不外推；真实结果由producer执行一次，reviewers未独立复跑。
+- `review`：`APPROVE / blocking=0 / pre-execution candidate only`
+- `supersedes_entry_id`：`NONE — earlier REVISE findings retained in TRACE-131 narrative`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：追加批次2 CHECKPOINT。
+
+### TRACE-20260827-133
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-133 / SEC-EXEC-01-REAL-TIMEOUT-QUARANTINE / CHECKPOINT / 2026-08-27T03:38:35+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-authorized batch 2 stop point / TRACE-129～132`
+- `what / why / expected_effect_or_gate`：冻结第二批停止点：一次真实受Guard保护的timeout cleanup通过，另一个pure quarantine-specific fence通过。原因是两种证据的边界已清楚且目标完成，不继续扩到真实cleanup failure/recovery。
+- `scope / non_goals`：只保存结果、报告hash与当前HANDOFF；不再运行真实命令，不stage/commit/push。
+- `baseline`：`STEP through TRACE-132 calculated before this entry; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main`
+- `commands`：`python3 -m json.tool`核报告JSON；artifact/HANDOFF/STEP`shasum -a 256`；scoped diff/no-index whitespace checks。
+- `stop_or_rollback_conditions`：TBD — checkpoint validation immediately after append; any JSON/hash/whitespace error stops before batch 3.
+- `result / effect`：`checkpoint=BATCH2_TIMEOUT_CLEANUP_PASS_LIMITED; real runs=1; pure quarantine=PASS; retained roots=0; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：report JSON/Markdown、smoke、supervisor、HANDOFF与final STEP hashes在本entry后计算。
+- `remaining_risks`：同TRACE-131；批次3仍只能pure mock。
+- `review`：`pre-execution dual quick review APPROVE; no post-execution rerun`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`CONTENT_HASH_ONLY / WORKTREE_DIRTY / commit=PENDING / push=PENDING`
+- `next_action`：批次3只做VisionForge/Browser Composition Root pure-mock前置验证。
+
+### TRACE-20260827-134
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-134 / SEC-EXEC-01-REAL-TIMEOUT-QUARANTINE / CORRECTION / 2026-08-27T03:40:11+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 2 checkpoint validation completion / TRACE-133`
+- `what / why / expected_effect_or_gate`：补齐TRACE-133在append后才能获得的精确validation/hash，替代其`TBD`；保留原entry不改写。原因是append-only checkpoint的自身hash必须在条目写入后计算。
+- `scope / non_goals`：只记录已完成的JSON/whitespace/hash检查；不运行测试或真实boundary。
+- `baseline`：`STEP through TRACE-133=70ab4323c7c5102affe23c9e74dd63ba1c3304caccc85f235dcf2ee28d243f30`
+- `commands`：`/usr/bin/python3 -m json.tool VerificationReports/SEC-EXEC-BATCH2-TIMEOUT-CLEANUP.json`; scoped tracked `git diff --check`; three untracked `git diff --no-index --check /dev/null <file>`；six-file`shasum -a 256`。
+- `stop_or_rollback_conditions`：未触发；JSON exit0，tracked diff-check exit0，三份no-index whitespace输出空（其exit1只表示相对`/dev/null`存在新增diff）。
+- `result / effect`：`TRACE-133 checkpoint validation=PASS; achieved=yes`
+- `artifacts / evidence`：`report JSON=b2271891ded0a2a1d85312cae3580fc9c83e31c2a58cc5e2132268fba68dc2f6`; `report Markdown=5bf4ea4811e92a0704088f4a30e71833f28f6cbc6861b472293bcc1fb6f9a82d`; `smoke=e29d8ca9cb0f1920a7d6bfac03e039b1d09f70dc42c98982d074ab4f489375ce`; `supervisor=b74504c1a32613eed63406143d13eacb54cd5e784fa35b7bbde45b64ecb7f315`; `HANDOFF=8579745a9ac7fe49d7e9cd85f9d7dad2ae6eb74d4f6ea3c21ba61327c926a114`; final STEP hash follows this append.
+- `remaining_risks`：无新增；同TRACE-131。
+- `review`：`N/A — mechanical checkpoint correction`
+- `supersedes_entry_id`：`TRACE-20260827-133 stop_or_rollback_conditions and artifact-hash placeholders only`
+- `git_checkpoint`：`VALIDATED_CONTENT_HASH_ONLY / WORKTREE_DIRTY / KEEP_NOT_ISSUED`
+- `next_action`：开始批次3 PRE_REGISTER。
+
+### TRACE-20260827-135
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-135 / SEC-EXEC-01-VISIONFORGE-COMPOSITION-PREFLIGHT / PRE_REGISTER / 2026-08-27T03:41:32+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 3 of user-authorized five sequential batches / TRACE-134 next_action`
+- `what / why / expected_effect_or_gate`：收紧两处VisionForge Composition Root的默认拒绝时点并用pure mock固定：CLI在`--confirm-real-calls`但缺local flag时，必须在load_env/suite/model config/endpoint/client/file/runner之前拒绝；Web真实executor在task authority=false时必须在plugin/model/env/Browser runner之前拒绝。显式批准control继续证明每trial fresh workspace-bound runner与fresh one-shot approver。原因是默认fail-closed若发生在模型或浏览器构造之后，仍会浪费成本并扩大副作用面。
+- `scope / non_goals`：预计只改`demo/visionforge_eval_run.py`、`demo/coding_workflow/visionforge/web_runtime.py`与现有pure composition test；不运行或修改真实Browser E2E、node/pnpm/Playwright/network/model，不改Runtime Supervisor/Profile/approval，不跑full discovery，不stage/commit/push/KEEP。
+- `baseline`：`STEP=0f4a571ddf8003b3db5ea57af776746d681ef6272a7be6a0e90106eae978cff6; CLI=286c32570e5a4bf74b0ada92dd6f1d319beb6f765287068e5b22c20934b92730; web_runtime=84ba7ac280c547a1220898cef3275b3d412804f4b040e12cb270919174ce14c5; composition_test=5b0f06177898d167af5979d5c85be717bb57a55840f57eca0f95f5743972f983; worktree dirty/unrelated changes preserved`
+- `commands`：`TBD — ACTUAL保存focused pure unittest、boundary traps、py_compile、diff/hash和计数；所有process/network/model seam必须mock为AssertionError`
+- `stop_or_rollback_conditions`：任何focused test触达真实process/signal/network/model、需要修改Browser Profile/Supervisor、破坏预算-only无`--confirm-real-calls`模式、显式批准不再fresh/workspace-bound、或超过三文件范围时停止并记录，不自动开启修订Gate。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期三个文件新hash与pure test计数；production没有真实执行证据。
+- `remaining_risks`：pure Composition证明不等于Browser可用；Renderer Profile、binary、真实Playwright/E2E继续未收口。
+- `review`：`PENDING — one brief scoped read-only review after green`
+- `supersedes_entry_id`：`NONE — starts batch 3`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：先改CLI/Web拒绝顺序和pure regression，再只跑focused mock。
+
+### TRACE-20260827-136
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-136 / SEC-EXEC-01-VISIONFORGE-COMPOSITION-PREFLIGHT / ACTUAL / 2026-08-27T03:46:07+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 3 implementation / TRACE-135`
+- `what / why / expected_effect_or_gate`：CLI把缺local authority的real-call拒绝移到load_env/Suite/model config之前；Web真实executor把false authority拒绝移到plugin/env/model/Workspace/Browser runner之前。preflight另拆`local_execution_approved`与`will_execute_local_commands=confirm&&approved`，避免仅授权但budget-only时冒称会执行。新增pure回归固定默认拒绝、预算模式、approved factories、workspace binding及renderer fail-closed。
+- `scope / non_goals`：只改预登记三文件；无真实process/network/model/Browser。未改Renderer Profile、Supervisor或E2E。
+- `baseline`：`CLI old=286c32570e5a4bf74b0ada92dd6f1d319beb6f765287068e5b22c20934b92730; web old=84ba7ac280c547a1220898cef3275b3d412804f4b040e12cb270919174ce14c5; test old=5b0f06177898d167af5979d5c85be717bb57a55840f57eca0f95f5743972f983`
+- `commands`：cwd=`<repo>/demo`：首红exact两test sanitized unittest → `Ran 2`, `2 failures`, exit1, 0.24270425s tool wall；修后`PYTHONPYCACHEPREFIX=/private/tmp/sec-exec-batch3-pycompile-final2 /usr/bin/python3 -m py_compile ...`；sanitized`/usr/bin/python3 -m unittest tests.test_visionforge_eval_composition -q`；scoped diff/no-index whitespace与`shasum -a 256`。
+- `stop_or_rollback_conditions`：未触发真实boundary。首红签名为CLI `load_env_file called once`和Web `resolve_scenario reached`。初次绿后review发现budget-only+local flag把approval冒称execution的medium blocker；在本批内改为两个字段并加组合回归，未扩范围。
+- `result / effect`：`achieved=yes; red=2 run/2 fail/0 error; final=7 pass/0 fail/0 error/0 skip, 0.016s; py_compile=0; process/network/model calls=0; default CLI/Web gates before side-effectful composition; budget-only both flag combinations execute=false; explicit confirm+approval fresh runner/approver and exact workspace binding`
+- `artifacts / evidence`：`visionforge_eval_run.py sha256=3c43de8e308c7223a5cd74fc12e1d4df8a0e35337f1187a9d40dfc44fba2d1db`; `web_runtime.py sha256=30eb35d199a7ec039de7445b5633ddc266d89f235a8d3af09bd0d15dbd592fdb`; `test sha256=c583fb285c53ceb4ec45972028fdf058b58fed61f6170bea6a2e22a94eab7612`; JSON/Markdown报告hash在CHECKPOINT后计算。
+- `remaining_risks`：Renderer未注册而fail-closed；真实Browser/node/pnpm/Playwright和E2E未跑，不能称可用或安全验收。
+- `review`：`PENDING — next entry`
+- `supersedes_entry_id`：`NONE — TRACE-135 achieved`
+- `git_checkpoint`：`WORKTREE_ONLY / commit=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：记录一次scoped review并checkpoint。
+
+### TRACE-20260827-137
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-137 / SEC-EXEC-01-VISIONFORGE-COMPOSITION-PREFLIGHT / REVIEW / 2026-08-27T03:46:07+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/browser_eval_correction_05 / three-file scoped static review / TRACE-136`
+- `what / why / expected_effect_or_gate`：独立核默认拒绝顺序、fresh factory/workspace binding及preflight字段语义；首轮REVISE指出budget-only overclaim，修后锁新hash复核。
+- `scope / non_goals`：只读静态；未重跑7/7、未触发Browser/network/model，不批准Runtime Acceptance。
+- `baseline`：`CLI=3c43de8e…d1db; web=30eb35d1…2fdb; test=c583fb28…7612; hashes stable`
+- `commands`：`N/A — independent static inspection; producer commands in TRACE-136`
+- `stop_or_rollback_conditions`：最终无blocking；ReferenceImageRenderer既有fail-closed限制保留。
+- `result / effect`：`recommendation=APPROVE; blocking=0; overclaim closed`
+- `artifacts / evidence`：ReviewArtifact消息绑定三个完整hash与字段/测试行；报告见本批artifact。
+- `remaining_risks`：同TRACE-136；review未独立复跑测试。
+- `review`：`APPROVE / blocking=0 / artifact-only`
+- `supersedes_entry_id`：`NONE — earlier medium finding retained in TRACE-136`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：追加批次3 CHECKPOINT。
+
+### TRACE-20260827-138
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-138 / SEC-EXEC-01-VISIONFORGE-COMPOSITION-PREFLIGHT / CHECKPOINT / 2026-08-27T03:46:07+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-authorized batch 3 stop point / TRACE-135～137`
+- `what / why / expected_effect_or_gate`：冻结第三批pure Composition停止点并推进到focused回归；目标已完成，不开启Browser Profile/E2E修订。
+- `scope / non_goals`：只记录结果/report/HANDOFF；不运行新测试，不stage/commit/push。
+- `baseline`：`HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main; worktree dirty`
+- `commands`：`json.tool`、scoped diff/no-index whitespace、artifact/HANDOFF/STEP hash在append后执行并由下一CORRECTION记录。
+- `stop_or_rollback_conditions`：`N/A — post-append mechanical validation follows; failure stops before batch 4`
+- `result / effect`：`checkpoint=BATCH3_VISIONFORGE_COMPOSITION_PURE_PASS; red=2/2; green=7/7; real boundaries=0; review=APPROVE; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：本批两个报告与三文件hash；精确report/HANDOFF/STEP hashes下一entry记录。
+- `remaining_risks`：Renderer/Profile/Browser E2E仍未收口。
+- `review`：`one scoped review APPROVE/blocking0`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`CONTENT_HASH_ONLY / WORKTREE_DIRTY / commit=PENDING / push=PENDING`
+- `next_action`：批次4只跑focused pure/mock/static回归并输出总览数据。
+
+### TRACE-20260827-139
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-139 / SEC-EXEC-01-VISIONFORGE-COMPOSITION-PREFLIGHT / CORRECTION / 2026-08-27T03:47:26+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 3 post-append checkpoint validation / TRACE-138`
+- `what / why / expected_effect_or_gate`：补齐TRACE-138的机械validation和精确hash；原entry保持append-only。
+- `scope / non_goals`：无测试或boundary，只验证JSON/whitespace/hash。
+- `baseline`：`STEP through TRACE-138=4603adb855f55c528b87914083cc003d18056d3b7cdc39a962e20bd7739aa416`
+- `commands`：`python3 -m json.tool`; tracked `git diff --check`; three untracked no-index whitespace checks；seven-file`shasum -a 256`。
+- `stop_or_rollback_conditions`：未触发；JSON/whitespace均通过。
+- `result / effect`：`TRACE-138 validation=PASS; batch 3 safely checkpointed`
+- `artifacts / evidence`：`report JSON=cb66425adb311eaac94d9cb8f8851f887263c155af1f7ca2aa25890a3b0245d1`; `report Markdown=a1ea42337c128cfd4f7d5b8c2a31b5c5131b072c8188f91ef7ae96153253dd02`; `CLI=3c43de8e308c7223a5cd74fc12e1d4df8a0e35337f1187a9d40dfc44fba2d1db`; `web=30eb35d199a7ec039de7445b5633ddc266d89f235a8d3af09bd0d15dbd592fdb`; `test=c583fb285c53ceb4ec45972028fdf058b58fed61f6170bea6a2e22a94eab7612`; `HANDOFF=e4b824df718d8523d5e90c04c2d870308b39fdb9f94b50f1227c92ed86a0b26e`; final STEP follows this append。
+- `remaining_risks`：无新增；同TRACE-136。
+- `review`：`N/A — mechanical correction`
+- `supersedes_entry_id`：`TRACE-20260827-138 post-append hash placeholders only`
+- `git_checkpoint`：`VALIDATED_CONTENT_HASH_ONLY / WORKTREE_DIRTY / KEEP_NOT_ISSUED`
+- `next_action`：开始批次4 PRE_REGISTER。
+
+### TRACE-20260827-140
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-140 / SEC-EXEC-01-FOCUSED-REGRESSION-DATA / PRE_REGISTER / 2026-08-27T03:48:09+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 4 of user-authorized five sequential batches / TRACE-139 next_action`
+- `what / why / expected_effect_or_gate`：不改功能，分独立解释器运行四组已登记pure/mock/default-off回归并汇总成一份用户可读总览：A行为+结构Oracle；B approval+supervisor；C POSIX safety+runner pure；D CLI/VisionForge与四个default-off smoke。原因是把前三批和核心门禁放在同一当前快照下复核，并给出直观数量、耗时、真实/模拟边界分布。
+- `scope / non_goals`：只运行明确模块和生成总览JSON/Markdown、STEP/HANDOFF；排除full discovery、完整`tests.test_command_validators`、任何opt-in selector、真实process/signal/network/model/Browser E2E、依赖安装、功能修复、KEEP/commit/push。
+- `baseline`：`STEP=4742d7557000bb4c9dbb3f7a8212492788ce32263e745853d127151b01682194; Runtime=90be53ffd9df1f5527b343d6ab01166ed2dcbae320b87b0a53356e2758e4320b; approval=f578db36aad208b0f0104c94f6ffaba99f2dfe53558e0d59a27505e563066143; supervisor=b74504c1a32613eed63406143d13eacb54cd5e784fa35b7bbde45b64ecb7f315; POSIX safety=266b8a328d79af523465355905618ad969ae6ae39c3bf92910e0055f9d149bdd; approval test=015b3f785750a5820bb4c2548776d37d5acff0926997e0b4b5c292bb54a3756e; behavior=1ce0cc46136ffc8970304c7f1c3dede0205b97fd010602a1c6924561518f03a0; structural=1e63489f6c33b1bf4ac90b4d1ac4ed4f97f796ac4022d9de8193f4224fcb7bb4`
+- `commands`：四条`/usr/bin/env -i` sanitized unittest命令，分别绑定明确模块；ACTUAL保存每组run/pass/fail/error/skip与wall。所有`SEC_EXEC_*` opt-in变量因`env -i`缺失。
+- `stop_or_rollback_conditions`：任一真实boundary被触达、selector未skip、测试FAIL/ERROR、出现未终止thread/audit tripwire、需要代码修复或模块外扩时立即停止并如实记录；本批不自动修复失败。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期总览JSON/Markdown和四组原始unittest摘要。
+- `remaining_risks`：focused pass不等于full regression/Browser/Runtime Acceptance；未列模块不获得隐含结论。
+- `review`：`PENDING — mechanical data consistency review only`
+- `supersedes_entry_id`：`NONE — starts batch 4`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：按A→B→C→D顺序执行，任何红即停止。
+
+### TRACE-20260827-141
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-141 / SEC-EXEC-01-FOCUSED-REGRESSION-DATA / ACTUAL / 2026-08-27T03:49:47+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 4 focused regression / TRACE-140`
+- `what / why / expected_effect_or_gate`：按四个独立sanitized解释器完成预登记模块回归并生成机器可读/人读scorecard；分解释器避免behavior永久audit hook污染其他组，同时让default-off smoke在无selector时只skip真实方法。
+- `scope / non_goals`：未改production/test功能；只新增两份scorecard并追加记录。未运行full/command_validators全模块/Browser/model/network/真实target。
+- `baseline`：关键八hash见TRACE-140，运行期间未编辑对应工件。
+- `commands`：cwd=`<repo>/demo`，共同前缀`/usr/bin/env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/private/tmp TMPDIR=/private/tmp PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 /usr/bin/python3 -m unittest`。A模块=`tests.test_local_trusted_execution_behavior_expected_red tests.test_local_trusted_execution_expected_red -q`；B=`tests.test_local_execution_approval tests.test_local_execution_supervisor -q`；C=`tests.test_local_execution_posix_safety tests.test_local_execution_posix_smoke_runner -q`；D=`tests.test_coding_agent_cli_local_execution_report tests.test_visionforge_eval_composition tests.test_local_execution_posix_smoke tests.test_local_execution_posix_target_smoke tests.test_project_workspace_production_smoke tests.test_local_execution_timeout_cleanup_smoke -q`。
+- `stop_or_rollback_conditions`：未触发；四组exit0，behavior无tripwire/live-thread错误，五个real methods均因selector缺失明确skip。
+- `result / effect`：`achieved=yes; A=25/25, unittest28.107s/tool28.373325084s; B=48/48, 0.297s/0.528706708s; C=71/71, 0.456s/0.519816s; D=24 run/19 pass/5 skip, 0.019s/0.228074708s; total=168 run/163 pass/5 skip/0 fail/0 error; unittest total=28.879s; tool wall sum=29.6499225s; new real boundaries=0`
+- `artifacts / evidence`：`VerificationReports/SEC-EXEC-FOCUSED-REGRESSION-SCORECARD.json`与`.md`; exact hashes在checkpoint记录。
+- `remaining_risks`：非full；未列模块、真实Browser/Renderer、model/network和Runtime Acceptance均未证明。
+- `review`：`PENDING — data consistency review next`
+- `supersedes_entry_id`：`NONE — TRACE-140 achieved`
+- `git_checkpoint`：`WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：核对四组加总、skip口径和报告措辞后checkpoint。
+
+### TRACE-20260827-142
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-142 / SEC-EXEC-01-FOCUSED-REGRESSION-DATA / REVIEW / 2026-08-27T03:52:40+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/browser_eval_correction_05 / batch 4 scorecard mechanical review / TRACE-141`
+- `what / why / expected_effect_or_gate`：独立核四组测试定义数、加总、耗时、skip口径、排除范围与无新增真实boundary措辞。数据本身一致，但报告只写“5个opt-in skips”，没有逐项列出test ID，故要求在checkpoint前补齐审计粒度。
+- `scope / non_goals`：只读机械复核；未运行测试，不独立证明执行provenance，不批准full regression、KEEP或Runtime Acceptance。
+- `baseline`：`JSON=51735737612e4258a6487001099174b5b2bc6549af686a7ee1299a211f32ad14; Markdown=a50de5d85775d47e234ac58dd28635d2c511ae641fba5eb0aca091d71ae73d77; STEP=fd4451c174b80adbd699aa1b7d0163d679a3567a284a73c101d422d54daaa5a3`
+- `commands`：`N/A — independent static/data inspection only`
+- `stop_or_rollback_conditions`：触发一个MEDIUM报告完整性blocking；checkpoint暂停，先补5个精确test ID，不重跑或改代码。
+- `result / effect`：`recommendation=REVISE; blocking=1; test result arithmetic remains valid`
+- `artifacts / evidence`：ReviewArtifact列出五个被skip的完整unittest ID；其余A/B/C/D=25/48/71/24、总计168/163/5/0F/0E及两类耗时全部通过。
+- `remaining_risks`：TRACE-141未保存四组完整原始stdout；review仅确认报告内部一致性和静态定义。
+- `review`：`REVISE / blocking=1 MEDIUM / report audit granularity only`
+- `supersedes_entry_id`：`NONE — preserves first review disposition`
+- `git_checkpoint`：`NOT_CHECKPOINTED / WORKTREE_ONLY`
+- `next_action`：只补JSON/Markdown的`skipped_tests`精确清单，再请同一reviewer复核。
+
+### TRACE-20260827-143
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-143 / SEC-EXEC-01-FOCUSED-REGRESSION-DATA / CORRECTION / 2026-08-27T03:53:38+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 4 scorecard audit-granularity correction / TRACE-142`
+- `what / why / expected_effect_or_gate`：在JSON加入恰好5项`skipped_tests`，Markdown加入同序完整unittest ID清单。原因是类别计数虽正确，但检查点必须能逐项追溯被跳过的真实方法。
+- `scope / non_goals`：只改两份报告；不重跑测试、不改production/test、不改变原统计或结论。
+- `baseline`：`old JSON=51735737612e4258a6487001099174b5b2bc6549af686a7ee1299a211f32ad14; old Markdown=a50de5d85775d47e234ac58dd28635d2c511ae641fba5eb0aca091d71ae73d77`
+- `commands`：`apply_patch`; `python3 -m json.tool`; tracked/no-index whitespace checks；`shasum -a 256`。
+- `stop_or_rollback_conditions`：未触发；JSON parse exit0，whitespace checks无错误，未运行测试。
+- `result / effect`：`achieved=yes; skipped test IDs=5 unique; totals unchanged`
+- `artifacts / evidence`：`new JSON=92642a9e314c1112f5985c84e726b34244ee8a7b653cc5197f7f83f58180d706; new Markdown=a185742984a0a748ba88aa95388c120756c4e5abd821b1a1d6686714a79c5cfa`
+- `remaining_risks`：不补造原始stdout；执行provenance仍以TRACE-141 producer记录为准。
+- `review`：`PENDING — same reviewer recheck next`
+- `supersedes_entry_id`：`TRACE-20260827-142 blocking finding only; original REVISE retained`
+- `git_checkpoint`：`WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：同一reviewer只读复核两份清单与模块定义。
+
+### TRACE-20260827-144
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-144 / SEC-EXEC-01-FOCUSED-REGRESSION-DATA / REVIEW / 2026-08-27T03:53:38+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/browser_eval_correction_05 / corrected scorecard review / TRACE-143`
+- `what / why / expected_effect_or_gate`：锁定修订后两份报告，逐字核JSON/Markdown五项清单、模块常量与方法定义，并确认TRACE-142的REVISE历史仍在。
+- `scope / non_goals`：只读artifact复核；未运行测试，不批准full/KEEP/Runtime Acceptance。
+- `baseline`：`JSON=92642a9e314c1112f5985c84e726b34244ee8a7b653cc5197f7f83f58180d706; Markdown=a185742984a0a748ba88aa95388c120756c4e5abd821b1a1d6686714a79c5cfa`
+- `commands`：`N/A — static artifact/module-definition inspection`
+- `stop_or_rollback_conditions`：未触发；五个FQID唯一且与定义逐字一致，两份顺序一致。
+- `result / effect`：`recommendation=APPROVE; blocking=0; batch 4 report auditable`
+- `artifacts / evidence`：独立ReviewArtifact绑定上述两个完整hash；TRACE-142保留旧候选与REVISE原因。
+- `remaining_risks`：同TRACE-143；review未独立重跑测试。
+- `review`：`APPROVE / blocking=0 / artifact-only`
+- `supersedes_entry_id`：`NONE — follows, but does not erase, TRACE-142`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：更新HANDOFF并追加批次4 CHECKPOINT，然后开始批次5范围清单。
+
+### TRACE-20260827-145
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-145 / SEC-EXEC-01-FOCUSED-REGRESSION-DATA / CHECKPOINT / 2026-08-27T03:54:46+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-authorized batch 4 stop point / TRACE-140～144`
+- `what / why / expected_effect_or_gate`：冻结第四批聚焦回归数据与修订后skip清单；目的仅是证明当前明确集合的一致性并给用户直观统计，不把它扩大为full regression。
+- `scope / non_goals`：只记录scorecard、Review和HANDOFF；不运行新测试、不stage/commit/push。
+- `baseline`：`HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main; STEP through TRACE-144=7e4b05cc84c51c9f50ee6831e657c9fa22d45546be454947651f7de57888223e`
+- `commands`：四组exact unittest见TRACE-141；checkpoint机械检查为`json.tool`、tracked/no-index whitespace、四文件`shasum -a 256`。
+- `stop_or_rollback_conditions`：第一次review触发报告粒度blocking并暂停；TRACE-143修正后复核APPROVE，最终未触发测试/功能blocker。
+- `result / effect`：`checkpoint=BATCH4_FOCUSED_PASS; 168 run/163 pass/5 explicit skip/0 failure/0 error; new real boundaries=0; review=APPROVE; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：`scorecard JSON=92642a9e314c1112f5985c84e726b34244ee8a7b653cc5197f7f83f58180d706; Markdown=a185742984a0a748ba88aa95388c120756c4e5abd821b1a1d6686714a79c5cfa; HANDOFF=e3bbd848a249a6f3af8eeeda348b99696b30a428a229b86aa5826f05a24ba077`
+- `remaining_risks`：full discovery、完整command_validators、Browser E2E、model/network、额外真实POSIX与Runtime Acceptance未证明。
+- `review`：`APPROVE / blocking=0 after one recorded REVISE correction`
+- `supersedes_entry_id`：`NONE — TRACE-142 remains historical`
+- `git_checkpoint`：`VALIDATED_CONTENT_HASH_ONLY / WORKTREE_DIRTY / commit=PENDING / push=PENDING`
+- `next_action`：开始第五批，只建立五批范围清单和内容哈希检查点。
+
+### TRACE-20260827-146
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-146 / SEC-EXEC-01-FIVE-BATCH-SCOPE-CHECKPOINT / PRE_REGISTER / 2026-08-27T03:54:46+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 5 of user-authorized five sequential batches / TRACE-145 next_action`
+- `what / why / expected_effect_or_gate`：建立scope-isolated五批manifest：逐批列目标、结果、当前内容hash、共享文件归属限制，并完整区分本轮artifact与既有/用户无关dirty路径。原因是共享工作树含大量此前安全实现和用户改动，必须让后续人可以核对“本五批做了什么”，又不会误stage或冒称clean commit。
+- `scope / non_goals`：只新增`VerificationReports/SEC-EXEC-FIVE-BATCH-MANIFEST.json/.md`并更新STEP/HANDOFF；不改production/test，不运行测试或真实boundary，不删除/清理/stage/commit/push，不触碰`demo/track.md`、`problems.md`、`prombles.md`删除或`Plan/Plan28.md`。
+- `baseline`：`HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main; STEP through TRACE-145 will be recalculated after this PRE; HANDOFF=e3bbd848a249a6f3af8eeeda348b99696b30a428a229b86aa5826f05a24ba077; worktree=DIRTY with related, prior SEC, and unrelated user changes`
+- `commands`：计划只读`git status --short`、显式文件列表`shasum -a 256`、`json.tool`、scoped tracked/no-index whitespace checks和secret/path hygiene scan；完整参数与结果写ACTUAL。
+- `stop_or_rollback_conditions`：若无法把五批文件与无关dirty范围明确分开、hash在review中漂移、manifest冒称commit/KEEP/clean worktree、或需要修改功能/运行测试，则停止并记录REVISE，不扩大范围。
+- `result / effect`：`TBD — not executed`
+- `artifacts / evidence`：预期两份manifest、当前status快照、逐文件hash与独立只读scope review。
+- `remaining_risks`：内容hash不是Git commit，也不能按hunk证明共享文件中所有改动归属；这些限制必须写入manifest。
+- `review`：`PENDING — one independent scope/data review after creation`
+- `supersedes_entry_id`：`NONE — starts batch 5`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：收集显式allowlist/排除清单与hash，生成两份manifest后只做机械验证。
+
+### TRACE-20260827-147
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-147 / SEC-EXEC-01-FIVE-BATCH-SCOPE-CHECKPOINT / ACTUAL / 2026-08-27T04:02:12+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / batch 5 scope-isolated manifest / TRACE-146`
+- `what / why / expected_effect_or_gate`：生成机器可读与人读五批manifest，逐批绑定结果与文件hash，将当前全部dirty路径完整分区，并明确共享文件hash不证明hunk归属。原因是安全停点必须可复核且不能把其他人的dirty内容误算进本批或误stage。
+- `scope / non_goals`：只新增两份manifest并更新STEP/HANDOFF；无production/test修改，无测试、真实boundary、清理、stage、commit或push。
+- `baseline`：`HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main; STEP after PRE=afeabb180f3b9371f736d2936681f0b46e49e3482091f2284325ca8152331b49; HANDOFF before final update=e3bbd848a249a6f3af8eeeda348b99696b30a428a229b86aa5826f05a24ba077`
+- `commands`：cwd=`<repo>`：`git status --short`; explicit 17 prior artifact/coordination `shasum -a 256`; `/usr/bin/python3 -m json.tool VerificationReports/SEC-EXEC-FIVE-BATCH-MANIFEST.json`; `git status --short | wc -l`; `git diff --check -- HANDOFF.md VerificationReports/STEP-LOG.md`; two `git diff --no-index --check /dev/null <manifest>`; `comm -3 <(git status...sort) <(jq manifest union...sort)`；`jq`四类计数；`jq artifact/path/hash | shasum`比较；scoped credential/absolute-path `rg`；四文件final `shasum`。
+- `stop_or_rollback_conditions`：未触发；没有范围差集、hash mismatch、JSON/whitespace/secret命中或hash漂移。
+- `result / effect`：`achieved=yes; dirty paths=66; partition=17 batch + 2 coordination + 4 unrelated user + 43 prior/outside; unique union=66; status set difference=empty; non-self artifact hashes=15/15 match; staged paths=0; new real boundaries=0`
+- `artifacts / evidence`：`manifest JSON=3ccd20218a4e9a5a71021d5bd5877fbf531e0bed0752094a7fc1c89a4ca9c962; Markdown=94d3c16f8a5d2749a55d4491163043bcdc9618ef5d6586915ab9c3354e6c6c91`; coordination final hashes在CHECKPOINT记录。
+- `remaining_risks`：这是content snapshot而非commit；共享文件只能全文件冻结，不能从hash推导单批hunk作者；五批各自证据边界不变。
+- `review`：`PENDING — next entry`
+- `supersedes_entry_id`：`NONE — TRACE-146 achieved`
+- `git_checkpoint`：`WORKTREE_ONLY / DIRTY / commit=PENDING / push=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：记录独立scope review并更新HANDOFF停止点。
+
+### TRACE-20260827-148
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-148 / SEC-EXEC-01-FIVE-BATCH-SCOPE-CHECKPOINT / REVIEW / 2026-08-27T04:02:12+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/trace082_final_review_a / Batch 5 manifest and coordination review / TRACE-147`
+- `what / why / expected_effect_or_gate`：独立重算status分区与15个hash，核branch/HEAD/staging、共享文件归属限制、Batch1～4摘要和未commit/push/KEEP措辞。
+- `scope / non_goals`：只读artifact/data review；未编辑、未运行测试或真实boundary，不重新认证前四批或批准提交/KEEP/Runtime Acceptance。
+- `baseline`：`JSON=3ccd20218a4e9a5a71021d5bd5877fbf531e0bed0752094a7fc1c89a4ca9c962; Markdown=94d3c16f8a5d2749a55d4491163043bcdc9618ef5d6586915ab9c3354e6c6c91; reviewed STEP=afeabb180f3b9371f736d2936681f0b46e49e3482091f2284325ca8152331b49; reviewed HANDOFF=e3bbd848a249a6f3af8eeeda348b99696b30a428a229b86aa5826f05a24ba077`
+- `commands`：reviewer只读`git status --porcelain=v1`、集合比较、逐文件SHA-256、branch/HEAD/staging与报告交叉核对；没有测试/真实执行。
+- `stop_or_rollback_conditions`：未触发；`critical/high/medium/low=0/0/0/0`。
+- `result / effect`：`recommendation=APPROVE; blocking=0; 66-path partition exact; 15/15 hashes match; staged=0; branch/main and HEAD/base match`
+- `artifacts / evidence`：独立ReviewArtifact绑定四个reviewed hash并明确final STEP/HANDOFF仍需append后重算。
+- `remaining_risks`：本地状态不能证明历史上绝无push，但HEAD等于base且Batch5无commit，与声明无矛盾；批准范围不外推。
+- `review`：`APPROVE / blocking=0 / scope-data artifact only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`REVIEWED_WORKTREE_ONLY / KEEP_NOT_ISSUED`
+- `next_action`：追加最终CHECKPOINT，复核终端hash，然后停止五批序列。
+
+### TRACE-20260827-149
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-149 / SEC-EXEC-01-FIVE-BATCH-SCOPE-CHECKPOINT / CHECKPOINT / 2026-08-27T04:03:32+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / final stop point for five user-authorized batches / TRACE-125～148`
+- `what / why / expected_effect_or_gate`：关闭五批顺序序列并留下可安全续接的worktree-only检查点。原因是用户授权的五批均已达到各自窄目标，继续进入Browser/full/commit会成为第六批并扩大权限。
+- `scope / non_goals`：只冻结最终manifest/HANDOFF/STEP状态；不运行任何新测试或boundary，不修改功能，不stage/commit/push，不签发KEEP/Runtime Acceptance。
+- `baseline`：`STEP through TRACE-148=f4e3f415365df785edbbaad2fb78a54b3d14f407eb1c6b1db73db3959a35573f; HEAD=0f9e41ad76d7a25deee0a28de42a422707a6f24d; branch=main`
+- `commands`：final `shasum -a 256`四文件；`json.tool`; tracked whitespace；`git diff --cached --name-only`; `git status --short | wc -l`; branch/HEAD；append后再次执行manifest hash、STEP/HANDOFF hash、JSON/whitespace/status/staging检查。
+- `stop_or_rollback_conditions`：未触发；review已APPROVE，manifest与HANDOFF hash稳定，JSON/whitespace通过，staging为空，status仍66项，branch/HEAD未变。
+- `result / effect`：`checkpoint=FIVE_BATCH_SEQUENCE_COMPLETE; batches=5/5; Batch4=168 run/163 pass/5 skip/0F/0E; Batch5 partition=66/66 and hashes=15/15; review=APPROVE; commit=false; push=false; KEEP_NOT_ISSUED`
+- `artifacts / evidence`：`manifest JSON=3ccd20218a4e9a5a71021d5bd5877fbf531e0bed0752094a7fc1c89a4ca9c962; manifest Markdown=94d3c16f8a5d2749a55d4491163043bcdc9618ef5d6586915ab9c3354e6c6c91; HANDOFF=fd11b06d4107e675a26f12542423afa5f89a77b16607abd114ff419b1d81aa75; terminal STEP hash is calculated after this append and reported in the final user handoff`
+- `remaining_risks`：工作树仍dirty且无commit；full discovery、完整command validators、真实Browser/Renderer、model/network、更多POSIX执行、01B-3B-2和最终Acceptance均未完成。
+- `review`：`Batch4 APPROVE/blocking0 after recorded correction; Batch5 APPROVE/blocking0`
+- `supersedes_entry_id`：`NONE — closes, but does not erase, the five-batch history`
+- `git_checkpoint`：`VALIDATED_CONTENT_HASH_ONLY / WORKTREE_DIRTY / STAGING_EMPTY / commit=PENDING / push=PENDING / KEEP_NOT_ISSUED`
+- `next_action`：停止。等待用户另行选择一个单独后续批次；不得自动合并Browser、full regression、commit/push或01B-3B-2。
+
+### TRACE-20260827-150
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-150 / SEC-EXEC-01-COMMIT-AND-PUSH / PRE_REGISTER / 2026-08-27T12:20:49+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-authorized commit and push / TRACE-149 safe stop`
+- `what / why / expected_effect_or_gate`：把当前完整SEC-EXEC实现、调用方、测试与证据闭包以显式62-path allowlist提交到`main`并普通推送`origin/main`；先同步HANDOFF/SEC中仍称target不存在的陈旧状态，再运行登记的pure/mock/default-off验证。原因是五批manifest只描述17+2增量归因，不能替代完整实现提交范围；提交必须自洽且不能误带用户无关内容。
+- `scope / non_goals`：include=独立scope review批准的62项（23 implementation/adapters + 26 tests/fixtures + 13 evidence/coordination）；exclude恰为`demo/track.md`、`problems.md`、`prombles.md`删除、`Plan/Plan28.md`。不使用`git add -A/-u`，不force push，不运行full discovery、完整`tests.test_command_validators`/`tests.test_workflow`、Browser E2E、opt-in POSIX、model/network或新真实boundary，不签发KEEP/Runtime Acceptance。
+- `baseline`：`branch=main; HEAD=origin/main=0f9e41ad76d7a25deee0a28de42a422707a6f24d after git fetch; divergence=0/0; dirty=66; staged=0; include allowlist sha256=f879c2b1b71a7c62dd1b2f331ae356bb0d872482c3ac56faade641df0aee7b9b; denylist sha256=fbd4b70afdc5f8527c95316f87ae874c4bd3c03c42d395ce23d7e024ad651b8c; pre-entry STEP=ebd65baa56d2fac1a48561717aa41e4c9fef4376a039c963d92ebb098da5112d`
+- `commands`：已执行只读`git status/branch/remote/log/diff stat`、`git fetch origin`、`rev-list HEAD...origin/main`、scope/hygiene scans。计划：`apply_patch`只同步HANDOFF/SEC；TRACE-141四组独立`env -i`测试；精确新增negative/mock IDs；候选Python `py_compile`；显式62-path `git add -- <allowlist>`；cached path set/diff/JSON/hash/secret检查；第一提交；追加commit SHA与push PRE/ACTUAL到STEP/HANDOFF后第二提交；再次fetch/divergence核对并普通`git push origin main`；最后核远端SHA与剩余四项dirty。
+- `stop_or_rollback_conditions`：HANDOFF/SEC陈旧状态未关闭、任一允许测试FAIL/ERROR或触达真实boundary、staged集合不等于62项、denylist进入staging、真实secret/临时产物、cached diff-check/JSON/hash失败、origin前进或push需要force时立即停止，不提交或不推送。
+- `result / effect`：`TBD — no staging/commit/push yet`
+- `artifacts / evidence`：scope review=`APPROVE/blocking0`; hygiene review初次=`REVISE/blocking1 HIGH`，唯一blocker为HANDOFF/SEC current-vs-future target叙事冲突；绝对本机路径降为历史复现nonblocking，真实secret=0、临时产物=0。
+- `remaining_risks`：真实Browser/Renderer、full regression、Runtime Acceptance与KEEP仍未完成；STEP约493KB属于明确但接受前待复核的仓库体积增长。
+- `review`：`PENDING — hygiene blocker correction and re-review required before staging`
+- `supersedes_entry_id`：`NONE — user has now separately authorized the commit/push that TRACE-149 intentionally deferred`
+- `git_checkpoint`：`PRE_REGISTERED / WORKTREE_DIRTY / STAGING_EMPTY / commit=PENDING / push=PENDING`
+- `next_action`：只同步HANDOFF/SEC陈旧状态并请原hygiene reviewer复核，然后再运行允许验证。
+
+### TRACE-20260827-151
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-151 / SEC-EXEC-01-COMMIT-AND-PUSH / ACTUAL / 2026-08-27T12:25:05+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / pre-staging documentation and verification / TRACE-150`
+- `what / why / expected_effect_or_gate`：同步HANDOFF与SEC中“future target artifact不存在”的陈旧current-state叙事，明确artifact及一次`stdout_short`历史窄执行已存在但不授予重跑；顶层/下层统一为本轮只授权62-path两阶段commit与普通push。随后运行四组隔离pure/mock/default-off门禁、10个精确negative/mock ID和49个候选Python文件compile。
+- `scope / non_goals`：只改HANDOFF/SEC/STEP文档，未改production/test；测试未设置任何`SEC_EXEC_*`或`VISIONFORGE_E2E` opt-in，未运行full discovery、完整command_validators/workflow、真实Browser、model/network或新真实boundary。
+- `baseline`：`old HANDOFF=fd11b06d4107e675a26f12542423afa5f89a77b16607abd114ff419b1d81aa75; old SEC=889427bd4fb1df686ef2681488d1ea7b5277380be100a08bbe7796ef1dc90dee; old STEP=ebd65baa56d2fac1a48561717aa41e4c9fef4376a039c963d92ebb098da5112d`
+- `commands`：`apply_patch`同步HANDOFF/SEC；stale phrase `rg`、`shasum`、scoped `git diff --check`；TRACE-141四条独立`env -i ... python3 -m unittest`；精确10 ID为3个CommandValidator policy/approval、5个Browser redaction/cleanup-terminal、2个Workflow拒绝；49-path`PYTHONPYCACHEPREFIX=/private/tmp/... python3 -m py_compile`。第一次JS orchestration在调用任何nested command前因模板字符串`${...}`解析产生`SyntaxError: Missing } in template expression`，随后纠正编排并完整执行；该失败不是项目测试结果。
+- `stop_or_rollback_conditions`：初次hygiene review的HIGH current/future冲突和第二次顶层MEDIUM冲突均暂停staging并修复；最终review关闭。测试/compile均未触发停止条件。
+- `result / effect`：`achieved=yes; A=25/25 in 28.265s; B=48/48 in 0.263s; C=71/71 in 0.373s; D=24 run/19 pass/5 explicit skip in 0.023s; exact negative/mock=10/10 in 0.008s; total=178 run/173 pass/5 skip/0 failure/0 error; py_compile=49/49; new real boundaries=0`
+- `artifacts / evidence`：`HANDOFF=3e42ed59c92e4b263cb32c77654546b63b4bcdb22dc7e74fd14130e5220afabf; SEC=112f34927b025328d3629b8bafdb39eb50d3f123ea980400ba67691eff0c2abf; pre-entry-review STEP=0ca88d150e07225c324479e05ca3b13fd1c25141726bc90c5e16455ee4d55647`
+- `remaining_risks`：同TRACE-150；历史绝对路径/owner/scope作为复现证据保留，真实secret=0；STEP约493KB为接受的非阻塞体积提醒。
+- `review`：`PENDING — final hygiene disposition next`
+- `supersedes_entry_id`：`TRACE-149 no-commit authorization state only; historical five-batch checkpoint remains valid`
+- `git_checkpoint`：`WORKTREE_DIRTY / STAGING_EMPTY / commit=PENDING / push=PENDING`
+- `next_action`：记录hygiene最终APPROVE，然后显式stage 62-path allowlist并核cached集合。
+
+### TRACE-20260827-152
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-152 / SEC-EXEC-01-COMMIT-AND-PUSH / REVIEW / 2026-08-27T12:25:05+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/browser_eval_correction_05 / pre-push hygiene correction review / TRACE-151`
+- `what / why / expected_effect_or_gate`：原reviewer分三次锁定修正：先要求关闭HANDOFF/SEC future-target冲突，再指出顶层仍称commit/push未授权；最终确认顶层33～46、下层261/524和SEC264～269全部一致，历史合同保留且不授予持续执行。
+- `scope / non_goals`：只读文档/hygiene review；未运行测试，不重新认证行为，不签发KEEP/Runtime Acceptance。
+- `baseline`：`HANDOFF=3e42ed59c92e4b263cb32c77654546b63b4bcdb22dc7e74fd14130e5220afabf; SEC=112f34927b025328d3629b8bafdb39eb50d3f123ea980400ba67691eff0c2abf; reviewed STEP=0ca88d150e07225c324479e05ca3b13fd1c25141726bc90c5e16455ee4d55647`
+- `commands`：`N/A — independent static/hygiene review; producer verification in TRACE-151`
+- `stop_or_rollback_conditions`：最终无blocking；`recommendation=APPROVE`。
+- `result / effect`：`APPROVE; blocking=0; true secrets=0; temp artifacts=0; current authorization and denylist consistent`
+- `artifacts / evidence`：final ReviewArtifact绑定上述三hash；明确仅批准62-path staging、两次non-force commit与普通push，不批准Browser/full/target/KEEP。
+- `remaining_risks`：review未独立重跑测试；STEP体积和历史本机路径为已披露nonblocking。
+- `review`：`APPROVE / blocking=0 / hygiene artifact only`
+- `supersedes_entry_id`：`NONE — prior REVISE findings retained in TRACE-151`
+- `git_checkpoint`：`REVIEWED_PRE_STAGING / commit=PENDING / push=PENDING`
+- `next_action`：显式stage allowlist，cached集合必须精确等于62项且denylist为0。
+
+### TRACE-20260827-153
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-153 / SEC-EXEC-01-COMMIT-AND-PUSH / ACTUAL / 2026-08-27T12:26:30+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / explicit staging and cached validation / TRACE-150～152`
+- `what / why / expected_effect_or_gate`：用当前status减精确四项denylist构造并复核62-path数组，再执行`git add -- <62 explicit paths>`；随后从Git index重新核路径集合、diff、JSON、模式和凭据卫生。原因是不能使用会夹带用户改动的宽泛add。
+- `scope / non_goals`：只stage独立review批准的62项；未stage、改写或删除denylist，没有commit/push或测试执行。
+- `baseline`：`dirty=66; staged=0; allowlist hash=f879c2b1b71a7c62dd1b2f331ae356bb0d872482c3ac56faade641df0aee7b9b; denylist hash=fbd4b70afdc5f8527c95316f87ae874c4bd3c03c42d395ce23d7e024ad651b8c`
+- `commands`：zsh显式`candidate_paths=(status - exact denylist); git add -- $candidate_paths`；`git diff --cached --name-only|wc/sort/shasum`; cached denylist查询；`git diff --cached --check/summary/stat`; 五个JSON `json.tool`; cached common credential/private-key grep；`git status --short`。
+- `stop_or_rollback_conditions`：未触发；cached路径=62，集合hash精确匹配approved allowlist，denylist cached输出为空，diff-check通过，JSON=5/5，所有新文件mode=100644。credential scan唯一命中`test_visionforge_browser.py`明确fake且不完整的脱敏负卡`-----BEGIN PRIVATE KEY-----private-material`，不是真实私钥。
+- `result / effect`：`achieved=yes; staged=62; unstaged/untracked denylist=4; cached additions=19235, deletions=560; true secrets=0; commit=PENDING`
+- `artifacts / evidence`：cached allowlist hash与TRACE-150一致；`git status`显示62项index状态加四项worktree-only denylist。
+- `remaining_risks`：提交较大（STEP原始审计链与安全卡/runner），但scope与用途已独立审查；KEEP/Runtime Acceptance仍未签发。
+- `review`：`scope APPROVE/blocking0; hygiene APPROVE/blocking0; cached mechanical checks PASS`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`STAGED_EXACT_62 / denylist=0 / commit=PENDING / push=PENDING`
+- `next_action`：restage本entry后的STEP，复核62-path集合不变，然后创建第一实现提交。

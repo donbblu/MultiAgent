@@ -1,0 +1,201 @@
+{
+  "schema": "sec-exec-five-batch-manifest/v1",
+  "recorded_at": "2026-08-27T03:55:28+08:00",
+  "objective": "Checkpoint the five user-authorized batches without claiming a clean commit, KEEP, or Runtime Acceptance.",
+  "git": {
+    "branch": "main",
+    "base_head": "0f9e41ad76d7a25deee0a28de42a422707a6f24d",
+    "worktree": "DIRTY",
+    "commit_created": false,
+    "push_performed": false
+  },
+  "status_partition": {
+    "dirty_paths_after_manifest_creation": 66,
+    "five_batch_content_paths": 17,
+    "coordination_paths": 2,
+    "preserved_outside_scope_paths": 47
+  },
+  "batches": [
+    {
+      "id": 1,
+      "name": "CLI visible local-execution report",
+      "result": "7 pure tests passed; default path reported spawn_count=0; approved mock path did not claim an observed spawn",
+      "real_boundaries": 0,
+      "artifacts": [
+        {
+          "path": "demo/coding_agent_cli.py",
+          "sha256": "e31378a4c45accaa7b54f52724c9dd1a7a69b9e66dea717ed352df380f8fe28b",
+          "attribution": "shared tracked file; hash covers the entire current file, not only Batch 1 hunks"
+        },
+        {
+          "path": "demo/tests/test_coding_agent_cli_local_execution_report.py",
+          "sha256": "2321ceaabeeab7b7472fb604781382c52c4b624457912788a07adb727007cebe"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-CLI-VISIBLE-DEMO.json",
+          "sha256": "0d4cd2eb8c268bd524eb99a48b24d4f70fdb2fb102f238acf9242758db6f8d2c"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-CLI-VISIBLE-DEMO.md",
+          "sha256": "8b28aab6a54df86b0dd389d61780ab2d424a9bbad902df75216e2b37e5f63f2a"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Guarded timeout cleanup plus pure quarantine fence",
+      "result": "one reviewed real guard-backed timeout passed; one pure same-workspace quarantine fence passed with second spawn count 0",
+      "real_boundaries": 1,
+      "artifacts": [
+        {
+          "path": "demo/tests/test_local_execution_timeout_cleanup_smoke.py",
+          "sha256": "e29d8ca9cb0f1920a7d6bfac03e039b1d09f70dc42c98982d074ab4f489375ce"
+        },
+        {
+          "path": "demo/tests/test_local_execution_supervisor.py",
+          "sha256": "b74504c1a32613eed63406143d13eacb54cd5e784fa35b7bbde45b64ecb7f315",
+          "attribution": "shared pre-existing SEC test file; Batch 2 attribution is limited to the focused quarantine regression"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-BATCH2-TIMEOUT-CLEANUP.json",
+          "sha256": "b2271891ded0a2a1d85312cae3580fc9c83e31c2a58cc5e2132268fba68dc2f6"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-BATCH2-TIMEOUT-CLEANUP.md",
+          "sha256": "5bf4ea4811e92a0704088f4a30e71833f28f6cbc6861b472293bcc1fb6f9a82d"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "VisionForge composition preflight",
+      "result": "2 expected red preflight cases were fixed; final pure composition suite passed 7/7 with process, network, and model calls at 0",
+      "real_boundaries": 0,
+      "artifacts": [
+        {
+          "path": "demo/visionforge_eval_run.py",
+          "sha256": "3c43de8e308c7223a5cd74fc12e1d4df8a0e35337f1187a9d40dfc44fba2d1db",
+          "attribution": "shared tracked file; hash covers the entire current file, not only Batch 3 hunks"
+        },
+        {
+          "path": "demo/coding_workflow/visionforge/web_runtime.py",
+          "sha256": "30eb35d199a7ec039de7445b5633ddc266d89f235a8d3af09bd0d15dbd592fdb",
+          "attribution": "shared tracked file; hash covers the entire current file, not only Batch 3 hunks"
+        },
+        {
+          "path": "demo/tests/test_visionforge_eval_composition.py",
+          "sha256": "c583fb285c53ceb4ec45972028fdf058b58fed61f6170bea6a2e22a94eab7612"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-BATCH3-VISIONFORGE-COMPOSITION.json",
+          "sha256": "cb66425adb311eaac94d9cb8f8851f887263c155af1f7ca2aa25890a3b0245d1"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-BATCH3-VISIONFORGE-COMPOSITION.md",
+          "sha256": "a1ea42337c128cfd4f7d5b8c2a31b5c5131b072c8188f91ef7ae96153253dd02"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Focused regression data",
+      "result": "168 run; 163 pass; 5 explicitly named opt-in skips; 0 failures; 0 errors; no new real boundary",
+      "real_boundaries": 0,
+      "artifacts": [
+        {
+          "path": "VerificationReports/SEC-EXEC-FOCUSED-REGRESSION-SCORECARD.json",
+          "sha256": "92642a9e314c1112f5985c84e726b34244ee8a7b653cc5197f7f83f58180d706"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-FOCUSED-REGRESSION-SCORECARD.md",
+          "sha256": "a185742984a0a748ba88aa95388c120756c4e5abd821b1a1d6686714a79c5cfa"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Scope-isolated content checkpoint",
+      "result": "this manifest, its human-readable companion, an independent scope review, and an append-only worktree checkpoint",
+      "real_boundaries": 0,
+      "artifacts": [
+        {
+          "path": "VerificationReports/SEC-EXEC-FIVE-BATCH-MANIFEST.json",
+          "sha256": null,
+          "hash_ref": "VerificationReports/STEP-LOG.md final Batch 5 checkpoint; self-hash is intentionally not embedded"
+        },
+        {
+          "path": "VerificationReports/SEC-EXEC-FIVE-BATCH-MANIFEST.md",
+          "sha256": null,
+          "hash_ref": "VerificationReports/STEP-LOG.md final Batch 5 checkpoint"
+        }
+      ]
+    }
+  ],
+  "coordination_paths": [
+    {
+      "path": "HANDOFF.md",
+      "hash_ref": "VerificationReports/STEP-LOG.md final Batch 5 checkpoint"
+    },
+    {
+      "path": "VerificationReports/STEP-LOG.md",
+      "hash_ref": "append-only final file; terminal hash is reported outside this self-referential manifest"
+    }
+  ],
+  "preserved_unrelated_user_paths": [
+    "demo/track.md",
+    "problems.md",
+    "prombles.md",
+    "Plan/Plan28.md"
+  ],
+  "preserved_preexisting_or_outside_scope_paths": [
+    "VerificationReports/SEC-EXEC-01.md",
+    "demo/coding_workflow/__init__.py",
+    "demo/coding_workflow/agents.py",
+    "demo/coding_workflow/coding_ablation.py",
+    "demo/coding_workflow/coding_ablation_execution.py",
+    "demo/coding_workflow/coding_evaluation.py",
+    "demo/coding_workflow/coding_evaluation_runtime.py",
+    "demo/coding_workflow/command_validators.py",
+    "demo/coding_workflow/dag_runner.py",
+    "demo/coding_workflow/models.py",
+    "demo/coding_workflow/policy.py",
+    "demo/coding_workflow/visionforge/__init__.py",
+    "demo/coding_workflow/visionforge/browser.py",
+    "demo/coding_workflow/visionforge/evaluation_runtime.py",
+    "demo/coding_workflow/workspace.py",
+    "demo/core_coding_ablation_run.py",
+    "demo/core_coding_eval_run.py",
+    "demo/core_coding_model_ablation_run.py",
+    "demo/tests/_local_execution_posix.py",
+    "demo/tests/fixtures/local_execution_process.py",
+    "demo/tests/test_audio_transcription.py",
+    "demo/tests/test_coding_ablation.py",
+    "demo/tests/test_coding_ablation_execution.py",
+    "demo/tests/test_coding_evaluation_runtime.py",
+    "demo/tests/test_coding_model_workers.py",
+    "demo/tests/test_command_validators.py",
+    "demo/tests/test_image_perception.py",
+    "demo/tests/test_local_execution_posix_safety.py",
+    "demo/tests/test_local_trusted_execution_behavior_expected_red.py",
+    "demo/tests/test_local_trusted_execution_expected_red.py",
+    "demo/tests/test_multimodal_intake.py",
+    "demo/tests/test_video_perception.py",
+    "demo/tests/test_visionforge_browser.py",
+    "demo/tests/test_workflow.py",
+    "demo/web_server.py",
+    "demo/coding_workflow/local_execution.py",
+    "demo/coding_workflow/local_execution_approval.py",
+    "demo/tests/_local_execution_posix_smoke_runner.py",
+    "demo/tests/test_local_execution_approval.py",
+    "demo/tests/test_local_execution_posix_smoke.py",
+    "demo/tests/test_local_execution_posix_smoke_runner.py",
+    "demo/tests/test_local_execution_posix_target_smoke.py",
+    "demo/tests/test_project_workspace_production_smoke.py"
+  ],
+  "limitations": [
+    "A content hash is not a Git commit and does not make the worktree clean.",
+    "For shared files, the hash checkpoints the full current file and does not prove hunk-level authorship by one batch.",
+    "This manifest does not authorize staging, committing, pushing, KEEP, Runtime Acceptance, Browser E2E, or additional real execution.",
+    "The five-batch evidence remains bounded by each batch report and its recorded exclusions."
+  ]
+}

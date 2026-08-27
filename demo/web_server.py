@@ -84,15 +84,26 @@ def finalize_node_states(
 
 def parse_visionforge_task_payload(
     data: object,
-) -> tuple[str, str]:
+) -> tuple[str, str, bool]:
     if not isinstance(data, dict):
         raise VisionForgeWebError("请求必须是 JSON 对象")
-    unknown = set(data) - {"requirement", "asset_id"}
+    unknown = set(data) - {
+        "requirement", "asset_id", "trusted_local_execution",
+    }
     if unknown:
         raise VisionForgeWebError(
             "任务请求包含未知字段: " + ", ".join(sorted(unknown))
         )
-    return str(data.get("requirement", "")), str(data.get("asset_id", ""))
+    trusted_local_execution = data.get("trusted_local_execution", False)
+    if not isinstance(trusted_local_execution, bool):
+        raise VisionForgeWebError(
+            "trusted_local_execution 必须是用户明确提交的布尔值"
+        )
+    return (
+        str(data.get("requirement", "")),
+        str(data.get("asset_id", "")),
+        trusted_local_execution,
+    )
 
 
 def role_from_event(entry: dict[str, object]) -> str | None:
@@ -157,7 +168,12 @@ def run_in_background(
     task_key: str,
     request: dict[str, object],
     lifecycle: LifecycleController,
+    *,
+    trusted_local_execution: bool = False,
 ) -> None:
+    if type(trusted_local_execution) is not bool:
+        raise TypeError("trusted_local_execution 必须是真正的 bool")
+
     def on_event(entry: dict[str, object]) -> None:
         with TASKS_LOCK:
             task = TASKS[task_key]
@@ -232,6 +248,7 @@ def run_in_background(
             model=str(request["model"]) if request.get("model") else None,
             event_listener=on_event,
             lifecycle=lifecycle,
+            trusted_local_execution=trusted_local_execution,
         )
         files = [
             str(path.relative_to(run.output))
@@ -388,10 +405,15 @@ class Handler(BaseHTTPRequestHandler):
                 if length <= 0 or length > 32768:
                     raise VisionForgeWebError("请求大小不合法")
                 data = json.loads(self.rfile.read(length))
-                requirement, asset_id = parse_visionforge_task_payload(data)
+                (
+                    requirement,
+                    asset_id,
+                    trusted_local_execution,
+                ) = parse_visionforge_task_payload(data)
                 task_id = VISIONFORGE_WEB.submit_task(
                     requirement,
                     asset_id,
+                    trusted_local_execution=trusted_local_execution,
                 )
                 self.send_json(202, {"id": task_id})
             except KeyError as exc:
@@ -440,8 +462,17 @@ class Handler(BaseHTTPRequestHandler):
             if length <= 0 or length > 32768:
                 raise ValueError("请求大小不合法")
             data = json.loads(self.rfile.read(length))
+            if not isinstance(data, dict):
+                raise TypeError("任务请求必须是 JSON 对象")
             requirement = str(data.get("requirement", "")).strip()
             name = str(data.get("name", "")).strip()
+            trusted_local_execution = data.get(
+                "trusted_local_execution", False
+            )
+            if type(trusted_local_execution) is not bool:
+                raise TypeError(
+                    "trusted_local_execution 必须是用户明确提交的真正 bool"
+                )
             if not 3 <= len(requirement) <= 4000:
                 raise ValueError("需求长度必须在 3 到 4000 字符之间")
             if not name:
@@ -472,6 +503,9 @@ class Handler(BaseHTTPRequestHandler):
             threading.Thread(
                 target=run_in_background,
                 args=(task_key, request, lifecycle),
+                kwargs={
+                    "trusted_local_execution": trusted_local_execution,
+                },
                 daemon=True,
             ).start()
             self.send_json(202, {"id": task_key})

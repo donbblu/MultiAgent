@@ -20,6 +20,7 @@ from .harness import (
     WorkerRegistry,
 )
 from .integration import IntegrationError, PatchIntegrator
+from .local_execution_approval import LocalExecutionApprover
 from .memory import (
     FailureObservation,
     MemoryKind,
@@ -63,10 +64,13 @@ def run_dag_task(
     command_policy: CommandPolicy | None = None,
     event_listener: Callable[[dict[str, Any]], None] | None = None,
     max_rework_attempts: int = 2,
+    approver_factory: Callable[[], LocalExecutionApprover] | None = None,
 ) -> DagRunResult:
     """真实 DAG 路径：拆分、并发生成 Patch、集中合并。"""
     if max_rework_attempts < 0:
         raise ValueError("max_rework_attempts 不能小于 0")
+    if approver_factory is not None and not callable(approver_factory):
+        raise TypeError("approver_factory 必须可调用")
     if not task.project_id:
         task.project_id = sha256(str(workspace.root).encode("utf-8")).hexdigest()
     controller = lifecycle or LifecycleController()
@@ -245,7 +249,11 @@ def run_dag_task(
 
     if not restored or restored.phase != "integrated":
         save_runner_snapshot("integrated")
-    verifier = CommandVerificationAgent(workspace, command_policy or CommandPolicy())
+    verifier = CommandVerificationAgent(
+        workspace,
+        command_policy,
+        approver_factory=approver_factory,
+    )
     while True:
         if task.state is not TaskState.VERIFYING:
             task.transition(TaskState.VERIFYING, "Patch 已安全合并，开始完整质量验证")
@@ -263,6 +271,11 @@ def run_dag_task(
             "sender": "tester", "recipient": "runtime", "message_type": "result",
             "summary": verification.summary, "payload": {"passed": verification.passed},
         })
+        if CommandVerificationAgent.is_local_execution_failure(verification):
+            task.feedback = list(verification.feedback)
+            task.transition(TaskState.FAILED, verification.summary)
+            controller.mark_failed(verification.summary)
+            return DagRunResult(task, states)
         previous_gate = memory.working_memory(task.task_id).quality_gate
         memory.update_quality_gate(task.task_id, QualityGateState(
             affected_checks_completed=previous_gate.affected_checks_completed,
@@ -416,6 +429,29 @@ def run_dag_task(
                 affected = verifier.run(task)
             finally:
                 task.verification_commands = full_commands
+            if CommandVerificationAgent.is_local_execution_failure(affected):
+                task.verification = affected
+                task.feedback = list(affected.feedback)
+                emit("agent_message", {
+                    "sender": "tester",
+                    "recipient": "runtime",
+                    "message_type": "result",
+                    "summary": affected.summary,
+                    "payload": {
+                        "passed": False,
+                        "admission_rejected": (
+                            affected.summary
+                            == CommandVerificationAgent.LOCAL_EXECUTION_REJECTED
+                        ),
+                        "system_failure": (
+                            affected.summary
+                            == CommandVerificationAgent.LOCAL_EXECUTION_FAILED
+                        ),
+                    },
+                })
+                task.transition(TaskState.FAILED, affected.summary)
+                controller.mark_failed(affected.summary)
+                return DagRunResult(task, states)
             emit("affected_tests_finished", {
                 "task_id": fix_id, "passed": affected.passed,
                 "summary": affected.summary,

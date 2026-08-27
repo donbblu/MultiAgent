@@ -57,6 +57,7 @@ from coding_workflow.artifacts import (
 from coding_workflow.integration import IntegrationError, PatchIntegrator
 from coding_workflow.planning import StructuredTaskPlanner
 from coding_workflow.dag_runner import run_dag_task
+from coding_workflow.local_execution_approval import LocalExecutionApprover
 from coding_workflow.runtime_sqlite import (
     RuntimeRecoveryError,
     RuntimeSnapshot,
@@ -73,7 +74,16 @@ from coding_workflow.harness import (
     TaskSpec,
     WorkerRegistry,
 )
-from coding_agent_cli import parse_command, safe_output_path
+from coding_agent_cli import (
+    build_parser,
+    parse_command,
+    run_requirement,
+    safe_output_path,
+)
+
+
+def trusted_local_approver() -> LocalExecutionApprover:
+    return LocalExecutionApprover(True)
 
 
 class WorkflowTests(unittest.TestCase):
@@ -925,6 +935,7 @@ class WorkflowTests(unittest.TestCase):
             result = run_dag_task(
                 task, Client(), workspace, memory_path=root / "memory.sqlite3",
                 command_policy=policy,
+                approver_factory=trusted_local_approver,
             )
             class NoCallClient:
                 def generate_json(self, messages):
@@ -938,6 +949,7 @@ class WorkflowTests(unittest.TestCase):
             resumed = run_dag_task(
                 resumed_task, NoCallClient(), workspace,
                 memory_path=root / "memory.sqlite3", command_policy=policy,
+                approver_factory=trusted_local_approver,
             )
             long_term = SQLiteMemoryStore(root / "memory.sqlite3").query(
                 project_id=result.task.project_id,
@@ -1029,6 +1041,7 @@ class WorkflowTests(unittest.TestCase):
                 command_policy=CommandPolicy(
                     allowed_commands=task.verification_commands
                 ),
+                approver_factory=trusted_local_approver,
             )
 
         self.assertEqual(result.task.state, TaskState.COMPLETED)
@@ -1112,6 +1125,7 @@ class WorkflowTests(unittest.TestCase):
                 memory_path=root / "memory.sqlite3",
                 command_policy=CommandPolicy(allowed_commands=task.verification_commands),
                 event_listener=events.append,
+                approver_factory=trusted_local_approver,
             )
             long_term = SQLiteMemoryStore(root / "memory.sqlite3").query(
                 project_id=result.task.project_id,
@@ -1225,8 +1239,24 @@ class WorkflowTests(unittest.TestCase):
             result = CommandVerificationAgent(
                 workspace,
                 CommandPolicy(allowed_executables={"python3"}, allowed_commands=[command]),
+                approver_factory=trusted_local_approver,
             ).run(task)
         self.assertFalse(result.passed)
+
+    def test_verifier_defaults_to_structured_local_execution_rejection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            command = ["python3", "-V"]
+            task = TaskContext("T", "目标", ["验证"], [command])
+            result = CommandVerificationAgent(
+                ProjectWorkspace(Path(temp)),
+                CommandPolicy(allowed_commands=[command]),
+            ).run(task)
+
+        self.assertFalse(result.passed)
+        self.assertEqual(
+            result.summary,
+            CommandVerificationAgent.LOCAL_EXECUTION_REJECTED,
+        )
 
     def test_command_policy_rejects_non_whitelisted_command(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -1250,6 +1280,18 @@ class WorkflowTests(unittest.TestCase):
             safe_output_path("../escape")
         with self.assertRaises(Exception):
             parse_command("python3 -c 'print(1)'")
+        self.assertFalse(
+            build_parser().parse_args(["实现功能"]).trusted_local_execution
+        )
+        self.assertTrue(build_parser().parse_args([
+            "实现功能", "--trusted-local-execution",
+        ]).trusted_local_execution)
+        with self.assertRaisesRegex(TypeError, "真正的 bool"):
+            run_requirement(
+                "实现功能",
+                "strict-bool",
+                trusted_local_execution=1,  # type: ignore[arg-type]
+            )
 
     def test_plan_validator_enforces_allowed_paths(self) -> None:
         task = self.make_task()

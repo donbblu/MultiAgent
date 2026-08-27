@@ -53,6 +53,7 @@ from coding_workflow import (
     build_multimodal_intake_plan,
     build_multimodal_intake_registry,
 )
+from coding_workflow.local_execution_approval import LocalExecutionApprover
 
 
 TEXT = "税额必须使用十进制 ROUND_HALF_UP 保留两位"
@@ -490,6 +491,7 @@ class MultimodalIntakeTests(unittest.TestCase):
                     artifacts=artifacts,
                     subject_refs=(subject,),
                     task_id=f"tax-{input_kind}",
+                    approver_factory=lambda: LocalExecutionApprover(True),
                 )
                 outcomes.append(result.outcome)
                 validators.append(tuple(

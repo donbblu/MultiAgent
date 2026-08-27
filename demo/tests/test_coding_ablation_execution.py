@@ -14,6 +14,7 @@ from coding_workflow import (
     build_core_ablation_preflight,
     estimate_core_ablation_calls,
     real_model_ablation_profiles,
+    run_real_model_ablation,
 )
 from coding_workflow.model import (
     BudgetedModelClient,
@@ -182,6 +183,11 @@ class CodingAblationExecutionTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(cli.main([]), 0)
             loader.assert_not_called()
+
+        self.assertFalse(cli.parse_args([]).trusted_local_execution)
+        self.assertTrue(cli.parse_args([
+            "--trusted-local-execution",
+        ]).trusted_local_execution)
         data = json.loads(output.getvalue())
         self.assertFalse(data["will_call_external_models"])
         self.assertEqual(data["call_estimate"]["maximum_external_requests"], 21)
@@ -191,9 +197,27 @@ class CodingAblationExecutionTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "SHA-256"):
                     cli.main([
                         "--confirm-real-calls",
+                        "--trusted-local-execution",
                         "--confirm-preflight-sha256", "wrong",
                     ])
             loader.assert_not_called()
+
+        with patch.object(cli, "load_env_file") as loader:
+            with redirect_stdout(io.StringIO()):
+                with self.assertRaisesRegex(
+                    RuntimeError, "trusted-local-execution"
+                ):
+                    cli.main(["--confirm-real-calls"])
+            loader.assert_not_called()
+
+    def test_real_ablation_local_execution_flag_requires_a_real_bool(self):
+        with self.assertRaisesRegex(TypeError, "真正的 bool"):
+            run_real_model_ablation(
+                self.suite,
+                self.model_config(),
+                self.experiment(),
+                trusted_local_execution=1,  # type: ignore[arg-type]
+            )
 
     def test_temperature_is_part_of_frozen_provider_payload(self):
         model = self.model_config()

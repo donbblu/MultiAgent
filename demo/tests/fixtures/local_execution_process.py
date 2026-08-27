@@ -240,6 +240,9 @@ def _workload(args: argparse.Namespace) -> int:
         )
         return 64
 
+    # This pre-ACK leader manifest is control-plane identity only.  Marker,
+    # pipe, descendant, listener, output, and every mode-specific effect remain
+    # below the fresh spawn-ACK gate.
     _atomic_write_json(
         args.leader_manifest,
         {
@@ -275,6 +278,7 @@ def _workload(args: argparse.Namespace) -> int:
         return 63
     arm_ack = _read_json(args.arm_ack_manifest)
     arm_deadline = arm_ack.get("deadline_monotonic") if arm_ack else None
+    arm_watchdog_pid = arm_ack.get("watchdog_pid") if arm_ack else None
     if (
         arm_ack is None
         or arm_ack.get("token") != token
@@ -282,6 +286,9 @@ def _workload(args: argparse.Namespace) -> int:
         or isinstance(arm_deadline, bool)
         or not isinstance(arm_deadline, (int, float))
         or arm_deadline <= 0
+        or isinstance(arm_watchdog_pid, bool)
+        or not isinstance(arm_watchdog_pid, int)
+        or arm_watchdog_pid <= 1
         or time.monotonic() >= arm_deadline
     ):
         _atomic_write_json(
@@ -298,12 +305,70 @@ def _workload(args: argparse.Namespace) -> int:
             },
         )
         return 62
+    owner_pid = armed.get("owner_pid")
+    if (
+        isinstance(owner_pid, bool)
+        or not isinstance(owner_pid, int)
+        or owner_pid <= 1
+    ):
+        _atomic_write_json(
+            args.leader_manifest,
+            {
+                "token": token,
+                "role": "leader",
+                "pid": leader_pid,
+                "pgid": pgid,
+                "sid": sid,
+                "port": 0,
+                "mode": args.mode,
+                "error": "armed launch has no valid owner PID",
+            },
+        )
+        return 60
+
+    def spawn_acknowledged() -> bool:
+        payload = _read_json(args.spawn_ack_manifest)
+        ack_deadline = payload.get("deadline_monotonic") if payload else None
+        return bool(
+            payload
+            and payload.get("token") == token
+            and payload.get("state") == "spawn_acknowledged"
+            and payload.get("owner_pid") == owner_pid
+            and payload.get("pid") == leader_pid
+            and payload.get("pgid") == pgid
+            and payload.get("sid") == sid
+            and payload.get("watchdog_pid") == arm_watchdog_pid
+            and isinstance(ack_deadline, (int, float))
+            and not isinstance(ack_deadline, bool)
+            and ack_deadline == arm_deadline
+            and time.monotonic() < ack_deadline
+        )
+
+    remaining_ack_time = max(0.0, float(arm_deadline) - time.monotonic())
+    if (
+        not _wait_until(spawn_acknowledged, remaining_ack_time)
+        or not spawn_acknowledged()
+    ):
+        _atomic_write_json(
+            args.leader_manifest,
+            {
+                "token": token,
+                "role": "leader",
+                "pid": leader_pid,
+                "pgid": pgid,
+                "sid": sid,
+                "port": 0,
+                "mode": args.mode,
+                "error": "watchdog did not acknowledge exact spawn identity",
+            },
+        )
+        return 61
     _atomic_write_json(
         args.launch_armed_manifest,
         {
             "token": token,
             "state": "registered",
-            "owner_pid": armed.get("owner_pid", 0),
+            "owner_pid": owner_pid,
             "leader_pid": leader_pid,
             "pgid": pgid,
             "sid": sid,
@@ -488,6 +553,110 @@ def _validated_target(
         except ValueError as exc:
             errors.append(str(exc))
     return pgid, tuple(pids), errors
+
+
+def _validated_spawn_candidate(
+    observation: Optional[Mapping[str, object]],
+    *,
+    token: str,
+    owner_pid: int,
+    forbidden_pgids: Sequence[int],
+) -> tuple[Optional[dict[str, object]], list[str]]:
+    """Validate one parent-observed direct child against its live identity."""
+
+    if observation is None:
+        return None, ["spawn observation is missing"]
+    try:
+        if observation.get("token") != token:
+            raise ValueError("spawn observation token identity mismatch")
+        state = observation.get("state")
+        if state != "spawn_observed":
+            raise ValueError("spawn observation has invalid state")
+        observed_owner = _manifest_int(observation, "owner_pid")
+        if observed_owner != owner_pid:
+            raise ValueError("spawn observation owner identity mismatch")
+        pid = _manifest_int(observation, "pid")
+        pgid = _manifest_int(observation, "pgid")
+        sid = _manifest_int(observation, "sid")
+        if pid != pgid or pgid != sid:
+            raise ValueError("spawn observation identity is not a session leader")
+        if pid == owner_pid or pgid in set(forbidden_pgids):
+            raise ValueError("spawn observation overlaps a protected identity")
+        try:
+            actual_pgid = os.getpgid(pid)
+            actual_sid = os.getsid(pid)
+        except (ProcessLookupError, OSError) as exc:
+            raise ValueError(
+                "spawn observation identity is no longer observable"
+            ) from exc
+        if actual_pgid != pgid or actual_sid != sid:
+            raise ValueError("spawn observation current identity mismatch")
+    except ValueError as exc:
+        return None, [str(exc)]
+    return {
+        "token": token,
+        "owner_pid": owner_pid,
+        "pid": pid,
+        "pgid": pgid,
+        "sid": sid,
+    }, []
+
+
+def _validated_candidate_target(
+    candidate: Optional[Mapping[str, object]],
+    leader: Optional[Mapping[str, object]],
+    grandchild: Optional[Mapping[str, object]],
+    *,
+    token: str,
+    forbidden_pgids: Sequence[int],
+) -> tuple[Optional[int], tuple[int, ...], list[str]]:
+    """Bind later manifests to the exact watchdog-acknowledged candidate."""
+
+    if candidate is None:
+        return None, (), ["no verified spawn candidate is available"]
+    try:
+        if candidate.get("token") != token:
+            raise ValueError("spawn candidate token identity mismatch")
+        candidate_pid = _manifest_int(candidate, "pid")
+        candidate_pgid = _manifest_int(candidate, "pgid")
+        candidate_sid = _manifest_int(candidate, "sid")
+        if candidate_pid != candidate_pgid or candidate_pgid != candidate_sid:
+            raise ValueError("spawn candidate identity is inconsistent")
+        if candidate_pgid in set(forbidden_pgids):
+            raise ValueError("spawn candidate overlaps a protected process group")
+    except ValueError as exc:
+        return None, (), [str(exc)]
+
+    if leader is None:
+        if grandchild is not None:
+            return None, (), [
+                "grandchild manifest exists before exact candidate leader"
+            ]
+        return candidate_pgid, (candidate_pid,), []
+
+    pgid, pids, validation_errors = _validated_target(
+        leader,
+        grandchild,
+        token=token,
+        forbidden_pgids=forbidden_pgids,
+    )
+    if validation_errors or pgid is None:
+        return None, (), validation_errors or [
+            "candidate target validation did not produce a process group"
+        ]
+    try:
+        leader_identity = (
+            _manifest_int(leader, "pid"),
+            _manifest_int(leader, "pgid"),
+            _manifest_int(leader, "sid"),
+        )
+    except ValueError as exc:
+        return None, (), [str(exc)]
+    if leader_identity != (candidate_pid, candidate_pgid, candidate_sid):
+        return None, (), [
+            "leader manifest does not exactly match the acknowledged candidate"
+        ]
+    return pgid, pids, []
 
 
 def _kill_target_group(
@@ -760,6 +929,7 @@ def _watchdog(args: argparse.Namespace) -> int:
     )
     idle_deadline = ready_monotonic + args.hard_deadline_seconds
     deadline: Optional[float] = None
+    candidate: Optional[dict[str, object]] = None
     reason = "untriggered"
     control_errors: list[str] = []
     while True:
@@ -810,6 +980,66 @@ def _watchdog(args: argparse.Namespace) -> int:
                 reason = "launch_protocol_error"
                 break
 
+        spawn_observation = _read_json(args.spawn_observed)
+        if spawn_observation is not None:
+            if launch_armed is None:
+                control_errors.append(
+                    "spawn observation exists without an armed launch"
+                )
+                reason = "spawn_protocol_error"
+                break
+            if launch_armed.get("state") == "disarmed_no_spawn":
+                control_errors.append(
+                    "spawn observation coexists with disarmed_no_spawn"
+                )
+                reason = "spawn_protocol_error"
+                break
+            if deadline is None:
+                control_errors.append(
+                    "spawn observation arrived before watchdog arm acknowledgment"
+                )
+                reason = "spawn_protocol_error"
+                break
+            if candidate is None:
+                candidate, candidate_errors = _validated_spawn_candidate(
+                    spawn_observation,
+                    token=token,
+                    owner_pid=owner_pid,
+                    forbidden_pgids=(owner_pgid, watchdog_pgid),
+                )
+                if candidate_errors or candidate is None:
+                    control_errors.extend(candidate_errors)
+                    reason = "spawn_protocol_error"
+                    break
+                acknowledged = time.monotonic()
+                if acknowledged >= deadline:
+                    # Retain the verified candidate for cleanup, but never
+                    # mint authority after (or exactly at) the hard deadline.
+                    reason = "hard_deadline"
+                    break
+                _atomic_write_json(
+                    args.spawn_ack,
+                    {
+                        **candidate,
+                        "state": "spawn_acknowledged",
+                        "watchdog_pid": watchdog_pid,
+                        "watchdog_pgid": watchdog_pgid,
+                        "acknowledged_monotonic": acknowledged,
+                        "deadline_monotonic": deadline,
+                    },
+                )
+            else:
+                observed_identity = {
+                    key: spawn_observation.get(key)
+                    for key in ("token", "owner_pid", "pid", "pgid", "sid")
+                }
+                if observed_identity != candidate:
+                    control_errors.append(
+                        "spawn observation identity changed after acknowledgment"
+                    )
+                    reason = "spawn_protocol_error"
+                    break
+
         control = _read_json(args.control)
         if control is not None:
             if control.get("token") != token or control.get("action") != "cleanup":
@@ -843,12 +1073,40 @@ def _watchdog(args: argparse.Namespace) -> int:
         token=token,
         registration_deadline_monotonic=registration_deadline,
     )
-    pgid, pids, validation_errors = _validated_target(
-        leader,
-        grandchild,
-        token=token,
-        forbidden_pgids=(owner_pgid, watchdog_pgid),
-    )
+    final_launch = _read_json(args.launch_armed_manifest)
+    final_state = final_launch.get("state") if final_launch else None
+    final_protocol_errors: list[str] = []
+    if final_launch is not None and final_launch.get("token") != token:
+        final_protocol_errors.append("final launch identity mismatch")
+    if final_state == "disarmed_no_spawn" and candidate is not None:
+        final_protocol_errors.append(
+            "verified spawn candidate coexists with disarmed_no_spawn"
+        )
+    final_observation = _read_json(args.spawn_observed)
+    if candidate is not None:
+        final_identity = {
+            key: final_observation.get(key) if final_observation else None
+            for key in ("token", "owner_pid", "pid", "pgid", "sid")
+        }
+        if final_identity != candidate:
+            final_protocol_errors.append(
+                "final spawn observation does not match acknowledged candidate"
+            )
+    if final_state == "disarmed_no_spawn" and candidate is None:
+        pgid, pids, validation_errors = None, (), []
+    elif candidate is None:
+        pgid, pids = None, ()
+        validation_errors = [
+            "armed launch has no verified spawn observation/candidate"
+        ] if final_state in {"armed", "registered"} else []
+    else:
+        pgid, pids, validation_errors = _validated_candidate_target(
+            candidate,
+            leader,
+            grandchild,
+            token=token,
+            forbidden_pgids=(owner_pgid, watchdog_pgid),
+        )
     (
         group_gone,
         pids_gone,
@@ -857,6 +1115,7 @@ def _watchdog(args: argparse.Namespace) -> int:
     ) = _kill_target_group(pgid, pids)
     errors = [
         *control_errors,
+        *final_protocol_errors,
         *registration_errors,
         *validation_errors,
         *cleanup_errors,
@@ -902,6 +1161,7 @@ def _parser() -> argparse.ArgumentParser:
     workload.add_argument("--grandchild-manifest", type=_path, required=True)
     workload.add_argument("--launch-armed-manifest", type=_path, required=True)
     workload.add_argument("--arm-ack-manifest", type=_path, required=True)
+    workload.add_argument("--spawn-ack-manifest", type=_path, required=True)
     workload.add_argument("--marker", type=_path, required=True)
     workload.add_argument("--port", type=int, default=0)
     workload.add_argument("--fake-secret", default="SEC_EXEC_FAKE_NOT_A_SECRET")
@@ -926,6 +1186,8 @@ def _parser() -> argparse.ArgumentParser:
     watchdog.add_argument("--grandchild-manifest", type=_path, required=True)
     watchdog.add_argument("--launch-armed-manifest", type=_path, required=True)
     watchdog.add_argument("--arm-ack", type=_path, required=True)
+    watchdog.add_argument("--spawn-observed", type=_path, required=True)
+    watchdog.add_argument("--spawn-ack", type=_path, required=True)
     watchdog.add_argument("--control", type=_path, required=True)
     watchdog.add_argument("--ready", type=_path, required=True)
     watchdog.add_argument("--result", type=_path, required=True)

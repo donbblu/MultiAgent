@@ -49,6 +49,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="",
         help="绑定用户已审阅的 preflight；摘要不匹配时拒绝调用。",
     )
+    parser.add_argument(
+        "--trusted-local-execution",
+        action="store_true",
+        help="明确允许本次消融执行受控的本地验证命令；默认拒绝",
+    )
     return parser.parse_args(argv)
 
 
@@ -95,6 +100,11 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(dict(preflight.to_dict()), ensure_ascii=False, indent=2))
     if not args.confirm_real_calls:
         return 0
+    if not args.trusted_local_execution:
+        raise RuntimeError(
+            "真实模型消融还必须显式提供 --trusted-local-execution，"
+            "否则不会启动模型客户端"
+        )
     if args.confirm_preflight_sha256 != preflight.digest:
         raise RuntimeError(
             "真实调用授权缺少或 preflight SHA-256 不匹配"
@@ -114,7 +124,12 @@ def main(argv: list[str] | None = None) -> int:
     if run_root.exists():
         raise RuntimeError(f"评测 Run 已存在: {run_id}")
 
-    execution = run_real_model_ablation(suite, model_config, experiment)
+    execution = run_real_model_ablation(
+        suite,
+        model_config,
+        experiment,
+        trusted_local_execution=args.trusted_local_execution,
+    )
     paths = write_core_ablation_run_bundle(
         run_root, preflight=preflight, execution=execution
     )

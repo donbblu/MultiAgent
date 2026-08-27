@@ -1,0 +1,47 @@
+{
+  "schema": "sec-exec-cli-visible-demo/v1",
+  "recorded_at": "2026-08-27T02:53:22+08:00",
+  "scope": "pure-mock composition-root visibility",
+  "default_cli": {
+    "approval_requested": false,
+    "status": "rejected_before_task",
+    "task_outcome": "not_started",
+    "spawn_count": 0,
+    "spawn_count_source": "preflight_zero",
+    "model_calls": 0,
+    "workspace_creations": 0,
+    "command_results": 0,
+    "exit_code": 2
+  },
+  "explicit_approval_mock": {
+    "approval_requested": true,
+    "approval_source": "cli_exact_bool",
+    "fresh_approver_instances": 2,
+    "status": "terminal",
+    "task_outcome": "completed",
+    "spawn_count": null,
+    "spawn_count_source": "not_instrumented",
+    "terminal_execution_evidence": 1,
+    "command_results": 1,
+    "duration_ms": 12,
+    "profile_id": "legacy_workspace_verify",
+    "exit_code": 0,
+    "cleanup_status": "terminal",
+    "cleanup_verified": true
+  },
+  "verification": {
+    "tests_run": 7,
+    "passed": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 0.003,
+    "py_compile_exit": 0,
+    "diff_check_exit": 0
+  },
+  "limitations": [
+    "The approved scenario uses a fake CodingRun and does not start a process.",
+    "No model, network, signal, Browser, or real local workload was used.",
+    "A terminal command result is not reported as a measured spawn count."
+  ]
+}

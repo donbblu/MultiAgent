@@ -10,7 +10,7 @@ from coding_workflow import (
 )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     demo_root = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
         description="Run the offline scripted Core Coding ablation dry-run."
@@ -25,14 +25,29 @@ def parse_args() -> argparse.Namespace:
             demo_root / ".runs" / "core-coding-eval" / "ablation-dry-run.json"
         ),
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--trusted-local-execution",
+        action="store_true",
+        help="明确允许本次消融执行受控的本地验证命令；默认拒绝",
+    )
+    args = parser.parse_args(argv)
+    if not args.trusted_local_execution:
+        parser.error(
+            "固定消融会执行本地验证；必须显式提供 "
+            "--trusted-local-execution"
+        )
+    return args
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     suite = FixedCodingSuite.load(args.suite)
     registry, _ = build_scripted_ablation_registry(suite)
-    report = CodingAblationRunner(suite, registry).run()
+    report = CodingAblationRunner(
+        suite,
+        registry,
+        trusted_local_execution=args.trusted_local_execution,
+    ).run()
     output = report.write_json(args.output)
     print(
         f"dry_run={str(report.dry_run).lower()} "

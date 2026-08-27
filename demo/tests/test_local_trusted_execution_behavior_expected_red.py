@@ -379,43 +379,30 @@ DEV_COMMAND = ("pnpm", "run", "dev", "--port", "4173")
 TEST_ONLY_PROCESS_BOUNDARY_MANIFEST = {
     "tests/test_local_trusted_execution_behavior_expected_red.py": (),
     "tests/_local_execution_posix.py": (
-        (
-            "tests/_local_execution_posix.py",
-            "subprocess.Popen",
-            697,
-            "__init__",
-        ),
+        ("subprocess.Popen", "ExternalProcessGuard.__init__", 1),
     ),
     "tests/fixtures/local_execution_process.py": (
-        (
-            "tests/fixtures/local_execution_process.py",
-            "subprocess.Popen",
-            345,
-            "_workload",
-        ),
+        ("subprocess.Popen", "_workload", 1),
     ),
     "tests/test_runtime_thread_event_store.py": (
         (
-            "tests/test_runtime_thread_event_store.py",
             "subprocess.run",
-            965,
-            "_run_process_mutation",
+            "RuntimeThreadEventStoreTests._run_process_mutation",
+            1,
         ),
     ),
     "tests/test_runtime_outbox_adversarial.py": (
         (
-            "tests/test_runtime_outbox_adversarial.py",
             "subprocess.run",
-            757,
-            "run_process_mutation",
+            "RuntimeOutboxAdversarialTests.run_process_mutation",
+            1,
         ),
     ),
     "tests/test_runtime_sqlite_uow.py": (
         (
-            "tests/test_runtime_sqlite_uow.py",
             "subprocess.run",
-            1015,
-            "run_crash_process",
+            "RuntimeSQLiteUnitOfWorkTests.run_crash_process",
+            1,
         ),
     ),
 }
@@ -577,6 +564,8 @@ class FakeManaged:
         self.process = process
         self.killpg = killpg
         self.stop_count = 0
+        self.cleanup_evidence: Mapping[str, object] = {}
+        self.cleanup_evidence_digest = ""
 
     @property
     def running(self) -> bool:
@@ -596,6 +585,23 @@ class FakeManaged:
                 self.killpg(self.process.pid, 0)
             except ProcessLookupError:
                 pass
+            self.cleanup_evidence = {
+                "actions": ["term", "kill", "wait_reap", "verify"],
+                "resources": {
+                    "pid": self.process.pid,
+                    "pgid": self.process.pid,
+                },
+                "direct_child_reaped": True,
+                "verified": True,
+                "barrier_duration_seconds": 0.0,
+            }
+            self.cleanup_evidence_digest = hashlib.sha256(
+                json.dumps(
+                    self.cleanup_evidence,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
         self._running = False
 
     def log_tail(self, limit: int = 4000) -> str:
@@ -2218,6 +2224,7 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
                     controls = self._invoke_all_entrypoints(
                         auth_root,
                         trusted_local_by_entrypoint=tokens,
+                        use_default_limits=True,
                     )
                     if any(item[3] != 1 for item in controls):
                         violations.append(
@@ -2287,6 +2294,7 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
             legacy = ProjectWorkspace(root, command_timeout=60)
             browser = BrowserProcessRunner(
                 allowed_executables=frozenset({"pnpm"}),
+                executable_overrides={"pnpm": "/usr/bin/pnpm"},
             )
             core_confirmation = self._confirmation_for(
                 root,
@@ -2478,10 +2486,17 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
                 violations.append("symlink browser_runner accepted")
             runner_link.unlink()
 
-            browser = BrowserProcessRunner(
-                allowed_executables=frozenset({"pnpm"}),
-                executable_overrides={"pnpm": "/usr/bin/pnpm"},
-            )
+            browser_parameters = {
+                "allowed_executables": frozenset({"pnpm"}),
+                "executable_overrides": {"pnpm": "/usr/bin/pnpm"},
+            }
+            if "workspace_root" in inspect.signature(
+                BrowserProcessRunner
+            ).parameters:
+                browser_parameters["workspace_root"] = project
+            else:
+                violations.append("browser runner lacks trusted workspace_root")
+            browser = BrowserProcessRunner(**browser_parameters)
             self._check_invalid_request_no_challenge(
                 "browser/external-cwd",
                 lambda: browser.run(
@@ -2691,10 +2706,15 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
                 "--result",
                 str(valid_result),
             )
-            browser_paths = BrowserProcessRunner(
-                allowed_executables=frozenset({"node"}),
-                executable_overrides={"node": "/usr/bin/node"},
-            )
+            browser_path_parameters = {
+                "allowed_executables": frozenset({"node"}),
+                "executable_overrides": {"node": "/usr/bin/node"},
+            }
+            if "workspace_root" in inspect.signature(
+                BrowserProcessRunner
+            ).parameters:
+                browser_path_parameters["workspace_root"] = project
+            browser_paths = BrowserProcessRunner(**browser_path_parameters)
             external_targets = {
                 "spec": outside / "external-spec.json",
                 "screenshot": outside / "external-screenshot.png",
@@ -4490,14 +4510,6 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
             log_path = root / "server.log"
             log_payload = f"server api_key={FAKE_SECRET}\n"
 
-            dev_token = self._confirmation_for(
-                root,
-                PROFILE_IDS["visionforge_dev"],
-                "/usr/bin/pnpm",
-                DEV_COMMAND,
-                wall_deadline_seconds=60,
-                server_log=True,
-            )
             dev_popen = self._fake_background_popen(log_payload)
             log_view = ""
             running_durable_log = ""
@@ -4532,6 +4544,14 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
                         "low-level write recorder missed split/overwritten sentinel"
                     )
                 write_recorder.events.clear()
+                dev_token = self._confirmation_for(
+                    root,
+                    PROFILE_IDS["visionforge_dev"],
+                    "/usr/bin/pnpm",
+                    DEV_COMMAND,
+                    wall_deadline_seconds=60,
+                    server_log=True,
+                )
                 with self._patched_processes(dev_popen, FakeRunFactory()):
                     managed, managed_error = self._capture(
                         lambda: browser.start_background(
@@ -5087,7 +5107,7 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
         violations: list[str] = []
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            workspace = ProjectWorkspace(root)
+            workspace = ProjectWorkspace(root, command_timeout=60)
             command = ["python3", "-V"]
             run = FakeRunFactory(stderr=f"api_key={FAKE_SECRET}", returncode=1)
             legacy_popen = FakePopenFactory(lambda: FakeProcess(
@@ -6086,10 +6106,56 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
             sys.modules.pop(alias_module_name, None)
 
         for relative, expected in TEST_ONLY_PROCESS_BOUNDARY_MANIFEST.items():
-            actual = tuple(self._process_boundary_calls(ROOT / relative))
+            actual_details = tuple(
+                self._process_boundary_calls(ROOT / relative)
+            )
+            actual = self._semantic_process_boundary_manifest(
+                actual_details
+            )
             if actual != expected:
                 violations.append(
-                    f"test-only boundary manifest mismatch {relative}: {actual}"
+                    "test-only boundary manifest mismatch "
+                    f"{relative}: semantic={actual}, "
+                    f"diagnostics={actual_details}"
+                )
+            shifted_details = tuple(
+                (path, api, line + 100, owner)
+                for path, api, line, owner in actual_details
+            )
+            if self._semantic_process_boundary_manifest(
+                shifted_details
+            ) != actual:
+                violations.append(
+                    "test-only boundary semantic manifest depends on "
+                    f"diagnostic source lines: {relative}"
+                )
+        with tempfile.TemporaryDirectory() as temp:
+            qualified_owner_root = Path(temp)
+            owner_manifests = []
+            for owner_name in ("AllowedOwner", "ReplacementOwner"):
+                fixture = qualified_owner_root / f"{owner_name}.py"
+                fixture.write_text(
+                    "\n".join((
+                        "import subprocess",
+                        f"class {owner_name}:",
+                        "    def __init__(self):",
+                        "        subprocess.Popen([])",
+                        "",
+                    )),
+                    encoding="utf-8",
+                )
+                owner_manifests.append(
+                    self._semantic_process_boundary_manifest(tuple(
+                        self._process_boundary_calls(fixture)
+                    ))
+                )
+            if owner_manifests != [
+                (("subprocess.Popen", "AllowedOwner.__init__", 1),),
+                (("subprocess.Popen", "ReplacementOwner.__init__", 1),),
+            ]:
+                violations.append(
+                    "test-only boundary manifest does not preserve qualified "
+                    f"owner identity: {owner_manifests}"
                 )
         manifested_paths = set(TEST_ONLY_PROCESS_BOUNDARY_MANIFEST)
         actual_test_boundaries = {
@@ -7199,10 +7265,16 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
             )
             call = lambda: target.run(list(command))
         else:
-            target = BrowserProcessRunner(
-                allowed_executables=frozenset({command[0]}),
-                executable_overrides={command[0]: executable},
-            )
+            browser_parameters = {
+                "allowed_executables": frozenset({command[0]}),
+                "executable_overrides": {command[0]: executable},
+            }
+            if "workspace_root" not in inspect.signature(
+                BrowserProcessRunner
+            ).parameters:
+                return _UNSET
+            browser_parameters["workspace_root"] = root
+            target = BrowserProcessRunner(**browser_parameters)
             if profile_id == PROFILE_IDS["visionforge_dev"]:
                 call = lambda: target.start_background(
                     command,
@@ -9489,6 +9561,11 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
         classes = [
             node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
         ]
+        scope_parents = {
+            child: parent
+            for parent in ast.walk(tree)
+            for child in ast.iter_child_nodes(parent)
+        }
         module_aliases: dict[str, str] = {}
         importlib_aliases: set[str] = set()
         import_module_functions: set[str] = set()
@@ -9965,9 +10042,21 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
                 if api_name is not None:
                     default_api_aliases[(id(function), parameter.arg)] = api_name
 
+        def qualified_scope(node: ast.AST) -> str:
+            parts = []
+            current: ast.AST | None = node
+            while current is not None:
+                if isinstance(
+                    current,
+                    (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef),
+                ):
+                    parts.append(current.name)
+                current = scope_parents.get(current)
+            return ".".join(reversed(parts))
+
         def owner_function(lineno: int) -> str:
             candidates = [
-                node for node in functions
+                node for node in (*functions, *classes)
                 if node.lineno <= lineno <= getattr(node, "end_lineno", node.lineno)
             ]
             if not candidates:
@@ -9977,7 +10066,7 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
                 key=lambda node: getattr(node, "end_lineno", node.lineno)
                 - node.lineno,
             )
-            return owner.name
+            return qualified_scope(owner)
 
         calls: list[tuple[str, str, int, str]] = []
         for node in ast.walk(tree):
@@ -9996,6 +10085,19 @@ class LocalTrustedExecutionBehaviorExpectedRedTests(unittest.TestCase):
                     owner_function(node.lineno),
                 ))
         return sorted(calls, key=lambda item: (item[0], item[2], item[1]))
+
+    @staticmethod
+    def _semantic_process_boundary_manifest(
+        calls: tuple[tuple[str, str, int, str], ...],
+    ) -> tuple[tuple[str, str, int], ...]:
+        counts: dict[tuple[str, str], int] = {}
+        for _path, api, _line, owner in calls:
+            key = (api, owner)
+            counts[key] = counts.get(key, 0) + 1
+        return tuple(
+            (api, owner, counts[(api, owner)])
+            for api, owner in sorted(counts)
+        )
 
     @staticmethod
     def _restricted_boundary_imports(

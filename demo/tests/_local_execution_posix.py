@@ -650,11 +650,14 @@ class ExternalProcessGuard:
         )
         self._hard_deadline_seconds = hard_deadline
         self._arm_ack_timeout_seconds = ready_timeout
+        self._spawn_ack_timeout_seconds = ready_timeout
         self._state_lock = threading.RLock()
         self.leader_manifest = self.guard_root / "leader.json"
         self.grandchild_manifest = self.guard_root / "grandchild.json"
         self.launch_armed_manifest = self.guard_root / "launch-armed.json"
         self.watchdog_arm_ack_path = self.guard_root / "watchdog-arm-ack.json"
+        self.spawn_observed_path = self.guard_root / "spawn-observed.json"
+        self.watchdog_spawn_ack_path = self.guard_root / "watchdog-spawn-ack.json"
         self.marker_path = self.guard_root / "marker.log"
         self.control_path = self.guard_root / "cleanup.json"
         self.watchdog_ready_path = self.guard_root / "watchdog-ready.json"
@@ -662,6 +665,11 @@ class ExternalProcessGuard:
         self._closed = False
         self._close_in_progress = False
         self._cleanup_result: Optional[GuardCleanupResult] = None
+        self._deferred_close_error: Optional[BaseException] = None
+        self._spawned_process: Optional[object] = None
+        self._expected_workload_command: Optional[tuple[str, ...]] = None
+        self._owner_pid = os.getpid()
+        self._owner_pgid = os.getpgrp()
         executable = (python_executable or Path(sys.executable)).resolve()
         if not executable.is_file() or not FIXTURE_SCRIPT.is_file():
             raise ValueError("Python executable or POSIX fixture script is missing")
@@ -679,6 +687,10 @@ class ExternalProcessGuard:
             str(self.launch_armed_manifest),
             "--arm-ack",
             str(self.watchdog_arm_ack_path),
+            "--spawn-observed",
+            str(self.spawn_observed_path),
+            "--spawn-ack",
+            str(self.watchdog_spawn_ack_path),
             "--control",
             str(self.control_path),
             "--ready",
@@ -686,9 +698,9 @@ class ExternalProcessGuard:
             "--result",
             str(self.watchdog_result_path),
             "--owner-pid",
-            str(os.getpid()),
+            str(self._owner_pid),
             "--owner-pgid",
-            str(os.getpgrp()),
+            str(self._owner_pgid),
             "--hard-deadline-seconds",
             str(hard_deadline),
             "--registration-wait-seconds",
@@ -740,8 +752,9 @@ class ExternalProcessGuard:
     ) -> tuple[str, ...]:
         """Return one launch only after its watchdog has acknowledged the arm.
 
-        Execute the returned command synchronously before ``close``; if admission
-        fails before spawn, call ``disarm_no_spawn`` instead.
+        Execute the returned command only through ``spawn_observing_popen`` so
+        the direct child cannot become caller-visible before watchdog ownership.
+        If admission fails before the underlying spawn, call ``disarm_no_spawn``.
         """
 
         with self._state_lock:
@@ -796,7 +809,7 @@ class ExternalProcessGuard:
             timeout_seconds=self._arm_ack_timeout_seconds,
             poll_interval_seconds=0.02,
         )
-        if not acknowledged:
+        if not acknowledged or not self._watchdog_arm_is_acknowledged():
             atomic_write_json(
                 self.launch_armed_manifest,
                 {
@@ -808,7 +821,7 @@ class ExternalProcessGuard:
                 },
             )
             raise RuntimeError("watchdog did not acknowledge armed launch")
-        return (
+        command = (
             str(Path(sys.executable).resolve()),
             str(FIXTURE_SCRIPT),
             "workload",
@@ -824,6 +837,8 @@ class ExternalProcessGuard:
             str(self.launch_armed_manifest),
             "--arm-ack-manifest",
             str(self.watchdog_arm_ack_path),
+            "--spawn-ack-manifest",
+            str(self.watchdog_spawn_ack_path),
             "--marker",
             str(self.marker_path),
             "--port",
@@ -835,6 +850,142 @@ class ExternalProcessGuard:
             "--tick-seconds",
             str(tick),
         )
+        self._expected_workload_command = command
+        return command
+
+    def spawn_observing_popen(self, popen_factory):
+        """Wrap one trusted fixture spawn and return only after watchdog ACK.
+
+        The returned callable is intended to be injected at the Runtime's
+        already-frozen ``Popen`` seam.  It retains the direct-child handle
+        immediately after the underlying factory returns, atomically publishes
+        the observed PID/PGID/SID, and withholds the handle from the caller
+        until the external watchdog acknowledges that exact identity.  This
+        closes the caller-visible gap, not the interpreter-death window between
+        the factory return and the following strong-reference assignment.
+        """
+
+        if not callable(popen_factory):
+            raise TypeError("popen_factory must be callable")
+
+        def guarded_popen(*args, **kwargs):
+            with self._state_lock:
+                return self._spawn_observing_popen_locked(
+                    popen_factory, args, kwargs
+                )
+
+        return guarded_popen
+
+    def _spawn_observing_popen_locked(self, popen_factory, args, kwargs):
+        if self._closed or self._close_in_progress:
+            raise RuntimeError("cannot spawn through a closed process guard")
+        if self._watchdog.poll() is not None:
+            raise RuntimeError("cannot spawn after watchdog idle deadline or exit")
+        if self._spawned_process is not None:
+            raise RuntimeError("this process guard already observed one spawn")
+        if self._expected_workload_command is None:
+            raise RuntimeError("workload command must be armed before spawn")
+        if not args or tuple(args[0]) != self._expected_workload_command:
+            raise RuntimeError("spawn command does not match the armed fixture command")
+        armed = read_json_if_ready(self.launch_armed_manifest)
+        if (
+            armed is None
+            or armed.get("token") != self.token
+            or armed.get("state") != "armed"
+        ):
+            raise RuntimeError("spawn requires one matching armed launch")
+        if not self._watchdog_arm_is_acknowledged():
+            raise RuntimeError(
+                "spawn requires a fresh watchdog arm acknowledgment"
+            )
+
+        process = popen_factory(*args, **kwargs)
+        self._spawned_process = process
+        try:
+            pid = _positive_pid(getattr(process, "pid", None), "spawned pid")
+            owner_pid = getattr(self, "_owner_pid", os.getpid())
+            owner_pgid = getattr(self, "_owner_pgid", os.getpgrp())
+            if owner_pid != os.getpid():
+                raise RuntimeError("spawn wrapper owner PID changed")
+            if owner_pgid != os.getpgrp():
+                raise RuntimeError("spawn wrapper owner process group changed")
+            if pid in {owner_pid, self._watchdog.pid}:
+                raise RuntimeError("spawned PID overlaps a protected process")
+            pgid = os.getpgid(pid)
+            sid = os.getsid(pid)
+            if pid != pgid or pgid != sid:
+                raise RuntimeError(
+                    "spawned fixture is not its own process-group/session leader"
+                )
+            if pgid in {owner_pgid, self._watchdog.pid}:
+                raise RuntimeError("spawned PGID overlaps a protected process group")
+            identity = {
+                "token": self.token,
+                "owner_pid": owner_pid,
+                "pid": pid,
+                "pgid": pgid,
+                "sid": sid,
+            }
+            atomic_write_json(
+                self.spawn_observed_path,
+                {
+                    **identity,
+                    "state": "spawn_observed",
+                    "observed_monotonic": time.monotonic(),
+                },
+            )
+            acknowledged = wait_until(
+                lambda: self._watchdog_spawn_is_acknowledged(identity),
+                timeout_seconds=self._spawn_ack_timeout_seconds,
+                poll_interval_seconds=0.02,
+            )
+            if (
+                not acknowledged
+                or not self._watchdog_spawn_is_acknowledged(identity)
+            ):
+                raise RuntimeError(
+                    "watchdog did not provide an exact spawn acknowledgment"
+                )
+            return process
+        except BaseException:
+            self._terminate_and_join_spawned_before_raise(process)
+            raise
+
+    @staticmethod
+    def _terminate_and_join_spawned_before_raise(process) -> None:
+        """Never expose a failed registration while its direct child is live."""
+
+        terminal_wait = threading.Event()
+        term_attempted = False
+        kill_attempted = False
+        while True:
+            try:
+                if process.poll() is not None:
+                    try:
+                        process.wait()
+                    except BaseException:
+                        pass
+                    return
+            except BaseException:
+                if getattr(process, "returncode", None) is not None:
+                    return
+            try:
+                if not term_attempted:
+                    term_attempted = True
+                    process.terminate()
+                elif not kill_attempted:
+                    kill_attempted = True
+                    process.kill()
+            except BaseException:
+                pass
+            try:
+                process.wait(timeout=0.05)
+            except BaseException:
+                pass
+            try:
+                terminal_wait.wait(0.02)
+            except BaseException:
+                pass
 
     def disarm_no_spawn(self) -> None:
         """Explicitly close an admission path that never reached process spawn."""
@@ -854,6 +1005,11 @@ class ExternalProcessGuard:
             raise RuntimeError("no matching armed launch is available to disarm")
         if self.leader_payload() is not None or self.grandchild_payload() is not None:
             raise RuntimeError("cannot disarm after a process manifest was registered")
+        if self._spawned_process is not None:
+            raise RuntimeError("cannot disarm after the spawn factory returned")
+        observed = read_json_if_ready(self.spawn_observed_path)
+        if observed is not None:
+            raise RuntimeError("cannot disarm after a spawn observation was published")
         atomic_write_json(
             self.launch_armed_manifest,
             {
@@ -901,6 +1057,8 @@ class ExternalProcessGuard:
 
     def _close_locked(self) -> GuardCleanupResult:
         if self._cleanup_result is not None:
+            if self._deferred_close_error is not None:
+                raise self._deferred_close_error
             return self._return_or_raise(self._cleanup_result)
         if self._close_in_progress:
             raise RuntimeError("external process guard close is already in progress")
@@ -910,8 +1068,21 @@ class ExternalProcessGuard:
         group: Optional[OwnedProcessGroup] = None
         group_gone = False
         pids_gone = False
+        deferred_error: Optional[BaseException] = None
         try:
-            ordering_error = self._guard_root_ordering_error()
+            try:
+                ordering_error = self._guard_root_ordering_error()
+            except Exception as exc:
+                ordering_error = (
+                    "guard-root ordering check raised before watchdog join: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+            except BaseException as exc:
+                deferred_error = exc
+                ordering_error = (
+                    "guard-root ordering check was interrupted; deferring "
+                    f"{type(exc).__name__} until watchdog terminal"
+                )
             if ordering_error is not None:
                 errors.append(ordering_error)
             try:
@@ -924,8 +1095,17 @@ class ExternalProcessGuard:
                     "cleanup control write failed; waiting for watchdog hard deadline: "
                     f"{type(exc).__name__}: {exc}"
                 )
+            except BaseException as exc:
+                if deferred_error is None:
+                    deferred_error = exc
+                errors.append(
+                    "cleanup control write was interrupted; deferring "
+                    f"{type(exc).__name__} until watchdog terminal"
+                )
 
-            self._join_watchdog_before_return(errors, observations)
+            deferred_error = self._join_watchdog_before_return(
+                errors, observations, deferred_error
+            )
 
             ordering_error = self._guard_root_ordering_error()
             if ordering_error is not None:
@@ -994,9 +1174,12 @@ class ExternalProcessGuard:
                 errors=tuple(dict.fromkeys(errors)),
             )
             self._cleanup_result = result
+            self._deferred_close_error = deferred_error
             self._closed = True
         finally:
             self._close_in_progress = False
+        if deferred_error is not None:
+            raise deferred_error
         return self._return_or_raise(result)
 
     cleanup_now = close
@@ -1034,6 +1217,37 @@ class ExternalProcessGuard:
             and isinstance(deadline, (int, float))
             and not isinstance(deadline, bool)
             and deadline > 0
+            and time.monotonic() < deadline
+        )
+
+    def _watchdog_spawn_is_acknowledged(
+        self, identity: Mapping[str, object]
+    ) -> bool:
+        if self._watchdog.poll() is not None:
+            return False
+        payload = read_json_if_ready(self.watchdog_spawn_ack_path)
+        arm_payload = read_json_if_ready(self.watchdog_arm_ack_path)
+        deadline = payload.get("deadline_monotonic") if payload else None
+        arm_deadline = (
+            arm_payload.get("deadline_monotonic") if arm_payload else None
+        )
+        return bool(
+            payload
+            and arm_payload
+            and payload.get("token") == identity.get("token") == self.token
+            and arm_payload.get("token") == self.token
+            and payload.get("state") == "spawn_acknowledged"
+            and payload.get("owner_pid") == identity.get("owner_pid")
+            and payload.get("pid") == identity.get("pid")
+            and payload.get("pgid") == identity.get("pgid")
+            and payload.get("sid") == identity.get("sid")
+            and payload.get("watchdog_pid") == self._watchdog.pid
+            and arm_payload.get("watchdog_pid") == self._watchdog.pid
+            and isinstance(deadline, (int, float))
+            and not isinstance(deadline, bool)
+            and deadline > 0
+            and deadline == arm_deadline
+            and time.monotonic() < deadline
         )
 
     def _guard_root_ordering_error(self) -> Optional[str]:
@@ -1054,14 +1268,41 @@ class ExternalProcessGuard:
         return None
 
     def _join_watchdog_before_return(
-        self, errors: list[str], observations: list[str]
-    ) -> None:
-        """Boundedly join the watchdog before caller cleanup can remove manifests."""
+        self,
+        errors: list[str],
+        observations: list[str],
+        deferred_error: Optional[BaseException] = None,
+    ) -> Optional[BaseException]:
+        """Join normally, then enter an unbounded terminal-no-escape barrier.
+
+        The unbounded disaster path is intentional: Python cannot promise that
+        a blocked OS wait/signal/filesystem operation is preemptible, so a live
+        watchdog is never traded for a bounded return from ``close``.
+        """
 
         timeout = (
             self._hard_deadline_seconds
             + WATCHDOG_NORMAL_COMPLETION_BUFFER_SECONDS
         )
+
+        def watchdog_is_terminal() -> bool:
+            nonlocal deferred_error
+            try:
+                return self._watchdog.poll() is not None
+            except Exception as exc:
+                errors.append(
+                    "watchdog poll raised: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+            except BaseException as exc:
+                if deferred_error is None:
+                    deferred_error = exc
+                errors.append(
+                    "watchdog poll was interrupted; deferring "
+                    f"{type(exc).__name__} until terminal"
+                )
+            return getattr(self._watchdog, "returncode", None) is not None
+
         try:
             self._watchdog.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
@@ -1072,8 +1313,15 @@ class ExternalProcessGuard:
             errors.append(
                 f"watchdog join raised: {type(exc).__name__}: {exc}"
             )
+        except BaseException as exc:
+            if deferred_error is None:
+                deferred_error = exc
+            errors.append(
+                "watchdog join was interrupted; deferring "
+                f"{type(exc).__name__} until terminal"
+            )
 
-        if self._watchdog.poll() is None:
+        if not watchdog_is_terminal():
             observations.append(
                 "watchdog required emergency stop after bounded completion wait"
             )
@@ -1084,13 +1332,62 @@ class ExternalProcessGuard:
                     "could not safely stop and join watchdog: "
                     f"{type(exc).__name__}: {exc}"
                 )
-        if self._watchdog.poll() is None:
-            errors.append(
-                "watchdog is still alive after hard deadline plus "
-                f"{WATCHDOG_CLOSE_BUFFER_SECONDS:.1f}s close buffer"
+            except BaseException as exc:
+                if deferred_error is None:
+                    deferred_error = exc
+                errors.append(
+                    "watchdog emergency stop was interrupted; deferring "
+                    f"{type(exc).__name__} until terminal"
+                )
+        if not watchdog_is_terminal():
+            deferred_error = self._wait_watchdog_terminal_no_escape(
+                errors, observations, deferred_error
             )
-        else:
-            observations.append("watchdog joined before guard.close returned")
+        observations.append("watchdog joined before guard.close returned")
+        return deferred_error
+
+    def _wait_watchdog_terminal_no_escape(
+        self,
+        errors: list[str],
+        observations: list[str],
+        deferred_error: Optional[BaseException],
+    ) -> Optional[BaseException]:
+        """Block indefinitely rather than return or raise with a live watchdog."""
+
+        backoff = threading.Event()
+        poll_error_types: list[str] = []
+        while True:
+            try:
+                returncode = self._watchdog.poll()
+                if returncode is not None:
+                    break
+            except Exception as exc:
+                poll_error_types.append(type(exc).__name__)
+                if getattr(self._watchdog, "returncode", None) is not None:
+                    break
+            except BaseException as exc:
+                if deferred_error is None:
+                    deferred_error = exc
+                poll_error_types.append(type(exc).__name__)
+                if getattr(self._watchdog, "returncode", None) is not None:
+                    break
+            try:
+                backoff.wait(0.02)
+            except Exception as exc:
+                poll_error_types.append(type(exc).__name__)
+            except BaseException as exc:
+                if deferred_error is None:
+                    deferred_error = exc
+                poll_error_types.append(type(exc).__name__)
+        if poll_error_types:
+            errors.append(
+                "watchdog terminal barrier observed exceptions: "
+                + ", ".join(dict.fromkeys(poll_error_types))
+            )
+        observations.append(
+            "watchdog reached terminal state inside no-escape barrier"
+        )
+        return deferred_error
 
     def _stop_watchdog_only(self) -> None:
         if self._watchdog.poll() is not None:

@@ -79,6 +79,11 @@ from .command_validators import (
     ControlledCommandRunner,
     register_core_command_validators,
 )
+from .local_execution import (
+    issue_trusted_local_confirmation,
+    recover_local_execution_quarantine,
+    request_local_execution_recovery,
+)
 from .coding_evaluation import FixedCodingSuite, FixedCodingTask, FixedFile
 from .coding_evaluation_runtime import (
     FixedCodingEvaluationRunner,
@@ -343,6 +348,9 @@ __all__ = [
     "ControlledCommandResult",
     "ControlledCommandRunner",
     "register_core_command_validators",
+    "issue_trusted_local_confirmation",
+    "request_local_execution_recovery",
+    "recover_local_execution_quarantine",
     "FixedCodingSuite",
     "FixedCodingTask",
     "FixedFile",

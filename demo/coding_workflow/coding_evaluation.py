@@ -7,10 +7,11 @@ from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
-from typing import Mapping
+from typing import Callable, Mapping
 
 from .artifacts import ArtifactStore
 from .command_validators import register_core_command_validators
+from .local_execution_approval import LocalExecutionApprover
 from .requirements import AcceptanceCriterion, ValidatorProfile, ValidatorSpec
 from .validator_runtime import (
     ProfileVerificationResult,
@@ -210,7 +211,12 @@ class FixedCodingTask:
         profile.validate_criteria(criterion_tuple)
         return criterion_tuple, profile
 
-    def validator_registry(self, validation_workspace: Path) -> ValidatorRegistry:
+    def validator_registry(
+        self,
+        validation_workspace: Path,
+        *,
+        approver_factory: Callable[[], LocalExecutionApprover] | None = None,
+    ) -> ValidatorRegistry:
         commands = {
             kind: tuple(
                 tuple(command["argv"])
@@ -220,7 +226,11 @@ class FixedCodingTask:
         }
         registry = ValidatorRegistry()
         register_core_command_validators(
-            registry, validation_workspace, commands, max_timeout_seconds=10
+            registry,
+            validation_workspace,
+            commands,
+            max_timeout_seconds=10,
+            approver_factory=approver_factory,
         )
         return registry
 
@@ -232,6 +242,7 @@ class FixedCodingTask:
         artifacts: ArtifactStore,
         subject_refs: tuple[str, ...],
         task_id: str,
+        approver_factory: Callable[[], LocalExecutionApprover] | None = None,
     ) -> ProfileVerificationResult:
         private_workspace = self.prepare_validation_workspace(
             workspace, validation_workspace
@@ -239,7 +250,10 @@ class FixedCodingTask:
         _, profile = self.acceptance_contract()
         return ValidatorProfileRunner(
             profile,
-            self.validator_registry(private_workspace),
+            self.validator_registry(
+                private_workspace,
+                approver_factory=approver_factory,
+            ),
             artifacts,
         ).run(
             task_id=task_id,

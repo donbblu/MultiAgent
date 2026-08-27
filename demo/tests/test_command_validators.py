@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from coding_workflow import (
     Artifact,
@@ -16,6 +17,8 @@ from coding_workflow import (
     ValidatorSpec,
     VerificationOutcome,
 )
+from coding_workflow.local_execution_approval import LocalExecutionApprover
+from coding_workflow.local_execution import LocalExecutionError
 
 
 class CommandValidatorTests(unittest.TestCase):
@@ -40,6 +43,7 @@ class CommandValidatorTests(unittest.TestCase):
         *,
         timeout: float = 1,
         output_limit: int = 8000,
+        trusted_local_execution: bool = True,
     ) -> CommandValidator:
         return CommandValidator(
             kind,
@@ -52,7 +56,52 @@ class CommandValidatorTests(unittest.TestCase):
                 max_timeout_seconds=timeout,
                 output_limit_chars=output_limit,
             ),
+            approver_factory=(
+                (lambda: LocalExecutionApprover(True))
+                if trusted_local_execution
+                else None
+            ),
         )
+
+    def test_default_without_explicit_approval_fails_closed(self) -> None:
+        command = ("python3", "-c", "print('must-not-run')")
+        with tempfile.TemporaryDirectory() as temp:
+            result = self._validator(
+                Path(temp),
+                "core:cli",
+                (command,),
+                trusted_local_execution=False,
+            ).validate(self._request("core:cli", command))
+
+        self.assertEqual(result.outcome, VerificationOutcome.UNKNOWN)
+        self.assertIn("未获 Runtime 接纳", result.summary)
+
+    def test_policy_without_exact_registry_never_reaches_spawn(self) -> None:
+        command = ("python3", "-c", "print('must-not-run')")
+        with tempfile.TemporaryDirectory() as temp, mock.patch(
+            "coding_workflow.command_validators.shutil.which",
+            side_effect=AssertionError("不应解析可执行文件"),
+        ) as resolve_executable, mock.patch(
+            "coding_workflow.local_execution._spawn",
+            side_effect=AssertionError("不应进入进程边界"),
+        ) as spawn:
+            runner = ControlledCommandRunner(Path(temp), CommandPolicy())
+            with self.assertRaisesRegex(LocalExecutionError, "缺少精确登记"):
+                runner.run(command, timeout_seconds=1)
+
+        resolve_executable.assert_not_called()
+        spawn.assert_not_called()
+
+    def test_policy_with_exact_registry_accepts_only_registered_argv(self) -> None:
+        allowed = ["python3", "-c", "print('allowed')"]
+        policy = CommandPolicy(
+            allowed_executables={"python3"},
+            allowed_commands=[allowed],
+        )
+
+        policy.validate(list(allowed))
+        with self.assertRaisesRegex(ValueError, "命令参数未获批准"):
+            policy.validate(["python3", "-c", "print('different')"])
 
     def test_pass_records_exit_output_duration_and_hashes(self) -> None:
         command = ("python3", "-c", "print('cli-ok')")
@@ -166,6 +215,7 @@ class FixedCodingEvaluationTests(unittest.TestCase):
                 artifacts=artifacts,
                 subject_refs=(starter_ref,),
                 task_id="starter-run",
+                approver_factory=lambda: LocalExecutionApprover(True),
             )
             self.assertEqual(starter.outcome, VerificationOutcome.FAILED)
             self.assertEqual(
@@ -184,6 +234,7 @@ class FixedCodingEvaluationTests(unittest.TestCase):
                 artifacts=artifacts,
                 subject_refs=(solved_ref,),
                 task_id="solved-run",
+                approver_factory=lambda: LocalExecutionApprover(True),
             )
             self.assertEqual(solved.outcome, VerificationOutcome.PASSED)
             gate = artifacts.verification(solved.verification_ref)

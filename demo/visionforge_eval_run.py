@@ -6,6 +6,7 @@ import os
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 from urllib import error as urlerror
 from urllib import request as urlrequest
 
@@ -17,6 +18,7 @@ from coding_workflow.visionforge import (
     EvaluationSuite,
     ReferenceImageRenderer,
     RuntimeEvaluationTrialExecutor,
+    VisionForgeLocalExecutionApprover,
     VisionForgeEvaluator,
     estimate_model_calls,
 )
@@ -28,7 +30,7 @@ RENDERER_PATH = ROOT / "visionforge_eval" / "render-reference.mjs"
 TEMPLATE_PATH = ROOT / "visionforge_vue_template"
 
 
-def _arguments() -> argparse.Namespace:
+def _arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="VisionForge 固定三方案真实基线；默认只输出预算，不调用模型。"
     )
@@ -37,12 +39,17 @@ def _arguments() -> argparse.Namespace:
         action="store_true",
         help="明确允许本次真实模型调用；缺少此参数时只做预算预检。",
     )
+    parser.add_argument(
+        "--trusted-local-execution",
+        action="store_true",
+        help="明确允许本次评测执行受控的本地命令；默认拒绝。",
+    )
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--max-fix-attempts", type=int, default=2)
     parser.add_argument("--max-total-tokens", type=int, default=600_000)
     parser.add_argument("--vision-max-output-tokens", type=int, default=8_000)
     parser.add_argument("--run-id", default="")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _required_file(variable: str) -> Path:
@@ -62,6 +69,34 @@ def _check_endpoint(base_url: str, provider: str) -> None:
         return
     except (urlerror.URLError, TimeoutError, OSError) as exc:
         raise RuntimeError(f"模型供应商 {provider} 端点不可达: {exc}") from exc
+
+
+def _trial_runner_factory(
+    *,
+    node: Path,
+    pnpm: Path,
+) -> Callable[[Path], BrowserProcessRunner]:
+    overrides = {"node": str(node), "pnpm": str(pnpm)}
+
+    def create(project_root: Path) -> BrowserProcessRunner:
+        return BrowserProcessRunner(
+            executable_overrides=overrides,
+            workspace_root=project_root,
+        )
+
+    return create
+
+
+def _approver_factory(
+    trusted_local_execution: bool,
+) -> Callable[[], VisionForgeLocalExecutionApprover]:
+    if type(trusted_local_execution) is not bool:
+        raise TypeError("trusted_local_execution 必须是真正的 bool")
+
+    def create() -> VisionForgeLocalExecutionApprover:
+        return VisionForgeLocalExecutionApprover(trusted_local_execution)
+
+    return create
 
 
 class _ProgressExecutor:
@@ -90,8 +125,15 @@ class _ProgressExecutor:
         return result
 
 
-def main() -> int:
-    args = _arguments()
+def main(argv: list[str] | None = None) -> int:
+    args = _arguments(argv)
+    if type(args.trusted_local_execution) is not bool:
+        raise TypeError("trusted_local_execution 必须是真正的 bool")
+    if args.confirm_real_calls and not args.trusted_local_execution:
+        raise RuntimeError(
+            "真实 VisionForge 评测还必须显式提供 "
+            "--trusted-local-execution；拒绝发生在环境、Suite、模型和浏览器预检前"
+        )
     load_env_file(ROOT / ".env")
     suite = EvaluationSuite.load(SUITE_PATH)
     estimate = estimate_model_calls(
@@ -121,6 +163,10 @@ def main() -> int:
     )
     preflight = {
         "will_call_external_models": bool(args.confirm_real_calls),
+        "will_execute_local_commands": bool(
+            args.confirm_real_calls and args.trusted_local_execution
+        ),
+        "local_execution_approved": args.trusted_local_execution,
         "suite": {
             "id": suite.suite_id,
             "version": suite.version,
@@ -140,7 +186,6 @@ def main() -> int:
     print("[preflight] 模型端点可达", flush=True)
     node = _required_file("VISIONFORGE_NODE")
     pnpm = _required_file("VISIONFORGE_PNPM")
-    browser = _required_file("VISIONFORGE_BROWSER_EXECUTABLE")
     required_text = frozenset({
         ModelCapability.TEXT,
         ModelCapability.TOOL_CALLING,
@@ -166,12 +211,11 @@ def main() -> int:
     if run_root.exists():
         raise RuntimeError(f"评测 Run 已存在: {run_id}")
     run_root.mkdir(parents=True)
-    process_runner = BrowserProcessRunner(
-        executable_overrides={"node": str(node), "pnpm": str(pnpm)},
-        environment={
-            "PATH": f"{node.parent}:/usr/bin:/bin",
-            "VISIONFORGE_BROWSER_EXECUTABLE": str(browser),
-        },
+    runner_factory = _trial_runner_factory(node=node, pnpm=pnpm)
+    approver_factory = _approver_factory(args.trusted_local_execution)
+    renderer_runner = BrowserProcessRunner(
+        executable_overrides={"node": str(node)},
+        workspace_root=RENDERER_PATH.parent,
     )
     budget = EvaluationModelBudget(
         max_model_calls=config.max_model_calls,
@@ -180,15 +224,16 @@ def main() -> int:
     executor = RuntimeEvaluationTrialExecutor(
         template_root=TEMPLATE_PATH,
         runtime_root=run_root,
-        process_runner=process_runner,
+        runner_factory=runner_factory,
         text_client=text_client,
         vision_client=vision_client,
         budget=budget,
+        approver_factory=approver_factory,
     )
     evaluator = VisionForgeEvaluator(
         suite,
         config,
-        ReferenceImageRenderer(process_runner, RENDERER_PATH),
+        ReferenceImageRenderer(renderer_runner, RENDERER_PATH),
         _ProgressExecutor(
             executor, len(suite.tasks) * len(estimate.by_variant) * args.repetitions
         ),

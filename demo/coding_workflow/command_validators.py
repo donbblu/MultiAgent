@@ -1,53 +1,28 @@
 from __future__ import annotations
 
-import os
-import re
-import signal
 import shutil
-import subprocess
-import time
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass, field
 from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping
+from typing import Callable, Mapping
 
 from .artifacts import ArtifactDraft
+from .local_execution import (
+    FROZEN_PATH,
+    PROFILE_CORE,
+    SANDBOX_REQUIRED,
+    ExecutionOutcome,
+    LocalExecutionError,
+    prepare_execution,
+    redact_text,
+    run_prepared,
+    sanitize_output,
+)
+from .local_execution_approval import LocalExecutionApprover
 from .policy import CommandPolicy, CommandPolicyError
 from .truth import VerificationOutcome
 from .validator_runtime import ValidatorRunRequest, ValidatorRunResult
-
-
-_SECRET_ASSIGNMENT = re.compile(
-    r"(?i)\b(api[_-]?key|access[_-]?token|token|password|passwd|secret)"
-    r"\s*[:=]\s*(['\"]?)[^\s,'\";]+\2"
-)
-_BEARER = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]{8,}=*")
-
-
-def _redact(value: str) -> str:
-    value = _BEARER.sub("Bearer [REDACTED]", value)
-    return _SECRET_ASSIGNMENT.sub(
-        lambda match: f"{match.group(1)}=[REDACTED]", value
-    )
-
-
-def _clip(value: str, limit: int) -> tuple[str, bool, int, str]:
-    digest = sha256(value.encode("utf-8", errors="replace")).hexdigest()
-    length = len(value)
-    redacted = _redact(value)
-    if len(redacted) <= limit:
-        return redacted, False, length, digest
-    head = limit // 2
-    tail = limit - head
-    return (
-        redacted[:head]
-        + f"\n... [TRUNCATED {len(redacted) - limit} CHARS] ...\n"
-        + redacted[-tail:],
-        True,
-        length,
-        digest,
-    )
 
 
 @dataclass(frozen=True)
@@ -65,12 +40,61 @@ class ControlledCommandResult:
     stderr_chars: int = 0
     stdout_sha256: str = ""
     stderr_sha256: str = ""
-    _assertion_stdout: str = ""
-    _assertion_stderr: str = ""
+    # Retain the historical positional/keyword constructor slots without
+    # retaining a second, potentially unredacted copy of process output.
+    _assertion_stdout: InitVar[str] = ""
+    _assertion_stderr: InitVar[str] = ""
+    profile_manifest: Mapping[str, object] = field(
+        default_factory=lambda: MappingProxyType({}),
+        repr=False,
+    )
+    cleanup_evidence: Mapping[str, object] = field(
+        default_factory=lambda: MappingProxyType({}),
+        repr=False,
+    )
+    cleanup_evidence_digest: str = ""
+    assertion_results: Mapping[str, object] = field(
+        default_factory=lambda: MappingProxyType({}),
+        repr=False,
+    )
+
+    def __post_init__(
+        self,
+        _assertion_stdout: str,
+        _assertion_stderr: str,
+    ) -> None:
+        del _assertion_stdout, _assertion_stderr
+        assertions = self.assertion_results
+        if not isinstance(assertions, Mapping):
+            raise TypeError("assertion_results 必须是映射")
+        if not assertions:
+            normalized: Mapping[str, object] = MappingProxyType({})
+        else:
+            if set(assertions) != {
+                "stdout_contains", "stderr_contains", "zero_tests_absent",
+            }:
+                raise ValueError("assertion_results 字段无效")
+            stdout_contains = assertions["stdout_contains"]
+            stderr_contains = assertions["stderr_contains"]
+            zero_tests_absent = assertions["zero_tests_absent"]
+            if (
+                not isinstance(stdout_contains, (tuple, list))
+                or not all(isinstance(item, bool) for item in stdout_contains)
+                or not isinstance(stderr_contains, (tuple, list))
+                or not all(isinstance(item, bool) for item in stderr_contains)
+                or not isinstance(zero_tests_absent, bool)
+            ):
+                raise ValueError("assertion_results 必须只包含布尔证据")
+            normalized = MappingProxyType({
+                "stdout_contains": tuple(stdout_contains),
+                "stderr_contains": tuple(stderr_contains),
+                "zero_tests_absent": zero_tests_absent,
+            })
+        object.__setattr__(self, "assertion_results", normalized)
 
     def evidence(self) -> Mapping[str, object]:
         return MappingProxyType({
-            "command": [_redact(part) for part in self.command],
+            "command": [redact_text(part) for part in self.command],
             "command_sha256": sha256(
                 "\0".join(self.command).encode("utf-8", errors="replace")
             ).hexdigest(),
@@ -87,6 +111,10 @@ class ControlledCommandResult:
             "stderr_chars": self.stderr_chars,
             "stdout_sha256": self.stdout_sha256,
             "stderr_sha256": self.stderr_sha256,
+            "profile_manifest": self.profile_manifest,
+            "cleanup_evidence": self.cleanup_evidence,
+            "cleanup_evidence_digest": self.cleanup_evidence_digest,
+            "assertion_results": self.assertion_results,
         })
 
 
@@ -109,123 +137,141 @@ class ControlledCommandRunner:
             raise ValueError("max_timeout_seconds 必须大于 0")
         if output_limit_chars < 200:
             raise ValueError("output_limit_chars 不能小于 200")
+        if output_limit_chars > 10_000:
+            raise ValueError("output_limit_chars 不能超过 Profile 上限 10000")
+        if max_timeout_seconds > 30:
+            raise ValueError("max_timeout_seconds 不能超过 Profile 上限 30")
+        if environment:
+            raise ValueError("Core Validator 不接受调用方环境扩展")
         self.policy = policy
         self.max_timeout_seconds = float(max_timeout_seconds)
         self.output_limit_chars = output_limit_chars
-        base = {
-            "PATH": "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        self.environment = MappingProxyType({
+            "PATH": FROZEN_PATH,
             "LANG": "C.UTF-8",
             "LC_ALL": "C.UTF-8",
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONUNBUFFERED": "1",
-        }
-        base.update(dict(environment or {}))
-        self.environment = MappingProxyType(base)
+        })
 
     def run(
-        self, command: tuple[str, ...], *, timeout_seconds: float
-    ) -> ControlledCommandResult:
-        self.policy.validate(list(command))
-        if timeout_seconds <= 0 or timeout_seconds > self.max_timeout_seconds:
-            raise ValueError("命令 timeout 超出 Runtime 上限")
-        started = time.monotonic()
-        executable = shutil.which(command[0], path=self.environment["PATH"])
-        if executable is None:
-            return self._result(
-                command,
-                None,
-                "",
-                f"Validator executable not found: {command[0]}",
-                started,
-                tool_missing=True,
-            )
-        execution_command = (executable, *command[1:])
-        try:
-            process = subprocess.Popen(
-                execution_command,
-                cwd=self.workspace_root,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                stdin=subprocess.DEVNULL,
-                text=True,
-                shell=False,
-                env=dict(self.environment),
-                start_new_session=True,
-            )
-        except FileNotFoundError as exc:
-            return self._result(
-                command, None, "", str(exc), started, tool_missing=True
-            )
-        except OSError as exc:
-            return self._result(command, None, "", str(exc), started)
-
-        try:
-            stdout, stderr = process.communicate(timeout=timeout_seconds)
-            return self._result(
-                command, process.returncode, stdout, stderr, started
-            )
-        except subprocess.TimeoutExpired as exc:
-            self._terminate(process)
-            stdout, stderr = process.communicate()
-            if exc.stdout:
-                stdout = self._text(exc.stdout) + stdout
-            if exc.stderr:
-                stderr = self._text(exc.stderr) + stderr
-            return self._result(
-                command, None, stdout, stderr, started, timed_out=True
-            )
-
-    @staticmethod
-    def _text(value: str | bytes) -> str:
-        return value.decode("utf-8", errors="replace") if isinstance(
-            value, bytes
-        ) else value
-
-    @staticmethod
-    def _terminate(process: subprocess.Popen[str]) -> None:
-        try:
-            os.killpg(process.pid, signal.SIGTERM)
-            process.wait(timeout=0.5)
-        except (ProcessLookupError, subprocess.TimeoutExpired):
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            process.wait()
-
-    def _result(
         self,
         command: tuple[str, ...],
-        exit_code: int | None,
-        stdout: str,
-        stderr: str,
-        started: float,
         *,
-        timed_out: bool = False,
+        timeout_seconds: float,
+        trusted_local: object = None,
+        stdout_contains: tuple[str, ...] = (),
+        stderr_contains: tuple[str, ...] = (),
+        reject_zero_tests: bool = False,
+    ) -> ControlledCommandResult:
+        try:
+            self.policy.validate(list(command))
+        except (TypeError, ValueError, CommandPolicyError) as exc:
+            raise LocalExecutionError(
+                SANDBOX_REQUIRED,
+                f"Core Validator command rejected: {exc}",
+            ) from None
+        if timeout_seconds <= 0 or timeout_seconds > self.max_timeout_seconds:
+            raise LocalExecutionError(
+                SANDBOX_REQUIRED,
+                "Core Validator timeout 超出 Runtime Profile 上限",
+            )
+        executable = shutil.which(command[0], path=FROZEN_PATH)
+        if executable is None:
+            return self._local_failure_result(
+                command=command,
+                stderr=f"Validator executable not found: {command[0]}",
+                tool_missing=True,
+            )
+        executable_path = Path(executable)
+        if not executable_path.is_absolute() or executable_path.resolve(
+        ).is_relative_to(self.workspace_root):
+            raise LocalExecutionError(
+                SANDBOX_REQUIRED,
+                "Core Validator executable 未由冻结 Runtime PATH 解析",
+            )
+        prepared = prepare_execution(
+            profile_id=PROFILE_CORE,
+            workspace_root=self.workspace_root,
+            executable=str(executable_path),
+            command=command,
+            wall_deadline_seconds=timeout_seconds,
+            output_limit_chars=self.output_limit_chars,
+            python_profile=True,
+        )
+        try:
+            outcome = run_prepared(
+                prepared,
+                trusted_local=trusted_local,
+                stdout_contains=stdout_contains,
+                stderr_contains=stderr_contains,
+                reject_zero_tests=reject_zero_tests,
+            )
+        except LocalExecutionError as exc:
+            if (
+                exc.code == SANDBOX_REQUIRED
+                and exc.reason.startswith("local execution spawn failed:")
+            ):
+                return self._local_failure_result(
+                    command=command,
+                    stderr=exc.reason,
+                    tool_missing="No such file" in exc.reason,
+                )
+            raise
+        return self._result_from_outcome(command, outcome)
+
+    def _local_failure_result(
+        self,
+        *,
+        command: tuple[str, ...],
+        stderr: str,
         tool_missing: bool = False,
     ) -> ControlledCommandResult:
-        out, out_cut, out_chars, out_hash = _clip(
-            stdout or "", self.output_limit_chars
+        stdout = sanitize_output(
+            "",
+            limit_chars=self.output_limit_chars,
         )
-        err, err_cut, err_chars, err_hash = _clip(
-            stderr or "", self.output_limit_chars
+        bounded_error = sanitize_output(
+            stderr,
+            limit_chars=self.output_limit_chars,
         )
         return ControlledCommandResult(
-            command,
-            exit_code,
-            out,
-            err,
-            int((time.monotonic() - started) * 1000),
-            timed_out,
-            tool_missing,
-            out_cut,
-            err_cut,
-            out_chars,
-            err_chars,
-            out_hash,
-            err_hash,
-            stdout or "",
-            stderr or "",
+            command=command,
+            exit_code=None,
+            stdout=stdout.text,
+            stderr=bounded_error.text,
+            duration_ms=0,
+            tool_missing=tool_missing,
+            stdout_truncated=stdout.truncated,
+            stderr_truncated=bounded_error.truncated,
+            stdout_chars=stdout.raw_chars,
+            stderr_chars=bounded_error.raw_chars,
+            stdout_sha256=stdout.raw_sha256,
+            stderr_sha256=bounded_error.raw_sha256,
+        )
+
+    @staticmethod
+    def _result_from_outcome(
+        command: tuple[str, ...],
+        outcome: ExecutionOutcome,
+    ) -> ControlledCommandResult:
+        return ControlledCommandResult(
+            command=command,
+            exit_code=None if outcome.timed_out else outcome.exit_code,
+            stdout=outcome.stdout.text,
+            stderr=outcome.stderr.text,
+            duration_ms=outcome.duration_ms,
+            timed_out=outcome.timed_out,
+            stdout_truncated=outcome.stdout.truncated,
+            stderr_truncated=outcome.stderr.truncated,
+            stdout_chars=outcome.stdout.raw_chars,
+            stderr_chars=outcome.stderr.raw_chars,
+            stdout_sha256=outcome.stdout.raw_sha256,
+            stderr_sha256=outcome.stderr.raw_sha256,
+            profile_manifest=outcome.profile_manifest,
+            cleanup_evidence=outcome.cleanup_evidence,
+            cleanup_evidence_digest=outcome.cleanup_evidence_digest,
+            assertion_results=outcome.assertion_results,
         )
 
 
@@ -234,11 +280,20 @@ class CommandValidator:
 
     SUPPORTED_KINDS = frozenset({"core:build", "core:test", "core:cli"})
 
-    def __init__(self, validator_kind: str, runner: ControlledCommandRunner) -> None:
+    def __init__(
+        self,
+        validator_kind: str,
+        runner: ControlledCommandRunner,
+        *,
+        approver_factory: Callable[[], LocalExecutionApprover] | None = None,
+    ) -> None:
         if validator_kind not in self.SUPPORTED_KINDS:
             raise ValueError("CommandValidator kind 无效")
+        if approver_factory is not None and not callable(approver_factory):
+            raise TypeError("approver_factory 必须可调用")
         self.validator_kind = validator_kind
         self.runner = runner
+        self.approver_factory = approver_factory
 
     def validate(self, request: ValidatorRunRequest) -> ValidatorRunResult:
         if request.spec.validator_kind != self.validator_kind:
@@ -258,8 +313,33 @@ class CommandValidator:
         for item in commands:
             argv = tuple(item["argv"])
             try:
-                execution = self.runner.run(argv, timeout_seconds=timeout)
-            except (ValueError, CommandPolicyError) as exc:
+                if self.approver_factory is None:
+                    execution = self.runner.run(
+                        argv,
+                        timeout_seconds=timeout,
+                        stdout_contains=item["stdout_contains"],
+                        stderr_contains=item["stderr_contains"],
+                        reject_zero_tests=item["reject_zero_tests"],
+                    )
+                else:
+                    approver = self.approver_factory()
+                    if type(approver) is not LocalExecutionApprover:
+                        raise TypeError(
+                            "approver_factory 必须返回 LocalExecutionApprover"
+                        )
+                    execution = approver.run_controlled(
+                        self.runner,
+                        argv,
+                        timeout_seconds=timeout,
+                        stdout_contains=item["stdout_contains"],
+                        stderr_contains=item["stderr_contains"],
+                        reject_zero_tests=item["reject_zero_tests"],
+                    )
+            except (
+                ValueError,
+                CommandPolicyError,
+                LocalExecutionError,
+            ) as exc:
                 return ValidatorRunResult(
                     VerificationOutcome.UNKNOWN,
                     f"Validator 命令未获 Runtime 接纳: {exc}",
@@ -294,20 +374,30 @@ class CommandValidator:
                     f"命令 {index} 退出码 {execution.exit_code}，"
                     f"预期 {item['expected_exit_code']}"
                 )
-            for expected in item["stdout_contains"]:
-                if expected not in execution._assertion_stdout:
+            assertion_results = execution.assertion_results
+            stdout_matches = assertion_results.get("stdout_contains")
+            stderr_matches = assertion_results.get("stderr_contains")
+            zero_tests_absent = assertion_results.get("zero_tests_absent")
+            if (
+                not isinstance(stdout_matches, tuple)
+                or len(stdout_matches) != len(item["stdout_contains"])
+                or not isinstance(stderr_matches, tuple)
+                or len(stderr_matches) != len(item["stderr_contains"])
+                or not isinstance(zero_tests_absent, bool)
+            ):
+                unknowns.append(f"命令 {index} 缺少 Runtime 输出断言证据")
+                continue
+            for matched in stdout_matches:
+                if not matched:
                     definite_failures.append(
                         f"命令 {index} stdout 缺少预期文本"
                     )
-            for expected in item["stderr_contains"]:
-                if expected not in execution._assertion_stderr:
+            for matched in stderr_matches:
+                if not matched:
                     definite_failures.append(
                         f"命令 {index} stderr 缺少预期文本"
                     )
-            if item["reject_zero_tests"] and (
-                "Ran 0 tests" in execution._assertion_stdout
-                or "Ran 0 tests" in execution._assertion_stderr
-            ):
+            if item["reject_zero_tests"] and not zero_tests_absent:
                 definite_failures.append(f"命令 {index} 未执行任何测试")
 
         if definite_failures:
@@ -392,6 +482,7 @@ def register_core_command_validators(
     commands_by_kind: Mapping[str, tuple[tuple[str, ...], ...]],
     *,
     max_timeout_seconds: float = 30,
+    approver_factory: Callable[[], LocalExecutionApprover] | None = None,
 ) -> None:
     """Composition Root 显式注册；不提供开放命令执行器。"""
     from .validator_runtime import ValidatorRegistry
@@ -412,4 +503,11 @@ def register_core_command_validators(
             policy,
             max_timeout_seconds=max_timeout_seconds,
         )
-        registry.register(kind, CommandValidator(kind, runner))
+        registry.register(
+            kind,
+            CommandValidator(
+                kind,
+                runner,
+                approver_factory=approver_factory,
+            ),
+        )

@@ -6,7 +6,7 @@ from pathlib import Path
 from coding_workflow import FixedCodingEvaluationRunner, FixedCodingSuite
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     demo_root = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
         description="Run deterministic Core Coding fixture calibration."
@@ -21,13 +21,25 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=demo_root / ".runs" / "core-coding-eval" / "calibration.json",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--trusted-local-execution",
+        action="store_true",
+        help="明确允许本次评测执行受控的本地验证命令；默认拒绝",
+    )
+    args = parser.parse_args(argv)
+    if not args.trusted_local_execution:
+        parser.error(
+            "固定评测会执行本地验证；必须显式提供 "
+            "--trusted-local-execution"
+        )
+    return args
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     report = FixedCodingEvaluationRunner(
-        FixedCodingSuite.load(args.suite)
+        FixedCodingSuite.load(args.suite),
+        trusted_local_execution=args.trusted_local_execution,
     ).run()
     output = report.write_json(args.output)
     summary = report.summary()

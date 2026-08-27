@@ -10,11 +10,12 @@ from enum import Enum
 from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping
+from typing import Callable, Mapping
 from uuid import uuid4
 
 from .artifacts import Artifact, ArtifactStore
 from .coding_evaluation import FixedCodingSuite, FixedCodingTask
+from .local_execution_approval import LocalExecutionApprover
 from .truth import VerificationOutcome
 
 
@@ -153,8 +154,19 @@ class FixedEvaluationReport:
 class FixedCodingEvaluationRunner:
     """离线复位每个固定任务，并验证 starter/参考答案的题目有效性。"""
 
-    def __init__(self, suite: FixedCodingSuite) -> None:
+    def __init__(
+        self,
+        suite: FixedCodingSuite,
+        *,
+        trusted_local_execution: bool = False,
+    ) -> None:
+        if type(trusted_local_execution) is not bool:
+            raise TypeError("trusted_local_execution 必须是真正的 bool")
         self.suite = suite
+        approved = trusted_local_execution
+        self._approver_factory: Callable[[], LocalExecutionApprover] = (
+            lambda: LocalExecutionApprover(approved)
+        )
 
     def run(self) -> FixedEvaluationReport:
         started_at = datetime.now(timezone.utc).isoformat()
@@ -220,6 +232,7 @@ class FixedCodingEvaluationRunner:
                 artifacts=artifacts,
                 subject_refs=(subject_ref,),
                 task_id=task_run_id,
+                approver_factory=self._approver_factory,
             )
         except PermissionError as exc:
             return self._exception_trial(

@@ -31,6 +31,7 @@ from .browser import (
     BrowserProcessRunner,
     BrowserProjectConfig,
     PlaywrightBrowserTester,
+    VisionForgeLocalExecutionApprover,
 )
 from .scenario import VisionForgeScenarioRunner
 from .runner import VisionForgeRunResult
@@ -164,7 +165,17 @@ class VisionForgeWebRuntime:
         uploaded = self.asset(asset_id)
         return self.image_assets.read(uploaded.image), uploaded.image.mime_type
 
-    def submit_task(self, requirement: str, asset_id: str) -> str:
+    def submit_task(
+        self,
+        requirement: str,
+        asset_id: str,
+        *,
+        trusted_local_execution: bool = False,
+    ) -> str:
+        if not isinstance(trusted_local_execution, bool):
+            raise VisionForgeWebError(
+                "trusted_local_execution 必须是用户明确提交的布尔值"
+            )
         normalized = requirement.strip()
         if not 3 <= len(normalized) <= 4000:
             raise VisionForgeWebError("需求长度必须在 3 到 4000 字符之间")
@@ -198,6 +209,7 @@ class VisionForgeWebRuntime:
             "_task_root": task_root,
             "_artifacts": artifacts,
             "_done": threading.Event(),
+            "_trusted_local_execution": trusted_local_execution,
         }
         with self._lock:
             self._tasks[task_id] = task
@@ -295,6 +307,21 @@ class VisionForgeWebRuntime:
         artifacts: ArtifactStore,
         image_assets: ImageAssetStore,
     ) -> VisionForgeRunResult:
+        with self._lock:
+            trusted_local_execution = self._tasks[task_id][
+                "_trusted_local_execution"
+            ]
+        if type(trusted_local_execution) is not bool:
+            raise VisionForgeWebError(
+                "trusted_local_execution 必须是用户明确提交的真正 bool"
+            )
+        if not trusted_local_execution:
+            raise VisionForgeWebError(
+                "trusted_local_execution 未批准；拒绝发生在插件、模型和浏览器构造前"
+            )
+        approver_factory = lambda: VisionForgeLocalExecutionApprover(
+            trusted_local_execution
+        )
         registration = self.resolve_scenario()
         if self.env_file:
             load_env_file(self.env_file)
@@ -323,16 +350,9 @@ class VisionForgeWebRuntime:
             }.items()
             if value
         }
-        environment: dict[str, str] = {}
-        node = overrides.get("node")
-        if node:
-            environment["PATH"] = f"{Path(node).parent}:/usr/bin:/bin"
-        browser = os.environ.get("VISIONFORGE_BROWSER_EXECUTABLE", "").strip()
-        if browser:
-            environment["VISIONFORGE_BROWSER_EXECUTABLE"] = browser
         process_runner = BrowserProcessRunner(
             executable_overrides=overrides,
-            environment=environment,
+            workspace_root=project_root,
         )
         workspace = ProjectWorkspace(project_root)
         return VisionForgeScenarioRunner(
@@ -346,7 +366,8 @@ class VisionForgeWebRuntime:
                 process_runner,
                 artifacts,
                 image_assets,
-                task_root / "browser-runtime",
+                project_root / ".runtime" / "visionforge-browser",
+                approver_factory=approver_factory,
             ),
             visual_reviewer=VisualReviewer(
                 vision_client, artifacts, image_assets

@@ -1,18 +1,29 @@
 from __future__ import annotations
 
+import gc
 import json
 import os
+import signal
 import socket
-import sys
+import subprocess
 import tempfile
-import threading
 import time
 import unittest
+import weakref
 from pathlib import Path
+from types import MappingProxyType
+from unittest import mock
 
 from coding_workflow.artifacts import ArtifactStore
 from coding_workflow.harness import LifecycleController
 from coding_workflow.harness.lifecycle import TaskCancelledError
+from coding_workflow.local_execution import (
+    CLEANUP_FAILED,
+    LocalExecutionError,
+    SupervisedBackground,
+    redact_text,
+    sanitize_output,
+)
 from coding_workflow.visionforge import (
     ACTUAL_SCREENSHOT,
     BROWSER_RUN,
@@ -24,8 +35,10 @@ from coding_workflow.visionforge import (
     PlaywrightBrowserTester,
     ProcessExecution,
     UISpec,
+    VisionForgeLocalExecutionApprover,
     VisionForgeSchemaError,
 )
+from coding_workflow.visionforge.browser import ManagedProcess, _bounded_public_text
 
 
 ROOT = Path(__file__).parents[1]
@@ -33,46 +46,287 @@ TEMPLATE = ROOT / "visionforge_vue_template"
 
 
 class BrowserRuntimeUnitTests(unittest.TestCase):
-    def python_runner(self) -> BrowserProcessRunner:
+    class _TimedProcess:
+        pid = 424243
+
+        def __init__(self) -> None:
+            self.returncode = None
+            self.stdout = None
+            self.stderr = None
+
+        def communicate(self, timeout=None):
+            if timeout is not None and self.returncode is None:
+                time.sleep(float(timeout))
+                raise subprocess.TimeoutExpired(("pnpm",), timeout)
+            return "", ""
+
+        def wait(self, timeout=None):
+            del timeout
+            self.returncode = -signal.SIGTERM
+            return self.returncode
+
+        def poll(self):
+            return self.returncode
+
+    @staticmethod
+    def _killpg(pgid: int, sig: int) -> None:
+        del pgid
+        if sig == 0:
+            raise ProcessLookupError
+
+    def build_runner(self, root: Path) -> BrowserProcessRunner:
         return BrowserProcessRunner(
-            allowed_executables=frozenset({"python"}),
-            executable_overrides={"python": sys.executable},
+            executable_overrides={"pnpm": "/usr/bin/pnpm"},
             poll_interval=0.02,
+            workspace_root=root,
         )
 
+    @staticmethod
+    def _fake_supervisor(log_path: Path) -> SupervisedBackground:
+        with mock.patch.object(
+            SupervisedBackground,
+            "__init__",
+            return_value=None,
+        ):
+            state = SupervisedBackground()
+        state.log_path = log_path
+        state.request_stop = mock.Mock()
+        return state
+
     def test_process_timeout_terminates_command(self) -> None:
-        started = time.monotonic()
-        result = self.python_runner().run(
-            ("python", "-c", "import time; time.sleep(10)"),
-            cwd=ROOT,
-            timeout_seconds=0.1,
-        )
+        process = self._TimedProcess()
+        with tempfile.TemporaryDirectory() as temp, mock.patch(
+            "coding_workflow.local_execution._spawn",
+            return_value=process,
+        ), mock.patch(
+            "coding_workflow.local_execution.os.killpg",
+            side_effect=self._killpg,
+        ):
+            root = Path(temp)
+            started = time.monotonic()
+            result = VisionForgeLocalExecutionApprover(True).run_browser(
+                self.build_runner(root),
+                BrowserProcessRunner.BUILD_COMMAND,
+                cwd=root,
+                timeout_seconds=0.05,
+            )
         self.assertTrue(result.timed_out)
         self.assertEqual(result.exit_code, 124)
         self.assertLess(time.monotonic() - started, 2)
 
+    def test_public_text_uses_core_redaction_and_bounding(self) -> None:
+        sensitive = (
+            '{"token": "super-secret-\\\"escaped-secret-tail", '
+            '"authorization": "Bearer abcdefghijklmnop==", '
+            '"pem": "-----BEGIN PRIVATE KEY-----private-material'
+            '-----END PRIVATE KEY-----", '
+            '"ordinary": "visible text"}'
+        )
+        samples: tuple[object, ...] = (
+            sensitive,
+            sensitive.encode("utf-8"),
+            "ordinary output with punctuation, quotes, and spaces",
+            "ordinary-" * 2_000,
+        )
+        for sample in samples:
+            core = sanitize_output(sample, limit_chars=128)
+            browser = _bounded_public_text(sample, limit=128)
+            self.assertEqual(
+                browser,
+                (
+                    core.text,
+                    core.truncated,
+                    core.raw_chars,
+                    core.raw_sha256,
+                ),
+            )
+
+        full_text = _bounded_public_text(sensitive)[0]
+        for secret in (
+            "super-secret",
+            "escaped-secret-tail",
+            "abcdefghijklmnop",
+            "private-material",
+        ):
+            self.assertNotIn(secret, full_text)
+        self.assertIn("visible text", full_text)
+
+    def test_process_execution_dto_redacts_all_public_representations(self) -> None:
+        sensitive = (
+            '{"api_key": "dto-secret-\\\"escaped-tail", '
+            '"auth": "Bearer zyxwvutsrqponmlk==", '
+            '"key": "-----BEGIN RSA PRIVATE KEY-----dto-private'
+            '-----END RSA PRIVATE KEY-----", '
+            '"ordinary": "kept"}'
+        )
+        execution = ProcessExecution(
+            ("node", sensitive),
+            1,
+            sensitive,
+            sensitive,
+            7,
+            profile_manifest={sensitive: {"detail": sensitive}},
+            cleanup_evidence={"detail": [sensitive]},
+            cleanup_evidence_digest="d" * 64,
+        )
+        core = sanitize_output(sensitive, limit_chars=10_000)
+        self.assertEqual(execution.stdout, core.text)
+        self.assertEqual(execution.stderr, core.text)
+        self.assertEqual(execution.stdout_chars, core.raw_chars)
+        self.assertEqual(execution.stdout_sha256, core.raw_sha256)
+        representations = (
+            repr(execution),
+            json.dumps(execution.to_dict(), ensure_ascii=False),
+        )
+        for representation in representations:
+            for secret in (
+                "dto-secret",
+                "escaped-tail",
+                "zyxwvutsrqponmlk",
+                "dto-private",
+            ):
+                self.assertNotIn(secret, representation)
+            self.assertIn("kept", representation)
+
+    def test_browser_exception_representation_uses_core_redaction(self) -> None:
+        sensitive = (
+            '{"password": "exception-secret-\\\"escaped-tail", '
+            '"auth": "Bearer qwertyuiopasdfgh==", '
+            '"ordinary": "kept"}'
+        )
+        error = BrowserRuntimeError(sensitive)
+        self.assertEqual(str(error), redact_text(sensitive))
+        for representation in (str(error), repr(error)):
+            self.assertNotIn("exception-secret", representation)
+            self.assertNotIn("escaped-tail", representation)
+            self.assertNotIn("qwertyuiopasdfgh", representation)
+            self.assertIn("kept", representation)
+
     def test_process_cancel_terminates_command(self) -> None:
         lifecycle = LifecycleController()
         lifecycle.mark_running()
-
-        def cancel() -> None:
-            time.sleep(0.1)
-            lifecycle.cancel("测试取消")
-
-        thread = threading.Thread(target=cancel)
-        thread.start()
-        started = time.monotonic()
-        try:
+        lifecycle.cancel("测试取消")
+        process = self._TimedProcess()
+        with tempfile.TemporaryDirectory() as temp, mock.patch(
+            "coding_workflow.local_execution._spawn",
+            return_value=process,
+        ), mock.patch(
+            "coding_workflow.local_execution.os.killpg",
+            side_effect=self._killpg,
+        ):
+            root = Path(temp)
+            started = time.monotonic()
             with self.assertRaisesRegex(TaskCancelledError, "测试取消"):
-                self.python_runner().run(
-                    ("python", "-c", "import time; time.sleep(10)"),
-                    cwd=ROOT,
+                VisionForgeLocalExecutionApprover(True).run_browser(
+                    self.build_runner(root),
+                    BrowserProcessRunner.BUILD_COMMAND,
+                    cwd=root,
                     timeout_seconds=5,
                     lifecycle=lifecycle,
                 )
-        finally:
-            thread.join()
         self.assertLess(time.monotonic() - started, 2)
+
+    def test_managed_process_retains_live_state_until_cleanup_is_terminal(
+        self,
+    ) -> None:
+        terminal_evidence = MappingProxyType({"verified": True})
+        barrier_error = LocalExecutionError(
+            CLEANUP_FAILED,
+            "synthetic cleanup barrier",
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            state = self._fake_supervisor(root / "server.log")
+            state.stop = mock.Mock(side_effect=(barrier_error, None))
+            runner = self.build_runner(root)
+            managed = ManagedProcess(state, runner)
+            with mock.patch.object(
+                SupervisedBackground,
+                "cleanup_terminal",
+                new_callable=mock.PropertyMock,
+                side_effect=(False, True),
+            ), mock.patch.object(
+                SupervisedBackground,
+                "running",
+                new_callable=mock.PropertyMock,
+                return_value=True,
+            ), mock.patch.object(
+                SupervisedBackground,
+                "profile_manifest",
+                new_callable=mock.PropertyMock,
+                return_value=MappingProxyType({
+                    "profile_id": "visionforge_dev",
+                }),
+            ), mock.patch.object(
+                SupervisedBackground,
+                "cleanup_evidence",
+                new_callable=mock.PropertyMock,
+                return_value=MappingProxyType({}),
+            ) as cleanup_evidence, mock.patch.object(
+                SupervisedBackground,
+                "cleanup_evidence_digest",
+                new_callable=mock.PropertyMock,
+                return_value="",
+            ) as cleanup_digest, mock.patch.object(
+                SupervisedBackground,
+                "server_log",
+                new_callable=mock.PropertyMock,
+                return_value=MappingProxyType({
+                    "chars": 0,
+                    "sha256": "0" * 64,
+                    "truncated": False,
+                }),
+            ):
+                with self.assertRaises(LocalExecutionError) as raised:
+                    managed.stop()
+                self.assertIs(raised.exception, barrier_error)
+                self.assertTrue(managed.running)
+                self.assertEqual(dict(managed.cleanup_evidence), {})
+                self.assertEqual(
+                    managed.local_execution_approval_state()["log_path"],
+                    str(root / "server.log"),
+                )
+
+                cleanup_evidence.return_value = terminal_evidence
+                cleanup_digest.return_value = "d" * 64
+                managed.stop()
+
+            self.assertFalse(managed.running)
+            self.assertEqual(
+                dict(managed.cleanup_evidence), dict(terminal_evidence)
+            )
+            self.assertEqual(managed.cleanup_evidence_digest, "d" * 64)
+            cleanup_evidence.return_value = MappingProxyType({
+                "verified": False,
+            })
+            self.assertEqual(dict(managed.cleanup_evidence), {"verified": True})
+            managed.stop()
+
+    def test_nonterminal_stop_keeps_abandonment_cleanup_armed(self) -> None:
+        barrier_error = LocalExecutionError(
+            CLEANUP_FAILED,
+            "synthetic cleanup barrier",
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            state = self._fake_supervisor(root / "server.log")
+            state.stop = mock.Mock(side_effect=barrier_error)
+            managed = ManagedProcess(state, self.build_runner(root))
+            reference = weakref.ref(managed)
+
+            with mock.patch.object(
+                SupervisedBackground,
+                "cleanup_terminal",
+                new_callable=mock.PropertyMock,
+                return_value=False,
+            ):
+                with self.assertRaises(LocalExecutionError):
+                    managed.stop()
+                del managed
+                gc.collect()
+
+            self.assertIsNone(reference())
+            state.request_stop.assert_called_once_with("abandoned")
 
     def test_project_config_rejects_external_origin_and_install(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

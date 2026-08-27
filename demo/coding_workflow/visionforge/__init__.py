@@ -30,6 +30,7 @@ from .browser import (
     BrowserTestArtifacts,
     PlaywrightBrowserTester,
     ProcessExecution,
+    VisionForgeLocalExecutionApprover,
 )
 from .contracts import (
     AcceptanceCriterion,
@@ -174,6 +175,7 @@ __all__ = [
     "VisionForgeEvaluator",
     "VisionForgeFeedbackPolicy",
     "VisionForgeFixer",
+    "VisionForgeLocalExecutionApprover",
     "VisionForgeQualityGate",
     "VisionForgeRecoveryError",
     "VisionForgeRunner",

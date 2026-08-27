@@ -37,6 +37,7 @@ from coding_workflow import (
     build_image_perception_registry,
     score_image_observation,
 )
+from coding_workflow.local_execution_approval import LocalExecutionApprover
 
 
 PNG = b"\x89PNG\r\n\x1a\nfixed-image-requirement"
@@ -346,6 +347,7 @@ class ImagePerceptionTests(unittest.TestCase):
                     artifacts=artifacts,
                     subject_refs=(subject,),
                     task_id=f"tax-{modality}",
+                    approver_factory=lambda: LocalExecutionApprover(True),
                 )
                 outcomes.append(result.outcome)
                 validator_sets.append(tuple(

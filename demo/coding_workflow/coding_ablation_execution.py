@@ -326,7 +326,10 @@ def run_real_model_ablation(
     experiment: CoreAblationExperimentConfig,
     *,
     create_client: Callable[[ModelConfig], ModelClient] | None = None,
+    trusted_local_execution: bool = False,
 ) -> CoreAblationExecutionResult:
+    if type(trusted_local_execution) is not bool:
+        raise TypeError("trusted_local_execution 必须是真正的 bool")
     experiment.validate(model_config)
     budget = ModelCallBudget(
         max_model_calls=experiment.max_model_calls,
@@ -352,6 +355,7 @@ def run_real_model_ablation(
         registry,
         real_model_ablation_profiles(experiment),
         allow_model_usage=True,
+        trusted_local_execution=trusted_local_execution,
     ).run()
     audits = {
         role: tuple(

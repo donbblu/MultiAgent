@@ -39,6 +39,7 @@ from coding_workflow import (
     build_audio_transcription_registry,
     score_audio_transcript,
 )
+from coding_workflow.local_execution_approval import LocalExecutionApprover
 
 
 WAV = b"RIFF" + (40).to_bytes(4, "little") + b"WAVE" + b"fixed-audio-requirement"
@@ -392,6 +393,7 @@ class AudioTranscriptionTests(unittest.TestCase):
                     artifacts=artifacts,
                     subject_refs=(subject,),
                     task_id=f"tax-{modality}",
+                    approver_factory=lambda: LocalExecutionApprover(True),
                 )
                 outcomes.append(result.outcome)
                 validator_sets.append(tuple(

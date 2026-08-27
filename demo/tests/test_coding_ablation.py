@@ -5,6 +5,9 @@ import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
+
+import core_coding_ablation_run as cli
 
 from coding_workflow import (
     AblationBudget,
@@ -34,7 +37,9 @@ class CodingAblationTests(unittest.TestCase):
     def test_scripted_dry_run_exercises_all_three_strategies(self) -> None:
         suite = self.suite
         registry, _ = build_scripted_ablation_registry(suite)
-        report = CodingAblationRunner(suite, registry).run()
+        report = CodingAblationRunner(
+            suite, registry, trusted_local_execution=True
+        ).run()
         summary = report.summary()
 
         self.assertTrue(report.dry_run)
@@ -61,7 +66,9 @@ class CodingAblationTests(unittest.TestCase):
     def test_visibility_policy_never_grants_hidden_tests_or_solution(self) -> None:
         suite = self.suite
         registry, workers = build_scripted_ablation_registry(suite)
-        report = CodingAblationRunner(suite, registry).run()
+        report = CodingAblationRunner(
+            suite, registry, trusted_local_execution=True
+        ).run()
 
         for worker in workers.values():
             for request in worker.requests:
@@ -104,7 +111,12 @@ class CodingAblationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "边界被修改"):
             type(dual)(dual.strategy, (dual.stage("plan"), relaxed), dual.budget)
         registry, _ = build_scripted_ablation_registry(suite)
-        report = CodingAblationRunner(suite, registry, profiles).run()
+        report = CodingAblationRunner(
+            suite,
+            registry,
+            profiles,
+            trusted_local_execution=True,
+        ).run()
 
         by_task: dict[str, set[tuple[str, ...]]] = {}
         for trial in report.trials:
@@ -124,7 +136,12 @@ class CodingAblationTests(unittest.TestCase):
         )
         profiles = default_ablation_profiles(budget)
         registry, _ = build_scripted_ablation_registry(suite)
-        report = CodingAblationRunner(suite, registry, profiles).run()
+        report = CodingAblationRunner(
+            suite,
+            registry,
+            profiles,
+            trusted_local_execution=True,
+        ).run()
         dual = next(
             item for item in report.trials
             if item.task_id == "python-tax-rounding"
@@ -224,7 +241,9 @@ class CodingAblationTests(unittest.TestCase):
     def test_json_report_marks_scripted_usage_and_contains_no_hidden_source(self) -> None:
         suite = self.suite
         registry, _ = build_scripted_ablation_registry(suite)
-        report = CodingAblationRunner(suite, registry).run()
+        report = CodingAblationRunner(
+            suite, registry, trusted_local_execution=True
+        ).run()
         with tempfile.TemporaryDirectory() as temp:
             output = report.write_json(Path(temp) / "ablation.json")
             raw = output.read_text(encoding="utf-8")
@@ -241,6 +260,39 @@ class CodingAblationTests(unittest.TestCase):
         self.assertNotIn("2.675", raw)
         self.assertNotIn(".harness-hidden-tests", raw)
         self.assertNotIn("ROUND_HALF_UP", raw)
+
+    def test_local_execution_flag_requires_a_real_bool(self) -> None:
+        registry, _ = build_scripted_ablation_registry(self.suite)
+        with self.assertRaisesRegex(TypeError, "真正的 bool"):
+            CodingAblationRunner(
+                self.suite,
+                registry,
+                trusted_local_execution=1,  # type: ignore[arg-type]
+            )
+
+    def test_library_default_fails_closed_at_validation(self) -> None:
+        suite = self.suite
+        registry, _ = build_scripted_ablation_registry(suite)
+        runner = CodingAblationRunner(suite, registry)
+        with tempfile.TemporaryDirectory() as temp:
+            trial = runner.run_trial(
+                suite.task("python-tax-rounding"),
+                runner.profiles[1],
+                Path(temp),
+            )
+
+        self.assertEqual(trial.outcome, VerificationOutcome.UNKNOWN)
+        self.assertFalse(trial.delivered)
+
+    def test_cli_requires_explicit_local_execution_before_ablation(self) -> None:
+        with patch.object(cli.FixedCodingSuite, "load") as loader:
+            with self.assertRaises(SystemExit) as raised:
+                cli.main([])
+        loader.assert_not_called()
+        self.assertEqual(raised.exception.code, 2)
+        self.assertTrue(cli.parse_args([
+            "--trusted-local-execution",
+        ]).trusted_local_execution)
 
 
 if __name__ == "__main__":
