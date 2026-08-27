@@ -11,7 +11,8 @@
 
 > 当前入口运行真实的 **Agent Runtime MVP**：它会创建持久 Thread、AgentInstance 与
 > AgentSession，经 SQLite Mailbox 投递结构化 Message，并在共享线程池的 Agent 泳道中
-> 执行 scripted Worker。它尚未经过最终 release check，也不是生产级 Runtime。
+> 执行 scripted Worker。本地候选 `cbb35e3` 已通过干净检出 release check 与最终独立
+> Review，初审唯一文档新鲜度发现已关闭。它仍不是生产级 Runtime。
 
 要求 Python 3.10+。从仓库根目录运行：
 
@@ -60,8 +61,8 @@ Trial、Agent Runtime、StageAudit、Validator、失败原因、期望/实际矩
 该 scripted/offline Demo 证明冻结场景下的 Agent 生命周期、Mailbox、Handoff、泳道、
 Harness 编排、权限、Artifact、Validator 和 Fix 控制流；不证明 LLM 效果、多 Agent
 普遍优越性或生产认证。它没有 ACK/重试/崩溃重投、跨进程泳道协调、in-flight 恢复、
-exactly-once 或 durable Turn Store。CLI 与 JSON 报告是可复用 MVP 产品面；只有完成
-最终 release check 后才能称为作品集发布候选。下文真实模型 CLI、Web 和 VisionForge
+exactly-once 或 durable Turn Store。CLI 与 JSON 报告是可复用 MVP 产品面；本地候选已
+完成 release check 和最终独立Review。下文真实模型 CLI、Web 和 VisionForge
 是保留的进阶/纵向入口，不是默认路径。
 
 ## 当前执行路线

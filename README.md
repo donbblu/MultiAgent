@@ -19,7 +19,8 @@ Multi-Agent Harness
 
 ## Quickstart：默认离线作品集 Demo
 
-> 当前是可复用的 **Agent Runtime MVP**，但还不是最终发布候选或生产系统。默认入口会
+> 当前是已完成本地发布检查的 **作品集 Agent Runtime MVP 候选**，但不是生产系统、
+> Runtime Acceptance 或已对外发布版本。默认入口会
 > 创建持久 Thread、AgentInstance 和 AgentSession，经 SQLite Mailbox 投递结构化 Message，
 > 并在共享线程池的 Agent 泳道中执行现有 scripted Worker。Runtime 仍拥有 Validator 和
 > 最终状态裁决权；模型、Worker 与 Agent 都不能自行宣告完成。
@@ -89,7 +90,7 @@ Runtime-owned build / unittest / CLI Validator
 
 ## 当前状态
 
-项目目前是一个 **已有可运行离线 Agent Runtime MVP、尚未进入最终 release check、也未达到生产级的本地原型**。`MVP-AGENT-RUNTIME-01A～01D` 已完成 Agent 实体与 SQLite Store、Mailbox 与执行泳道、真实 Handoff 和 Demo 接入，以及文档、全量回归和独立审查。默认入口精确得到 9 Trial、6 交付、3 个预期失败、3 个修复成功、21 次 scripted 调用和 0 次模型调用；这些结果只证明冻结场景下的 Runtime/Harness 控制流。
+项目目前是一个 **已完成本地作品集发布检查、但未达到生产级的原型**。`MVP-AGENT-RUNTIME-01A～01D` 已完成 Agent 实体与 SQLite Store、Mailbox 与执行泳道、真实 Handoff 和 Demo 接入；本地候选 `cbb35e3` 的干净检出 Quickstart、回归、compile、差异门禁和最终独立审查均通过，初审唯一文档新鲜度发现已关闭，最终 0 finding。默认入口精确得到 9 Trial、6 交付、3 个预期失败、3 个修复成功、21 次 scripted 调用和 0 次模型调用；这些结果只证明冻结场景下的 Runtime/Harness 控制流。
 
 现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；Runtime Kernel 已完成 `PROD-01A` 领域协议、`PROD-01B-1` SQLite Schema/Migration/UnitOfWork 事务底座、`PROD-01B-2` concrete Thread current-state + append-only RuntimeEvent 原子纵切、`PROD-01B-3A` durable Outbox intent 原子三写，以及 `PROD-01B-3B-1` 本地 claim/NACK/expiry-reclaim。`local_trusted_execution/v1` 的主体候选也已实现并提交，但没有完成生产安全认证。
 
@@ -155,10 +156,10 @@ EXPECTED_RED 证据，因此不能混入普通 discover 进程；它们不是当
 
 ## 后续路线
 
-`MVP-AGENT-RUNTIME-01D` 已完成文档、全量回归和独立审查。下一批只有在用户另行
-启动后才进入 `MVP-CLOSE-01D`，届时从干净检出复跑
-Quickstart、定向回归、Python compile和差异格式检查，并形成最终独立Review与release
-candidate。生产级持久Invocation、Transport publish/ACK、完整Thread Web、资源隔离、
+`MVP-AGENT-RUNTIME-01D` 已完成文档、全量回归和独立审查；`MVP-CLOSE-01D` 已从本地候选
+`cbb35e3` 的干净检出复跑 Quickstart、定向/全量回归、Python compile和差异格式检查，
+并完成最终独立Review。当前没有活动作品集批次；tag、push或部署需用户另行决定。生产级持久
+Invocation、Transport publish/ACK、完整Thread Web、资源隔离、
 容量与事故运营继续作为后续Roadmap。
 
 ## 权威文档

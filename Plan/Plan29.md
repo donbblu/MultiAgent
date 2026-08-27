@@ -124,8 +124,9 @@ Medium文档新鲜度问题已按`TRACE-189`修正，并由同一审查者窄复
 
 ### MVP-CLOSE-01D：作品集版发布检查
 
-状态：**进行中（2026-08-27）**。Agent Runtime 01A～01D前置已满足；候选manifest已在
-`TRACE-194`冻结，正在创建本地release-candidate并执行干净检出复现。尚未通过最终独立Review。
+状态：**已完成（2026-08-27）**。本地候选`cbb35e3`已完成干净检出Quickstart、拒绝
+边界、33/184/579回归、compile与diff门禁；最终独立Review支持功能/安全/manifest，
+初审唯一文档/证据新鲜度Medium见`TRACE-195`，修正后窄复核确认关闭，最终0 finding。
 
 - 从干净检出运行 Quickstart 和一次离线端到端 smoke。
 - 运行与默认 Demo、Artifact、Validator、本地执行拒绝边界直接相关的定向回归；再运行 Python compile 与 `git diff --check`。
@@ -268,4 +269,4 @@ limitations
 
 ## 下一动作
 
-`MVP-CLOSE-01A～01C` 的薄Demo baseline已保留；`MVP-AGENT-RUNTIME-01A～01D`已完成真实 Agent/Session、schema v5 Mailbox、同Agent串行/跨Agent并行lane、结构化Handoff、Portfolio Demo真实接入、两份README、33项定向、184项Runtime、579项非expected-red全仓回归、连续5次真实CLI smoke、compile/diff门禁和最终0 finding独立Review。下一批是仍暂停的`MVP-CLOSE-01D`，必须由用户另行启动；不得自动扩张到Web、真实模型、Browser、完整PROD-01C～05、stage/commit/push。
+`MVP-CLOSE-01A～01D`与`MVP-AGENT-RUNTIME-01A～01D`均已完成，本地作品集候选为`cbb35e3`；干净检出Quickstart、拒绝边界、33项定向、184项Runtime、579项非expected-red全仓回归、compile/diff、报告契约与最终独立Review均通过，初审唯一Medium已关闭。当前没有活动批次；tag、push或部署由用户另行决定，不自动扩张到Web、真实模型、Browser或完整PROD-01C～05。

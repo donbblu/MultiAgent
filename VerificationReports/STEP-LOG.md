@@ -4225,3 +4225,105 @@ ps -axo pid=,ppid=,pgid=,command=
 - `supersedes_entry_id`：`NONE — starts MVP-CLOSE-01D after explicit user authorization`
 - `git_checkpoint`：`PRE_REGISTERED / WORKTREE_DIRTY / STAGING_EMPTY / commit=PENDING / push=NOT_AUTHORIZED`
 - `next_action`：审计冻结manifest的依赖、敏感信息和diff边界；更新Plan29/HANDOFF为本批进行中后，显式创建`codex/mvp-close-01d`并只stage冻结清单。
+
+### TRACE-20260827-195
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-195 / MVP-CLOSE-01D-RELEASE-CHECK / REVIEW / 2026-08-27T18:51:51+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/release_review independent reviewer; producer=/root / exact clean release candidate cbb35e3 / Plan29 MVP-CLOSE-01D + TRACE-194`
+- `what / why / expected_effect_or_gate`：全新独立审查者按`review-artifact`对精确commit、28-file manifest、干净worktree/report/SQLite、Plan29、README、HANDOFF和安全/架构边界做只读发布审查。功能、权限、manifest、保护路径排除、运行依赖和clean report均获支持；发现一个Medium阻塞：候选提交内部README/demo README/Plan29/HANDOFF仍混有“发布检查未开始/暂停/WORKTREE_ONLY/无candidate”的旧状态，Step仅有PRE_REGISTER，尚未把已执行证据绑定为ACTUAL/CHECKPOINT。
+- `scope / non_goals`：审查者未修改仓库、未签发Runtime Acceptance、未commit/tag/push。此条封存初始`REVISE`，后续不得删除或改写；修正只允许文档/证据新鲜度，不改功能代码。
+- `baseline`：`subject commit=cbb35e3ffd59bdad9d00978613f65e054166d7c7; parent=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; tree=84afee47edba61bcd55887511065c9967858e8d8; clean report=a9aeab723de74d3e2fc5a8a0b3bb883e6c9a739f51ae8137fe2dc4bfbd78c4fe; pre-REVIEW STEP=b70e9dcc2ad7b0b27745f0f90d0077349d537fecc9ffe4a46ed0f7899fc1e62a`
+- `commands`：审查者读取skill/checklists，直接检查commit/diff/manifest、Plan29/README/HANDOFF/Step、代码/测试/report与SQLite；独立复跑33/33定向和无批准exit2/report不变；核对两个expected-red文件、保护路径相对parent无变化、`git diff --check`、秘密扫描和clean status。Producer另有184/184、579/579 skip9、py_compile与clean Quickstart证据。
+- `stop_or_rollback_conditions`：功能/安全阻塞未触发；文档/证据Medium在新候选前必须关闭。不得用重跑覆盖旧结论或修改保护路径。
+- `result / effect`：`REVISE / Medium=1 blocking documentation+evidence freshness; functional/security/manifest evidence supported`
+- `artifacts / evidence`：独立确认clean v2报告9/6/3/3、21 scripted/0 model、9 Thread/21 Agent+closed Session/42 consumed、21 stage Message/12 cross-Agent Handoff、FIFO/max parallel3、Runtime-owned Validator、完整私有状态；保护路径未进commit。
+- `remaining_risks`：Reviewer未重复184/579/py_compile和成功Quickstart以避免改变report/SQLite，依赖producer精确证据；新候选必须把这些结果与cbb35e3/report hash持久绑定并做窄复核。
+- `review`：`REVISE / findings=1 / blocking=1 / severity=Medium / independent_read_only`
+- `supersedes_entry_id`：`NONE — preserves initial release review before remediation`
+- `git_checkpoint`：`REVIEWED_COMMIT cbb35e3 / branch=codex/mvp-close-01d / protected paths remain unstaged / push=NOT_AUTHORIZED`
+- `next_action`：统一两份README、Plan29尾部与HANDOFF全部当前态，追加clean-checkout ACTUAL；不改功能代码。完成后让独立Reviewer对精确修正版本做窄复核。
+
+### TRACE-20260827-196
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-196 / MVP-CLOSE-01D-RELEASE-CHECK / ACTUAL / 2026-08-27T18:53:11+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / local candidate commit + independent clean-checkout release gates + documentation remediation / Plan29 MVP-CLOSE-01D + TRACE-194/195`
+- `what / why / expected_effect_or_gate`：在本地分支`codex/mvp-close-01d`创建候选内容commit`cbb35e3`，只含TRACE-194的28-file manifest；四个保护路径未进入commit。用独立detached worktree从精确commit干净检出，运行唯一Quickstart、无批准拒绝、Agent/Runtime/全仓回归、compile、commit diff与report contract。初始独立Review支持功能/安全/manifest，只因提交内旧发布状态给出Medium；现已统一两份README、Plan29尾部、HANDOFF深层当前态并追加本ACTUAL，等待窄复核。
+- `scope / non_goals`：本次修正只改`README.md`、`demo/README.md`、`Plan/Plan29.md`、`HANDOFF.md`和追加Step；候选功能代码保持`cbb35e3`不变。未纳入/修改用户保护路径内容，不push/tag/deploy，不声明Runtime Acceptance、production-ready或SEC KEEP。
+- `baseline`：`branch=codex/mvp-close-01d; candidate=cbb35e3ffd59bdad9d00978613f65e054166d7c7; parent=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; tree=84afee47edba61bcd55887511065c9967858e8d8; original worktree after candidate commit contains only four protected dirty paths before docs remediation`
+- `commands`：`git switch -c codex/mvp-close-01d`；只对冻结28路径`git add`并核对cached manifest/stat/check/secret+conflict scan；`git commit -m "feat: assemble portfolio agent runtime candidate"`；`git worktree add --detach ... cbb35e3`。clean root运行`python3 demo/portfolio_demo.py --trusted-local-execution` exit0；无批准运行exit2且report hash前后不变；clean demo运行33/33定向、184/184 Runtime、579/579非expected-red（skip9）；指定文件`py_compile`、`git diff --check HEAD^ HEAD`和精确JSON契约断言全部通过，clean status始终无tracked变化。
+- `stop_or_rollback_conditions`：未触发。初始Review Medium属于可恢复文档新鲜度问题，已封存在TRACE-195并按限定范围修正；功能候选没有失败、竞态、SQLite异常或安全边界退化。
+- `result / effect`：`candidate_created=yes; clean_checkout=yes; Quickstart PASS; denial exit2/report_unchanged; directed=33/33; Runtime=184/184; full_non_expected_red=579/579 skip9; compile/diff/report_contract=PASS; initial independent review=REVISE Medium1 docs freshness; remediation candidate ready`
+- `artifacts / evidence`：`candidate commit=cbb35e3ffd59bdad9d00978613f65e054166d7c7; clean report=a9aeab723de74d3e2fc5a8a0b3bb883e6c9a739f51ae8137fe2dc4bfbd78c4fe; report=9/6/3/3,21 scripted/0 model,9 Thread/21 Agent+closed Session/42 consumed/21 stage Message/12 Handoff/FIFO true/max parallel3/Runtime-owned Validator; remediation README=50588f64e660ed43e352bd6f3b61077a0acb9fcd4f78e32e8f54277bd203eea7; demo README=e71a4cbd6158526bc52bb80858fd68ba6b37e6563f50d9673c6f1fc552654008; Plan29=5a8f8a8838340070884f5371d52ceaea9a6f404bbc2b2ec2f8dfa43ea4456616; HANDOFF=e4510df16af1880d1e2d14cdf047bd028d2d8be76d98bbf7cfc08b54fcf89c5e; pre-ACTUAL STEP=1a811897c58614bb6b3041988dbb12f0d459f10245a9e90bbea63dad843d14d3`
+- `remaining_risks`：产品限制仍是receive-time Mailbox cursor、无ack/retry/crash redelivery、无多进程lane协调、durable Turn Store、in-flight恢复、exactly-once、真实模型/网络/Browser或生产认证。原工作树四个保护路径未入candidate；本地branch尚未push/tag/deploy。文档修正仍需独立窄复核后才能关闭批次。
+- `review`：`functional release review evidence in TRACE-195; remediation review=PENDING`
+- `supersedes_entry_id`：`NONE — fulfills TRACE-194 while preserving TRACE-195 initial REVISE`
+- `git_checkpoint`：`candidate cbb35e3 committed locally / remediation docs WORKTREE_ONLY / protected paths unstaged / push=NOT_AUTHORIZED`
+- `next_action`：对修正后的两份README、Plan29、HANDOFF和TRACE-195/196做独立窄复核；若通过，追加REVIEW/CHECKPOINT并形成最终本地证据commit。
+
+### TRACE-20260827-197
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-197 / MVP-CLOSE-01D-RELEASE-CHECK / REVIEW / 2026-08-27T18:56:13+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/release_review independent reviewer; producer=/root / fixed documentation-evidence remediation / Plan29 MVP-CLOSE-01D + TRACE-195/196`
+- `what / why / expected_effect_or_gate`：同一独立Reviewer对固定五文件修正版本做全文件只读窄复核，确认TRACE-195唯一Medium“发布状态与证据新鲜度矛盾”完全关闭。两份README准确区分clean门禁与当时待封印状态；Plan29顶部/底部一致；HANDOFF顶部、protocol、HandoffProposal、深层next_action和方向决议无paused/not-started/no-commit/WORKTREE_ONLY矛盾；TRACE-195原始REVISE保留，TRACE-196精确绑定commit/report/全部门禁与限制。
+- `scope / non_goals`：只读文档/证据复核，未重跑功能门禁、未修改文件、未签发Runtime Acceptance或授权push/tag/deploy。
+- `baseline`：`functional candidate=cbb35e3ffd59bdad9d00978613f65e054166d7c7; clean report=a9aeab723de74d3e2fc5a8a0b3bb883e6c9a739f51ae8137fe2dc4bfbd78c4fe; reviewed README=50588f64e660ed43e352bd6f3b61077a0acb9fcd4f78e32e8f54277bd203eea7; demo README=e71a4cbd6158526bc52bb80858fd68ba6b37e6563f50d9673c6f1fc552654008; Plan29=5a8f8a8838340070884f5371d52ceaea9a6f404bbc2b2ec2f8dfa43ea4456616; HANDOFF=e4510df16af1880d1e2d14cdf047bd028d2d8be76d98bbf7cfc08b54fcf89c5e; STEP=96e18290ccc36f86b4adc2d5d249621803a804ffbf648a1b1d42ea0f871b2163`
+- `commands`：审查者核对五个hash、全文件反例扫描、相对cbb35e3功能路径diff为空、四个保护路径保持原状态和五文件`git diff --check`；按窄复核请求未重复Quickstart/33/184/579/compile。
+- `stop_or_rollback_conditions`：未触发；没有剩余或新增发现。
+- `result / effect`：`APPROVE / findings=0 / TRACE-195 prior Medium CLOSED`
+- `artifacts / evidence`：Reviewer逐项定位README、demo README、Plan29、HANDOFF和TRACE-195/196，确认当前态、下一动作、manifest、clean证据、expected-red与已知限制一致。
+- `remaining_risks`：本窄复核沿用TRACE-195/196功能证据；advisory only，不是Runtime Acceptance、外部发布或生产认证。
+- `review`：`APPROVE / independent_read_only / findings=0 / prior_finding=CLOSED`
+- `supersedes_entry_id`：`NONE — closes TRACE-195 while preserving initial finding history`
+- `git_checkpoint`：`candidate cbb35e3 + approved remediation docs WORKTREE_ONLY / protected paths unstaged / push=NOT_AUTHORIZED`
+- `next_action`：更新五份文档为MVP-CLOSE-01D completed，追加CHECKPOINT，让独立Reviewer对精确最终内容做状态封印，随后提交本地证据文档。
+
+### TRACE-20260827-198
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-198 / MVP-CLOSE-01D-RELEASE-CHECK / CHECKPOINT / 2026-08-27T18:56:13+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / completed local portfolio release-candidate checkpoint / Plan29 MVP-CLOSE-01D`
+- `what / why / expected_effect_or_gate`：本地作品集候选已形成、从独立干净检出复现并完成独立发布Review。功能候选`cbb35e3`精确排除四个保护路径；Quickstart、fail-closed拒绝、33/184/579、compile/diff、v2报告契约全部通过；初审唯一Medium文档新鲜度已封存、修正并由独立Reviewer确认关闭。MVP-CLOSE-01A～01D与MVP-AGENT-RUNTIME-01A～01D全部完成。
+- `scope / non_goals`：本检查点表示portfolio-complete/local demo ready，不表示production-ready、Runtime Acceptance、SEC KEEP、真实模型效果、tag、push、部署或已发布GitHub。没有触碰四个保护路径，不恢复PROD/SEC路线。
+- `baseline`：`base=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e; branch=codex/mvp-close-01d; functional candidate=cbb35e3ffd59bdad9d00978613f65e054166d7c7; clean report=a9aeab723de74d3e2fc5a8a0b3bb883e6c9a739f51ae8137fe2dc4bfbd78c4fe; TRACE-196 gates PASS; TRACE-197 independent review APPROVE findings0`
+- `commands`：见TRACE-196/197；最终状态文本只做完成态同步，功能代码相对cbb35e3无变化。
+- `stop_or_rollback_conditions`：未触发；所有独立审查发现已在完成声明前关闭。
+- `result / effect`：`achieved=yes; portfolio-complete=yes; local-demo-ready=yes; MVP-CLOSE-01D=COMPLETED; independent review APPROVE findings0; tag/push/deploy=NOT_AUTHORIZED_NOT_DONE`
+- `artifacts / evidence`：候选commit/report/命令见TRACE-196；初始REVISE见TRACE-195；修正APPROVE见TRACE-197；两份README、Plan29、HANDOFF和本Step将作为cbb35e3之后的本地证据commit提交。
+- `remaining_risks`：receive-time cursor、无ack/retry/crash redelivery、多进程lane协调、durable Turn Store、in-flight恢复、exactly-once、真实模型/网络/Browser和生产认证；原工作树仍有四个未入候选的用户改动。全部不影响冻结作品集完成口径但禁止夸大。
+- `review`：`APPROVE / findings=0 / advisory portfolio release review only`
+- `supersedes_entry_id`：`NONE`
+- `git_checkpoint`：`functional candidate cbb35e3 committed / final evidence docs pending local commit / push=NOT_AUTHORIZED`
+- `next_action`：完成最终只读状态封印后提交五份证据文档并停止；等待用户决定是否push/tag/deploy或恢复其他路线。
+
+### TRACE-20260827-199
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-199 / MVP-CLOSE-01D-RELEASE-CHECK / REVIEW / 2026-08-27T18:57:45+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root/release_review independent reviewer; producer=/root / final staged status seal candidate / Plan29 MVP-CLOSE-01D + TRACE-198`
+- `what / why / expected_effect_or_gate`：独立Reviewer对相对`cbb35e3`仅五个staged文档的完成态做最终封印，确认scope、证据、TRACE顺序、保护路径和授权边界均正确，但发现根README Quickstart导语仍写“还不是最终发布候选”，与同文件、Plan29和HANDOFF的portfolio-complete/local candidate状态冲突，给出一个Medium阻塞。产生者随后只修正该一句，明确已完成本地作品集候选但非生产、Runtime Acceptance或外部发布。
+- `scope / non_goals`：本条封存最终封印的`REVISE`后再修正；只允许修改README这一句并追加Step，不改功能、其他文档事实、测试、保护路径或授权边界。
+- `baseline`：`reviewed staged README=a84ea414d9066bb448f4d09e388b65d2c22e0585a0c9cc9379c0978fa7070581; demo README=23054aa6a4a005bb7f2f927c11019eea960981d9ed21dabb18e8e3ab7da1eee3; Plan29=b64d5ed167402ee70c6007ff56a1dd85d07ad322beb35f5331cf2452d290fb3c; HANDOFF=9bfc89044b519deb156d26571496e1d1d2231a41b40ec004096753ae304eb3e9; STEP pre=9a13adfeb6638c28fb230fa20e4488ad25224dded46d90716d00a9ee16b64e1f`
+- `commands`：Reviewer核对index仅五文档、五hash、cached diff-check、cbb35e3/report/gates稳定、TRACE-195～198、保护路径unstaged及全文件完成态；按请求未重跑测试。
+- `stop_or_rollback_conditions`：功能/证据/权限阻塞未触发；README冲突必须在最终commit前关闭。
+- `result / effect`：`REVISE / Medium=1 blocking root README current-state phrase; all other final-seal criteria satisfied`
+- `artifacts / evidence`：冲突为修正前`README.md:22`；修正只把“不是最终发布候选”替换为“已完成本地发布检查的作品集候选，但非生产/Runtime Acceptance/外部发布”。
+- `remaining_risks`：修正版本仍需同一Reviewer只读确认；本条不改变TRACE-198的功能证据，但在发现关闭前暂停最终commit。
+- `review`：`REVISE / findings=1 / blocking=1 / severity=Medium / independent_read_only`
+- `supersedes_entry_id`：`TRACE-20260827-198 only for final documentation seal status until this finding closes; functional checkpoint evidence remains valid`
+- `git_checkpoint`：`functional candidate cbb35e3 committed / five docs staged with README+Step remediation pending restage / push=NOT_AUTHORIZED`
+- `next_action`：重新stage README/Step并让同一Reviewer核对精确hash；批准后追加CORRECTION并最终提交证据文档。
+
+### TRACE-20260827-200
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-200 / MVP-CLOSE-01D-RELEASE-CHECK / CORRECTION / 2026-08-27T18:59:04+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root + /root/release_review / final README current-state correction approval / TRACE-199 + Plan29 MVP-CLOSE-01D`
+- `what / why / expected_effect_or_gate`：TRACE-199封存的根README Quickstart状态冲突已通过单句修正关闭：当前明确为“已完成本地发布检查的作品集Agent Runtime MVP候选”，同时明确非生产系统、非Runtime Acceptance、非已对外发布。独立Reviewer核对精确五文件index、hash、cached diff、Plan/HANDOFF一致性、TRACE-199保留、保护路径和授权边界后确认prior finding CLOSED、findings=0。
+- `scope / non_goals`：仅修正README一句并追加TRACE-199/200；功能candidate、clean report、其他验收事实和保护路径未变化，未重跑测试，未push/tag/deploy。
+- `baseline`：`functional candidate=cbb35e3ffd59bdad9d00978613f65e054166d7c7; reviewed final README=5724efb97c5052344f72939b8481fe0fc637e92624531ff9543eccd5bf39adc3; demo README=23054aa6a4a005bb7f2f927c11019eea960981d9ed21dabb18e8e3ab7da1eee3; Plan29=b64d5ed167402ee70c6007ff56a1dd85d07ad322beb35f5331cf2452d290fb3c; HANDOFF=9bfc89044b519deb156d26571496e1d1d2231a41b40ec004096753ae304eb3e9; STEP pre-CORRECTION=52328e1b6c61b83db55dfcb0861ba4ce51c1c4b2ff0bdd47bfe30ff51c5461f9`
+- `commands`：Reviewer只读核对五hash、staged scope、`git diff --cached --check`、README/Plan/HANDOFF current-state、TRACE-199和保护/权限边界；未重跑功能测试。
+- `stop_or_rollback_conditions`：未触发；所有已知发布审查发现现已关闭。
+- `result / effect`：`corrected=yes; TRACE-199 prior Medium CLOSED; final status seal APPROVE findings0; TRACE-198 portfolio completion checkpoint reinstated`
+- `artifacts / evidence`：最终README表述与同文件后文、Plan29完成状态和HANDOFF完成摘要一致；index仍只有五个证据文档，无功能代码，四个保护路径保持unstaged/untracked。
+- `remaining_risks`：与TRACE-198一致；本地候选不是生产认证或外部发布，push/tag/deploy未授权。
+- `review`：`APPROVE / independent_read_only / findings=0 / prior_finding=CLOSED`
+- `supersedes_entry_id`：`TRACE-20260827-199 for final documentation seal status only; preserves its REVISE history and restores TRACE-198 completion decision`
+- `git_checkpoint`：`functional candidate cbb35e3 committed / final five evidence docs staged pending local commit / push=NOT_AUTHORIZED`
+- `next_action`：核对并提交五份本地证据文档；随后停止，等待用户决定是否push/tag/deploy或开启其他路线。

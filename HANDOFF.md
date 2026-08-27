@@ -20,17 +20,18 @@ MVP-AGENT-RUNTIME-01A～01C 已完成真实 AgentInstance/AgentSession、SQLite 
 42/42 Mailbox、21 stage Message和12跨Agent Handoff，全部Session关闭；双轴code-review最终0 finding。
 01D已更新根README与demo/README并完成33定向、184 Runtime、579非expected-red、连续5次CLI smoke、
 compile/diff和独立review-artifact；初审唯一Medium是本HANDOFF/Plan29状态过期，修正后窄复核已确认关闭，最终0 finding。
-用户已明确启动MVP-CLOSE-01D；候选manifest见TRACE-194，当前正在创建本地release-candidate、
-执行干净检出复现和最终独立Review。尚未完成，不能提前宣布作品集完成。
+MVP-CLOSE-01D已完成。本地候选`cbb35e3`通过干净检出Quickstart、拒绝边界、33/184/579
+回归、compile/diff与报告契约；最终独立Review支持功能/安全/manifest，初审唯一Medium
+发布状态新鲜度已由窄复核确认关闭，最终0 finding。它不是Runtime Acceptance或生产认证。
 
 用户已确认新的发布前主线：MVP-AGENT-RUNTIME-01A → 01B → 01C → 01D → MVP-CLOSE-01D。
-MVP-AGENT-RUNTIME-01A～01D已全部完成，`MVP-CLOSE-01D`正在执行。只按TRACE-194冻结manifest
-创建本地候选并运行发布门禁；不要重复Agent Runtime实现，也不要扩张候选范围。
+MVP-AGENT-RUNTIME-01A～01D与MVP-CLOSE-01A～01D已全部完成，当前没有活动实施批次。
+不要重复已通过的门禁或扩张候选；tag、push、部署和后续生产路线均等待用户另行决定。
 
-不得跳过`MVP-CLOSE-01D`的干净检出和独立Review；不得扩张到分布式队列、Lease/Heartbeat、
+不得把本地作品集候选冒称生产系统；不得扩张到分布式队列、Lease/Heartbeat、
 崩溃中执行恢复、exactly-once、生产Reaper、完整Web、真实模型、网络或Browser。
 不得触碰 demo/track.md、problems.md、prombles.md 的删除状态或 Plan/Plan28.md。
-用户本轮已授权为`MVP-CLOSE-01D`创建本地release-candidate分支/commit；仍不授权push/tag/deploy。
+用户本轮授权的本地release-candidate分支/commit已完成；仍不授权push/tag/deploy。
 
 01D不重写01C执行内核；若必须扩大到完整PROD-01C～05或破坏现有
 Artifact/Validator安全边界，立即停止并报告阻塞，不得自动扩大范围。
@@ -40,7 +41,7 @@ Artifact/Validator安全边界，立即停止并报告阻塞，不得自动扩�
 
 唯一项目级追加式过程账本是 [`VerificationReports/STEP-LOG.md`](VerificationReports/STEP-LOG.md)，权威规则见 [`Plan/Plan26.md`](Plan/Plan26.md) 的 `Append-only Project Step Log Protocol`。它记录每个逻辑步骤的 What / Why / Expected Effect / Actual Effect / Command / Result / Artifact Hash / Review / Status / Git Checkpoint；不记录私密推理，也不替代 VerificationReport、Harness Evolution、INC/RuntimeEvent、`KEEP` 或 Runtime Acceptance。
 
-后续任务开始时必须读取末尾条目并检查 base HEAD/worktree；修改前追加 `PRE_REGISTER`，动作结束后在进入下一状态前追加 `ACTUAL`，收到独立审查后追加 `REVIEW`，里程碑追加 `CHECKPOINT`。失败候选不得删除或改写，只能通过新候选或 `CORRECTION + supersedes_entry_id` 续记；缺失原始证据必须写 `MISSING/UNKNOWN`，未提交只能写 `WORKTREE_ONLY/PENDING`。本轮正式序列从 `TRACE-20260826-001` 开始，当前仍未创建本批 Git commit。
+后续任务开始时必须读取末尾条目并检查 base HEAD/worktree；修改前追加 `PRE_REGISTER`，动作结束后在进入下一状态前追加 `ACTUAL`，收到独立审查后追加 `REVIEW`，里程碑追加 `CHECKPOINT`。失败候选不得删除或改写，只能通过新候选或 `CORRECTION + supersedes_entry_id` 续记；缺失原始证据必须写 `MISSING/UNKNOWN`，未提交只能写 `WORKTREE_ONLY/PENDING`。本轮正式序列从 `TRACE-20260826-001` 开始；本地候选内容commit为`cbb35e3`，最终证据由其后的文档commit记录。
 
 `MVP-CLOSE-01` 与 `MVP-AGENT-RUNTIME-01` 按 Plan29 使用轻量例外：每个 01A～01D 批次只做批次级 PRE_REGISTER 和结束时 ACTUAL/CHECKPOINT；搜索、微小修正与普通定向复跑不再逐步建哈希/双审链。只有安全边界、真实外部副作用、Agent Runtime 01D和最终发布候选需要独立 Review；恢复 PROD/INC/安全认证时才回到上述严格协议。
 
@@ -50,21 +51,21 @@ Artifact/Validator安全边界，立即停止并报告阻塞，不得自动扩�
 
 以下 `HandoffProposal` 是当前最小接续信息。它记录已经批准的优先级修订，但不创建 RouteEdge、Invocation、权限、任务完成、`KEEP` 或 Runtime Acceptance。
 
-- **objective**：从冻结manifest形成可识别的本地release-candidate，并从干净检出复现Quickstart、回归和最终独立Review。
-- **target_role**：`MVP-CLOSE-01D`发布检查实施者；只操作TRACE-194清单，不重写01C适配层、不触碰保护路径、不push/tag/deploy。
+- **objective**：本地作品集候选已完成；保持证据和限制，等待用户决定是否tag、push、部署或恢复后续生产路线。
+- **target_role**：当前无活动实施批次。后续操作必须由用户另行授权，不重写候选、不触碰保护路径。
 - **public_rationale**：现有薄Demo清楚展示了Harness控制流，但角色时间线只是StageAudit投影，不能证明“独立Agent像逻辑线程一样存在”。用户已确认这项设计必须在作品集发布前真正可用，而不必扩张到分布式或生产级。
-- **completed_work**：`MVP-CLOSE-01A～01C` 薄Demo baseline保留；`MVP-AGENT-RUNTIME-01A/01B` 完成schema v5 Agent/Session/私有状态/Mailbox/lane；`01C`新增Portfolio专用薄适配，每Trial真实创建Agent并让stage经持久Mailbox/lane执行，v2报告保存9 Thread/21 Agent/42 Message/12 Handoff/生命周期/FIFO/并行；`01D`已更新两份README并通过33/184/579回归、5次CLI smoke、compile/diff。独立初审确认实现/报告/README/测试无功能发现，只要求刷新Plan/HANDOFF状态。
-- **evidence_refs**：base `HEAD=origin/main=6d2b6a2703d6387e6c6de0bdb8c68984a9f90c3e`；薄Demo/文档证据见 `TRACE-162～173`；路线纠正见 `TRACE-174～176`；01A见 `TRACE-177～180`；01B见 `TRACE-181～183`；01C见`TRACE-184～187`；01D预注册与初审见`TRACE-188～189`；权威合同见 [`Plan/Plan29.md`](Plan/Plan29.md)。
+- **completed_work**：`MVP-CLOSE-01A～01D`和`MVP-AGENT-RUNTIME-01A～01D`均已完成；本地分支`codex/mvp-close-01d`的候选`cbb35e3`精确包含28-file manifest且排除四个保护路径。独立干净检出通过Quickstart、拒绝边界、33/184/579、compile/diff和报告契约；独立发布初审唯一Medium文档新鲜度已关闭，最终0 finding。
+- **evidence_refs**：base `6d2b6a2`；Agent Runtime证据见`TRACE-177～193`；发布PRE_REGISTER/初审/ACTUAL/最终审查与检查点见`TRACE-194`及之后条目；候选`cbb35e3ffd59bdad9d00978613f65e054166d7c7`，clean report sha256=`a9aeab723de74d3e2fc5a8a0b3bb883e6c9a739f51ae8137fe2dc4bfbd78c4fe`；权威合同见 [`Plan/Plan29.md`](Plan/Plan29.md)。
 - **decisions_and_constraints**：当前唯一顺序为 `MVP-AGENT-RUNTIME-01A → 01B → 01C → 01D → MVP-CLOSE-01D`。MVP使用单进程、共享线程池、SQLite持久Agent/Session/Mailbox/私有状态；同Agent FIFO、不同Agent可并行，pause/resume/close影响调度，Handoff必须经过Mailbox。Runtime-owned Validator保持独立，不变成能自证的Agent。完整PROD-01C～05仍后置。
-- **assumptions_and_uncertainty**：01B固定单recipient、领取即推进游标，无ack/重试/崩溃重投；Message `turn_ref` 当前只有typed Scope引用，没有durable Turn存在性Store。当前仍是WORKTREE_ONLY，未验证干净检出可复现性，也未形成release candidate；这些属于后续`MVP-CLOSE-01D`。
-- **open_questions**：Agent Runtime MVP无待决产品问题；当前只剩候选manifest依赖是否完整、干净检出是否可复现及独立Reviewer是否批准。tag/发布仍等待用户未来另行决定。
-- **next_action**：创建`codex/mvp-close-01d`本地分支，只stage TRACE-194清单并核对；提交候选后在独立worktree运行Quickstart/门禁，再做独立Review。
-- **expected_output**：一个不含四个保护路径的本地候选commit；干净检出保持9/6/3/3、21 scripted、0 model、9 Thread、21 closed Agent/Session、42/42 Mailbox、21 stage Message、12 Handoff、FIFO和max parallel 3，并有最终Review证据。
+- **assumptions_and_uncertainty**：01B固定单recipient、领取即推进游标，无ack/重试/崩溃重投；Message `turn_ref` 当前只有typed Scope引用，没有durable Turn存在性Store。原工作树仍保留四个未入候选的用户改动；候选未push/tag/deploy。
+- **open_questions**：本地作品集范围内无待决门禁。tag、push、部署和后续生产路线是否启动均等待用户另行决定。
+- **next_action**：停止并等待用户；不要自动tag、push、部署或恢复PROD/SEC路线。
+- **expected_output**：已完成候选保持9/6/3/3、21 scripted、0 model、9 Thread、21 closed Agent/Session、42/42 Mailbox、21 stage Message、12 Handoff、FIFO和max parallel 3；后续外部发布不预先声明结果。
 - **acceptance_criteria**：Agent/Message/Handoff不是StageAudit投影；Planner/Developer/Tester/Fixer至少按实际策略创建并通过Mailbox执行；Validator保持Runtime-owned独立门禁；所有Agent最终关闭；报告与stdout矩阵不漂移；既有拒绝边界、临时Workspace、无网络/模型和原子报告保持。
 - **required_capabilities**：仓库读写、Python/SQLite、Git本地branch/stage/commit/worktree；不授予真实模型、网络、Browser、push/tag/deploy。
-- **resource_scope**：精确候选清单见TRACE-194。继续保护 `demo/track.md`、`problems.md`、`prombles.md`、`Plan/Plan28.md`；不改Web、模型、固定Suite或受控执行安全合同。
+- **resource_scope**：当前无活动写入范围。继续保护 `demo/track.md`、`problems.md`、`prombles.md`、`Plan/Plan28.md`；未来任务重新冻结范围。
 - **budget_or_deadline**：无新增实现估算或期限；未设置token/费用预算。
-- **risks**：最大风险是脏工作树把保护路径带入候选，或只测当前目录而没有验证干净检出。现有实现限制仍是无ack/retry/crash redelivery、无多进程lane协调、无durable Turn Store、无真实模型/网络/Browser和无生产认证。
+- **risks**：最大风险是把本地作品集候选夸成生产发布，或未来操作误带四个保护路径。现有实现限制仍是无ack/retry/crash redelivery、无多进程lane协调、无durable Turn Store、无真实模型/网络/Browser和无生产认证。
 
 ## 项目目标与定位
 
@@ -337,7 +338,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
   - `L3 生产自主 Harness 演进`：自动修改并晋升生产 Harness；当前非目标。INC-03 提供发布验证和 Shadow/Canary/Rollback，INC-04 提供 Learning/Guardrail 审批与退役，INC-05 提供运营和长期复发评价；全部成熟后仍需重新立项。
 - **assumptions_and_uncertainty**：当前离线资产可以支持 L1 的管线 smoke 与小规模实验，但样本量、真实模型重复运行和跨任务 Held-out 尚未冻结；没有这些证据前，不能声称 Multi-Agent、Memory、Reviewer 或任何 Harness 版本更优。
 - **open_questions**：第一次真实 Harness Evolution Pilot 的任务数量、模型、调用预算、重复次数和 Held-out cohort 必须在用户明确授权真实调用时单独预注册；不得从历史示例数字反推。
-- **next_action**：保持既有 KEEP/INCONCLUSIVE 历史不变；当前不继续 SEC、3B-2 或真实模型实验。薄入口作为preview baseline保留，`MVP-AGENT-RUNTIME-01A～01D` 已完成；停止并等待用户决定是否另行启动`MVP-CLOSE-01D`，生产路线未来恢复时再按原严格协议续接。
+- **next_action**：保持既有 KEEP/INCONCLUSIVE 历史不变；当前不继续 SEC、3B-2 或真实模型实验。`MVP-AGENT-RUNTIME-01A～01D`与`MVP-CLOSE-01D`均已完成；停止并等待用户，生产路线未来恢复时再按原严格协议续接。
 - **expected_output**：每个适用批次包含一个版本化 Harness Evolution 实验小节或报告，引用可定位 Run/Trial/Evidence，明确示例、离线确定性结果、真实模型实测和生产观察；分别给出 `lifecycle_status=PROPOSED/RUNNING/FROZEN/COMPLETED/INVALID` 与 `decision=KEEP/ROLLBACK/INCONCLUSIVE`。
 - **acceptance_criteria**：后续适用 Plan 至少包含失败/工作负载、Baseline、强对照、可证伪假设、单一 Mutation、固定 manifest、Validation/Held-out 隔离或确定性“不适用”依据、硬门禁、效果与代价、Incident/Regression 落点和决策/回滚；没有真实行为变化时显式写不适用及原因。
 - **required_capabilities**：仓库读、受控候选 Patch、独立评测、版本化报告和与实验范围匹配的故障注入；真实模型、网络、媒体、外部仓库、秘密或副作用仍需当次授权。
@@ -353,7 +354,7 @@ Harness 的确定性不变量与模型智能指标必须分开报告，不能用
 
 `Plan/Plan26.md` 已完成 `PROD-00` 产品 Charter，冻结 Scope、Thread、Turn/Outcome、Message、AgentInstance/AgentSession、Invocation、SessionBinding、RouteEdge、Artifact/Context、Capability 和场景化 Acceptance 的边界。批次 10A～13A 的代码和测试继续作为 Coding、多模态 Intake 与插件机制的已实现资产保留，不因产品纠偏删除，也不得再被描述成默认产品流程。
 
-2026-08-27 起后续仍一次只推进一个小批次；`MVP-CLOSE-01A～01C` 已完成为preview baseline，`MVP-AGENT-RUNTIME-01A～01D` 已完成，`MVP-CLOSE-01D`暂停。当前没有活动实施批次，只等待用户决定是否另行启动`MVP-CLOSE-01D`。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 的完成事实保留；完整 `PROD-01B`、SEC最终认证和增强版 `01B-3B-2` 统一转为后续 Roadmap。
+2026-08-27 起后续仍一次只推进一个小批次；`MVP-CLOSE-01A～01D`与`MVP-AGENT-RUNTIME-01A～01D`均已完成，本地候选`cbb35e3`已干净验证并通过最终独立Review，当前没有活动批次。`PROD-01A`、`PROD-01B-1`、`PROD-01B-2`、`PROD-01B-3A` 与 `PROD-01B-3B-1` 的完成事实保留；完整 `PROD-01B`、SEC最终认证和增强版 `01B-3B-2` 统一转为后续 Roadmap。
 
 ### PROD / INC 双轨联动规则（后续任务强制执行）
 
