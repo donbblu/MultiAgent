@@ -139,6 +139,8 @@ Agent最多只能生成`ChangeProposal`候选，明确列出目标、理由、�
 
 紧邻的`PRODUCT-01C-TERMINAL-RESULT-REPLAY`也已完成离线纵切。公共红测实际复现“刷新后重新进入执行链，旧Mailbox消息已消费，结果错误变成`mailbox_delivery_missing`”；服务现在先读取append-only receipt，精确相同请求直接重放且Executor调用0。`product-task-result/v2`持久一个脱敏request digest，Prompt、权限或超时任一变化但复用相同scope/task ID时，在Agent及任何新副作用前稳定拒绝`task_request_conflict`。Planner执行失败、Planner协议无效、无合格Agent和recipient执行失败只保存无Artifact/Verification的真实终态receipt；Validator `failed/unknown`则保存候选、报告与最终Verification，不伪造通过。产品服务5/5、Runtime discovery185/185、全仓普通集合652/652（9 skip）及两个独立行为卡25/25通过，真实CLI/模型/网络调用0。
 
+`PRODUCT-01C-REAL-CODEX-DOUBLE-AGENT-SMOKE`已完成一次用户明确授权的真实复验。执行前TDD先暴露Fake Planner硬编码正确JSON掩盖的合同缺口：产品Planner Prompt只说协议名，没有六个字段的Schema和当前规范Role ID；新增动态`allowed_recipient_roles`与严格JSON output schema后红测转绿。真实运行随后只启动两个read-only新Session，Planner与Reviewer各一次，无resume、retry或第三Agent；Runtime完成RoleAssignment、Message/Mailbox、候选Artifact和最终Verification，固定Reviewer结论由Runtime-owned Validator判定passed，Service重建后相同Task重放仍为零额外调用，Workspace digest不变。总耗时36375 ms；总输入62423、缓存输入52224、输出350、reasoning输出49。公开报告只含角色、布尔验收、事件类型、Usage与耗时，不含Backend Session ID、Prompt/正文、stdout/stderr、路径或认证信息。该结果证明当前自包含双Agent产品链真实可用，但不是任意复杂任务质量、取消、并发首次提交或生产安全认证。
+
 用户单独授权的`PRODUCT-01C-ROLE-ASSIGNMENT`纵切已完成：`RoleRequirement → RoleAssignment → 可选Mailbox投递`公共接口、role-neutral Profile兼容迁移、SQLite v6、确定性硬过滤/排序、等待或次优决策、同代防重/显式supersede、提交时Agent快照复核、选择证据和Assignment+Mailbox同事务均已实现。等待秒数由显式Policy传入，没有偷设产品常量。其他Action、本地API和Web仍留在后续讨论/批次；ContextBundle首切状态见下文。
 
 `PRODUCT-01C-SEND-MESSAGE-V1`已按TDD和真实DeepSeek复验完成。首次真实smoke证明API鉴权和JSON输出成功，但模型Role字符串未与规范键`reviewer`精确匹配，Runtime按设计进入`needs_input/no_eligible_agent`且没有Message副作用。该真实踩坑的最小修复随后TDD转绿：Runtime把当前`role_candidates`规范键稳定排序后写入`recipient_role.enum`，并增加“必须原样复制、不得翻译/改写/使用显示名”的系统指令；列表外Role仍安全进入`needs_input`，不做模糊猜测。修复后复验使用`deepseek-v4-pro`，一次模型调用即返回可路由Action：RoleAssignment为`assigned`，接收者为`reviewer-agent`，Message成功持久化且Mailbox恰有一条消息；未触发协议修正，输入212、输出42、总计254 Token，Provider延时1310 ms。当前切片7/7、相关41/41、Runtime 184/184、全仓非expected-red 596/596（9 skip）、编译和diff-check通过；首次真实失败继续作为历史踩坑证据保留。
@@ -165,9 +167,9 @@ Agent最多只能生成`ChangeProposal`候选，明确列出目标、理由、�
 
 ## 时间与取舍
 
-首个Codex CLI Executor、认证、安全环境、真实人工Session恢复、精确ChangeSet用户批准Runtime门、产品服务终态历史和精确重放均已验证。从当前检查点完成第一版产品暂估还需 **6～11个专注小时**，另留 **2～4小时风险缓冲**。剩余主要是一次真实双Invocation复验、本地API、Web用户批准/介入控件、控制台和双Agent E2E；不再把已完成的CLI Executor、Session恢复、Runtime批准门或终态历史重复计入。该估算不是固定工期，如本地API与旧Web状态模型冲突，使用风险缓冲而不删除必要失败路径。
+首个Codex CLI Executor、认证、安全环境、真实人工Session恢复、精确ChangeSet用户批准Runtime门、产品服务终态历史、精确重放和真实双Agent产品链均已验证。从当前检查点完成第一版产品暂估还需 **5～9个专注小时**，另留 **2～4小时风险缓冲**。剩余主要是本地API、Web用户批准/介入控件、控制台和浏览器双Agent E2E；不再把已完成的CLI Executor、Session恢复、Runtime批准门、终态历史或真实双Agent复验重复计入。该估算不是固定工期，如本地API与旧Web状态模型冲突，使用风险缓冲而不删除必要失败路径。
 
-如果要求把Cat Café教程00～15课和全部作业都真实复刻，包括PWA/Rich Blocks、知识系统、Voice、完整Feature/Pack纪律等非当前产品关键内容，总时间仍按 **35～50个专注小时** 单独计算，不包含在当前6～11小时产品暂估内。第一版产品完成后再继续这些扩展，不让非关键课程阻塞产品入口。
+如果要求把Cat Café教程00～15课和全部作业都真实复刻，包括PWA/Rich Blocks、知识系统、Voice、完整Feature/Pack纪律等非当前产品关键内容，总时间仍按 **35～50个专注小时** 单独计算，不包含在当前5～9小时产品暂估内。第一版产品完成后再继续这些扩展，不让非关键课程阻塞产品入口。
 
 ### 可调整时间表
 
@@ -207,4 +209,4 @@ PWA/Rich Blocks、Voice、完整知识系统、Pack纪律及其余未进入产�
 
 ## 下一动作
 
-`PRODUCT-01C-SEND-MESSAGE-V1`及Context/幂等纵切继续有效；Codex AgentExecutor、显式状态/Session恢复、精确ChangeSet批准门、产品服务全终态历史和精确相同Task零调用重放均已转绿。下一步先单独请求一次脱敏真实Codex Planner+Reviewer双Invocation复验；通过后提供最小本地API，再接ChangeSet批准、Session恢复的Web按钮与状态投影。Mailbox ACK/崩溃重投仍不阻塞压缩版首交付，不在此切片偷换为分布式重构。
+`PRODUCT-01C-SEND-MESSAGE-V1`及Context/幂等纵切继续有效；Codex AgentExecutor、显式状态/Session恢复、精确ChangeSet批准门、产品服务全终态历史、精确相同Task零调用重放和真实Planner+Reviewer双Invocation均已转绿。下一步提供最小本地API，把创建任务、读取结果/Artifact/Verification和稳定错误映射为本机HTTP合同；随后接ChangeSet批准、Session恢复的Web按钮与状态投影。Mailbox ACK/崩溃重投仍不阻塞压缩版首交付，不在此切片偷换为分布式重构。

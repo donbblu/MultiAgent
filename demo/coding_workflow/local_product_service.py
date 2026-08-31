@@ -652,14 +652,68 @@ class LocalProductTaskService:
             acceptance_summary=value["acceptance_summary"].strip(),
         )
 
-    @staticmethod
-    def _planner_prompt(user_prompt: str) -> str:
+    def _planner_prompt(self, user_prompt: str) -> str:
+        role_ids = sorted({
+            agent.role_id
+            for agent in self._agents
+            if agent.role_id != "planner"
+        })
+        role_contracts = [
+            {
+                "role_id": role_id,
+                "available_capabilities": sorted({
+                    capability
+                    for agent in self._agents
+                    if agent.role_id == role_id
+                    for capability in agent.capabilities
+                }),
+            }
+            for role_id in role_ids
+        ]
         return json.dumps({
             "instruction": (
-                "把用户任务拆成一个最小委派。只能返回planner-delegation/v1；"
-                "指定recipient_role，不能指定具体Agent。"
+                "把用户任务拆成一个最小委派。只返回一个严格匹配"
+                "output_schema的JSON对象，不要Markdown或解释。"
+                "recipient_role必须原样复制允许的规范Role ID；"
+                "不能翻译、改写或指定具体Agent。"
             ),
             "allowed_action": "delegate_task",
+            "allowed_recipient_roles": role_contracts,
+            "output_schema": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "schema_version": {
+                        "const": "planner-delegation/v1",
+                    },
+                    "action": {"const": "delegate_task"},
+                    "recipient_role": {
+                        "type": "string",
+                        "enum": role_ids,
+                    },
+                    "task_instruction": {
+                        "type": "string",
+                        "minLength": 1,
+                    },
+                    "required_capabilities": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1},
+                        "uniqueItems": True,
+                    },
+                    "acceptance_summary": {
+                        "type": "string",
+                        "minLength": 1,
+                    },
+                },
+                "required": [
+                    "schema_version",
+                    "action",
+                    "recipient_role",
+                    "task_instruction",
+                    "required_capabilities",
+                    "acceptance_summary",
+                ],
+            },
             "user_task": user_prompt,
         }, ensure_ascii=False, sort_keys=True)
 

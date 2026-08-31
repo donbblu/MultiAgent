@@ -50,15 +50,18 @@ class _ProductExecutor:
         planner_message: Optional[str] = None,
         planner_status: AgentExecutionStatus = AgentExecutionStatus.COMPLETED,
         recipient_status: AgentExecutionStatus = AgentExecutionStatus.COMPLETED,
+        require_planner_contract: bool = False,
     ) -> None:
         self.requests: list[AgentExecutionRequest] = []
         self._planner_message = planner_message
         self._planner_status = planner_status
         self._recipient_status = recipient_status
+        self._require_planner_contract = require_planner_contract
 
     def run(self, request: AgentExecutionRequest) -> AgentExecutionResult:
         self.requests.append(request)
         if request.agent_id == "planner-agent":
+            contract_present = self._planner_contract_present(request.prompt)
             final_message = self._planner_message or json.dumps(
                 {
                     "schema_version": "planner-delegation/v1",
@@ -70,6 +73,8 @@ class _ProductExecutor:
                 },
                 ensure_ascii=False,
             )
+            if self._require_planner_contract and not contract_present:
+                final_message = "{}"
         elif request.agent_id == "reviewer-agent":
             final_message = "结论：通信必须经过 Runtime 路由和持久化。"
         else:
@@ -88,6 +93,40 @@ class _ProductExecutor:
             events=(AgentExecutionEvent("agent_message", {"text": final_message}),),
             usage=AgentExecutionUsage(input_tokens=10, output_tokens=5),
             duration_ms=1,
+        )
+
+    @staticmethod
+    def _planner_contract_present(prompt: str) -> bool:
+        try:
+            payload = json.loads(prompt)
+        except json.JSONDecodeError:
+            return False
+        expected_fields = {
+            "schema_version",
+            "action",
+            "recipient_role",
+            "task_instruction",
+            "required_capabilities",
+            "acceptance_summary",
+        }
+        schema = payload.get("output_schema", {})
+        properties = schema.get("properties", {})
+        roles = payload.get("allowed_recipient_roles")
+        return (
+            schema.get("type") == "object"
+            and schema.get("additionalProperties") is False
+            and set(schema.get("required", ())) == expected_fields
+            and set(properties) == expected_fields
+            and properties.get("schema_version", {}).get("const")
+            == "planner-delegation/v1"
+            and properties.get("action", {}).get("const")
+            == "delegate_task"
+            and properties.get("recipient_role", {}).get("enum")
+            == ["reviewer"]
+            and roles == [{
+                "role_id": "reviewer",
+                "available_capabilities": ["core:code_review"],
+            }]
         )
 
 
@@ -297,6 +336,33 @@ class LocalProductTaskServiceTests(unittest.TestCase):
             executor.requests[1].prompt,
         )
         self.assertTrue(artifacts.is_verified(result.result_artifact_ref))
+
+    def test_planner_receives_strict_schema_and_current_role_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            executor = _ProductExecutor(require_planner_contract=True)
+            service = self._scenario_service(
+                root=root,
+                database=self._scenario_database(
+                    root / "runtime.sqlite3",
+                    "planner-contract",
+                ),
+                executor=executor,
+                validator=_PassingResultValidator(),
+            )
+
+            result = service.run(ProductTaskRequest(
+                task_id="task-planner-contract",
+                prompt="请让Reviewer检查一项通信协议。",
+                permission=AgentExecutionPermission.READ_ONLY,
+                timeout_seconds=30,
+            ))
+
+        self.assertIs(result.status, ProductTaskStatus.VALIDATED)
+        self.assertEqual(
+            [item.agent_id for item in executor.requests],
+            ["planner-agent", "reviewer-agent"],
+        )
 
     def test_validated_result_and_evidence_reopen_without_executor_calls(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

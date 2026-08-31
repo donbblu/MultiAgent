@@ -5672,3 +5672,44 @@ ps -axo pid=,ppid=,pgid=,command=
 - `review`：`self-review PASS for terminal truthfulness, request-bound idempotency and no-false-acceptance boundary; PRODUCT-01C final independent code-review not yet due`
 - `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
 - `next_action`：预注册一次脱敏真实Codex Planner+Reviewer双Invocation产品复验并请求用户明确授权；验证真实Planner严格委派、Runtime RoleAssignment/Mailbox、Reviewer候选、Runtime Validator与公开输出后，再进入最小本地API。
+
+### TRACE-20260901-288
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-288 / PRODUCT-01C-REAL-CODEX-DOUBLE-AGENT-SMOKE / PRE_REGISTER / 2026-09-01 / 2026-09-01`
+- `principal / authorization / plan_ref`：`/root / 用户明确回复“确认真实双agent复验” / Plan30 PRODUCT-01C + TRACE-287 next_action`
+- `confirmed_public_seam`：产品行为仍只通过`LocalProductTaskService.run(ProductTaskRequest) → ProductTaskResult`验收；新增opt-in脱敏smoke入口只负责Composition和公开报告，不绕过Service检查私有SQLite表。Planner和Reviewer都经过同一`CodexCliAgentExecutor`，但使用不同Agent ID、Harness Session和Backend Session绑定。
+- `preflight_gap`：现有Planner请求只写“返回planner-delegation/v1”，没有把六个必填字段、类型和当前允许的规范Role ID自描述给真实Backend。Fake Executor硬编码正确JSON，无法证明真实Planner不猜Schema/Role。先用公共服务红测要求AgentExecutionRequest包含严格输出合同及动态`allowed_recipient_roles=[reviewer]`，最小修复后才运行真实smoke。
+- `real_run_bounds`：用户授权最多两个新的真实Codex非交互Invocation：Planner一次，只有严格委派成功且Runtime Assignment/Mailbox成功时Reviewer一次；不resume、不retry、不启动第三Agent。两者均`read-only`、固定安全环境、禁止审批和网络，临时SQLite位于系统临时目录；前后核对Workspace digest。Planner失败即停止，不能为凑齐两次调用偷偷重试。
+- `public_output`：只允许公开status/error code、Agent角色/调用次数、Assignment/Message/Artifact/Verification是否存在、Validator outcome、事件类型、Usage/耗时、Session observed布尔和Workspace unchanged布尔；不得公开Backend Session ID、认证材料、Prompt/Agent正文、stdout/stderr、工具原文、本机路径或私有推理。
+- `acceptance`：恰好2次Agent Invocation；Planner结果通过严格`planner-delegation/v1`解析；Runtime选择reviewer并持久投递；Reviewer只形成候选Artifact；Runtime-owned Validator形成非unknown最终Verification并决定状态；相同Task重放不产生第三次调用；Workspace digest不变；公开报告通过脱敏shape测试。
+- `scope / non_goals`：不让真实Agent修改代码或系统策略；不测试resume、取消、第二CLI、Developer、Debate、Mailbox ACK或Web；不stage/commit/push/tag/deploy。官方OpenAI文档仅用于确认`codex exec`非交互、read-only默认、JSONL和保存认证复用边界，不替代本地Runtime验收。
+- `stop_conditions`：Planner Schema/Role仍靠猜；真实调用超过2次；任何一次不是read-only；Workspace变化；公开报告含Session、Prompt、正文、路径、stdout/stderr或认证信息；出现无法直接解释的CLI/并发/SQLite失败。
+- `result / effect`：`PENDING TDD PREFLIGHT RED→GREEN THEN ONE AUTHORIZED REAL DOUBLE-AGENT RUN`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / main@6703d61 + existing uncommitted PRODUCT-01C slices / staging untouched`
+- `next_action`：新增Planner自描述合同公共红测；转绿并回归后实现脱敏opt-in smoke报告测试，最后执行一次授权真实命令。
+
+- `actual / tdd_preflight`：Planner合同测试使用一个“只有请求含完整Schema和动态Role列表才返回合法委派”的Fake。旧实现实际返回`needs_input/invalid_planner_delegation`而红；最小修订把当前非Planner Role及能力动态写入`allowed_recipient_roles`，并给出固定version/action、六个required字段、类型、enum和`additionalProperties=false`的JSON Schema，测试转绿。第二条smoke公共报告测试先因`product_agent_smoke`模块不存在而ImportError红；最小Composition入口后转绿，并用私有Fake Session/version/Prompt/正文/path哨兵证明均未进入公开JSON。
+- `official_boundary`：执行前查阅OpenAI官方Codex Non-interactive文档；其明确`codex exec`适用于脚本、默认read-only、`--json`输出JSONL事件且默认复用已保存CLI认证。本实现继续使用现有受监督CLI Adapter和`--ignore-user-config`安全环境，不读取或复制auth文件，也不把官方文档当作本地Runtime通过证据。
+- `authorized_real_command`：`PYTHONPYCACHEPREFIX=/tmp/codex-pycache python3 demo/product_agent_smoke.py --trusted-real-double-agent`。只执行一次；Planner成功后Reviewer一次，总Agent Invocation恰好2，无resume、retry或第三Agent，进程exit 0。
+- `real_public_result`：`status=passed; error_code=""; backend_id=codex_cli; agent_invocations=2; planner duration=14152ms/input15479/cached11008/output150/reasoning0; reviewer duration=21875ms/input46944/cached41216/output200/reasoning49; total duration=36375ms/input62423/cached52224/output350/reasoning49`。两者事件均为`session_started/turn_started/agent_message/turn_completed`，均`completed/read-only/session_observed=true`。
+- `acceptance_checks`：`two_isolated_agent_invocations=true; planner_then_reviewer=true; read_only_sandbox=true; runtime_assignment_and_message=true; artifact_and_verification_durable=true; runtime_validator_passed=true; same_task_replayed_without_extra_call=true; workspace_unchanged=true`。最终ProductTask为`validated/passed`，recipient为`reviewer-agent`，Assignment、Message、Artifact和Verification引用均存在。报告没有输出任何具体Backend Session、Planner/Reviewer正文、Prompt、stdout/stderr、命令、路径、认证或私有推理。
+- `commands / regression`：新增Planner合同`RED→GREEN`；smoke报告`ImportError RED→GREEN`；LocalProductService+ProductSmoke+CodexAdapter+AgentState邻近`36/36 PASS`；Runtime discovery`185/185 PASS`；全仓普通集合`654/654 PASS (9 skipped)`；两个必须独立解释器的行为卡`8/8 + 17/17 PASS`，当前合法总集合`679/679`；changed-file py_compile、尾随空白和`git diff --check`均PASS。普通集合导入两个历史opt-in CLI模块时打印缺少`--trusted-local-execution`的预期拒绝，最终exit 0。
+- `external_effects`：按用户本次明确授权消费ChatGPT订阅并启动2个真实Codex CLI进程；没有API Key读取/输出，没有工具调用、网络工具、文件修改、resume/retry/第三Agent。Runtime SQLite位于临时目录并随smoke清理；Workspace digest前后相同。没有系统ChangeSet应用或Git stage/commit/push/tag/deploy。本次真实授权已消费完毕，后续调用需新授权。
+- `failure_and_recovery`：无真实执行失败、并发竞态或SQLite异常；没有调用`diagnosing-bugs`。TDD预期红均与预注册合同缺口直接一致。真实Reviewer的input明显高于Planner，当前只记录为成本/Context优化信号，不在本批修改模型、Prompt压缩或Context策略。
+- `limitations`：真实任务刻意自包含并要求固定Reviewer结论，证明机械链和最小语义遵从，不证明任意复杂任务拆分质量、多轮讨论、取消、并发首次提交、Mailbox ACK/重投或生产安全。Planner输出仍由Prompt Schema约束加Runtime严格校验，不是CLI级`--output-schema`强制；非法输出保持fail-closed且不自动重试。
+- `artifacts / evidence`：`product_smoke=4d791c460afb0ab47d22c8e1091498924bdc0168e0a556e6fd2f42a8ae3426a7; product_service=bf29e6969cbb68327c41e26bf9b1af6e974890cf37e1791378110dc7c8644a4a; smoke_tests=0c899ad6b3eccd91f179d56900313a1a7fb4dee46f07cb600a26842253e71795; product_tests=540047544ae60db1243b01c96b0a9722bd776cff58899469d4a2cbfe89c37fc4; Plan30=724487bc89ca881e6963139efe2e9c92017b06afd4fdf40d70c6c83f25a88ee4; HANDOFF=a0a3be506eefb0e37541400495c8b1481c550aaf6f46d89bc8970bdcdaa6a33c; decision_record=9f6dc2c5bfee262e4e6a4bcb73d195c51ea8ac59c4a48b69a1f0f0135524c7d2; pre-ACTUAL_STEP=617e53659ca21215ea9aa62b3cd50669d3f4f12fe97c694b176e7bdde86d1e9e`。
+- `result / effect`：`REAL CODEX DOUBLE-AGENT PRODUCT CHAIN PASS / PLANNER SCHEMA SELF-DESCRIBING / RUNTIME ROUTES AND ACCEPTS / TWO ISOLATED READ-ONLY SESSIONS / ZERO REPLAY CALL / WORKSPACE UNCHANGED`
+- `review`：`self-review PASS for authorized call bound, public-data minimization, Runtime-owned acceptance and no hidden retry; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：按TDD在`LocalProductTaskService`前接最小本机HTTP API，先用Fake Executor完成创建任务、读取结果/Artifact/Verification、精确重放和409冲突映射；不再次调用真实Codex。随后接Web状态投影与用户批准/恢复控件。
+
+### TRACE-20260901-289
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-289 / PRODUCT-01C-REAL-CODEX-DOUBLE-AGENT-SMOKE / CORRECTION / 2026-09-01 / 2026-09-01`
+- `supersedes_entry_id`：`TRACE-20260901-288 PRE_REGISTER git_checkpoint + ACTUAL git_checkpoint only`
+- `correction`：本任务开始时没有重新执行`git status/HEAD`，错误沿用了上一任务结束时的`main@6703d61`摘要。任务结束只读核对显示当前`HEAD=main@639e657`且`origin/main=639e657`，提交`Implement multi-agent workflow support`已包含至TRACE-287的既有PRODUCT-01C工作。当前证据不能证明该提交发生在本任务中或真实smoke期间，因此撤回“本任务base为6703d61”的说法，也不把该提交归因于本任务或两个read-only Agent。
+- `workspace_evidence_boundary`：真实smoke的`workspace_unchanged=true`比较的是排除`.git/.runtime/.runs/.verification`后的内容digest，只证明两个CLI Invocation没有修改受测Workspace文件；它本来就不证明Git HEAD不变。当前本任务新增/修改仍只有Planner合同、product smoke、测试与文档，均未stage/commit/push。
+- `corrected_git_checkpoint`：`WORKTREE_ONLY / current main@639e657 = origin/main / staging untouched / TRACE-288 changes uncommitted / no commit, push, tag or deploy by this task`
+- `verification`：`git log/reflog/show/status read-only audit; git diff --check=PASS`。
+- `effect_on_result`：不改变两次真实Codex Invocation、8项acceptance、Usage/耗时、679项回归或Workspace内容不变结论；只校正Git基线归属。
