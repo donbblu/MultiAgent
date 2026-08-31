@@ -189,6 +189,19 @@ class RuntimeOutboxAdversarialTests(unittest.TestCase):
         "DROP TABLE runtime_agent_instances",
     )
     _V5_DROP_STATEMENTS = (
+        "DROP TABLE runtime_product_verifications",
+        "DROP TABLE runtime_product_artifacts",
+        "DROP TABLE runtime_product_task_results",
+        "DROP TABLE runtime_change_applications",
+        "DROP TABLE runtime_change_application_claims",
+        "DROP TABLE runtime_change_user_approvals",
+        "DROP TABLE runtime_change_proposals",
+        "DROP TABLE runtime_backend_session_recovery_attempts",
+        "DROP TABLE runtime_backend_session_recovery_decisions",
+        "DROP TABLE runtime_backend_session_recovery_requests",
+        "DROP TABLE runtime_backend_session_recoveries",
+        "DROP TABLE runtime_agent_execution_recovery_contexts",
+        "DROP TABLE runtime_backend_session_bindings",
         "DROP TABLE runtime_agent_execution_results",
         "DROP TABLE runtime_agent_execution_states",
         "DROP TABLE runtime_role_assignments",
@@ -302,7 +315,7 @@ class RuntimeOutboxAdversarialTests(unittest.TestCase):
             )
             connection.execute(
                 """UPDATE runtime_schema_metadata SET schema_version = 2
-                   WHERE component = 'runtime_kernel' AND schema_version = 7"""
+                   WHERE component = 'runtime_kernel' AND schema_version = 12"""
             )
         self.assert_released_v2(path)
 

@@ -391,27 +391,37 @@ class PortfolioDemoTests(unittest.TestCase):
 
     def test_atomic_write_failure_is_setup_exit_three(self) -> None:
         stderr = io.StringIO()
-        with (
-            patch.object(cli.FixedCodingSuite, "load", return_value=self.suite),
-            patch.object(
-                cli,
-                "build_scripted_ablation_registry",
-                return_value=(object(), {}),
-            ),
-            patch.object(
-                cli.PortfolioAgentAblationRunner,
-                "run",
-                return_value=PortfolioAgentRun(self._report(), self._runtime()),
-            ),
-            patch.object(
-                cli,
-                "write_report_atomic",
-                side_effect=OSError("injected write failure"),
-            ),
-            redirect_stdout(io.StringIO()) as stdout,
-            redirect_stderr(stderr),
-        ):
-            code = cli.main(["--trusted-local-execution"])
+        with tempfile.TemporaryDirectory() as temporary:
+            isolated_runtime = Path(temporary) / "runtime.sqlite3"
+            with (
+                patch.object(cli, "RUNTIME_DB_PATH", isolated_runtime),
+                patch.object(
+                    cli.FixedCodingSuite,
+                    "load",
+                    return_value=self.suite,
+                ),
+                patch.object(
+                    cli,
+                    "build_scripted_ablation_registry",
+                    return_value=(object(), {}),
+                ),
+                patch.object(
+                    cli.PortfolioAgentAblationRunner,
+                    "run",
+                    return_value=PortfolioAgentRun(
+                        self._report(),
+                        self._runtime(),
+                    ),
+                ),
+                patch.object(
+                    cli,
+                    "write_report_atomic",
+                    side_effect=OSError("injected write failure"),
+                ),
+                redirect_stdout(io.StringIO()) as stdout,
+                redirect_stderr(stderr),
+            ):
+                code = cli.main(["--trusted-local-execution"])
 
         self.assertEqual(code, 3)
         self.assertEqual(stdout.getvalue(), "")

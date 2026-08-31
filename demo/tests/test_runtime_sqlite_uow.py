@@ -133,6 +133,19 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         with sqlite3.connect(str(self.path)) as connection:
             connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute("DROP TABLE runtime_product_verifications")
+            connection.execute("DROP TABLE runtime_product_artifacts")
+            connection.execute("DROP TABLE runtime_product_task_results")
+            connection.execute("DROP TABLE runtime_change_applications")
+            connection.execute("DROP TABLE runtime_change_application_claims")
+            connection.execute("DROP TABLE runtime_change_user_approvals")
+            connection.execute("DROP TABLE runtime_change_proposals")
+            connection.execute("DROP TABLE runtime_backend_session_recovery_attempts")
+            connection.execute("DROP TABLE runtime_backend_session_recovery_decisions")
+            connection.execute("DROP TABLE runtime_backend_session_recovery_requests")
+            connection.execute("DROP TABLE runtime_backend_session_recoveries")
+            connection.execute("DROP TABLE runtime_agent_execution_recovery_contexts")
+            connection.execute("DROP TABLE runtime_backend_session_bindings")
             connection.execute("DROP TABLE runtime_agent_execution_results")
             connection.execute("DROP TABLE runtime_agent_execution_states")
             connection.execute("DROP TABLE runtime_role_assignments")
@@ -207,7 +220,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         database.initialize()
 
         self.assertEqual(database.schema_version(), RUNTIME_DB_SCHEMA_VERSION)
-        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 7)
+        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 12)
         self.assertEqual(RUNTIME_DB_COMPONENT, "runtime_kernel")
         objects = self.raw_rows(
             self.path,
@@ -224,6 +237,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("index", "runtime_events_recorded_idx"),
                 ("index", "runtime_outbox_scope_state_idx"),
                 ("index", "runtime_role_assignments_thread_idx"),
+                ("table", "runtime_agent_execution_recovery_contexts"),
                 ("table", "runtime_agent_execution_results"),
                 ("table", "runtime_agent_execution_states"),
                 ("table", "runtime_agent_instances"),
@@ -231,20 +245,62 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("table", "runtime_agent_messages"),
                 ("table", "runtime_agent_private_state"),
                 ("table", "runtime_agent_sessions"),
+                ("table", "runtime_backend_session_bindings"),
+                ("table", "runtime_backend_session_recoveries"),
+                ("table", "runtime_backend_session_recovery_attempts"),
+                ("table", "runtime_backend_session_recovery_decisions"),
+                ("table", "runtime_backend_session_recovery_requests"),
+                ("table", "runtime_change_application_claims"),
+                ("table", "runtime_change_applications"),
+                ("table", "runtime_change_proposals"),
+                ("table", "runtime_change_user_approvals"),
                 ("table", "runtime_events"),
                 ("table", "runtime_outbox"),
                 ("table", "runtime_outbox_policy"),
                 ("table", "runtime_outbox_receipts"),
+                ("table", "runtime_product_artifacts"),
+                ("table", "runtime_product_task_results"),
+                ("table", "runtime_product_verifications"),
                 ("table", "runtime_role_assignments"),
                 ("table", "runtime_schema_metadata"),
                 ("table", "runtime_schema_migrations"),
                 ("table", "runtime_threads"),
+                ("trigger", "runtime_agent_execution_recovery_contexts_deny_delete"),
+                ("trigger", "runtime_agent_execution_recovery_contexts_deny_replace"),
+                ("trigger", "runtime_agent_execution_recovery_contexts_deny_update"),
                 ("trigger", "runtime_agent_execution_results_deny_delete"),
                 ("trigger", "runtime_agent_execution_results_deny_replace"),
                 ("trigger", "runtime_agent_execution_results_deny_update"),
                 ("trigger", "runtime_agent_execution_states_deny_delete"),
                 ("trigger", "runtime_agent_execution_states_deny_replace"),
                 ("trigger", "runtime_agent_execution_states_deny_update"),
+                ("trigger", "runtime_backend_session_bindings_deny_delete"),
+                ("trigger", "runtime_backend_session_bindings_deny_replace"),
+                ("trigger", "runtime_backend_session_bindings_deny_update"),
+                ("trigger", "runtime_backend_session_recoveries_deny_delete"),
+                ("trigger", "runtime_backend_session_recoveries_deny_replace"),
+                ("trigger", "runtime_backend_session_recoveries_deny_update"),
+                ("trigger", "runtime_backend_session_recovery_attempts_deny_delete"),
+                ("trigger", "runtime_backend_session_recovery_attempts_deny_replace"),
+                ("trigger", "runtime_backend_session_recovery_attempts_deny_update"),
+                ("trigger", "runtime_backend_session_recovery_decisions_deny_delete"),
+                ("trigger", "runtime_backend_session_recovery_decisions_deny_replace"),
+                ("trigger", "runtime_backend_session_recovery_decisions_deny_update"),
+                ("trigger", "runtime_backend_session_recovery_requests_deny_delete"),
+                ("trigger", "runtime_backend_session_recovery_requests_deny_replace"),
+                ("trigger", "runtime_backend_session_recovery_requests_deny_update"),
+                ("trigger", "runtime_change_application_claims_deny_delete"),
+                ("trigger", "runtime_change_application_claims_deny_replace"),
+                ("trigger", "runtime_change_application_claims_deny_update"),
+                ("trigger", "runtime_change_applications_deny_delete"),
+                ("trigger", "runtime_change_applications_deny_replace"),
+                ("trigger", "runtime_change_applications_deny_update"),
+                ("trigger", "runtime_change_proposals_deny_delete"),
+                ("trigger", "runtime_change_proposals_deny_replace"),
+                ("trigger", "runtime_change_proposals_deny_update"),
+                ("trigger", "runtime_change_user_approvals_deny_delete"),
+                ("trigger", "runtime_change_user_approvals_deny_replace"),
+                ("trigger", "runtime_change_user_approvals_deny_update"),
                 ("trigger", "runtime_events_deny_delete"),
                 ("trigger", "runtime_events_deny_replace"),
                 ("trigger", "runtime_events_deny_update"),
@@ -257,6 +313,15 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("trigger", "runtime_outbox_receipts_deny_delete"),
                 ("trigger", "runtime_outbox_receipts_deny_replace"),
                 ("trigger", "runtime_outbox_receipts_deny_update"),
+                ("trigger", "runtime_product_artifacts_deny_delete"),
+                ("trigger", "runtime_product_artifacts_deny_replace"),
+                ("trigger", "runtime_product_artifacts_deny_update"),
+                ("trigger", "runtime_product_task_results_deny_delete"),
+                ("trigger", "runtime_product_task_results_deny_replace"),
+                ("trigger", "runtime_product_task_results_deny_update"),
+                ("trigger", "runtime_product_verifications_deny_delete"),
+                ("trigger", "runtime_product_verifications_deny_replace"),
+                ("trigger", "runtime_product_verifications_deny_update"),
                 ("trigger", "runtime_role_assignments_deny_delete"),
                 ("trigger", "runtime_role_assignments_deny_replace"),
                 ("trigger", "runtime_role_assignments_deny_update"),
@@ -278,6 +343,11 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("runtime_kernel", 5, "runtime_agent_mailbox_v5", 64),
                 ("runtime_kernel", 6, "runtime_role_assignment_v6", 64),
                 ("runtime_kernel", 7, "runtime_agent_execution_state_v7", 64),
+                ("runtime_kernel", 8, "runtime_backend_session_binding_v8", 64),
+                ("runtime_kernel", 9, "runtime_backend_session_recovery_v9", 64),
+                ("runtime_kernel", 10, "runtime_backend_session_recovery_confirmation_v10", 64),
+                ("runtime_kernel", 11, "runtime_exact_changeset_user_approval_v11", 64),
+                ("runtime_kernel", 12, "runtime_product_acceptance_history_v12", 64),
             ],
         )
         database.verify_integrity()
@@ -297,6 +367,46 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.assertEqual(self.schema_snapshot(self.path), before)
 
+    def test_backend_session_binding_rejects_raw_replace(self) -> None:
+        database = self.database()
+        database.initialize()
+        with sqlite3.connect(str(self.path)) as connection:
+            connection.execute(
+                """INSERT INTO runtime_backend_session_bindings(
+                    scope_id, thread_id, agent_id, backend_id,
+                    backend_session_id
+                ) VALUES (?, ?, ?, ?, ?)""",
+                (
+                    "scope-a",
+                    "thread-a",
+                    "reviewer-agent",
+                    "codex_cli",
+                    "backend-session-original",
+                ),
+            )
+            with self.assertRaises(sqlite3.IntegrityError):
+                connection.execute(
+                    """INSERT OR REPLACE INTO runtime_backend_session_bindings(
+                        scope_id, thread_id, agent_id, backend_id,
+                        backend_session_id
+                    ) VALUES (?, ?, ?, ?, ?)""",
+                    (
+                        "scope-a",
+                        "thread-a",
+                        "reviewer-agent",
+                        "codex_cli",
+                        "backend-session-replacement",
+                    ),
+                )
+        self.assertEqual(
+            self.raw_rows(
+                self.path,
+                """SELECT backend_session_id
+                   FROM runtime_backend_session_bindings""",
+            ),
+            [("backend-session-original",)],
+        )
+
     def test_released_v1_upgrades_to_current_preserving_ledger_and_unmanaged_data(self) -> None:
         database = self.database()
         self.initialize_probe_schema(database)
@@ -309,7 +419,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.database().initialize()
 
-        self.assertEqual(self.database().schema_version(), 7)
+        self.assertEqual(self.database().schema_version(), 12)
         self.assertEqual(
             self.raw_rows(self.path, "SELECT id, value FROM probe_parent"),
             [("v1", "stable")],
@@ -329,6 +439,11 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 (5, "runtime_agent_mailbox_v5", 64),
                 (6, "runtime_role_assignment_v6", 64),
                 (7, "runtime_agent_execution_state_v7", 64),
+                (8, "runtime_backend_session_binding_v8", 64),
+                (9, "runtime_backend_session_recovery_v9", 64),
+                (10, "runtime_backend_session_recovery_confirmation_v10", 64),
+                (11, "runtime_exact_changeset_user_approval_v11", 64),
+                (12, "runtime_product_acceptance_history_v12", 64),
             ],
         )
         self.assertEqual(
@@ -356,7 +471,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.assertEqual(self.schema_snapshot(self.path), before)
         self.database().initialize()
-        self.assertEqual(self.database().schema_version(), 7)
+        self.assertEqual(self.database().schema_version(), 12)
 
     def test_required_v2_trigger_drift_fails_closed(self) -> None:
         self.database().initialize()
@@ -396,7 +511,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 connection.execute("PRAGMA table_info(runtime_snapshots)").fetchall(),
                 before_columns,
             )
-        self.assertEqual(self.database().schema_version(), 7)
+        self.assertEqual(self.database().schema_version(), 12)
 
     def test_initialization_preserves_database_global_version_pragmas(self) -> None:
         self.path.parent.mkdir(parents=True)
@@ -534,6 +649,11 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 (5, "integer"),
                 (6, "integer"),
                 (7, "integer"),
+                (8, "integer"),
+                (9, "integer"),
+                (10, "integer"),
+                (11, "integer"),
+                (12, "integer"),
             ],
         )
 
@@ -597,7 +717,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
             )
 
         self.database().initialize()
-        self.assertEqual(self.database().schema_version(), 7)
+        self.assertEqual(self.database().schema_version(), 12)
         self.assertEqual(
             self.raw_rows(self.path, "SELECT id, value FROM legacy_canary"),
             [("one", "stable")],

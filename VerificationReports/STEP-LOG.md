@@ -5365,3 +5365,310 @@ ps -axo pid=,ppid=,pgid=,command=
 - `review`：`self-review PASS for frozen public seam, append-only persistence and truthful crash-window limitation; PRODUCT-01C final independent code-review not yet due`
 - `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / protected user changes preserved`
 - `next_action`：下一纵切按Plan30实现`backend_id=codex_cli + backend_session_id`私有持久绑定；先用Fake证明首次捕获、同Agent/Thread/Backend resume和错误绑定零CLI调用，再处理Session丢失时的Context重建。不自动运行真实CLI。
+
+### TRACE-20260831-272
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-272 / PRODUCT-01C-BACKEND-SESSION-BINDING / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / backend_id + backend_session_id private durable binding with Fake Backend / Plan30 PRODUCT-01C + TRACE-271`
+- `confirmed_public_seam`：继续通过`AgentExecutionRuntime.run(AgentExecutionRequest) → AgentExecutionResult`观察行为；Fake只替代外部Codex CLI。持久行为通过关闭并重建Database/Store/Runtime后的第二次公开调用验证，不用直接查SQLite表证明业务结果。
+- `tdd_slice_1`：首次调用显式声明`backend_id=codex_cli`且没有Backend Session；Fake返回新的`backend_session_id`后，Runtime必须按`scope_id + thread_id + agent_id + backend_id`私有持久化绑定。
+- `tdd_slice_2`：重建Runtime后，同一Scope/Thread/Agent/Backend的新Invocation显式携带已绑定ID，Fake必须恰好收到该ID并执行一次resume语义调用。
+- `tdd_slice_3`：跨Agent、跨Thread、跨Backend或与已有绑定不一致的Session引用必须在Fake调用前以稳定错误码拒绝；绑定ID不得进入Message、Context或公开产品输出。本批只测试Runtime/Executor合同，不新建前端投影。
+- `scope / non_goals`：不处理Session不存在/失效后的Context重建，不运行真实CLI/模型/网络，不实现第二Backend、Mailbox ACK、ASK_USER/FINISH、本地API或自进化，不stage/commit/push/tag/deploy。
+- `stop_conditions`：任务正确性需要依赖CLI隐藏Session；绑定可被覆盖；错误绑定仍调用Fake；需要把Prompt、Message正文或Session ID投影到公开事件；SQLite迁移或并发出现无法直接解释失败；或全仓回归出现非预期退化。
+- `result / effect`：`PENDING THREE VERTICAL TDD RED→GREEN SLICES / REAL CALLS FORBIDDEN`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`main@6703d61 / worktree clean before PRE_REGISTER / no external effects`
+- `next_action`：新增首次捕获并跨Runtime恢复绑定的公共行为红测，只运行该测试捕获预期失败。
+
+### TRACE-20260831-273
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-273 / PRODUCT-01C-BACKEND-SESSION-BINDING / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / durable private Backend Session binding with Fake Backend / TRACE-272 + Plan30 PRODUCT-01C`
+- `slice_1_red_green`：首次公共行为测试先因`AgentExecutionRuntime`不接受`session_store`而TypeError红。最小实现增加`backend_id/backend_session_id`合同、SQLite v8私有绑定和Runtime自动注入；第一次Fake返回ID后关闭并重建Database/Store/Runtime，同一Scope/Thread/Agent/Backend的新Invocation收到相同ID，测试转绿。
+- `slice_2_red_green`：错误Session测试先证明旧逻辑会忽略调用方给出的错误ID并继续调用Fake；加入匹配检查后以`backend_session_mismatch`在Backend前拒绝。跨Agent、跨Thread和跨Backend测试随后复现前两类只在Fake调用后的SQLite唯一约束处失败、跨Backend甚至不失败；统一改为任何没有匹配私有绑定的显式Session引用均在Backend前拒绝，三类转绿。
+- `slice_3_red_green`：完成结果重放测试先证明旧顺序会在绑定检查前返回其他Backend的持久结果；把绑定校验前置并核对完成结果的`backend_id`后转绿，换Backend重放返回`backend_mismatch`且Fake总调用仍为1。
+- `immutability_red_green`：原始SQLite测试证明`INSERT OR REPLACE`能够绕过普通主键冲突并覆盖Backend Session绑定；v8新增专门append-collision trigger后转绿。update/delete/replace均被拒绝，同一`backend_id + backend_session_id`也不能绑定第二个Agent或Thread。
+- `privacy / terminology`：Harness业务`agent_session_id`保持不变；Codex/Backend连续性字段统一为`backend_id`与`backend_session_id`。Codex `session_started`公开Event不再携带具体ID，脱敏smoke只公开`session_observed`布尔并使用`backend_id`，测试证明报告repr不含具体Session。
+- `schema_and_fixture_regression`：Runtime schema由v7升至v8。首次Runtime 184项回归的10个失败全部精确对应测试固定写死v7及降级fixture未删除v8表；只更新发布版本夹具后185/185通过。首次全仓脚本从stdin启动导致multiprocessing无法重新导入`<stdin>`，改用真实unittest模块入口；随后旧候选v8 checksum残留在固定portfolio demo数据库使一个测试提前失败，将该测试的Runtime DB隔离到TemporaryDirectory后恢复，未删除用户或演示数据。
+- `commands / result`：核心Session/Executor/Smoke/SQLite定向`54/54 PASS`；Runtime定向`185/185 PASS`；全仓排除必须独立新解释器运行的`test_local_trusted_execution_behavior_expected_red.py`后`635/635 PASS (9 skipped)`；changed-file py_compile、`git diff --check`和公开Session字段扫描PASS。
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；无resume、API Key读取、认证文件访问、用户配置修改、业务Workspace写入、自进化应用、Git stage/commit/push/tag/deploy。
+- `limitations`：当前只证明Fake Backend的Session捕获、跨Runtime持久恢复、防串线和公开脱敏；尚未真实调用Codex resume，也未实现Session不存在、过期或Backend拒绝resume后的权威Context重建。Backend完成但结果提交前的claim/fencing窗口仍未关闭，不宣称exactly-once。
+- `artifacts / evidence`：`agent_executor=c247ec99329505b4651757849146d421bad075abbc96c2bb0dff6beca3e49560; execution_store=153a48b6b8b37a0a1444b85bee4af4b9a8bff2cbf566286d41a0d6c8fd1450fa; runtime_sqlite=5b2c206f9c1ebc800b4a4aae89b3c495dd0c39cca463db491b8c2a4cef0eb3f8; state_tests=3b271c43fab56b31f2ec338a95eb187f95e663094a7ba46ad983ce1e9627290d; sqlite_tests=05cb1a390e2021f55a6e90727ad7245070225246a819dae36d11327f39af48a6; Plan30=0d37542c3bb24cc2d6f69a1a6fab0ae60f99132e511b0c719829fa314f959afc; HANDOFF=cbbdc39b5d38875e6fb90d1c92b6f02aa9d4d2eb586042c4630285025acb1e22; decision_record=2bc2d7799129929aa0e4ccf002b757feacdb45a295df324f1b928ec9b505b693; pre-ACTUAL_STEP=3f1f3eebb0d35baf5f613aa33f4998484621f627254dcd615b181cbc39a6ccd7`。
+- `result / effect`：`BACKEND SESSION PRIVATE DURABLE BINDING PASS OFFLINE / CROSS-BINDING FAILS BEFORE BACKEND / REAL RESUME AND CONTEXT REBUILD PENDING`
+- `review`：`self-review PASS for bounded public seam, private projection and truthful offline boundary; expected TDD/schema fixture failures were directly explained, diagnosing-bugs not invoked; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / no commit, push, tag or deploy`
+- `next_action`：按TDD用Fake模拟Backend Session缺失/失效，让Runtime从持久Task Snapshot、Permission Snapshot、Message和Artifact引用重建自描述Context并创建新Session；错误状态继续在Backend前拒绝。不自动真实调用。
+
+### TRACE-20260831-274
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-274 / PRODUCT-01C-BACKEND-SESSION-CONTEXT-REBUILD / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / one bounded Session-invalid recovery from Runtime-owned persisted context / Plan30 PRODUCT-01C + TRACE-273`
+- `confirmed_public_seam`：继续使用用户已确认的`AgentExecutionRuntime.run(AgentExecutionRequest) → AgentExecutionResult`；Fake只替代外部Codex Backend。Session失效由稳定typed Backend错误表达，重建结果通过Fake第二次收到的新Session请求与最终Result观察，不测试私有helper。
+- `tdd_slice_1`：已有私有绑定时，Fake第一次明确返回/抛出“该Backend Session不存在或失效”；Runtime只能重建一次不携带旧ID的自描述请求，Fake第二次返回新Session并完成。不得把一般Backend失败当Session失效重试，也不得无限恢复。
+- `tdd_slice_2`：重建Context必须绑定当前权威Task Snapshot、Permission Snapshot、Message和Artifact引用/内容；任一引用、hash或权限不匹配继续在第一次Backend调用前`state_mismatch`，缺少必需重建材料时fail-closed且不进行第二次调用。
+- `persistence_boundary`：优先复用现有Message/Artifact/Context合同；若现有Store不能持有重建所需最小公开内容，只新增不可变、digest绑定的Runtime Context Snapshot，不把供应商隐藏历史、原始私有推理、凭据或任意环境写入SQLite。
+- `scope / non_goals`：不真实运行Codex CLI/模型/网络，不实现通用CLI重试、取消、Mailbox ACK、第二Backend、本地API/Web或自进化；不stage/commit/push/tag/deploy。
+- `stop_conditions`：恢复需要猜测旧Session隐藏事实；一般失败触发第二调用；重建内容未绑定Snapshot/Permission/Artifact hash；能跨Agent/Thread/Backend；超过一次恢复；具体Session进入公开Event/Message/Context；SQLite或并发出现无法解释失败。
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / REAL CALLS FORBIDDEN`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + TRACE-273 uncommitted session-binding slice / staging untouched`
+- `next_action`：读取现有ContextBundle、Mailbox/Artifact持久化与AgentExecutor失败语义，确定最小复用设计后写第一条Session失效恢复红测。
+
+### TRACE-20260831-275
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-275 / PRODUCT-01C-BACKEND-SESSION-CONTEXT-REBUILD / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / one bounded Session-invalid recovery from Runtime-owned persisted context / TRACE-274 + Plan30 PRODUCT-01C`
+- `tdd_red_green`：第一条公共行为测试先因`AgentExecutionContextPart`、`AgentExecutionRecoveryContext`和`BackendSessionUnavailable`不存在而ImportError红；增加最小类型后又因SQLite Store没有`record_recovery_context`而AttributeError红。最小实现增加Recovery Context持久边界与Runtime单次恢复后转绿。完整性测试随后暴露v9校验查询漏取`scope_id`，导致合法状态被误报投影漂移；补齐权威scope投影并精确比对Task/Task Snapshot/Permission Snapshot/Artifact refs后转绿。
+- `runtime_contract`：Recovery Context以`agent-execution-recovery-context/v1`保存Task Snapshot、Permission Snapshot、至少一条Message和零到多个Artifact；每段正文SHA-256必须等于其`ScopedSnapshotRef.content_hash`，整个Context canonical digest与权威State Envelope绑定。只有typed `BackendSessionUnavailable`同时匹配当前`backend_id + backend_session_id`时才进入恢复；重建请求清空旧ID、使用持久自描述Context并最多调用一次。缺Context返回`recovery_context_not_found`，第二次仍失效返回`backend_session_recovery_failed`，普通Runtime错误原样抛出且不重试。
+- `persistence_contract`：Runtime SQLite schema升至v9，新增append-only `runtime_agent_execution_recovery_contexts`与`runtime_backend_session_recoveries`。新Session按`scope/thread/agent/backend + recovery_generation`追加，不能覆盖v8初始绑定；读绑定时优先最新replacement，完整性扫描验证Context/state digest、权威引用以及连续`stale → replacement`恢复链。重建Prompt测试明确拒绝出现旧或新Backend Session ID。
+- `schema_regression`：首轮90项SQLite/Outbox/Agent回归出现14个失败和3个错误，均精确对应旧current-version=8断言及v1/v2/v4降级fixture未删除v9保留表；补齐v9表/trigger/ledger期望和降级顺序后90/90通过。这些是可直接解释的迁移合同差异，未调用`diagnosing-bugs`。
+- `commands / result`：核心State/Executor/Smoke/SQLite定向`59/59 PASS`；Runtime discovery`185/185 PASS`；全仓按既有协议排除必须独立解释器运行的`test_local_trusted_execution_behavior_expected_red.py`后`640/640 PASS (9 skipped)`；changed-file `py_compile=PASS`；`git diff --check=PASS`。
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；没有resume、API Key或认证材料读取、用户配置修改、业务Workspace写入、自进化应用、Git stage/commit/push/tag/deploy。
+- `limitations`：当前只完成Runtime收到typed Session失效后的离线恢复合同。`CodexCliAgentExecutor`尚未把真实CLI的稳定错误信号分类成`BackendSessionUnavailable`，因此不宣称真实resume或真实失效重建已通过。Backend第二次调用成功但恢复记录提交前崩溃/并发冲突仍属于既有claim/fencing窗口，不宣称exactly-once。
+- `artifacts / evidence`：`agent_executor=bbe0faa1104246f9e8e333d601afb32fe6e197fcc0241ad74e7b2353f46c5f17; execution_store=a4620d365eae756a0cfe358f43ddecf698df89eaf3b1183b50c65cba7e2ce494; runtime_sqlite=07987027259cc597687379f8365984d0a0c585441b7df979a029258df43098eb; state_tests=39ba0596b12140f9dd220c016a775de07f04831d1b24caf6a385a65d4cbae8e9; sqlite_tests=caf0108f6c2289582bb4d02ca4d88459d4ea878bf44d9375d2b9c1fb76ccf69b; Plan30=d7a519a727816048f54899315c88511b0d9f740b9889ef2a34b44fe65d3028bd; HANDOFF=e74a7654195e9311d2669004cc6525d0ab6446752f09b4179867dca675aa03cf; decision_record=9be5cf87d7e8078d6b0486a32aefdd8359b6c9bb12426b16cc6b66cd712e2cfd; pre-ACTUAL_STEP=b29f07cec7386a435c4d02e376a1a1d0ce30eeff771a5a478208c285d709e9b1`。
+- `result / effect`：`RUNTIME CONTEXT REBUILD PASS OFFLINE / ONE RECOVERY MAX / REAL CLI ERROR CLASSIFICATION PENDING`
+- `review`：`self-review PASS for explicit authoritative context, bounded retry, append-only recovery chain and private Session projection; expected TDD/schema failures directly explained; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：下一纵切按TDD冻结Codex CLI错误分类；只有能可靠证明指定Session不存在/失效的结果才转换为typed `BackendSessionUnavailable`，超时、进程异常、JSONL损坏与一般失败不得触发恢复。先用Fake完成Adapter→Runtime链，真实resume/失效复验需用户另行授权。
+
+### TRACE-20260831-276
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-276 / PRODUCT-01C-CODEX-SESSION-ERROR-CLASSIFICATION / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / narrow Codex CLI Adapter failure classification with Fake Transport / Plan30 PRODUCT-01C + TRACE-275`
+- `confirmed_public_seam`：继续使用已冻结的`AgentExecutionRuntime.run(AgentExecutionRequest) → AgentExecutionResult`产品seam；外部边界使用Fake `CodexCliTransport`，行为从Runtime最终结果/稳定错误码和Fake调用次数观察。不会测试私有解析helper。
+- `source_check`：先查询OpenAI官方Codex文档是否定义`codex exec resume --json`的Session-not-found错误码；若官方文档没有稳定合同，只允许采用本机CLI可观察的结构化字段或新增显式Adapter证据边界，不按stderr/自然语言子串猜测，不把未确认字符串冒充官方协议。
+- `tdd_slice_1`：Fake Transport返回“resume请求 + 明确结构化Session失效证据”时，Codex Adapter必须抛typed `BackendSessionUnavailable`，Runtime才能使用已持久Recovery Context恰好新建一次Session并完成。
+- `tdd_slice_2`：超时、非零退出但无明确Session证据、JSONL损坏、普通结构化错误均不得触发Context重建；每类最多一次Transport调用并返回/抛稳定的一般失败，不得扫描或公开完整stderr。
+- `scope / non_goals`：不真实运行Agent/模型/网络，不用伪造Session ID发起resume，不读取认证材料，不实现通用重试/取消、Mailbox ACK、第二Backend、Web或自进化；不stage/commit/push/tag/deploy。
+- `stop_conditions`：只能依靠自然语言错误文本猜Session失效；错误分类会暴露stderr/Session ID；普通失败触发第二次调用；无法从当前CLI/官方资料找到可冻结的结构化证据且又必须真实调用才能确定；或出现无法直接解释的并发/SQLite失败。
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / REAL AGENT CALLS FORBIDDEN`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + TRACE-273/275 uncommitted slices / staging untouched`
+- `next_action`：读取本机CLI版本与resume help（不发起Agent调用），再写第一条Adapter→Runtime结构化Session失效公共行为红测。
+
+### TRACE-20260831-277
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-277 / PRODUCT-01C-CODEX-SESSION-ERROR-CLASSIFICATION / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / narrow Codex CLI Adapter failure-evidence contract with Fake Transport / TRACE-276 + Plan30 PRODUCT-01C`
+- `source_evidence`：OpenAI官方非交互文档确认`codex exec --json`输出JSONL、事件类型可能含`turn.failed`与`error`，并支持`codex exec resume <SESSION_ID>`；该页没有定义“指定Session不存在/失效”的稳定错误code/字段。本机只读执行`codex-cli 0.149.0-alpha.4.3 --version`与`exec resume --help`也只提供命令参数。对本机二进制执行`strings`只发现多种自然语言Session/thread错误与内部`SessionExpired`枚举，不能证明哪一种是exec JSONL公共合同。因此本切拒绝基于stderr/自然语言猜测。官方页：`https://learn.chatgpt.com/docs/non-interactive-mode`。
+- `slice_1_red_green`：公共Adapter测试先因`CodexCliFailureKind`不存在而ImportError红；最小实现给`CodexCliProcessResult`增加受校验失败种类，并让带当前Backend Session的resume在收到明确`backend_session_unavailable`时抛typed `BackendSessionUnavailable`。随后Adapter→Runtime→SQLite Recovery Context集成回归证明第一次resume、第二次无旧ID新Session，Fake Transport恰好调用2次。
+- `approval_boundary_issue`：首轮模块回归中，新增Enum对象作为ProcessResult字段被既有`LocalExecutionApprover`安全图检查拒绝为“trusted local capability escaped through a result”。这是可直接解释的边界不兼容；将结果字段改为边界内枚举校验后归一化的普通字符串，既有一次性批准与防能力逃逸测试恢复通过。未使用`diagnosing-bugs`。
+- `slice_2_red_green`：超时结果即使错误携带Session失效种类，旧实现仍抛`BackendSessionUnavailable`并可能诱发重建，形成独立红测；最小修复要求必须是带ID的resume、非timeout且非零退出，否则抛不携带私有诊断的`RuntimeProtocolError`。stderr单独含“Session not found”首次即保持普通FAILED，是已有安全行为回归，没有伪造RED。
+- `slice_3_red_green`：损坏JSONL最初直接泄出带原始stdout `.doc`状态的`JSONDecodeError`，红测要求安全协议错误；最小实现离开解析异常上下文后抛固定`RuntimeProtocolError`，不保存stdout/stderr或Session ID。非对象JSON同样fail-closed。
+- `commands / result`：Codex Adapter/Runtime State/Smoke/SQLite定向`64/64 PASS`；Runtime discovery`185/185 PASS`；全仓排除专用expected-red后`645/645 PASS (9 skipped)`；changed-file `py_compile=PASS`；`git diff --check=PASS`。
+- `external_effects`：真实Codex Agent/模型调用0，API/模型网络调用0；只读取官方公开文档、执行本机CLI version/help和二进制公开字符串检查。没有resume、认证材料读取、用户配置修改、业务Workspace写入、自进化应用、Git stage/commit/push/tag/deploy。
+- `limitations`：当前完成的是“显式证据才能触发”的Adapter/Runtime合同，不是当前CLI真实错误映射。`CodexCliProcessRunner`仍只返回`failure_kind=none`，因此真实Transport不会凭猜测自动恢复；必须先取得一次受控、脱敏的真实Session失效JSONL/退出证据，再按CLI版本冻结映射。真实resume与恢复仍未验收。
+- `artifacts / evidence`：`agent_executor=c76caafefefd1d490cb52672af909d45f7e5ba7c45f6543429b7ccb71e0ef55c; codex_tests=c47c0dedf0b9b65a1696d9eb62bfeedd7a6bf50d3018c027c13aee6865f29af0; state_tests=a3e8b2c44598365e5e7a7af649995d676d09c35ba7c3dda741a4d3d1ecb7cb28; Plan30=59b0512818bfd343010212d58141452b492d9f7f59a609543e140d1e09d5179f; HANDOFF=c2f35e7a222f013e75a5bc8bdbc19539f111a928639eda36dd8404edd73659ad; decision_record=b7d863f0327bf7cdc574d9d6d9c3ce995caa95533a7e2c253019834536cddfeb; pre-ACTUAL_STEP=96d66f7b69abc3e78444f268f2030fb5d8da1ca8a9a355b2993d292b9701882f`。
+- `result / effect`：`EXPLICIT SESSION FAILURE EVIDENCE GATE PASS OFFLINE / STDERR GUESSING FORBIDDEN / REAL TRANSPORT MAPPING PENDING`
+- `review`：`self-review PASS for narrow evidence boundary, approval-safe public graph, no raw diagnostic retention and bounded Runtime recovery; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：请求用户单独授权一次受控真实resume/Session失效观察；只保留脱敏事件类型、字段名、退出/timeout和是否发起模型调用，不公开Session ID、stderr正文或认证信息。观察后先写版本化映射红测，再实现真实Transport分类；若无法安全保证不调用模型，则停止并改用新Session→有效resume两阶段复验。
+
+### TRACE-20260831-278
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-278 / PRODUCT-01C-CODEX-SESSION-FAILURE-PROBE / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / one authorized sanitized invalid-Session observation / Plan30 PRODUCT-01C + TRACE-277`
+- `authorization`：用户在被明确告知下一步需要单独授权受控真实Session失效观察后回复“下一步”；本条将其解释为仅授权一次该探针，不扩张为真实Agent任务、第二次调用、有效resume、模型使用或其他外部副作用。
+- `confirmed_public_seam`：新增诊断入口返回固定脱敏Report；测试通过Fake `CodexCliTransport`观察公开Report，不测试解析helper。真实执行只调用该入口，命令行和输出均不得包含测试Session ID、stderr/stdout正文、认证信息或用户路径。
+- `tdd_slice`：先用Fake证明探针只公开exit class、timeout、JSONL是否有效、事件类型/字段名、stderr是否存在和模型执行迹象；即使Fake原始输出含Session ID、路径或token，Report repr也不得出现。最小实现后再运行一次真实、明确不存在的保留测试UUID resume。
+- `real_probe_contract`：恰好一次Codex进程；read-only、固定安全环境、无工具批准、短timeout。若出现`thread.started`、`turn.started`、`item.*`或`turn.completed`即标记`model_execution_observed=true`并停止，不自动重试或恢复。只记录字段名，不记录字段值。
+- `scope / non_goals`：不读取认证文件内容，不公开或持久化原始stdout/stderr，不调用第二Agent，不运行有效Session resume，不实现自然语言匹配，不stage/commit/push/tag/deploy。
+- `stop_conditions`：探针需要打印原始诊断才能判断；CLI启动模型/工具；发生timeout；测试UUID意外命中真实Session；返回形态无法在不泄漏内容下区分；或需要第二次真实调用。
+- `result / effect`：`PENDING TDD RED→GREEN + ONE AUTHORIZED REAL PROBE MAX`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + uncommitted PRODUCT-01C slices / staging untouched`
+- `next_action`：新增Fake脱敏Report红测，最小实现探针入口，定向回归通过后执行一次真实探针。
+
+### TRACE-20260831-279
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-279 / PRODUCT-01C-CODEX-SESSION-FAILURE-PROBE / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / one authorized sanitized invalid-Session observation / TRACE-278 + Plan30 PRODUCT-01C`
+- `tdd_red_green`：公开Fake测试先因`run_codex_session_failure_probe`不存在而ImportError红；最小实现新增固定脱敏诊断Report后转绿。第二条Fake回归证明即使原始stdout包含私有Session、路径和token，Report只保留事件类型与顶层字段名；一旦出现`thread.started/turn.started`等模型执行事件，固定返回`PROBE_MODEL_EXECUTION_OBSERVED`且不公开字段值。预期RED可直接解释，未调用`diagnosing-bugs`。
+- `real_probe`：用户授权后只启动一次`codex-cli 0.149.0-alpha.4.3`进程，以固定不存在的保留测试UUID执行read-only resume，timeout=10s且无retry。1654ms后`process_exit=nonzero`、`timed_out=false`、`stdout_line_count=0`、`jsonl_valid=true`、`event_types=[]`、`event_fields={}`、`stderr_present=true`、`model_execution_events_observed=false`。原始stdout/stderr、Session ID、用户路径、认证材料和任何字段值均未公开或写入报告。
+- `finding`：当前CLI在该真实路径上没有提供可以安全冻结为`backend_session_unavailable`的结构化stdout证据；官方文档也没有定义对应错误code/字段。仅凭“非零退出 + stderr存在 + 尚无事件”自动恢复，会把认证、配置或进程启动失败一并误分类。真实Transport因此继续fail-closed，不加入自然语言stderr匹配或静默fallback。
+- `commands / result`：Codex Smoke/Adapter/Runtime State/SQLite定向`66/66 PASS`；Runtime discovery`185/185 PASS`；全仓排除专用expected-red后`647/647 PASS (9 skipped)`；changed-file `py_compile=PASS`；`git diff --check=PASS`。首次全仓shell包装因使用zsh只读内置变量名`modules`而在测试启动前退出，改用`test_module_names`后正常完成；这是命令写法错误，不是项目回归。
+- `external_effects`：真实Codex进程恰好1次，无重试、无有效resume、无第二Agent；观察不到模型/工具执行事件。没有读取认证文件内容、修改用户配置、写业务Workspace、stage/commit/push/tag/deploy。
+- `limitations`：真实有效Session resume和“从旧Session失败到新Session完成”的恢复链仍未验收。由于当前CLI没有结构化失效信号，下一步是产品策略选择，不是可直接推出的版本化映射：要么fail-closed并等待用户确认后新建Session，要么接受其他启动前失败也会额外调用一次，采用一次有界自动fallback。
+- `artifacts / evidence`：`codex_smoke=0069217f3d315e5ed60aa5163a2858f43eed23b099ef75b5d04a41670fa83dae; smoke_tests=ad920116f3506ee01a500b74825638096e2551e2a0cb12a0e101d2324d2788f4; Plan30=701f980f9bd987999cb93eefcf0e49e1005ceed6f00d280d5c03351a86ec0633; HANDOFF=e6d57711e81cda80ecf7c73c225edf658880d6d10b8b55ce9475ffe97e460023; decision_record=4abde7772be47c8d1556574c0d798881ff8ab7e7cd50ae2f741a3e935be8431d; pre-ACTUAL_STEP=e1c7c30a1c18ed1b5f297270eb74d33c61b814bc949420d7595b7f0571efe574`。
+- `result / effect`：`SANITIZED INVALID-SESSION OBSERVATION COMPLETE / NO STRUCTURED SESSION-LOSS SIGNAL / MODEL EXECUTION NOT OBSERVED / RECOVERY POLICY USER DECISION REQUIRED`
+- `review`：`self-review PASS for one-process authorization boundary, safe public projection, no stderr guessing and truthful negative evidence; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：向用户解释两种恢复策略并请求选择。推荐fail-closed人工确认；确认后按TDD实现稳定产品状态与所选恢复分支，真实恢复复验仍需单独授权。
+
+### TRACE-20260901-280
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-280 / PRODUCT-01C-MANUAL-SESSION-RECOVERY-CONFIRMATION / PRE_REGISTER / 2026-09-01 / 2026-09-01`
+- `principal / slice / plan_ref`：`/root / durable fail-closed user confirmation before Backend Session rebuild / Plan30 PRODUCT-01C + TRACE-279`
+- `user_decision`：用户询问人工确认流程后回复“下一步”，确认采用推荐的fail-closed路径：旧Session恢复失败时Runtime暂停，不自动新建；用户对当前失败逐次确认后，Runtime才从权威Recovery Context创建新Session。该确认不是系统演进批准，也不能授权其他Invocation或状态版本。
+- `confirmed_public_seam`：继续通过`AgentExecutionRuntime`观察。`run(request)`在可恢复的resume失败后返回不含Backend Session ID的公开等待确认对象；调用方把原`AgentExecutionRequest`与该对象的一次性确认ID交给Runtime确认接口。确认接口返回恢复结果；调用方不查询SQLite、不接触私有绑定或stderr。
+- `tdd_slice_1`：使用真实临时SQLite与Fake Backend：第一次resume失败后必须只调用Fake一次并持久返回`awaiting_user_confirmation`；关闭并重建Database/Store/Runtime后，匹配当前Invocation、State、Thread、Agent、Backend和确认ID的确认才能用持久Context发起一次无旧ID的新Session并完成。公开等待对象的repr/to_dict不得包含旧Session、Context正文、Workspace路径或认证信息。
+- `followup_slices`：第一条链路转绿后再分别增加拒绝/停止、错误或过期确认零Backend调用、重复点击幂等、恢复再次失败停止和通用启动失败不误触发。不得在第一条RED前批量预建所有状态。
+- `persistence_boundary`：若现有v9不能表达跨Runtime等待与决定，新增最小append-only请求/决定表并升级schema；请求绑定权威State digest、Recovery Context digest和当前私有Session，决定绑定确认ID。不得用可变布尔字段覆盖历史。
+- `scope / non_goals`：本批只做Runtime领域接口、SQLite持久等待/决定和Fake测试；不新增FastAPI/Web、第二CLI、Mailbox ACK、自动fallback、自主进化或真实CLI/模型/网络调用，不stage/commit/push/tag/deploy。
+- `stop_conditions`：首次失败后自动发起第二Backend调用；确认ID能跨Invocation/State/Agent/Thread/Backend复用；确认后使用旧Session或内存Prompt；拒绝/过期/重复确认仍调用Backend；公开对象泄漏私有ID/上下文；SQLite出现无法解释的并发或迁移失败。
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / REAL AGENT CALLS FORBIDDEN`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + TRACE-267～279 uncommitted slices / staging untouched`
+- `next_action`：写第一条跨Runtime“失败→等待→确认→新Session完成”公共行为红测，再做最小实现。
+
+### TRACE-20260901-281
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-281 / PRODUCT-01C-MANUAL-SESSION-RECOVERY-CONFIRMATION / ACTUAL+CHECKPOINT / 2026-09-01 / 2026-09-01`
+- `principal / slice / plan_ref`：`/root / durable fail-closed user confirmation before Backend Session rebuild / TRACE-280 + Plan30 PRODUCT-01C`
+- `slice_1_red_green`：跨Runtime公共测试先因`AgentExecutionRecoveryConfirmation/Prompt/Decision`不存在而ImportError红。最小实现增加公开`awaiting_user_confirmation`Prompt、确认对象、Runtime确认入口和SQLite v10请求/决定事实；Fake第一次resume失败后只调用1次，重建Database/Store/Runtime后确认才使用持久Context清空旧ID创建新Session，测试转绿。Prompt固定只公开schema、状态、确认ID、Invocation ID、说明和两个选择，repr不含私有Session、Context正文或Workspace。
+- `slice_2_red_green`：停止路径先因`AgentExecutionRecoveryStopped`不存在而ImportError红；最小实现持久`stop_task`决定并返回可重放`stopped`，首次失败后Backend总调用保持1。错误确认测试随后复现SQLite Store错误直接越过Runtime稳定协议；新增领域`AgentExecutionRecoveryConfirmationRejected`并映射为`recovery_confirmation_mismatch`后转绿，Fake仍只有首次1次调用。
+- `idempotency_red_green`：跨Runtime刷新等待页最初再次调用Fake并试图覆盖Session绑定；新增持久pending读取后返回同一Prompt、Backend不重调。成功确认重复点击最初因replacement已改变而报mismatch；先验证已持久决定并重放completed result后转绿，Backend总计仍为2。停止后刷新同样返回`stopped`而不是重新请求。
+- `loop_prevention_red_green`：确认后的新Session再次失效时，旧实现第二次点击会发起第三次Backend调用；v10增加append-only attempt claim，单个确认只能领取一次，重复点击在Backend前`recovery_confirmation_already_used`。随后红测要求刷新同一Invocation也不能回到旧resume，最小新增公开`recovery_attempt_unresolved`投影；无replacement的已领取尝试保持fail-closed，不形成第三次调用。该状态也覆盖claim后进程崩溃的不确定窗口，因此不冒称exactly-once。
+- `real_observation_mapping`：除明确typed Session失效外，Runtime只在“请求带当前私有Session、Result=failed、没有任何公开Event且没有新Session”这一可观察组合下生成确认Prompt；它把情况描述为resume启动前失败，不声称识别出Session丢失。普通异常、已有事件的失败或缺失权威Context不会触发自动新Session。
+- `persistence_contract`：Runtime SQLite schema由v9升至v10，新增append-only`runtime_backend_session_recovery_requests`、`runtime_backend_session_recovery_decisions`和`runtime_backend_session_recovery_attempts`及update/delete/replace门禁。请求绑定Invocation/State digest/Context digest/Scope/Thread/Agent/Backend/私有stale Session；公开ID不携带这些私有值。Store完整性扫描复核请求与权威State/Context、决定与请求、attempt只属于`create_new_session`决定。
+- `schema_regression`：首次95项迁移/Outbox/Mailbox组合回归出现14个失败和3个错误，全部精确对应旧current-version=9断言及v1/v2/v4降级fixture未删除v10保留表；只更新v10发布夹具、对象/ledger期望和降级顺序后95/95通过。这些是可直接解释的迁移合同差异，未调用`diagnosing-bugs`。
+- `commands / result`：Agent State模块`18/18 PASS`；Codex/State/SQLite定向`70/70 PASS`；Runtime discovery`185/185 PASS`；全仓排除专用expected-red后`651/651 PASS (9 skipped)`；changed-file`py_compile=PASS`；`git diff --check=PASS`。
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；没有resume、订阅额度消耗、认证材料读取、用户配置或业务Workspace修改、Git stage/commit/push/tag/deploy。
+- `limitations`：当前交付的是Runtime领域接口和SQLite持久状态，不是FastAPI endpoint或Web按钮。真实“无效resume→等待Prompt→用户确认→有效新Session→replacement持久化”尚未执行；需要用户单独授权一次无效resume和一次read-only新Session。`recovery_attempt_unresolved`尚无operator重新授权流程，保持人工处置，不自动清除claim。
+- `artifacts / evidence`：`agent_executor=f7cb9b5d977fd4bcf8294c8b231861830d4c50fcea71d0822314afd3386f76b9; execution_store=290c79500df00077a9152babbc143306f6cd91b7b6831d79cf895cce761ab457; runtime_sqlite=129f173f6bacccd5e5414a7dccfa167fe444d3103ac8984fbbb3c8c571d7b3a9; state_tests=b0a9caeca1cbeec37ce179bd96ce9a84e837a7e18ab05b0cba27f364ffa7723e; sqlite_tests=75e8f9559fa5e9205ec8356fdcb72072fa524fd84df585682833dd7376548361; Plan30=8c3e79d07eba29d955b9ab3495d0b191ba0534997e101e89abcf8cc9eac26f84; HANDOFF=80ff5a596a85e79cb4cc3d79582a1d24993fd529d21a47a94818173ba14eb929; decision_record=f8ed8b2da9f382fd6a94f69957a7b8f9660e839e290e3af1b503b5c80b40191a; pre-ACTUAL_STEP=6be8b7e95c0a616b1e02b5b996f3ba50f33bd6fcbe5b57bdb6dcfc3ab39b62b7`。
+- `result / effect`：`MANUAL SESSION RECOVERY CONFIRMATION PASS OFFLINE / NO AUTOMATIC FALLBACK / ONE CONFIRMATION ONE ATTEMPT / REAL RECOVERY PENDING`
+- `review`：`self-review PASS for explicit user decision, private durable binding, bounded execution and truthful unresolved crash state; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：向用户报告离线完成边界。若用户单独授权，下一步运行一次脱敏真实人工恢复复验；通过前不实现FastAPI/Web按钮或宣称真实恢复验收完成。
+
+### TRACE-20260901-282
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-282 / PRODUCT-01C-REAL-MANUAL-SESSION-RECOVERY-SMOKE / PRE_REGISTER / 2026-09-01 / 2026-09-01`
+- `principal / slice / plan_ref`：`/root / one sanitized invalid-resume → durable prompt → explicit confirmation → one read-only new Session / Plan30 PRODUCT-01C + TRACE-281`
+- `authorization`：用户在被告知剩余顺序后回复“继续”；本条只解释为授权这一次脱敏真实人工恢复复验，不授权第三次调用、第二Agent、Workspace写入、其他网络调用或Git发布。
+- `confirmed_public_seam`：新增`run_codex_manual_session_recovery_smoke(executor, workspace_root) → Mapping`。只公开固定状态、布尔验收项、调用计数、公开Event类型、Usage和耗时；不公开Session ID、confirmation ID、Context正文、SQLite路径、stderr/stdout原文或认证信息。
+- `tdd_slice`：Fake Executor第一次在带无效私有Session时返回无Event失败，公开报告必须证明Runtime先持久进入`awaiting_user_confirmation`；确认`create_new_session`后只允许一次不带旧Session的新调用，完成后重放不增加调用。报告repr必须排除Fake私有Session、Context和路径。
+- `real_contract`：约束为两个Codex进程上限：第一次用固定不存在测试Session执行read-only resume；Runtime返回等待后，把本次用户“继续”作为该确认的`create_new_session`决定；第二次从持久Recovery Context创建一个新read-only Session。若第一次出现公开模型Event、未进入等待、或第二次失败，立即停止且不第三调。
+- `scope / non_goals`：不实现FastAPI/Web、Mailbox ACK、通用重试、取消、第二Backend或自主进化；不stage/commit/push/tag/deploy。
+- `result / effect`：`PENDING PUBLIC RED→GREEN + TWO REAL CODEX PROCESSES MAX`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + existing uncommitted PRODUCT-01C slices / staging untouched`
+- `next_action`：先新增一条脱敏报告公共行为红测，再实现最小真实入口和定向回归，绿后才调用真实Codex。
+- `actual / red_green`：公开smoke测试先因`run_codex_manual_session_recovery_smoke`不存在而ImportError红；最小实现组装不可变State/Recovery Context、临时SQLite v10、私有无效Session绑定、Runtime等待/确认和脱敏报告。第一次绿测直接暴露把`SQLiteRuntimeDatabase`误当作长连接调用`close()`；该类只创建独立UoW且由UoW关闭连接，删除三处无效调用后新测试绿。这是可直接解释的API误用，不是SQLite竞态，未调用`diagnosing-bugs`。
+- `real_result`：真实入口exit 0 / `status=passed`，`agent_invocations=2`。第一次无效resume没有公开Event并持久得到`awaiting_user_confirmation`；确认后第二次请求清空旧Session，read-only新Session完成，replacement被观察且持久，相同Invocation重放没有第三次调用。公开检查9/9为true，Event仅`session_started/turn_started/agent_message/turn_completed`，Agent回报Workspace未修改。
+- `usage / latency`：总耗时9823ms；真实新Session的Usage为`input=15528 / cached_input=11008 / output=14 / reasoning_output=0`。无效resume未观察到模型Event；报告不包含新旧Session ID、confirmation ID、Context、SQLite/Workspace路径、stdout/stderr原文或认证信息。
+- `commands / result`：新smoke行为`1/1 PASS`；Codex Smoke + Agent State + Executor相关`35/35 PASS`；排除必须独立运行的behavior red-card后全仓合法集合`652/652 PASS (9 skipped)`（主集644 + 独立expected-red卡8）；changed-file `py_compile=PASS`；`git diff --check=PASS`。一次未排除特殊入口的普通discovery按设计打印两条缺少`--trusted-local-execution`拒绝，没有用该运行冒充验收。
+- `external_effects`：只启动两个已授权Codex CLI进程；第一次无效resume，第二次一个read-only新Session。无第三次调用、第二Agent、Workspace写入、认证材料读取、用户配置修改、自身变更应用或Git stage/commit/push/tag/deploy。
+- `limitations`：这只验证当前版本的人工确认恢复；CLI仍没有结构化Session-loss code，真实有效resume、取消、其他错误分类和claim后崩溃的operator再授权尚未完成，不宣称exactly-once。FastAPI/Web按钮仍未实现。
+- `artifacts / evidence`：`codex_smoke=8be15e697410099e0be65bfcd7652fcf1dab00b5bb68749a99eb073658e1066b; smoke_tests=a536fd258bd11741f712c974352dfb7f9ab22ba853dcc83c571b0e88b7ea35bc; Plan30=7bd2d3f60d39918a6129edc5a6579170c74eae8ea3f95d2f535192b4f75f02b7; HANDOFF=b5f157f1663869c882b3d847fdaefbb9417e51915be46a59621c9b6107e4169a; decision_record=81d05dfa746a0ed3ffb0fc8ffec1f23f828e1068bfb51adacb4086979ddf3020; pre-ACTUAL_STEP=0bf518f9407f66b18a0169111ebe0f84739a7066ae810fc057989f6653fec4db`。
+- `result / effect`：`REAL MANUAL SESSION RECOVERY PASS / TWO CALLS EXACT / DURABLE REPLACEMENT / REPLAY ZERO EXTRA CALL / PUBLIC REPORT SANITIZED`
+- `review`：`self-review PASS for bounded real-call authorization, public red→green seam, durable confirmation/replay evidence and private projection; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：下一纵切按TDD实现绑定精确digest的`PROPOSED → USER_APPROVED → APPLIED`用户批准门；不允许任何Agent、Reviewer或Validator代替用户批准系统自身变更。
+
+### TRACE-20260901-283
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-283 / PRODUCT-01C-REAL-MANUAL-SESSION-RECOVERY-SMOKE / CORRECTION / 2026-09-01 / 2026-09-01`
+- `supersedes_entry_id`：`TRACE-20260901-282 artifacts / evidence (Plan30 hash only)`
+- `correction`：TRACE-282的ACTUAL落账后，Plan30又把一处过时的“当前16～25小时”跨文引用同步为已校正的“当前11～17小时”；不改变代码、真实smoke、测试或结论。因此TRACE-282中`Plan30=7bd2...`不再是最终文件哈希，其余哈希保持有效。
+- `corrected_artifact`：`Plan30=7b9ea8dc7b0754d45a4ca77ca2384a2b94826dee4339ea04b7be9a0957ad6694`。
+- `verification`：`git diff --check=PASS`。
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+
+### TRACE-20260901-284
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-284 / PRODUCT-01C-EXACT-CHANGESET-USER-APPROVAL / PRE_REGISTER / 2026-09-01 / 2026-09-01`
+- `principal / slice / plan_ref`：`/root / durable exact ChangeSet user-review gate before any protected system change / Plan30 禁止自主进化 + DEC-012`
+- `confirmed_public_seam`：`ChangeApprovalRuntime.propose(change_set) → ChangeProposal`；`approve(user_confirmation) → ChangeApproval`；`apply(change_set, current_state_digest, effect) → ChangeApplication`。测试只观察公开状态、稳定拒绝code和effect调用次数，不查询私有SQLite表。
+- `slice_1`：提案持久后只是`PROPOSED/PENDING_USER_REVIEW`；无批准直接apply必须在effect前`user_approval_required`。用户确认必须同时绑定proposal ID、精确change digest和base state digest；重建Database/Store/Runtime后才允许effect一次并持久`APPLIED`，重放不得第二次调用。
+- `slice_2`：任何精确内容、目标、权限范围、依赖、证据或base state变化都必须在effect前拒绝，旧批准不能迁移。Agent/Reviewer/Validator不拥有`approve`入口的工具暴露；本切只实现Runtime硬门，Web用户按钮后续接入。
+- `persistence`：优先延伸当前Runtime SQLite append-only迁移，分开保存proposal、user approval、application claim和applied receipt；不使用可变status覆盖历史。claim后effect/提交失败必须fail-closed为不可自动重试的未决状态，不宣称exactly-once。
+- `scope / non_goals`：不实现Evolver、自动生成或自动应用系统变更；不修改Prompt/Role/Skill/权限/Runtime配置作为smoke；不接Web、第二CLI、Mailbox ACK，不stage/commit/push/tag/deploy。
+- `stop_conditions`：无批准仍调用effect；digest变化仍复用批准；重放产生第二次副作用；Agent可从已暴露Action伪造user approval；并发/SQLite出现无法直接解释的失败。
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / ZERO REAL MODEL OR SYSTEM CHANGE APPLICATION`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + existing uncommitted PRODUCT-01C slices / staging untouched`
+- `next_action`：新增第一条跨Runtime“propose→无批准拒绝→user approve→单次apply”公共行为红测。
+
+- `actual / red_green`：第一条公共行为测试先因`coding_workflow.change_approval`不存在而ImportError红；最小实现新增`ChangeApprovalRuntime`、精确`ChangeSet`规范化digest和SQLite v11 append-only Store后转绿。后续红测证明内容/目标/权限/依赖/证据/风险/验证/base-state任一漂移都会使旧批准失效，以及effect失败后的claim跨Runtime保持`change_application_unresolved`且不自动重试。
+- `approval_contract`：保护范围包括Prompt、Role/Profile、模型策略、工具/权限、Runtime策略、Skill、Context/Memory、Validator/Acceptance与系统代码。用户确认同时绑定proposal ID、change digest和base-state digest；无批准为`user_approval_required`，精确内容或状态漂移在effect前拒绝。成功申请只执行一次，成功重放返回`change_already_applied`且effect调用次数不增加。
+- `persistence_contract`：Runtime SQLite schema由v10升至v11，新增append-only proposal、user approval、application claim和application receipt表及update/delete/replace门禁。application claim先于外部effect；effect、receipt或进程在claim后失败时保持人工未决，不自动清除或重试，因此没有冒称exactly-once。
+- `schema_regression`：首次106项SQLite/Runtime定向回归出现14个失败和2个错误，全部精确对应current-version仍断言v10及v1/v2降级fixture未删除v11对象；修订发布夹具后106/106通过。首次全仓合法集合随后仅有1个错误，精确对应v4迁移fixture仍从v10降级；同步为v11后655/655通过。这些均为可直接解释的迁移合同变化，未调用`diagnosing-bugs`。
+- `commands / result`：ChangeApproval公共行为`3/3 PASS`；SQLite/Runtime定向`106/106 PASS`；全仓排除专用expected-red后`655/655 PASS (9 skipped)`；changed-file `py_compile=PASS`；最终`git diff --check=PASS`。两个历史opt-in CLI模块在普通导入时按设计打印缺少`--trusted-local-execution`用法，测试进程仍exit 0，未将其误报为失败。
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；测试effect只是内存计数器，没有修改Prompt、Role、Skill、权限、Runtime策略或系统自身配置；没有Git stage/commit/push/tag/deploy。
+- `limitations`：当前交付的是Runtime硬门和SQLite事实，不是Web按钮或用户身份认证。后续API只能从真实用户交互调用`approve()`，不得把它暴露成Agent Action、工具或Reviewer/Validator能力。claim后失败仍需人工处置；尚无operator重新授权流程，不宣称exactly-once。
+- `artifacts / evidence`：`change_approval=9acef5699befdb5257ec50663cebc08e64f5ce002b237194659b5672453c7185; approval_store=76a56b0a8512d70f9ac976b3b49ef1e35e0f407022ba16c8daaa1c36e131f19c; runtime_sqlite=6565a265ab853831223c44de53e4abbb7658a0ec4ac24e39a988746734465965; persistence_exports=d5cd0fd4a00280d9b6f8e8e918eb8cbcf00e942a5ed3ee4dfc8710b8a2d57810; tests=cbcf1a5d3b8de7c625bc1690ca8b3600fae16b1d906cf703c719fbb51a48fe5e; Plan30=445795aae2bb0389a2643c5041485c95e31ab21c405d8256a9b439a079b59e64; HANDOFF=cfcd46128bc213c38f3d94973a1019bd936b7fbae2e6a87682dac0a810e9aa15; decision_record=24ae06b509374a493206f8fe8638180e9e54234d54c3ed387fb8c527c23d97b8; pre-ACTUAL_STEP=994688b23cae2be2b59ca61e72d455a0cc51d6b66c019aed6f2bd1def9e474ec`。
+- `result / effect`：`EXACT CHANGESET USER APPROVAL GATE PASS OFFLINE / DRIFT REQUIRES REAPPROVAL / ONE CLAIM ONE EFFECT ATTEMPT / ZERO SELF-EVOLUTION`
+- `review`：`self-review PASS for exact-content binding, durable user decision, pre-effect rejection and truthful unresolved crash state; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：按TDD把现有CLI Invocation、Planner/RoleAssignment、持久Mailbox和Runtime-owned Validator接成一个本地产品服务纵切；通过离线链路后再请求一次脱敏真实CLI复验授权，随后接本地API/Web与只由用户触发的批准按钮。
+
+### TRACE-20260901-285
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-285 / PRODUCT-01C-LOCAL-PRODUCT-SERVICE-CHAIN / PRE_REGISTER / 2026-09-01 / 2026-09-01`
+- `principal / slice / plan_ref`：`/root / user task → Planner CLI Invocation → Runtime RoleAssignment + durable Mailbox → recipient CLI Invocation → Runtime-owned Validator / Plan30 下一动作`
+- `confirmed_public_seam`：沿用用户已确认的Plan30产品链路，新增`LocalProductTaskService.run(ProductTaskRequest) → ProductTaskResult`。测试只从该入口观察最终状态、公开引用和两个Fake Executor调用；不直接查询SQLite私表证明业务成功。
+- `minimal_protocol`：Planner首切只允许严格`planner-delegation/v1`单步委派，字段固定为`schema_version/action/recipient_role/task_instruction/required_capabilities/acceptance_summary`；不得指定具体Agent。Runtime负责确定性选择Agent、建立RoleAssignment、持久Message/Mailbox并领取；接收Agent首切将公开final message作为候选Artifact，不能自行宣布通过，最终状态只取Runtime-owned Validator结果。
+- `slice_1`：一条任意非fixture用户任务由Planner产生单步委派；Runtime从配置候选中选择接收Agent并持久投递；接收Agent消费消息并执行一次；非空结果形成带producer provenance的Artifact，独立Validator返回证据并决定`validated/validation_failed/needs_input/failed`。Planner与接收Agent各恰好一次Invocation。
+- `scope / non_goals`：本批先用Fake AgentExecutor，不启动真实Codex、模型或网络；不实现Web/FastAPI、完整DAG、多接收者、Debate、取消/重试、第二CLI、Mailbox ACK/崩溃重投或自主进化。首切复用当前内存ArtifactStore；跨进程Artifact/Validator历史持久化在下一子切补齐，未完成前不得宣称历史页面可重开。
+- `stop_conditions`：Planner能指定agent_id；CLI能直接写Mailbox或决定Assignment；接收Agent文本可绕过Validator成为passed；单步成功链发生重复Executor调用；SQLite出现无法直接解释的迁移/竞态失败。
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / ZERO REAL CLI OR MODEL CALLS`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + existing uncommitted PRODUCT-01C slices / staging untouched`
+- `next_action`：新增一条`LocalProductTaskService.run`公共成功链红测，然后只实现足以转绿的本地编排层。
+
+- `actual / red_green`：公共测试先因`coding_workflow.local_product_service`不存在而ImportError红。最小实现新增`LocalProductTaskService`及请求/Agent配置/结果合同：建立Thread和两个隔离Agent，分别为Planner与接收Agent记录权威State并经`AgentExecutionRuntime`执行；严格解析单步Planner委派后，由现有Scheduler确定性选Agent，Assignment+Message/Mailbox同事务持久，领取消息后才执行接收Agent；最终文本形成带producer provenance的候选Artifact，独立Validator给出证据后结果才成为`validated`。测试转绿，两个Fake Invocation各恰好一次。
+- `protocol_effect`：`planner-delegation/v1`只允许`schema_version/action/recipient_role/task_instruction/required_capabilities/acceptance_summary`六个字段，action固定`delegate_task`，没有`agent_id`字段。Planner理解业务与选择Role，Runtime独占具体Agent选择；接收AgentPrompt明确只能提交候选，不能宣布最终通过。
+- `commands / result`：新公共链`1/1 PASS`；Executor/RoleAssignment/Mailbox/Validator邻近回归`49/49 PASS`；全仓排除专用expected-red后`656/656 PASS (9 skipped)`；changed-file `py_compile=PASS`；最终`git diff --check=PASS`。两个历史opt-in CLI模块仍按设计打印缺少`--trusted-local-execution`用法，测试进程exit 0。
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；Fake Planner和Reviewer各一次，未消费订阅。没有系统自身ChangeSet应用，也没有Git stage/commit/push/tag/deploy。
+- `limitations`：这是首条成功链，不是本地API或Web完成。Agent execution结果、RoleAssignment和Mailbox已进入Runtime SQLite，但结果Artifact、Validator report与Verification仍使用现有内存ArtifactStore，进程退出后不能重开；畸形Planner、无合格Agent、Validator failed/unknown、相同Task重放与跨进程产品历史尚未验收。真实Codex Planner+Reviewer双Invocation需要用户另行授权后才能执行。
+- `artifacts / evidence`：`product_service=9221b7b62ff876195ec3b1bc2f8125b12283b648f730d964d6d1687f775477f0; tests=1dbe4d3cae8ba690f1660a054cb01cd6674eea088e0682c272aa9c7b8398c779; Plan30=8aabae632aa7dc6790e02b0970d375553ea09eebf66f2d00d13dc0fc2970efb3; HANDOFF=65883b436aad2d9ae66b554877927c6737fc528a7980f741720beaa56c198c6f; decision_record=78a3e37e87a05278f239e552bbdc9f16dd424ea4f6117957fccb1b461693ed54; pre-ACTUAL_STEP=0bca3524aaea2b79ebb6225c51eb7272005b4a1c9f6484bfc16dddd7342e7e42`。
+- `result / effect`：`LOCAL PRODUCT SERVICE SUCCESS CHAIN PASS OFFLINE / PLANNER ROLE ONLY / RUNTIME ASSIGNS AND DELIVERS / VALIDATOR OWNS FINAL STATUS`
+- `review`：`self-review PASS for the confirmed public seam and no-agent-selection/no-self-acceptance boundaries; failure/replay/durable product history remain explicit next slices; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：继续在同一公共入口逐条TDD畸形Planner、无合格Agent、Validator failed/unknown和相同Task重放，并把Artifact/Verification接入可跨进程读取的Runtime历史；完成后才请求一次真实Codex双Invocation复验授权。
+
+### TRACE-20260901-286
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-286 / PRODUCT-01C-DURABLE-PRODUCT-ACCEPTANCE-HISTORY / PRE_REGISTER / 2026-09-01 / 2026-09-01`
+- `principal / slice / plan_ref`：`/root / durable product result Artifact + Validator evidence + acceptance receipt across process restart / Plan30 PRODUCT-01C + TRACE-285 limitation`
+- `confirmed_public_seam`：用户询问每次工作验收是否记录，并在被明确告知下一步补Artifact+Verification跨进程持久化后回复“下一步”。公共测试继续只使用`LocalProductTaskService`：第一次`run(request)`完成后重建Database与Service，`get_task_result(task_id)`必须返回相同结果；`get_artifact(ref)`和`get_verification(ref)`必须解析对应候选、报告与最终Runtime验证记录。测试不直接查询SQLite私表。
+- `slice_1`：首个validated任务完成时，以一个Runtime事务不可变保存公开ProductTaskResult receipt、本任务所有Artifact（候选、Validator evidence、Validator report）和最终VerificationRecord；重启后不用Executor即可读取，具体Backend Session、私有Prompt和stderr不进入历史。
+- `persistence`：延伸Runtime受管SQLite append-only迁移；记录使用canonical JSON+SHA-256，重复相同内容幂等，task_id/ref绑定不同内容拒绝。只持久当前产品链JSON可序列化Artifact，不替换整个通用ArtifactStore或旧Snapshot Store。
+- `scope / non_goals`：本批不调用真实CLI/模型/网络；不实现Web/FastAPI、完整DAG、Developer、Mailbox ACK、失败路径、自动重试或自主进化。历史读取只覆盖已形成最终ProductTaskResult的任务。
+- `stop_conditions`：重启后需要原内存ArtifactStore才能读取；receipt存在但Artifact/Verification缺失；同一task_id可覆盖不同验收；私有Session/Prompt/stderr进入持久公开历史；无法直接解释的SQLite迁移或并发失败。
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / ZERO REAL CLI OR MODEL CALLS`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + existing uncommitted PRODUCT-01C slices / staging untouched`
+- `next_action`：在现有成功链测试后新增跨Database/Service重建的公共历史红测，再做最小持久化实现。
+
+- `actual / red_green`：新公共测试先运行一次validated产品任务，再重建Database和Service并换入空白ArtifactStore；最初因`LocalProductTaskService.get_task_result`不存在而AttributeError红。最小实现新增SQLite v12 `runtime_product_task_results/runtime_product_artifacts/runtime_product_verifications`、append-only触发器、canonical JSON+SHA-256 Store和Service的`get_task_result/get_artifact/get_verification`。重启后恢复的ProductTaskResult与首次完全相等，候选正文、Validator report和passed Verification均可读取，重建后的Fake Executor调用0，测试转绿。
+- `durability_contract`：任务receipt、本任务候选/Validator evidence/report Artifact和最终Verification在一个Runtime UoW内提交；task ID、Artifact ID或Verification ID不能覆盖已有不同内容。持久对象不包含请求Prompt、Backend Session、stdout/stderr或认证信息。Store完整性扫描复核JSON digest、receipt引用、Verification subject/evidence Artifact存在性。
+- `schema_regression`：首次117项SQLite/Runtime定向回归出现14个失败和3个错误，全部精确对应current-version仍断言v11、v1/v2/v4降级fixture未删除v12对象或metadata仍从v11降级；只更新v12发布夹具、对象/ledger期望和降级顺序后117/117通过。这是可直接解释的迁移合同变化，未调用`diagnosing-bugs`。
+- `commands / result`：产品服务`2/2 PASS`；SQLite/Runtime定向`117/117 PASS`；全仓排除专用expected-red后`657/657 PASS (9 skipped)`；changed-file `py_compile=PASS`；最终`git diff --check=PASS`。两个历史opt-in CLI模块在普通导入时按设计打印缺少`--trusted-local-execution`用法，测试进程仍exit 0。
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；没有订阅消耗、Prompt/Session/stderr持久化、系统自身ChangeSet应用或Git stage/commit/push/tag/deploy。
+- `limitations`：本切只持久已有最终Validator结果的产品任务；planner失败、无合格Agent、recipient失败、Validator failed/unknown和相同Task重放尚未统一为可重开终态。通用ArtifactStore仍保持内存实现，v12 Store只持久当前产品服务JSON可序列化的公开Artifact与Verification，不冒充整个Harness Artifact平台迁移完成。
+- `artifacts / evidence`：`product_service=1669bdb17793e1ea33f4a41695cb56812c585358215b658eb6c112ce3dc5ccf0; product_history=7ed9b8fa143f6faa7675f6054d9beaf7dfbc16f6883ed810ea2c628709cd9646; runtime_sqlite=1b0dbc8edc601e71862ecbeadb98f2452a0414893c31674e69ab3629d0084c17; persistence_exports=145a196475d4ab78245e84ff681f2556ec0096e6d8f8e7e9ad583af58b1c389c; product_tests=5dfe23816451646ee43340e9a8ba1aa9451b519c5e863183ea019f0bd96a42fd; sqlite_tests=d94ef9705711c5f3562c6cd983a688cd3045506fc1d39de4527010870d8807e6; outbox_tests=9e419ea481656e33ff931a586c25a8343cab59eb237fcf70257b609564401c0e; adversarial_tests=3a633329bd4cb52b27f069cdab77eee4c931e320a2df69b182b8429f864815ef; lifecycle_adversarial=e832e2858e6657be270f8d565bb5abbb64aec8af3b6f675b0081171f8ea73d88; mailbox_tests=da78a3ba56e782d278b1c49415ead14dd1bb583e14fa61726d62040bfe0b7a94; Plan30=af560dfb5486c83fc0a46da760fb5b056e8eb26127d1184caac3f24f9a66116a; HANDOFF=389ecd9d69ec3dfa9f1d9b6e3dc6aa01dbff18eb959637f5cc6a36daacc4366b; decision_record=b9ac178be71521424b4a10511019d1c0b9639425ed3b218e68d391af6403c3d0; pre-ACTUAL_STEP=a6dd232ec5053b38148e1ffb29d7b25b842fabbd9df6101eebe30fa52a54ec56`。
+- `result / effect`：`VALIDATED PRODUCT ACCEPTANCE HISTORY PASS OFFLINE / REOPEN ZERO AGENT CALLS / ARTIFACT + EVIDENCE + VERIFICATION DURABLE`
+- `review`：`self-review PASS for public restart seam, atomic immutable receipt and truthful product-scoped persistence boundary; failure/replay remain explicit next slices; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：在同一服务入口按TDD统一持久化invalid planner/no eligible agent/recipient failure/Validator failed-or-unknown终态，并让相同Task重放先读取已有receipt而不重新调用Agent；完成后才请求真实Codex双Invocation复验授权。
+
+### TRACE-20260901-287
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260901-287 / PRODUCT-01C-TERMINAL-RESULT-REPLAY / PRE_REGISTER / 2026-09-01 / 2026-09-01`
+- `principal / slice / plan_ref`：`/root / durable terminal results + idempotent same-task replay / Plan30 PRODUCT-01C + TRACE-286 limitation`
+- `confirmed_public_seam`：继续只使用`LocalProductTaskService.run(ProductTaskRequest) → ProductTaskResult`及重建后的`get_task_result(task_id)`。完全相同请求重放必须返回原receipt且Agent Executor调用0；同一scope/task_id绑定不同请求必须在Agent调用和副作用之前以稳定冲突拒绝，不能错误返回旧结果。
+- `slice_1`：先以公共红测证明相同Task重放当前仍会进入执行链；最小修复为执行前读取持久receipt，并用不包含密钥、Session、stdout/stderr的确定性请求digest区分精确重放与task_id复用冲突。
+- `slice_2`：invalid planner、无合格Agent、recipient execution failure均作为无最终Verification的终态receipt原子持久化；重启后可读取且相同请求不重调Agent。不得伪造Validator通过或创建虚假Verification。
+- `slice_3`：Validator `failed/unknown`必须连同候选Artifact、Validator report、最终Verification持久化并可重开；`ProductTaskStatus`只由Runtime-owned Validator outcome映射。
+- `scope / non_goals`：本批不调用真实Codex CLI、模型或网络；不实现Web/FastAPI、自动重试、Mailbox ACK、第二CLI或自主进化；不修改用户并行文件`demo/track.md`、`problems.md`、`prombles.md`或未跟踪`Plan/Plan31.md`。
+- `stop_conditions`：精确重放仍调用Agent；不同请求错误复用旧receipt；失败结果刷新后消失；早期失败被伪装成Validator验收记录；出现无法直接解释的并发或SQLite失败。
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / ZERO REAL CLI OR MODEL CALLS`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 + existing uncommitted PRODUCT-01C slices / staging untouched`
+- `next_action`：新增相同Task精确重放的公共红测，确认失败后只实现执行前receipt短路。
+
+- `actual / red_green`：第一条红测在重建Service后再次`run`相同请求，实际得到`failed/mailbox_delivery_missing`而不是原validated receipt，证明刷新仍重进执行链。最小执行前历史短路后转绿。第二条红测先因公开`ProductTaskConflictError`不存在而ImportError；新增`product-task-result/v2`脱敏request digest后，精确重放返回旧receipt，不同Prompt复用scope/task ID在Agent前稳定拒绝`task_request_conflict`。第三条红测证明invalid Planner结果在重启后为`None`；扩展v12 ProductHistory支持无Verification终态receipt并统一所有早期return落账后转绿。
+- `terminal_contract`：Planner execution failed、Planner delegation无效、无合格Agent、Mailbox缺失和recipient execution failed均持久ProductTaskResult，但三个验收引用保持空字符串且不创建虚假Artifact/Verification。Validator `passed/failed/unknown`继续持久候选Artifact、Validator report和最终Verification；状态分别映射`validated/validation_failed/needs_input`。完整性扫描允许“全部验收引用为空”或“全部存在”，拒绝半套引用。
+- `replay_contract`：服务在Thread、Agent、Executor、Assignment和Mailbox之前读取scope/task receipt；相同request digest零调用返回。digest覆盖schema、scope、task、Prompt、permission和timeout，不包含Backend Session、认证、stdout/stderr。不同请求不会覆盖旧receipt，也不会误把旧结果冒充新任务。当前只证明已提交终态后的重放，不宣称两个进程并发首次创建同一Task为exactly-once。
+- `regression_coverage`：新增/扩展公共行为覆盖validated重开+执行重放+请求冲突、invalid Planner、Planner执行失败、无合格Agent、recipient失败及Validator failed/unknown重开。后四类在通用终态持久实现后首次运行即绿，作为同一最小修复的回归覆盖，没有伪造额外红测。
+- `commands / result`：产品服务`5/5 PASS`；Runtime discovery`185/185 PASS`；全仓排除两个独立行为卡的普通集合`652/652 PASS (9 skipped)`；两个行为卡在独立解释器分别`8/8`和`17/17 PASS`，合法总集合`677/677`。changed-file `py_compile=PASS`；最终`git diff --check=PASS`。首次py_compile使用系统默认cache路径被macOS sandbox拒绝，改用`PYTHONPYCACHEPREFIX=/tmp/codex-pycache`后通过，这是输出路径权限而非代码失败。普通全仓导入两个历史opt-in CLI模块时仍打印缺少`--trusted-local-execution`的预期拒绝，测试进程最终exit 0。
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；没有订阅消耗、系统ChangeSet应用、Git stage/commit/push/tag/deploy，也未修改用户保护的`demo/track.md`、`problems.md`、`prombles.md`、`Plan/Plan28.md`或并行未跟踪`Plan/Plan31.md`。
+- `limitations`：本批没有测试两个独立进程在receipt产生前并发提交同一Task；该窗口仍可能让两者都开始执行，需由真实冲突证据决定是否增加claim/fencing。Mailbox仍为领取即推进，无ACK、重投或崩溃恢复。新的产品双Agent链仍只用Fake Executor，真实Codex双Invocation需要用户单独授权。
+- `artifacts / evidence`：`product_service=5a03f19e304b773f3b4de1e06e0d32dc52a23bca6af83d259baab4023e2ba797; product_history=f32677a6e4a378e959dbf278340a2b78f64b2a2442b8baadf33cb29f07708fb0; product_tests=862de0fc06037ffb60638159f6eb7cac6c6712b3392424c6e330232572920f15; Plan30=670e49874699bfbe66c68efd73a7af7ff755bbaec3573b471d596a81f4d4f389; HANDOFF=d34b41089f43ca27b551100bab1cb8a55fb9eb5b7e9b027d91078b113e74004a; decision_record=fc3509deea37b46d9c3464e6e99391953a0ff1af13ee6388dc14d6511193b8f9; pre-ACTUAL_STEP=6ffd8bede1944cc8e086f84933545e8a7527e326ba09aaf36197460052cb96f7`。
+- `result / effect`：`ALL PRODUCT TERMINAL RESULTS DURABLE / EXACT SAME-TASK REPLAY ZERO AGENT CALLS / REQUEST DRIFT FAILS BEFORE SIDE EFFECT / ZERO FALSE VERIFICATION`
+- `review`：`self-review PASS for terminal truthfulness, request-bound idempotency and no-false-acceptance boundary; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / base main@6703d61 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：预注册一次脱敏真实Codex Planner+Reviewer双Invocation产品复验并请求用户明确授权；验证真实Planner严格委派、Runtime RoleAssignment/Mailbox、Reviewer候选、Runtime Validator与公开输出后，再进入最小本地API。

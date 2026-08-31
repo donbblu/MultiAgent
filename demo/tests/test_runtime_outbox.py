@@ -162,8 +162,8 @@ class RuntimeOutboxExpectedRedTests(unittest.TestCase):
         """The current schema must retain the released v3 Outbox contract."""
 
         database, _ = self.runtime()
-        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 7)
-        self.assertEqual(database.schema_version(), 7)
+        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 12)
+        self.assertEqual(database.schema_version(), 12)
         with sqlite3.connect(str(self.path)) as connection:
             table_sql = dict(connection.execute(
                 """SELECT name, sql FROM sqlite_schema

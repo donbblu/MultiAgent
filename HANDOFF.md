@@ -18,7 +18,7 @@ Plan/Plan29.md 顶部的产品口径纠正，以及 VerificationReports/STEP-LOG
 这些证据继续作为底座回归，不要重复。当前仍没有任意任务Web入口、接入新Agent Runtime的真实模型协作、
 用户介入和完整历史体验。
 
-当前唯一产品主线是Plan30。PRODUCT-01C中的RoleAssignment、SEND_MESSAGE v1、显式Agent状态信封与SQLite持久重放均已实现并通过回归，
+当前唯一产品主线是Plan30。PRODUCT-01C中的RoleAssignment、SEND_MESSAGE v1、显式Agent状态信封、SQLite持久重放与Backend Session私有绑定均已实现并通过回归，
 SEND_MESSAGE已完成真实DeepSeek端到端复验；一跳Reviewer接收、ContextBundle、评审对象绑定、正文去重和幂等冲突检测均已完成。用户于2026-08-31把产品执行边界从API-only修订为CLI-first，并确认Codex CLI、ChatGPT订阅、分Role读写权限、每Agent/Thread隔离可恢复Session和脱敏公开输出。`CodexCliAgentExecutor` Fake合同、`SupervisedCodexCliTransport`和认证桥接均已转绿。两次早期真实read-only smoke的机械链路通过但Agent判断`CODEX_HOME`存在，canonical filter单变量修订无效；项目因此增加Runtime-owned固定布尔哨兵并把环境策略收紧为`inherit=none + 固定安全PATH`。用户随后只授权一次新Session真实复验：Runtime直接观察`codex_home_present=false`，模型一致，read-only、Workspace未修改、Session/shell/turn终态全部通过；耗时17912 ms，输入30671、缓存26112、输出153、reasoning输出32，无resume、retry或第二Agent。该具体认证环境泄漏缺口已关闭，但不等于PRODUCT-01B全部错误语义或生产安全认证完成。用户进一步冻结“协议无状态、业务状态显式化”：工具/Backend每次调用独立自描述，Runtime用Task/Snapshot/Permission/Artifact引用持有进度和恢复真相，CLI Session仅为可替换优化。
 
 PRODUCT-01A必须覆盖：拓扑；通信协议；全局上下文与冗余控制；黑板/路由/发布订阅；角色、任务分解、
@@ -50,21 +50,21 @@ PRODUCT-01A必须覆盖：拓扑；通信协议；全局上下文与冗余控制
 以下 `HandoffProposal` 是当前最小接续信息。它记录已经批准的优先级修订，但不创建 RouteEdge、Invocation、权限、任务完成、`KEEP` 或 Runtime Acceptance。
 
 - **objective**：尽快交付一个用户可使用的本地 Multi-Agent Web 纵切，而不是继续扩建生产底座或美化 CLI 演示。
-- **target_role**：通信合同已达到当前最小门槛，`Runtime → AgentExecutor → 受控Codex进程 → JSONL结果`、认证桥接、Runtime-owned安全观察和默认拒绝工具环境已经通过一次真实read-only复验；显式状态信封、SQLite Authority和已完成结果跨Runtime重放也已离线转绿。当前目标转为`backend_id + backend_session_id`私有绑定和Session丢失时的Context重建，不自动开始第二Agent协作或新的真实调用。
+- **target_role**：通信合同、Codex CLI Executor、显式状态/Session恢复、精确ChangeSet用户批准门和离线产品服务均已转绿；所有终态可跨Database/Service重建读取，精确相同Task重放零Agent调用，不同请求复用task ID会在Agent前拒绝。当前目标是单独授权一次真实双Invocation复验；不自动开始第二CLI或扩大到自主进化。
 - **public_rationale**：scripted/offline CLI只证明固定场景控制流；成熟Agent CLI是新的后端执行器，负责单Agent工具循环。用户仍通过Web使用产品，多Agent路由、状态、通信、收敛和验收继续由本项目Runtime控制。
-- **completed_work**：既有Runtime里程碑、RoleAssignment和SEND_MESSAGE证据继续有效。`recipient_runtime.py`提供一跳自动执行、确定性接收Invocation因果ID、白名单Context、评审对象、必需上下文fail-closed、稳定裁剪、暂停门禁和回复后停止。SEND_MESSAGE新增规范请求摘要：相同身份同请求重放原Message，同身份不同请求返回`idempotency_conflict`且无模型/消息副作用。显式状态信封首切新增Task/Task Snapshot/Permission Snapshot/Artifact refs和权限绑定；内存Authority在Backend前拒绝缺失或不一致状态。该切定向60/60、全仓620/620（9 skip）通过，真实调用0。
-- **evidence_refs**：底座候选与Plan29证据不变；RoleAssignment见TRACE-219起，SEND_MESSAGE及真实踩坑/修复见TRACE-224～232，一跳Context纵切见TRACE-233～234；当前仍是`HEAD=8975ba5`上的WORKTREE_ONLY产品实现。
+- **completed_work**：既有Runtime里程碑、RoleAssignment、SEND_MESSAGE、Context、显式状态、SQLite执行重放、Backend Session恢复、真实恢复smoke和SQLite v11 ChangeApproval均继续有效。`LocalProductTaskService.run`已装配Planner→Runtime分配/Mailbox→Reviewer→Validator；SQLite v12以单事务append-only保存公开ProductTaskResult及存在时的Artifact和Verification。刷新相同请求先返回receipt，不重新执行Agent；request digest不一致返回`task_request_conflict`。Planner执行/协议、Assignment、recipient失败保存真实终态但不伪造Verification；Validator passed/failed/unknown保存完整证据。服务5/5、Runtime185/185、全仓普通集合652/652（9 skip）和独立行为卡25/25通过，本批真实CLI/模型/网络调用0。
+- **evidence_refs**：底座候选与Plan29证据不变；RoleAssignment见TRACE-219起，SEND_MESSAGE及真实踩坑/修复见TRACE-224～232，一跳Context纵切见TRACE-233～234，显式状态与持久重放见TRACE-267～271，Backend Session绑定见TRACE-272起；当前`main@6703d61`上为WORKTREE_ONLY实现，未commit/push。
 - **decisions_and_constraints**：用户于2026-08-31把API-only修订为CLI-first。成熟Agent CLI负责单Agent思考/工具loop；Runtime仍独占Planner分解、RoleAssignment、Message/Mailbox、Context、Handoff、终止、审计和Acceptance。首版只接一个CLI，并优先让核心Agent使用同CLI/模型、隔离Session以减少能力差异；CLI不得私下路由其他Agent。现有DeepSeek API和Provider自检保留为RawModelBackend对照，Qwen/Kimi不再阻塞第一版。CLI通过统一`AgentExecutor/FullAgentBackend`接入；凭据由CLI或OS凭据存储管理，不进入项目状态和公开输出。工具/Backend协议采用独立、自描述调用，业务状态由Runtime持久化并用Task/Snapshot/Permission/Artifact引用显式传递；供应商Session不能作为任务真相。产品禁止自主进化：Agent只能提交绑定精确digest的ChangeProposal；任何Prompt/Role/Profile/模型策略/权限/Skill/Runtime路由/验收规则或系统自身代码演进，必须逐次由用户检阅并明确批准，内容变化即重新批准，Agent投票、Validator或历史KEEP不能代替。Role与Agent动态解耦、Runtime中介受控网状拓扑、Planner语义拆分＋Runtime确定性分配、小步冻结＋垂直切片均保持不变。AgentInstance/Session、Mailbox、FIFO/并行和Runtime-owned Validator不重写。
 - **assumptions_and_uncertainty**：01B固定单recipient、领取即推进游标，无ack/重试/崩溃重投；Message `turn_ref` 当前只有typed Scope引用，没有durable Turn存在性Store。原工作树仍保留四个未入候选的用户改动；候选未push/tag/deploy。
-- **open_questions**：首个CLI、认证/付费、权限、Session、公开输出、禁止自主进化原则、显式状态信封和持久重放均已确认。尚待实现的是Backend Session私有绑定、Session丢失Context重建和精确ChangeSet逐次用户批准门；尚待逐项冻结的是CLI失败/重试语义、ACK重投、角色冲突、Debate、完整收敛/评估和前端公开信息。
-- **next_action**：按TDD实现`backend_id=codex_cli + backend_session_id`私有持久绑定，先用Fake证明首次调用捕获ID、同一`scope/thread/agent/backend`显式resume、错误绑定零CLI调用；再做Session缺失/失效时从持久Snapshot重建Context。不自动真实调用或应用系统演进。产品Developer获得对本项目自身/治理面的workspace-write前，必须先实现精确ChangeSet逐次用户批准门。
+- **open_questions**：首个CLI、认证/付费、权限、Session命名与私有绑定、公开输出、禁止自主进化、显式状态、Session恢复、精确ChangeSet批准及产品服务全终态历史/重放均已确认。真实产品双Invocation、FastAPI/Web批准按钮、其余CLI取消语义、Developer链、角色冲突、Debate和完整收敛/评估仍未实现。
+- **next_action**：先预注册并请求一次脱敏真实Codex Planner+Reviewer双Invocation复验授权，验证真实Planner严格委派、Runtime分配/Mailbox、Reviewer候选和Runtime Validator；通过后进入最小本地API。
 - **expected_output**：首个成熟CLI通过统一Executor接入Runtime；第一版产品能输入任意任务、运行至少两个隔离Session的真实Agent、显示持久消息/产物/验证并允许用户介入。
 - **acceptance_criteria**：权威门槛见Plan30；scripted CLI回归不替代真实Agent CLI任意任务smoke，CLI退出0也不替代Runtime-owned语义验收。
 - **required_capabilities**：离线实现只需仓库读写和本地测试。真实Agent CLI执行、网络、额度或费用需要用户当次授权；push/tag/deploy未授权。
-- **resource_scope**：既有`recipient_runtime.py`、通信测试、DeepSeek脱敏smoke与Codex read-only smoke均保留。下一步只实现一个Codex Backend Session绑定纵切和必要的Fake失败分类；不接第二CLI、不改Mailbox/ACK、不自动运行真实CLI。继续保护`demo/track.md`、`problems.md`、`prombles.md`和`Plan/Plan28.md`。
-- **budget_or_deadline**：CLI-first调整后，从当前检查点暂估第一版还需16～25个专注小时、另留3～5小时风险缓冲；首个CLI确认后依据实际非交互协议校正。完整复刻Cat Café 00～15课与作业仍后置为`LEARNING-POST-01`。没有模型费用或CLI额度授权。
+- **resource_scope**：既有`recipient_runtime.py`、通信测试、DeepSeek脱敏smoke、Codex read-only smoke、真实人工恢复smoke和ChangeApproval门均保留。下一步只做本地产品服务链；不接第二CLI、不扩展分布式Mailbox/ACK，不应用任何未经用户批准的自身变更。继续保护`demo/track.md`、`problems.md`、`prombles.md`和`Plan/Plan28.md`。
+- **budget_or_deadline**：从当前检查点完成第一版暂估还需6～11个专注小时，另留2～4小时风险缓冲。完整复刻Cat Café 00～15课与作业仍后置为`LEARNING-POST-01`。未获得新的模型费用、额外CLI调用或发布授权。
 - **post_product_reminder**：PRODUCT-01E准备完成时必须先提醒用户是否启动`LEARNING-POST-01`；未确认前不得自动开始或冒称课程已完成。该提醒按产品里程碑触发，不设置猜测日期的定时任务。
-- **risks**：真实Codex已验证JSONL终态、Session、Usage和read-only公开链路，但工具进程仍看见只应由Codex主进程持有的`CODEX_HOME`，安全隔离未通过；CLI短任务还出现约3.06万输入Token和22.7秒延时。Session恢复、取消和错误分类仍未真实验证。显式Snapshot/Permission引用信封尚未实现；请求摘要算法仍无独立版本迁移；Artifact解析器仍未接产品级持久Artifact Store；接收Invocation仍无独立pending记录，Mailbox仍无ack/retry/crash redelivery。
+- **risks**：真实Codex已验证JSONL终态、Usage、read-only公开链路、默认拒绝工具环境和人工Session恢复，但新的双Agent产品服务仍只用Fake Executor验收。真实有效resume、取消和其他错误分类尚未验证；一次性恢复尝试和ChangeSet application claim在进程崩溃后都会fail-closed为人工未决，不宣称exactly-once。`approve()`接API时必须只暴露给真实用户交互。终态历史已持久，但并发首次提交同一Task尚未验收；Mailbox仍无ack/retry/crash redelivery。
 
 ## 项目目标与定位
 

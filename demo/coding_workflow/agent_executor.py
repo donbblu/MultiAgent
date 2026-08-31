@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
+from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
 from typing import Callable, Mapping, Protocol
@@ -31,6 +32,16 @@ class AgentExecutionPermission(str, Enum):
 class AgentExecutionStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class AgentExecutionRecoveryDecision(str, Enum):
+    CREATE_NEW_SESSION = "create_new_session"
+    STOP_TASK = "stop_task"
+
+
+class CodexCliFailureKind(str, Enum):
+    NONE = "none"
+    BACKEND_SESSION_UNAVAILABLE = "backend_session_unavailable"
 
 
 @dataclass(frozen=True)
@@ -93,6 +104,200 @@ class AgentExecutionStateEnvelope:
 
 
 @dataclass(frozen=True)
+class AgentExecutionContextPart:
+    ref: ScopedSnapshotRef
+    content: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.ref, ScopedSnapshotRef):
+            raise RuntimeProtocolError("recovery context ref必须是ScopedSnapshotRef")
+        if not isinstance(self.content, str) or not self.content.strip():
+            raise RuntimeProtocolError("recovery context content不能为空")
+        actual = sha256(self.content.encode("utf-8")).hexdigest()
+        if self.ref.content_hash != actual:
+            raise RuntimeProtocolError("recovery context content hash不匹配")
+
+    def to_dict(self) -> Mapping[str, object]:
+        return MappingProxyType({
+            "ref": dict(self.ref.to_dict()),
+            "content": self.content,
+        })
+
+
+@dataclass(frozen=True)
+class AgentExecutionRecoveryContext:
+    scope_id: str
+    task_ref: ScopedRef
+    task_snapshot: AgentExecutionContextPart
+    permission_snapshot: AgentExecutionContextPart
+    messages: tuple[AgentExecutionContextPart, ...]
+    artifacts: tuple[AgentExecutionContextPart, ...]
+    schema_version: str = "agent-execution-recovery-context/v1"
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.scope_id, str) or not self.scope_id.strip():
+            raise RuntimeProtocolError("recovery context scope_id不能为空")
+        scope_id = self.scope_id.strip()
+        object.__setattr__(self, "scope_id", scope_id)
+        if not isinstance(self.task_ref, ScopedRef):
+            raise RuntimeProtocolError("recovery context task_ref必须是ScopedRef")
+        self.task_ref.assert_scope(scope_id, "recovery_context.task_ref")
+        self.task_ref.assert_type("core:task")
+        for field_name, part, entity_type in (
+            ("task_snapshot", self.task_snapshot, "core:task_snapshot"),
+            (
+                "permission_snapshot",
+                self.permission_snapshot,
+                "core:permission_snapshot",
+            ),
+        ):
+            self._validate_part(field_name, part, entity_type, scope_id)
+        messages = tuple(self.messages)
+        artifacts = tuple(self.artifacts)
+        if not messages:
+            raise RuntimeProtocolError("recovery context至少需要一条Message")
+        for index, part in enumerate(messages):
+            self._validate_part(
+                f"messages[{index}]", part, "core:message", scope_id
+            )
+        for index, part in enumerate(artifacts):
+            self._validate_part(
+                f"artifacts[{index}]", part, "core:artifact", scope_id
+            )
+        if self.schema_version != "agent-execution-recovery-context/v1":
+            raise RuntimeProtocolError("recovery context schema_version不受支持")
+        object.__setattr__(self, "messages", messages)
+        object.__setattr__(self, "artifacts", artifacts)
+
+    @staticmethod
+    def _validate_part(
+        field_name: str,
+        part: AgentExecutionContextPart,
+        entity_type: str,
+        scope_id: str,
+    ) -> None:
+        if not isinstance(part, AgentExecutionContextPart):
+            raise RuntimeProtocolError(
+                f"recovery context {field_name}必须是ContextPart"
+            )
+        part.ref.ref.assert_scope(scope_id, f"recovery_context.{field_name}")
+        part.ref.ref.assert_type(entity_type)
+
+    def to_dict(self) -> Mapping[str, object]:
+        return MappingProxyType({
+            "schema_version": self.schema_version,
+            "scope_id": self.scope_id,
+            "task_ref": dict(self.task_ref.to_dict()),
+            "task_snapshot": dict(self.task_snapshot.to_dict()),
+            "permission_snapshot": dict(self.permission_snapshot.to_dict()),
+            "messages": [dict(item.to_dict()) for item in self.messages],
+            "artifacts": [dict(item.to_dict()) for item in self.artifacts],
+        })
+
+    def to_prompt(self) -> str:
+        return json.dumps(
+            dict(self.to_dict()),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+    @property
+    def context_digest(self) -> str:
+        return sha256(self.to_prompt().encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True)
+class AgentExecutionRecoveryPrompt:
+    confirmation_id: str
+    invocation_id: str
+    schema_version: str = "agent-execution-recovery-prompt/v1"
+    status: str = "awaiting_user_confirmation"
+
+    def __post_init__(self) -> None:
+        for name in ("confirmation_id", "invocation_id"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise RuntimeProtocolError(f"{name}不能为空")
+        if self.schema_version != "agent-execution-recovery-prompt/v1":
+            raise RuntimeProtocolError("recovery prompt schema_version不受支持")
+        if self.status != "awaiting_user_confirmation":
+            raise RuntimeProtocolError("recovery prompt status不受支持")
+
+    def to_dict(self) -> Mapping[str, object]:
+        return MappingProxyType({
+            "schema_version": self.schema_version,
+            "status": self.status,
+            "confirmation_id": self.confirmation_id,
+            "invocation_id": self.invocation_id,
+            "message": "上次 Agent 会话无法恢复。是否创建新会话继续？",
+            "allowed_decisions": [
+                AgentExecutionRecoveryDecision.CREATE_NEW_SESSION.value,
+                AgentExecutionRecoveryDecision.STOP_TASK.value,
+            ],
+        })
+
+
+@dataclass(frozen=True)
+class AgentExecutionRecoveryConfirmation:
+    confirmation_id: str
+    invocation_id: str
+    decision: AgentExecutionRecoveryDecision
+
+    def __post_init__(self) -> None:
+        for name in ("confirmation_id", "invocation_id"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise RuntimeProtocolError(f"{name}不能为空")
+        if not isinstance(self.decision, AgentExecutionRecoveryDecision):
+            raise RuntimeProtocolError("recovery confirmation decision无效")
+
+
+@dataclass(frozen=True)
+class AgentExecutionRecoveryStopped:
+    invocation_id: str
+    schema_version: str = "agent-execution-recovery-stopped/v1"
+    status: str = "stopped"
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.invocation_id, str) or not self.invocation_id.strip():
+            raise RuntimeProtocolError("invocation_id不能为空")
+        if self.schema_version != "agent-execution-recovery-stopped/v1":
+            raise RuntimeProtocolError("recovery stopped schema_version不受支持")
+        if self.status != "stopped":
+            raise RuntimeProtocolError("recovery stopped status不受支持")
+
+    def to_dict(self) -> Mapping[str, object]:
+        return MappingProxyType({
+            "schema_version": self.schema_version,
+            "status": self.status,
+            "invocation_id": self.invocation_id,
+        })
+
+
+@dataclass(frozen=True)
+class AgentExecutionRecoveryBlocked:
+    invocation_id: str
+    schema_version: str = "agent-execution-recovery-blocked/v1"
+    status: str = "recovery_attempt_unresolved"
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.invocation_id, str) or not self.invocation_id.strip():
+            raise RuntimeProtocolError("invocation_id不能为空")
+        if self.schema_version != "agent-execution-recovery-blocked/v1":
+            raise RuntimeProtocolError("recovery blocked schema_version不受支持")
+        if self.status != "recovery_attempt_unresolved":
+            raise RuntimeProtocolError("recovery blocked status不受支持")
+
+    def to_dict(self) -> Mapping[str, object]:
+        return MappingProxyType({
+            "schema_version": self.schema_version,
+            "status": self.status,
+            "invocation_id": self.invocation_id,
+        })
+
+
+@dataclass(frozen=True)
 class AgentExecutionRequest:
     invocation_id: str
     thread_id: str
@@ -102,10 +307,17 @@ class AgentExecutionRequest:
     permission: AgentExecutionPermission
     timeout_seconds: float
     state_envelope: AgentExecutionStateEnvelope
-    session_id: str = ""
+    backend_id: str = "codex_cli"
+    backend_session_id: str = ""
 
     def __post_init__(self) -> None:
-        for name in ("invocation_id", "thread_id", "agent_id", "prompt"):
+        for name in (
+            "invocation_id",
+            "thread_id",
+            "agent_id",
+            "prompt",
+            "backend_id",
+        ):
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{name} must be a non-empty string")
@@ -124,8 +336,8 @@ class AgentExecutionRequest:
             or self.timeout_seconds <= 0
         ):
             raise ValueError("timeout_seconds must be greater than zero")
-        if not isinstance(self.session_id, str):
-            raise TypeError("session_id must be a string")
+        if not isinstance(self.backend_session_id, str):
+            raise TypeError("backend_session_id must be a string")
         object.__setattr__(self, "workspace_root", root)
 
 
@@ -162,9 +374,9 @@ class AgentExecutionEvent:
 @dataclass(frozen=True)
 class AgentExecutionResult:
     status: AgentExecutionStatus
-    backend: str
+    backend_id: str
     cli_version: str
-    session_id: str
+    backend_session_id: str
     sandbox: str
     final_message: str
     events: tuple[AgentExecutionEvent, ...]
@@ -187,6 +399,15 @@ class CodexCliProcessResult:
     stderr: str
     duration_ms: int
     timed_out: bool
+    failure_kind: str = CodexCliFailureKind.NONE.value
+
+    def __post_init__(self) -> None:
+        kind = self.failure_kind
+        if isinstance(kind, CodexCliFailureKind):
+            kind = kind.value
+        if kind not in {item.value for item in CodexCliFailureKind}:
+            raise ValueError("unsupported Codex CLI failure kind")
+        object.__setattr__(self, "failure_kind", kind)
 
 
 class CodexCliTransport(Protocol):
@@ -219,6 +440,121 @@ class AgentExecutionReplayStore(Protocol):
     ) -> AgentExecutionResult: ...
 
 
+class BackendSessionBindingStore(Protocol):
+    def bound_session_for(
+        self,
+        *,
+        scope_id: str,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> str | None: ...
+
+    def record_session_binding(
+        self,
+        *,
+        scope_id: str,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        backend_session_id: str,
+    ) -> str: ...
+
+
+class AgentExecutionRecoveryContextStore(Protocol):
+    def recovery_context_for(
+        self,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+    ) -> AgentExecutionRecoveryContext | None: ...
+
+    def record_session_recovery(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        stale_backend_session_id: str,
+        replacement_backend_session_id: str,
+    ) -> str: ...
+
+    def request_session_recovery_confirmation(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        stale_backend_session_id: str,
+    ) -> AgentExecutionRecoveryPrompt: ...
+
+    def record_session_recovery_confirmation(
+        self,
+        *,
+        confirmation: AgentExecutionRecoveryConfirmation,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        stale_backend_session_id: str,
+    ) -> None: ...
+
+    def pending_session_recovery_confirmation(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> AgentExecutionRecoveryPrompt | None: ...
+
+    def validate_recorded_session_recovery_confirmation(
+        self,
+        *,
+        confirmation: AgentExecutionRecoveryConfirmation,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> None: ...
+
+    def stopped_session_recovery_for(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> AgentExecutionRecoveryStopped | None: ...
+
+    def claim_session_recovery_attempt(
+        self,
+        *,
+        confirmation: AgentExecutionRecoveryConfirmation,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+    ) -> None: ...
+
+    def unresolved_session_recovery_attempt_for(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> AgentExecutionRecoveryBlocked | None: ...
+
+
 class FrozenAgentExecutionStateAuthority:
     def __init__(
         self,
@@ -248,6 +584,19 @@ class AgentExecutionStateRejected(RuntimeError):
         self.code = code
 
 
+class AgentExecutionRecoveryConfirmationRejected(RuntimeError):
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+class BackendSessionUnavailable(RuntimeError):
+    def __init__(self, *, backend_id: str, backend_session_id: str) -> None:
+        super().__init__("backend_session_unavailable")
+        self.backend_id = backend_id
+        self.backend_session_id = backend_session_id
+
+
 class AgentExecutionRuntime:
     def __init__(
         self,
@@ -255,6 +604,8 @@ class AgentExecutionRuntime:
         executor: AgentExecutor,
         state_authority: AgentExecutionStateAuthority,
         replay_store: AgentExecutionReplayStore | None = None,
+        session_store: BackendSessionBindingStore | None = None,
+        recovery_context_store: AgentExecutionRecoveryContextStore | None = None,
     ) -> None:
         if not callable(getattr(executor, "run", None)):
             raise TypeError("executor must implement AgentExecutor")
@@ -271,8 +622,41 @@ class AgentExecutionRuntime:
                         "replay_store must implement AgentExecutionReplayStore"
                     )
         self._replay_store = replay_store
+        if session_store is not None:
+            for method in ("bound_session_for", "record_session_binding"):
+                if not callable(getattr(session_store, method, None)):
+                    raise TypeError(
+                        "session_store must implement BackendSessionBindingStore"
+                    )
+        self._session_store = session_store
+        if recovery_context_store is not None:
+            for method in (
+                "recovery_context_for",
+                "record_session_recovery",
+                "request_session_recovery_confirmation",
+                "record_session_recovery_confirmation",
+                "pending_session_recovery_confirmation",
+                "validate_recorded_session_recovery_confirmation",
+                "stopped_session_recovery_for",
+                "claim_session_recovery_attempt",
+                "unresolved_session_recovery_attempt_for",
+            ):
+                if not callable(getattr(recovery_context_store, method, None)):
+                    raise TypeError(
+                        "recovery_context_store must implement "
+                        "AgentExecutionRecoveryContextStore"
+                    )
+        self._recovery_context_store = recovery_context_store
 
-    def run(self, request: AgentExecutionRequest) -> AgentExecutionResult:
+    def run(
+        self,
+        request: AgentExecutionRequest,
+    ) -> (
+        AgentExecutionResult
+        | AgentExecutionRecoveryPrompt
+        | AgentExecutionRecoveryStopped
+        | AgentExecutionRecoveryBlocked
+    ):
         if not isinstance(request, AgentExecutionRequest):
             raise TypeError("request must be AgentExecutionRequest")
         expected = self._state_authority.expected_for(request.invocation_id)
@@ -283,14 +667,260 @@ class AgentExecutionRuntime:
             or request.state_envelope != expected
         ):
             raise AgentExecutionStateRejected("state_mismatch")
+        effective_request = request
+        bound_session = None
+        if self._session_store is not None:
+            bound_session = self._session_store.bound_session_for(
+                scope_id=expected.scope_id,
+                thread_id=request.thread_id,
+                agent_id=request.agent_id,
+                backend_id=request.backend_id,
+            )
+            if (
+                request.backend_session_id
+                and request.backend_session_id != bound_session
+            ):
+                raise AgentExecutionStateRejected("backend_session_mismatch")
+            if bound_session is not None:
+                effective_request = replace(
+                    request,
+                    backend_session_id=bound_session,
+                )
         if self._replay_store is not None:
             completed = self._replay_store.completed_for(
                 request.invocation_id,
                 expected,
             )
             if completed is not None:
+                if completed.backend_id != request.backend_id:
+                    raise AgentExecutionStateRejected("backend_mismatch")
+                if (
+                    bound_session is not None
+                    and completed.backend_session_id != bound_session
+                ):
+                    raise AgentExecutionStateRejected(
+                        "backend_session_mismatch"
+                    )
                 return completed
-        result = self._executor.run(request)
+        if self._recovery_context_store is not None:
+            stopped_recovery = (
+                self._recovery_context_store.stopped_session_recovery_for(
+                    invocation_id=request.invocation_id,
+                    state=expected,
+                    thread_id=request.thread_id,
+                    agent_id=request.agent_id,
+                    backend_id=request.backend_id,
+                )
+            )
+            if stopped_recovery is not None:
+                return stopped_recovery
+            blocked_recovery = self._recovery_context_store.unresolved_session_recovery_attempt_for(
+                invocation_id=request.invocation_id,
+                state=expected,
+                thread_id=request.thread_id,
+                agent_id=request.agent_id,
+                backend_id=request.backend_id,
+            )
+            if blocked_recovery is not None:
+                return blocked_recovery
+            pending_recovery = (
+                self._recovery_context_store.pending_session_recovery_confirmation(
+                    invocation_id=request.invocation_id,
+                    state=expected,
+                    thread_id=request.thread_id,
+                    agent_id=request.agent_id,
+                    backend_id=request.backend_id,
+                )
+            )
+            if pending_recovery is not None:
+                return pending_recovery
+        recovered_context = None
+        recovered_from_session = ""
+        try:
+            result = self._executor.run(effective_request)
+        except BackendSessionUnavailable as exc:
+            if (
+                self._recovery_context_store is None
+                or bound_session is None
+                or exc.backend_id != request.backend_id
+                or exc.backend_session_id != bound_session
+            ):
+                raise AgentExecutionStateRejected(
+                    "backend_session_unavailable"
+                ) from exc
+            recovered_context = (
+                self._recovery_context_store.recovery_context_for(
+                    request.invocation_id,
+                    expected,
+                )
+            )
+            if recovered_context is None:
+                raise AgentExecutionStateRejected(
+                    "recovery_context_not_found"
+                ) from exc
+            return self._recovery_context_store.request_session_recovery_confirmation(
+                invocation_id=request.invocation_id,
+                state=expected,
+                context=recovered_context,
+                thread_id=request.thread_id,
+                agent_id=request.agent_id,
+                backend_id=request.backend_id,
+                stale_backend_session_id=bound_session,
+            )
+        if result.backend_id != request.backend_id:
+            raise AgentExecutionStateRejected("backend_mismatch")
+        if (
+            result.status is AgentExecutionStatus.FAILED
+            and bound_session is not None
+            and not result.events
+            and not result.backend_session_id
+            and self._recovery_context_store is not None
+        ):
+            recovered_context = self._recovery_context_store.recovery_context_for(
+                request.invocation_id,
+                expected,
+            )
+            if recovered_context is None:
+                raise AgentExecutionStateRejected("recovery_context_not_found")
+            return self._recovery_context_store.request_session_recovery_confirmation(
+                invocation_id=request.invocation_id,
+                state=expected,
+                context=recovered_context,
+                thread_id=request.thread_id,
+                agent_id=request.agent_id,
+                backend_id=request.backend_id,
+                stale_backend_session_id=bound_session,
+            )
+        if self._session_store is not None and result.backend_session_id:
+            self._session_store.record_session_binding(
+                scope_id=expected.scope_id,
+                thread_id=request.thread_id,
+                agent_id=request.agent_id,
+                backend_id=request.backend_id,
+                backend_session_id=result.backend_session_id,
+            )
+        if self._replay_store is None:
+            return result
+        return self._replay_store.record_completed(
+            request.invocation_id,
+            expected,
+            result,
+        )
+
+    def confirm_session_recovery(
+        self,
+        request: AgentExecutionRequest,
+        confirmation: AgentExecutionRecoveryConfirmation,
+    ) -> AgentExecutionResult | AgentExecutionRecoveryStopped:
+        if not isinstance(request, AgentExecutionRequest):
+            raise TypeError("request must be AgentExecutionRequest")
+        if not isinstance(
+            confirmation,
+            AgentExecutionRecoveryConfirmation,
+        ):
+            raise TypeError(
+                "confirmation must be AgentExecutionRecoveryConfirmation"
+            )
+        if confirmation.invocation_id != request.invocation_id:
+            raise AgentExecutionStateRejected("recovery_confirmation_mismatch")
+        expected = self._state_authority.expected_for(request.invocation_id)
+        if expected is None:
+            raise AgentExecutionStateRejected("state_not_found")
+        if (
+            request.permission is not request.state_envelope.permission
+            or request.state_envelope != expected
+        ):
+            raise AgentExecutionStateRejected("state_mismatch")
+        if self._session_store is None or self._recovery_context_store is None:
+            raise AgentExecutionStateRejected("recovery_confirmation_unavailable")
+        context = self._recovery_context_store.recovery_context_for(
+            request.invocation_id,
+            expected,
+        )
+        if context is None:
+            raise AgentExecutionStateRejected("recovery_context_not_found")
+        if self._replay_store is not None:
+            completed = self._replay_store.completed_for(
+                request.invocation_id,
+                expected,
+            )
+            if completed is not None:
+                try:
+                    self._recovery_context_store.validate_recorded_session_recovery_confirmation(
+                        confirmation=confirmation,
+                        state=expected,
+                        context=context,
+                        thread_id=request.thread_id,
+                        agent_id=request.agent_id,
+                        backend_id=request.backend_id,
+                    )
+                except AgentExecutionRecoveryConfirmationRejected as exc:
+                    raise AgentExecutionStateRejected(exc.code) from exc
+                if completed.backend_id != request.backend_id:
+                    raise AgentExecutionStateRejected("backend_mismatch")
+                return completed
+        bound_session = self._session_store.bound_session_for(
+            scope_id=expected.scope_id,
+            thread_id=request.thread_id,
+            agent_id=request.agent_id,
+            backend_id=request.backend_id,
+        )
+        if bound_session is None:
+            raise AgentExecutionStateRejected("backend_session_unavailable")
+        try:
+            self._recovery_context_store.record_session_recovery_confirmation(
+                confirmation=confirmation,
+                state=expected,
+                context=context,
+                thread_id=request.thread_id,
+                agent_id=request.agent_id,
+                backend_id=request.backend_id,
+                stale_backend_session_id=bound_session,
+            )
+        except AgentExecutionRecoveryConfirmationRejected as exc:
+            raise AgentExecutionStateRejected(exc.code) from exc
+        if confirmation.decision is AgentExecutionRecoveryDecision.STOP_TASK:
+            return AgentExecutionRecoveryStopped(
+                invocation_id=request.invocation_id,
+            )
+        try:
+            self._recovery_context_store.claim_session_recovery_attempt(
+                confirmation=confirmation,
+                state=expected,
+                context=context,
+            )
+        except AgentExecutionRecoveryConfirmationRejected as exc:
+            raise AgentExecutionStateRejected(exc.code) from exc
+        recovery_request = replace(
+            request,
+            prompt=context.to_prompt(),
+            backend_session_id="",
+        )
+        try:
+            result = self._executor.run(recovery_request)
+        except BackendSessionUnavailable as exc:
+            raise AgentExecutionStateRejected(
+                "backend_session_recovery_failed"
+            ) from exc
+        if (
+            result.backend_id != request.backend_id
+            or result.status is not AgentExecutionStatus.COMPLETED
+            or not result.backend_session_id
+            or result.backend_session_id == bound_session
+        ):
+            raise AgentExecutionStateRejected(
+                "backend_session_recovery_failed"
+            )
+        self._recovery_context_store.record_session_recovery(
+            invocation_id=request.invocation_id,
+            state=expected,
+            context=context,
+            thread_id=request.thread_id,
+            agent_id=request.agent_id,
+            backend_id=request.backend_id,
+            stale_backend_session_id=bound_session,
+            replacement_backend_session_id=result.backend_session_id,
+        )
         if self._replay_store is None:
             return result
         return self._replay_store.record_completed(
@@ -391,8 +1021,8 @@ class CodexCliAgentExecutor:
 
     def run(self, request: AgentExecutionRequest) -> AgentExecutionResult:
         execution_command = (
-            ("exec", "resume", "--json", request.session_id, "-")
-            if request.session_id
+            ("exec", "resume", "--json", request.backend_session_id, "-")
+            if request.backend_session_id
             else ("exec", "--json", "-")
         )
         launch = CodexCliLaunch(
@@ -411,6 +1041,22 @@ class CodexCliAgentExecutor:
             timeout_seconds=float(request.timeout_seconds),
         )
         process = self._transport.run(launch)
+        if (
+            process.failure_kind
+            == CodexCliFailureKind.BACKEND_SESSION_UNAVAILABLE.value
+        ):
+            if (
+                not request.backend_session_id
+                or process.timed_out
+                or process.exit_code in {None, 0}
+            ):
+                raise RuntimeProtocolError(
+                    "Codex CLI Session failure evidence is inconsistent"
+                )
+            raise BackendSessionUnavailable(
+                backend_id=request.backend_id,
+                backend_session_id=request.backend_session_id,
+            )
         events: list[AgentExecutionEvent] = []
         session_id = ""
         final_message = ""
@@ -420,14 +1066,20 @@ class CodexCliAgentExecutor:
         for line in process.stdout.splitlines():
             if not line.strip():
                 continue
-            payload = json.loads(line)
+            invalid_json = False
+            try:
+                payload = json.loads(line)
+            except json.JSONDecodeError:
+                payload = None
+                invalid_json = True
+            if invalid_json or not isinstance(payload, Mapping):
+                raise RuntimeProtocolError(
+                    "Codex CLI emitted invalid JSONL"
+                )
             event_type = payload.get("type")
             if event_type == "thread.started":
                 session_id = redact_text(str(payload.get("thread_id", "")))
-                events.append(AgentExecutionEvent(
-                    "session_started",
-                    {"session_id": session_id},
-                ))
+                events.append(AgentExecutionEvent("session_started"))
             elif event_type == "turn.started":
                 events.append(AgentExecutionEvent("turn_started"))
             elif event_type == "item.completed":
@@ -493,9 +1145,9 @@ class CodexCliAgentExecutor:
         )
         return AgentExecutionResult(
             status=status,
-            backend="codex_cli",
+            backend_id="codex_cli",
             cli_version=self._cli_version,
-            session_id=session_id,
+            backend_session_id=session_id,
             sandbox=request.permission.value,
             final_message=final_message,
             events=tuple(events),

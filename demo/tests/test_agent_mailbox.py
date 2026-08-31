@@ -517,9 +517,22 @@ class AgentMailboxTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(consumed, "")
 
-    def test_v4_agent_data_upgrades_through_v7_without_loss(self) -> None:
+    def test_v4_agent_data_upgrades_through_v12_without_loss(self) -> None:
         with sqlite3.connect(str(self.path)) as connection:
             connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute("DROP TABLE runtime_product_verifications")
+            connection.execute("DROP TABLE runtime_product_artifacts")
+            connection.execute("DROP TABLE runtime_product_task_results")
+            connection.execute("DROP TABLE runtime_change_applications")
+            connection.execute("DROP TABLE runtime_change_application_claims")
+            connection.execute("DROP TABLE runtime_change_user_approvals")
+            connection.execute("DROP TABLE runtime_change_proposals")
+            connection.execute("DROP TABLE runtime_backend_session_recovery_attempts")
+            connection.execute("DROP TABLE runtime_backend_session_recovery_decisions")
+            connection.execute("DROP TABLE runtime_backend_session_recovery_requests")
+            connection.execute("DROP TABLE runtime_backend_session_recoveries")
+            connection.execute("DROP TABLE runtime_agent_execution_recovery_contexts")
+            connection.execute("DROP TABLE runtime_backend_session_bindings")
             connection.execute("DROP TABLE runtime_agent_execution_results")
             connection.execute("DROP TABLE runtime_agent_execution_states")
             connection.execute("DROP TABLE runtime_role_assignments")
@@ -532,12 +545,12 @@ class AgentMailboxTests(unittest.TestCase):
             )
             connection.execute(
                 """UPDATE runtime_schema_metadata SET schema_version = 4
-                   WHERE component = 'runtime_kernel' AND schema_version = 7"""
+                   WHERE component = 'runtime_kernel' AND schema_version = 12"""
             )
 
         upgraded = self._database(self.path)
         upgraded.initialize()
-        self.assertEqual(upgraded.schema_version(), 7)
+        self.assertEqual(upgraded.schema_version(), 12)
         upgraded_agents = AgentManager(upgraded)
         self.assertIsNotNone(
             upgraded_agents.get_agent("scope-a", "thread-a", "agent-a")

@@ -10,7 +10,9 @@ from coding_workflow.agent_executor import (
     AgentExecutionRequest,
     AgentExecutionStateEnvelope,
     AgentExecutionStatus,
+    BackendSessionUnavailable,
     CodexCliAgentExecutor,
+    CodexCliFailureKind,
     CodexCliProcessRunner,
     CodexCliProcessResult,
     SupervisedCodexCliTransport,
@@ -18,6 +20,7 @@ from coding_workflow.agent_executor import (
 from coding_workflow.local_execution import LocalExecutionError
 from coding_workflow.local_execution_approval import LocalExecutionApprover
 from coding_workflow.runtime_domain import ScopedRef, ScopedSnapshotRef
+from coding_workflow.runtime_domain import RuntimeProtocolError
 
 
 def _state_envelope() -> AgentExecutionStateEnvelope:
@@ -191,6 +194,56 @@ class _ConflictingObservationTransport:
         )
 
 
+class _StructuredSessionUnavailableTransport:
+    def run(self, launch):
+        del launch
+        return CodexCliProcessResult(
+            exit_code=1,
+            stdout="",
+            stderr="private diagnostic must not be classified or exposed",
+            duration_ms=3,
+            timed_out=False,
+            failure_kind=CodexCliFailureKind.BACKEND_SESSION_UNAVAILABLE,
+        )
+
+
+class _UnstructuredSessionTextTransport:
+    def run(self, launch):
+        del launch
+        return CodexCliProcessResult(
+            exit_code=1,
+            stdout="",
+            stderr="Session not found: private-session-id",
+            duration_ms=3,
+            timed_out=False,
+        )
+
+
+class _TimedOutSessionFailureTransport:
+    def run(self, launch):
+        del launch
+        return CodexCliProcessResult(
+            exit_code=None,
+            stdout="",
+            stderr="private timeout diagnostic",
+            duration_ms=30_000,
+            timed_out=True,
+            failure_kind=CodexCliFailureKind.BACKEND_SESSION_UNAVAILABLE,
+        )
+
+
+class _MalformedJsonTransport:
+    def run(self, launch):
+        del launch
+        return CodexCliProcessResult(
+            exit_code=1,
+            stdout='{private-secret:"unterminated"',
+            stderr="another private diagnostic",
+            duration_ms=4,
+            timed_out=False,
+        )
+
+
 class CodexCliAgentExecutorTests(unittest.TestCase):
     def test_tool_environment_inherits_nothing_and_sets_only_safe_path(
         self,
@@ -287,9 +340,10 @@ class CodexCliAgentExecutorTests(unittest.TestCase):
             ))
 
         self.assertEqual(result.status, AgentExecutionStatus.COMPLETED)
-        self.assertEqual(result.backend, "codex_cli")
+        self.assertEqual(result.backend_id, "codex_cli")
         self.assertEqual(result.cli_version, "0.149.0-alpha.4.3")
-        self.assertEqual(result.session_id, "codex-session-1")
+        self.assertEqual(result.backend_session_id, "codex-session-1")
+        self.assertEqual(result.events[0].data, {})
         self.assertEqual(result.sandbox, "read-only")
         self.assertEqual(result.final_message, "发现一项有依据的问题。")
         self.assertEqual(
@@ -391,12 +445,117 @@ class CodexCliAgentExecutorTests(unittest.TestCase):
                 permission=AgentExecutionPermission.READ_ONLY,
                 timeout_seconds=30,
                 state_envelope=_state_envelope(),
-                session_id="codex-session-1",
+                backend_session_id="codex-session-1",
             ))
 
         self.assertEqual(result.status, AgentExecutionStatus.COMPLETED)
-        self.assertEqual(result.session_id, "codex-session-1")
+        self.assertEqual(result.backend_session_id, "codex-session-1")
         self.assertEqual(result.final_message, "继续评审完成。")
+
+    def test_structured_session_failure_becomes_typed_runtime_signal(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            executor = CodexCliAgentExecutor(
+                executable=Path(
+                    "/Applications/ChatGPT.app/Contents/Resources/codex"
+                ),
+                cli_version="0.149.0-alpha.4.3",
+                transport=_StructuredSessionUnavailableTransport(),
+            )
+            with self.assertRaises(BackendSessionUnavailable) as raised:
+                executor.run(AgentExecutionRequest(
+                    invocation_id="invocation-session-unavailable",
+                    thread_id="thread-1",
+                    agent_id="reviewer-agent",
+                    prompt="继续上一轮评审。",
+                    workspace_root=Path(temporary),
+                    permission=AgentExecutionPermission.READ_ONLY,
+                    timeout_seconds=30,
+                    state_envelope=_state_envelope(),
+                    backend_session_id="codex-session-stale",
+                ))
+
+        self.assertEqual("codex_cli", raised.exception.backend_id)
+        self.assertEqual(
+            "codex-session-stale", raised.exception.backend_session_id
+        )
+        self.assertNotIn("private diagnostic", repr(raised.exception))
+
+    def test_stderr_text_cannot_claim_session_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            result = CodexCliAgentExecutor(
+                executable=Path(
+                    "/Applications/ChatGPT.app/Contents/Resources/codex"
+                ),
+                cli_version="0.149.0-alpha.4.3",
+                transport=_UnstructuredSessionTextTransport(),
+            ).run(AgentExecutionRequest(
+                invocation_id="invocation-unstructured-error",
+                thread_id="thread-1",
+                agent_id="reviewer-agent",
+                prompt="继续上一轮评审。",
+                workspace_root=Path(temporary),
+                permission=AgentExecutionPermission.READ_ONLY,
+                timeout_seconds=30,
+                state_envelope=_state_envelope(),
+                backend_session_id="codex-session-stale",
+            ))
+
+        self.assertEqual(AgentExecutionStatus.FAILED, result.status)
+        self.assertNotIn("Session not found", repr(result))
+        self.assertNotIn("private-session-id", repr(result))
+
+    def test_timeout_cannot_claim_session_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            executor = CodexCliAgentExecutor(
+                executable=Path(
+                    "/Applications/ChatGPT.app/Contents/Resources/codex"
+                ),
+                cli_version="0.149.0-alpha.4.3",
+                transport=_TimedOutSessionFailureTransport(),
+            )
+            with self.assertRaises(RuntimeProtocolError) as raised:
+                executor.run(AgentExecutionRequest(
+                    invocation_id="invocation-timeout",
+                    thread_id="thread-1",
+                    agent_id="reviewer-agent",
+                    prompt="继续上一轮评审。",
+                    workspace_root=Path(temporary),
+                    permission=AgentExecutionPermission.READ_ONLY,
+                    timeout_seconds=30,
+                    state_envelope=_state_envelope(),
+                    backend_session_id="codex-session-stale",
+                ))
+
+        self.assertNotIsInstance(raised.exception, BackendSessionUnavailable)
+        self.assertNotIn("private timeout diagnostic", repr(raised.exception))
+
+    def test_malformed_jsonl_fails_without_exposing_raw_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            executor = CodexCliAgentExecutor(
+                executable=Path(
+                    "/Applications/ChatGPT.app/Contents/Resources/codex"
+                ),
+                cli_version="0.149.0-alpha.4.3",
+                transport=_MalformedJsonTransport(),
+            )
+            with self.assertRaises(RuntimeProtocolError) as raised:
+                executor.run(AgentExecutionRequest(
+                    invocation_id="invocation-malformed-jsonl",
+                    thread_id="thread-1",
+                    agent_id="reviewer-agent",
+                    prompt="继续上一轮评审。",
+                    workspace_root=Path(temporary),
+                    permission=AgentExecutionPermission.READ_ONLY,
+                    timeout_seconds=30,
+                    state_envelope=_state_envelope(),
+                    backend_session_id="codex-session-stale",
+                ))
+
+        self.assertNotIsInstance(raised.exception, BackendSessionUnavailable)
+        self.assertNotIn("private-secret", repr(raised.exception))
+        self.assertNotIn("private-secret", repr(raised.exception.__dict__))
 
     def test_supervised_transport_uses_stdin_and_one_shot_approval(self) -> None:
         class _FakeCodexProcess:

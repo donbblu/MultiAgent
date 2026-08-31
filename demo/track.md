@@ -474,3 +474,24 @@
 - 确定下一条产品主线：ACK/claim、ASK_USER/FINISH、冲突处理或本地 Product API。
 - 将 Provider API 自检项落实到 DeepSeek、Qwen、Kimi 等供应商无关适配层。
 - Mailbox 仍缺少 ACK、失败重试、进程崩溃后的重新投递机制，Web/API 入口仍待建设。
+
+## 2026-08-31
+
+### 已优化
+
+- 将首版执行路线调整为 CLI-first，并以统一 AgentExecutor 保持 Backend 与供应商解耦；Codex CLI 的认证、JSONL、只读 Sandbox 和脱敏结果链路完成真实复验。
+- Agent 工具环境改为 `inherit=none` 加固定安全 PATH，配合 Runtime-owned 布尔哨兵验证 `CODEX_HOME` 不向工具进程泄漏。
+- 增加显式 Task/Snapshot/Permission/Artifact 状态信封、SQLite 不可变 Authority、完成结果重放以及 Backend Session 私有持久绑定。
+- 增加不可变 Recovery Context、单次 Session 重建合同与显式失败证据门；全仓非 expected-red 回归达到 647/647，9 项跳过。
+
+### 已解决
+
+- 解决仅靠模型短答或环境变量黑名单无法可靠证明工具环境隔离的问题。
+- 解决 Runtime 重启后任务状态、完成结果和 Agent Backend Session 连续性无法可靠恢复的问题。
+- 解决 stderr 文本可能被误判为 Session 失效并触发错误恢复，以及损坏 JSONL 可能泄漏原始诊断的问题。
+
+### 待优化
+
+- 当前 Codex CLI 未提供可安全映射的结构化 Session 失效信号，需确定人工确认恢复或一次有界自动 fallback 策略。
+- 真实有效 Session resume、恢复、取消及其余 CLI 错误分类仍待验证。
+- 精确 ChangeSet 逐次用户批准门、Mailbox ACK/重投、本地 API 与 Web 产品入口仍待实现。

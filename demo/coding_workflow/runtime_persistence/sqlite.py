@@ -13,7 +13,7 @@ from typing import Callable, Iterable, Mapping
 
 
 RUNTIME_DB_COMPONENT = "runtime_kernel"
-RUNTIME_DB_SCHEMA_VERSION = 7
+RUNTIME_DB_SCHEMA_VERSION = 12
 _MIGRATION_V1_NAME = "runtime_kernel_base_v1"
 _MIGRATION_V2_NAME = "runtime_thread_event_v2"
 _MIGRATION_V3_NAME = "runtime_event_outbox_v3"
@@ -21,6 +21,11 @@ _MIGRATION_V4_NAME = "runtime_agent_store_v4"
 _MIGRATION_V5_NAME = "runtime_agent_mailbox_v5"
 _MIGRATION_V6_NAME = "runtime_role_assignment_v6"
 _MIGRATION_V7_NAME = "runtime_agent_execution_state_v7"
+_MIGRATION_V8_NAME = "runtime_backend_session_binding_v8"
+_MIGRATION_V9_NAME = "runtime_backend_session_recovery_v9"
+_MIGRATION_V10_NAME = "runtime_backend_session_recovery_confirmation_v10"
+_MIGRATION_V11_NAME = "runtime_exact_changeset_user_approval_v11"
+_MIGRATION_V12_NAME = "runtime_product_acceptance_history_v12"
 _OUTBOX_DESTINATION = "core:runtime_events"
 _SQLITE_SIGNED_INT64_MAX = (1 << 63) - 1
 
@@ -257,6 +262,16 @@ _MANAGED_DATA_TABLES = frozenset(
         "runtime_role_assignments",
         "runtime_agent_execution_states",
         "runtime_agent_execution_results",
+        "runtime_backend_session_bindings",
+        "runtime_agent_execution_recovery_contexts",
+        "runtime_backend_session_recoveries",
+        "runtime_backend_session_recovery_requests",
+        "runtime_backend_session_recovery_decisions",
+        "runtime_backend_session_recovery_attempts",
+        "runtime_change_proposals",
+        "runtime_change_user_approvals",
+        "runtime_change_application_claims",
+        "runtime_change_applications",
     }
 )
 
@@ -852,6 +867,467 @@ _MIGRATION_V7_CHECKSUM = sha256(
     ("\n".join(_MIGRATION_V7_DDL) + "\n" + _MIGRATION_V7_NAME).encode("utf-8")
 ).hexdigest()
 
+_MIGRATION_V8_DDL = (
+    """CREATE TABLE runtime_backend_session_bindings (
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        backend_id TEXT NOT NULL,
+        backend_session_id TEXT NOT NULL,
+        PRIMARY KEY (scope_id, thread_id, agent_id, backend_id),
+        UNIQUE (backend_id, backend_session_id)
+    ) WITHOUT ROWID""",
+    """CREATE TRIGGER runtime_backend_session_bindings_deny_update
+        BEFORE UPDATE ON runtime_backend_session_bindings
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_bindings is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_bindings_deny_delete
+        BEFORE DELETE ON runtime_backend_session_bindings
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_bindings is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_bindings_deny_replace
+        BEFORE INSERT ON runtime_backend_session_bindings
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_backend_session_bindings
+            WHERE (
+                scope_id = NEW.scope_id
+                AND thread_id = NEW.thread_id
+                AND agent_id = NEW.agent_id
+                AND backend_id = NEW.backend_id
+            ) OR (
+                backend_id = NEW.backend_id
+                AND backend_session_id = NEW.backend_session_id
+            )
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_bindings append collision');
+        END""",
+)
+_MIGRATION_V8_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V8_DDL) + "\n" + _MIGRATION_V8_NAME).encode("utf-8")
+).hexdigest()
+
+_MIGRATION_V9_DDL = (
+    """CREATE TABLE runtime_agent_execution_recovery_contexts (
+        invocation_id TEXT PRIMARY KEY,
+        state_digest TEXT NOT NULL CHECK (length(state_digest) = 64),
+        context_json TEXT NOT NULL CHECK (json_valid(context_json)),
+        context_digest TEXT NOT NULL CHECK (length(context_digest) = 64),
+        UNIQUE (invocation_id, context_digest),
+        FOREIGN KEY (invocation_id, state_digest)
+            REFERENCES runtime_agent_execution_states(
+                invocation_id, state_digest
+            ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_backend_session_recoveries (
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        backend_id TEXT NOT NULL,
+        recovery_generation INTEGER NOT NULL
+            CHECK (typeof(recovery_generation) = 'integer'
+                   AND recovery_generation >= 1),
+        invocation_id TEXT NOT NULL,
+        stale_backend_session_id TEXT NOT NULL,
+        replacement_backend_session_id TEXT NOT NULL,
+        context_digest TEXT NOT NULL CHECK (length(context_digest) = 64),
+        PRIMARY KEY (
+            scope_id, thread_id, agent_id, backend_id, recovery_generation
+        ),
+        UNIQUE (backend_id, replacement_backend_session_id),
+        FOREIGN KEY (invocation_id, context_digest)
+            REFERENCES runtime_agent_execution_recovery_contexts(
+                invocation_id, context_digest
+            ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TRIGGER runtime_agent_execution_recovery_contexts_deny_update
+        BEFORE UPDATE ON runtime_agent_execution_recovery_contexts
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_recovery_contexts is append-only');
+        END""",
+    """CREATE TRIGGER runtime_agent_execution_recovery_contexts_deny_delete
+        BEFORE DELETE ON runtime_agent_execution_recovery_contexts
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_recovery_contexts is append-only');
+        END""",
+    """CREATE TRIGGER runtime_agent_execution_recovery_contexts_deny_replace
+        BEFORE INSERT ON runtime_agent_execution_recovery_contexts
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_agent_execution_recovery_contexts
+            WHERE invocation_id = NEW.invocation_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_recovery_contexts append collision');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recoveries_deny_update
+        BEFORE UPDATE ON runtime_backend_session_recoveries
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recoveries is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recoveries_deny_delete
+        BEFORE DELETE ON runtime_backend_session_recoveries
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recoveries is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recoveries_deny_replace
+        BEFORE INSERT ON runtime_backend_session_recoveries
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_backend_session_recoveries
+            WHERE (
+                scope_id = NEW.scope_id
+                AND thread_id = NEW.thread_id
+                AND agent_id = NEW.agent_id
+                AND backend_id = NEW.backend_id
+                AND recovery_generation = NEW.recovery_generation
+            ) OR (
+                backend_id = NEW.backend_id
+                AND replacement_backend_session_id =
+                    NEW.replacement_backend_session_id
+            )
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recoveries append collision');
+        END""",
+)
+_MIGRATION_V9_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V9_DDL) + "\n" + _MIGRATION_V9_NAME).encode("utf-8")
+).hexdigest()
+
+_MIGRATION_V10_DDL = (
+    """CREATE TABLE runtime_backend_session_recovery_requests (
+        confirmation_id TEXT PRIMARY KEY,
+        invocation_id TEXT NOT NULL UNIQUE,
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        backend_id TEXT NOT NULL,
+        stale_backend_session_id TEXT NOT NULL,
+        state_digest TEXT NOT NULL CHECK (length(state_digest) = 64),
+        context_digest TEXT NOT NULL CHECK (length(context_digest) = 64),
+        UNIQUE (
+            confirmation_id, invocation_id, state_digest, context_digest
+        ),
+        FOREIGN KEY (invocation_id, state_digest)
+            REFERENCES runtime_agent_execution_states(
+                invocation_id, state_digest
+            ) ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (invocation_id, context_digest)
+            REFERENCES runtime_agent_execution_recovery_contexts(
+                invocation_id, context_digest
+            ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_backend_session_recovery_decisions (
+        confirmation_id TEXT PRIMARY KEY,
+        invocation_id TEXT NOT NULL,
+        decision TEXT NOT NULL
+            CHECK (decision IN ('create_new_session', 'stop_task')),
+        state_digest TEXT NOT NULL CHECK (length(state_digest) = 64),
+        context_digest TEXT NOT NULL CHECK (length(context_digest) = 64),
+        FOREIGN KEY (
+            confirmation_id, invocation_id, state_digest, context_digest
+        ) REFERENCES runtime_backend_session_recovery_requests(
+            confirmation_id, invocation_id, state_digest, context_digest
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_backend_session_recovery_attempts (
+        confirmation_id TEXT PRIMARY KEY,
+        invocation_id TEXT NOT NULL,
+        state_digest TEXT NOT NULL CHECK (length(state_digest) = 64),
+        context_digest TEXT NOT NULL CHECK (length(context_digest) = 64),
+        FOREIGN KEY (
+            confirmation_id, invocation_id, state_digest, context_digest
+        ) REFERENCES runtime_backend_session_recovery_requests(
+            confirmation_id, invocation_id, state_digest, context_digest
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TRIGGER runtime_backend_session_recovery_requests_deny_update
+        BEFORE UPDATE ON runtime_backend_session_recovery_requests
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_requests is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_requests_deny_delete
+        BEFORE DELETE ON runtime_backend_session_recovery_requests
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_requests is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_requests_deny_replace
+        BEFORE INSERT ON runtime_backend_session_recovery_requests
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_backend_session_recovery_requests
+            WHERE confirmation_id = NEW.confirmation_id
+               OR invocation_id = NEW.invocation_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_requests append collision');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_decisions_deny_update
+        BEFORE UPDATE ON runtime_backend_session_recovery_decisions
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_decisions is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_decisions_deny_delete
+        BEFORE DELETE ON runtime_backend_session_recovery_decisions
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_decisions is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_decisions_deny_replace
+        BEFORE INSERT ON runtime_backend_session_recovery_decisions
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_backend_session_recovery_decisions
+            WHERE confirmation_id = NEW.confirmation_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_decisions append collision');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_attempts_deny_update
+        BEFORE UPDATE ON runtime_backend_session_recovery_attempts
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_attempts is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_attempts_deny_delete
+        BEFORE DELETE ON runtime_backend_session_recovery_attempts
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_attempts is append-only');
+        END""",
+    """CREATE TRIGGER runtime_backend_session_recovery_attempts_deny_replace
+        BEFORE INSERT ON runtime_backend_session_recovery_attempts
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_backend_session_recovery_attempts
+            WHERE confirmation_id = NEW.confirmation_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_backend_session_recovery_attempts append collision');
+        END""",
+)
+_MIGRATION_V10_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V10_DDL) + "\n" + _MIGRATION_V10_NAME).encode(
+        "utf-8"
+    )
+).hexdigest()
+
+_MIGRATION_V11_DDL = (
+    """CREATE TABLE runtime_change_proposals (
+        proposal_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        target_kind TEXT NOT NULL,
+        target_ref TEXT NOT NULL,
+        base_state_digest TEXT NOT NULL CHECK (length(base_state_digest) = 64),
+        change_digest TEXT NOT NULL CHECK (length(change_digest) = 64),
+        change_json TEXT NOT NULL CHECK (json_valid(change_json)),
+        UNIQUE (proposal_id, change_digest, base_state_digest)
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_change_user_approvals (
+        approval_id TEXT PRIMARY KEY,
+        proposal_id TEXT NOT NULL UNIQUE,
+        change_digest TEXT NOT NULL CHECK (length(change_digest) = 64),
+        base_state_digest TEXT NOT NULL CHECK (length(base_state_digest) = 64),
+        user_id TEXT NOT NULL,
+        UNIQUE (
+            approval_id, proposal_id, change_digest, base_state_digest
+        ),
+        FOREIGN KEY (proposal_id, change_digest, base_state_digest)
+            REFERENCES runtime_change_proposals(
+                proposal_id, change_digest, base_state_digest
+            ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_change_application_claims (
+        proposal_id TEXT PRIMARY KEY,
+        approval_id TEXT NOT NULL,
+        change_digest TEXT NOT NULL CHECK (length(change_digest) = 64),
+        base_state_digest TEXT NOT NULL CHECK (length(base_state_digest) = 64),
+        UNIQUE (
+            proposal_id, approval_id, change_digest, base_state_digest
+        ),
+        FOREIGN KEY (
+            approval_id, proposal_id, change_digest, base_state_digest
+        ) REFERENCES runtime_change_user_approvals(
+            approval_id, proposal_id, change_digest, base_state_digest
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_change_applications (
+        proposal_id TEXT PRIMARY KEY,
+        approval_id TEXT NOT NULL,
+        change_digest TEXT NOT NULL CHECK (length(change_digest) = 64),
+        base_state_digest TEXT NOT NULL CHECK (length(base_state_digest) = 64),
+        result_digest TEXT NOT NULL CHECK (length(result_digest) = 64),
+        FOREIGN KEY (
+            proposal_id, approval_id, change_digest, base_state_digest
+        ) REFERENCES runtime_change_application_claims(
+            proposal_id, approval_id, change_digest, base_state_digest
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TRIGGER runtime_change_proposals_deny_update
+        BEFORE UPDATE ON runtime_change_proposals
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_proposals is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_proposals_deny_delete
+        BEFORE DELETE ON runtime_change_proposals
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_proposals is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_proposals_deny_replace
+        BEFORE INSERT ON runtime_change_proposals
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_change_proposals
+            WHERE proposal_id = NEW.proposal_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_proposals append collision');
+        END""",
+    """CREATE TRIGGER runtime_change_user_approvals_deny_update
+        BEFORE UPDATE ON runtime_change_user_approvals
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_user_approvals is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_user_approvals_deny_delete
+        BEFORE DELETE ON runtime_change_user_approvals
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_user_approvals is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_user_approvals_deny_replace
+        BEFORE INSERT ON runtime_change_user_approvals
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_change_user_approvals
+            WHERE approval_id = NEW.approval_id
+               OR proposal_id = NEW.proposal_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_user_approvals append collision');
+        END""",
+    """CREATE TRIGGER runtime_change_application_claims_deny_update
+        BEFORE UPDATE ON runtime_change_application_claims
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_application_claims is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_application_claims_deny_delete
+        BEFORE DELETE ON runtime_change_application_claims
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_application_claims is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_application_claims_deny_replace
+        BEFORE INSERT ON runtime_change_application_claims
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_change_application_claims
+            WHERE proposal_id = NEW.proposal_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_application_claims append collision');
+        END""",
+    """CREATE TRIGGER runtime_change_applications_deny_update
+        BEFORE UPDATE ON runtime_change_applications
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_applications is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_applications_deny_delete
+        BEFORE DELETE ON runtime_change_applications
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_applications is append-only');
+        END""",
+    """CREATE TRIGGER runtime_change_applications_deny_replace
+        BEFORE INSERT ON runtime_change_applications
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_change_applications
+            WHERE proposal_id = NEW.proposal_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_change_applications append collision');
+        END""",
+)
+_MIGRATION_V11_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V11_DDL) + "\n" + _MIGRATION_V11_NAME).encode(
+        "utf-8"
+    )
+).hexdigest()
+
+_MIGRATION_V12_DDL = (
+    """CREATE TABLE runtime_product_task_results (
+        scope_id TEXT NOT NULL,
+        task_id TEXT NOT NULL,
+        result_json TEXT NOT NULL CHECK (json_valid(result_json)),
+        result_digest TEXT NOT NULL CHECK (length(result_digest) = 64),
+        PRIMARY KEY (scope_id, task_id)
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_product_artifacts (
+        artifact_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        task_id TEXT NOT NULL,
+        artifact_json TEXT NOT NULL CHECK (json_valid(artifact_json)),
+        artifact_digest TEXT NOT NULL CHECK (length(artifact_digest) = 64)
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_product_verifications (
+        verification_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        task_id TEXT NOT NULL,
+        verification_json TEXT NOT NULL CHECK (json_valid(verification_json)),
+        verification_digest TEXT NOT NULL CHECK (length(verification_digest) = 64)
+    ) WITHOUT ROWID""",
+    """CREATE TRIGGER runtime_product_task_results_deny_update
+        BEFORE UPDATE ON runtime_product_task_results
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_task_results is append-only');
+        END""",
+    """CREATE TRIGGER runtime_product_task_results_deny_delete
+        BEFORE DELETE ON runtime_product_task_results
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_task_results is append-only');
+        END""",
+    """CREATE TRIGGER runtime_product_task_results_deny_replace
+        BEFORE INSERT ON runtime_product_task_results
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_product_task_results
+            WHERE scope_id = NEW.scope_id AND task_id = NEW.task_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_task_results append collision');
+        END""",
+    """CREATE TRIGGER runtime_product_artifacts_deny_update
+        BEFORE UPDATE ON runtime_product_artifacts
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_artifacts is append-only');
+        END""",
+    """CREATE TRIGGER runtime_product_artifacts_deny_delete
+        BEFORE DELETE ON runtime_product_artifacts
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_artifacts is append-only');
+        END""",
+    """CREATE TRIGGER runtime_product_artifacts_deny_replace
+        BEFORE INSERT ON runtime_product_artifacts
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_product_artifacts
+            WHERE artifact_id = NEW.artifact_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_artifacts append collision');
+        END""",
+    """CREATE TRIGGER runtime_product_verifications_deny_update
+        BEFORE UPDATE ON runtime_product_verifications
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_verifications is append-only');
+        END""",
+    """CREATE TRIGGER runtime_product_verifications_deny_delete
+        BEFORE DELETE ON runtime_product_verifications
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_verifications is append-only');
+        END""",
+    """CREATE TRIGGER runtime_product_verifications_deny_replace
+        BEFORE INSERT ON runtime_product_verifications
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_product_verifications
+            WHERE verification_id = NEW.verification_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_product_verifications append collision');
+        END""",
+)
+_MIGRATION_V12_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V12_DDL) + "\n" + _MIGRATION_V12_NAME).encode(
+        "utf-8"
+    )
+).hexdigest()
+
 
 @dataclass(frozen=True)
 class _RuntimeMigration:
@@ -869,6 +1345,11 @@ _MIGRATIONS = (
     _RuntimeMigration(5, _MIGRATION_V5_NAME, _MIGRATION_V5_DDL, _MIGRATION_V5_CHECKSUM),
     _RuntimeMigration(6, _MIGRATION_V6_NAME, _MIGRATION_V6_DDL, _MIGRATION_V6_CHECKSUM),
     _RuntimeMigration(7, _MIGRATION_V7_NAME, _MIGRATION_V7_DDL, _MIGRATION_V7_CHECKSUM),
+    _RuntimeMigration(8, _MIGRATION_V8_NAME, _MIGRATION_V8_DDL, _MIGRATION_V8_CHECKSUM),
+    _RuntimeMigration(9, _MIGRATION_V9_NAME, _MIGRATION_V9_DDL, _MIGRATION_V9_CHECKSUM),
+    _RuntimeMigration(10, _MIGRATION_V10_NAME, _MIGRATION_V10_DDL, _MIGRATION_V10_CHECKSUM),
+    _RuntimeMigration(11, _MIGRATION_V11_NAME, _MIGRATION_V11_DDL, _MIGRATION_V11_CHECKSUM),
+    _RuntimeMigration(12, _MIGRATION_V12_NAME, _MIGRATION_V12_DDL, _MIGRATION_V12_CHECKSUM),
 )
 
 _REQUIRED_SCHEMA_OBJECTS = {
@@ -927,6 +1408,68 @@ _REQUIRED_SCHEMA_OBJECTS = {
         ("trigger", "runtime_agent_execution_results_deny_update", _MIGRATION_V7_DDL[5]),
         ("trigger", "runtime_agent_execution_results_deny_delete", _MIGRATION_V7_DDL[6]),
         ("trigger", "runtime_agent_execution_results_deny_replace", _MIGRATION_V7_DDL[7]),
+    ),
+    8: (
+        ("table", "runtime_backend_session_bindings", _MIGRATION_V8_DDL[0]),
+        ("trigger", "runtime_backend_session_bindings_deny_update", _MIGRATION_V8_DDL[1]),
+        ("trigger", "runtime_backend_session_bindings_deny_delete", _MIGRATION_V8_DDL[2]),
+        ("trigger", "runtime_backend_session_bindings_deny_replace", _MIGRATION_V8_DDL[3]),
+    ),
+    9: (
+        ("table", "runtime_agent_execution_recovery_contexts", _MIGRATION_V9_DDL[0]),
+        ("table", "runtime_backend_session_recoveries", _MIGRATION_V9_DDL[1]),
+        ("trigger", "runtime_agent_execution_recovery_contexts_deny_update", _MIGRATION_V9_DDL[2]),
+        ("trigger", "runtime_agent_execution_recovery_contexts_deny_delete", _MIGRATION_V9_DDL[3]),
+        ("trigger", "runtime_agent_execution_recovery_contexts_deny_replace", _MIGRATION_V9_DDL[4]),
+        ("trigger", "runtime_backend_session_recoveries_deny_update", _MIGRATION_V9_DDL[5]),
+        ("trigger", "runtime_backend_session_recoveries_deny_delete", _MIGRATION_V9_DDL[6]),
+        ("trigger", "runtime_backend_session_recoveries_deny_replace", _MIGRATION_V9_DDL[7]),
+    ),
+    10: (
+        ("table", "runtime_backend_session_recovery_requests", _MIGRATION_V10_DDL[0]),
+        ("table", "runtime_backend_session_recovery_decisions", _MIGRATION_V10_DDL[1]),
+        ("table", "runtime_backend_session_recovery_attempts", _MIGRATION_V10_DDL[2]),
+        ("trigger", "runtime_backend_session_recovery_requests_deny_update", _MIGRATION_V10_DDL[3]),
+        ("trigger", "runtime_backend_session_recovery_requests_deny_delete", _MIGRATION_V10_DDL[4]),
+        ("trigger", "runtime_backend_session_recovery_requests_deny_replace", _MIGRATION_V10_DDL[5]),
+        ("trigger", "runtime_backend_session_recovery_decisions_deny_update", _MIGRATION_V10_DDL[6]),
+        ("trigger", "runtime_backend_session_recovery_decisions_deny_delete", _MIGRATION_V10_DDL[7]),
+        ("trigger", "runtime_backend_session_recovery_decisions_deny_replace", _MIGRATION_V10_DDL[8]),
+        ("trigger", "runtime_backend_session_recovery_attempts_deny_update", _MIGRATION_V10_DDL[9]),
+        ("trigger", "runtime_backend_session_recovery_attempts_deny_delete", _MIGRATION_V10_DDL[10]),
+        ("trigger", "runtime_backend_session_recovery_attempts_deny_replace", _MIGRATION_V10_DDL[11]),
+    ),
+    11: (
+        ("table", "runtime_change_proposals", _MIGRATION_V11_DDL[0]),
+        ("table", "runtime_change_user_approvals", _MIGRATION_V11_DDL[1]),
+        ("table", "runtime_change_application_claims", _MIGRATION_V11_DDL[2]),
+        ("table", "runtime_change_applications", _MIGRATION_V11_DDL[3]),
+        ("trigger", "runtime_change_proposals_deny_update", _MIGRATION_V11_DDL[4]),
+        ("trigger", "runtime_change_proposals_deny_delete", _MIGRATION_V11_DDL[5]),
+        ("trigger", "runtime_change_proposals_deny_replace", _MIGRATION_V11_DDL[6]),
+        ("trigger", "runtime_change_user_approvals_deny_update", _MIGRATION_V11_DDL[7]),
+        ("trigger", "runtime_change_user_approvals_deny_delete", _MIGRATION_V11_DDL[8]),
+        ("trigger", "runtime_change_user_approvals_deny_replace", _MIGRATION_V11_DDL[9]),
+        ("trigger", "runtime_change_application_claims_deny_update", _MIGRATION_V11_DDL[10]),
+        ("trigger", "runtime_change_application_claims_deny_delete", _MIGRATION_V11_DDL[11]),
+        ("trigger", "runtime_change_application_claims_deny_replace", _MIGRATION_V11_DDL[12]),
+        ("trigger", "runtime_change_applications_deny_update", _MIGRATION_V11_DDL[13]),
+        ("trigger", "runtime_change_applications_deny_delete", _MIGRATION_V11_DDL[14]),
+        ("trigger", "runtime_change_applications_deny_replace", _MIGRATION_V11_DDL[15]),
+    ),
+    12: (
+        ("table", "runtime_product_task_results", _MIGRATION_V12_DDL[0]),
+        ("table", "runtime_product_artifacts", _MIGRATION_V12_DDL[1]),
+        ("table", "runtime_product_verifications", _MIGRATION_V12_DDL[2]),
+        ("trigger", "runtime_product_task_results_deny_update", _MIGRATION_V12_DDL[3]),
+        ("trigger", "runtime_product_task_results_deny_delete", _MIGRATION_V12_DDL[4]),
+        ("trigger", "runtime_product_task_results_deny_replace", _MIGRATION_V12_DDL[5]),
+        ("trigger", "runtime_product_artifacts_deny_update", _MIGRATION_V12_DDL[6]),
+        ("trigger", "runtime_product_artifacts_deny_delete", _MIGRATION_V12_DDL[7]),
+        ("trigger", "runtime_product_artifacts_deny_replace", _MIGRATION_V12_DDL[8]),
+        ("trigger", "runtime_product_verifications_deny_update", _MIGRATION_V12_DDL[9]),
+        ("trigger", "runtime_product_verifications_deny_delete", _MIGRATION_V12_DDL[10]),
+        ("trigger", "runtime_product_verifications_deny_replace", _MIGRATION_V12_DDL[11]),
     ),
 }
 _MANAGED_SCHEMA_OBJECT_NAMES = frozenset(
@@ -1161,6 +1704,46 @@ class SQLiteRuntimeDatabase:
                 connection.execute(
                     "PRAGMA foreign_key_check(runtime_agent_execution_results)"
                 )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_backend_session_bindings)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_execution_recovery_contexts)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_backend_session_recoveries)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_change_proposals)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_change_user_approvals)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_change_application_claims)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_change_applications)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_product_task_results)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_product_artifacts)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_product_verifications)"
+                )
             )
             if foreign_key_rows:
                 raise RuntimeDatabaseIntegrityError(
@@ -1171,12 +1754,16 @@ class SQLiteRuntimeDatabase:
             from .mailbox import SQLiteMailboxStore
             from .assignment import SQLiteRoleAssignmentStore
             from .agent_execution import SQLiteAgentExecutionStateStore
+            from .change_approval import SQLiteChangeApprovalStore
+            from .product_history import SQLiteProductHistoryStore
 
             SQLiteThreadEventStore(self)._verify_connection(connection)
             SQLiteAgentStore(self)._verify_connection(connection)
             SQLiteMailboxStore(self)._verify_connection(connection)
             SQLiteRoleAssignmentStore(self)._verify_connection(connection)
             SQLiteAgentExecutionStateStore(self)._verify_connection(connection)
+            SQLiteChangeApprovalStore(self)._verify_connection(connection)
+            SQLiteProductHistoryStore(self)._verify_connection(connection)
         finally:
             connection.close()
 

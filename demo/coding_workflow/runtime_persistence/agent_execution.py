@@ -6,8 +6,15 @@ from enum import Enum
 from typing import Mapping
 
 from ..agent_executor import (
+    AgentExecutionContextPart,
     AgentExecutionEvent,
     AgentExecutionPermission,
+    AgentExecutionRecoveryBlocked,
+    AgentExecutionRecoveryConfirmation,
+    AgentExecutionRecoveryConfirmationRejected,
+    AgentExecutionRecoveryContext,
+    AgentExecutionRecoveryPrompt,
+    AgentExecutionRecoveryStopped,
     AgentExecutionResult,
     AgentExecutionStateEnvelope,
     AgentExecutionStatus,
@@ -98,13 +105,63 @@ def _state_from_dict(value: Mapping[str, object]) -> AgentExecutionStateEnvelope
     )
 
 
+def _context_part_from_dict(value: object) -> AgentExecutionContextPart:
+    if (
+        not isinstance(value, Mapping)
+        or set(value) != {"ref", "content"}
+        or not isinstance(value["ref"], Mapping)
+    ):
+        raise RuntimeProtocolError("AgentExecutionContextPart schema 无效")
+    return AgentExecutionContextPart(
+        ref=ScopedSnapshotRef.from_dict(value["ref"]),
+        content=value["content"],
+    )
+
+
+def _recovery_context_from_dict(
+    value: Mapping[str, object],
+) -> AgentExecutionRecoveryContext:
+    required = {
+        "schema_version",
+        "scope_id",
+        "task_ref",
+        "task_snapshot",
+        "permission_snapshot",
+        "messages",
+        "artifacts",
+    }
+    if (
+        set(value) != required
+        or value["schema_version"]
+        != "agent-execution-recovery-context/v1"
+        or not isinstance(value["task_ref"], Mapping)
+        or not isinstance(value["messages"], list)
+        or not isinstance(value["artifacts"], list)
+    ):
+        raise RuntimeProtocolError("AgentExecutionRecoveryContext schema 无效")
+    return AgentExecutionRecoveryContext(
+        scope_id=value["scope_id"],
+        task_ref=ScopedRef.from_dict(value["task_ref"]),
+        task_snapshot=_context_part_from_dict(value["task_snapshot"]),
+        permission_snapshot=_context_part_from_dict(
+            value["permission_snapshot"]
+        ),
+        messages=tuple(
+            _context_part_from_dict(item) for item in value["messages"]
+        ),
+        artifacts=tuple(
+            _context_part_from_dict(item) for item in value["artifacts"]
+        ),
+    )
+
+
 def _result_to_dict(result: AgentExecutionResult) -> dict[str, object]:
     return {
         "schema_version": "agent-execution-result/v1",
         "status": result.status.value,
-        "backend": result.backend,
+        "backend": result.backend_id,
         "cli_version": result.cli_version,
-        "session_id": result.session_id,
+        "session_id": result.backend_session_id,
         "sandbox": result.sandbox,
         "final_message": result.final_message,
         "events": [
@@ -159,9 +216,9 @@ def _result_from_dict(value: Mapping[str, object]) -> AgentExecutionResult:
         raise RuntimeProtocolError("AgentExecutionResult usage 无效")
     return AgentExecutionResult(
         status=AgentExecutionStatus(value["status"]),
-        backend=nonempty(value["backend"], "backend"),
+        backend_id=nonempty(value["backend"], "backend"),
         cli_version=nonempty(value["cli_version"], "cli_version"),
-        session_id=value["session_id"],
+        backend_session_id=value["session_id"],
         sandbox=nonempty(value["sandbox"], "sandbox"),
         final_message=value["final_message"],
         events=tuple(events),
@@ -230,6 +287,69 @@ class SQLiteAgentExecutionStateStore:
                 uow._abort_managed_operation()
             raise
 
+    def record_recovery_context(
+        self,
+        uow: RuntimeUnitOfWork,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+    ) -> AgentExecutionStateRecordResult:
+        try:
+            self._require_uow(uow)
+            locator = nonempty(invocation_id, "invocation_id")
+            self._require_context_matches(state, context)
+            state_raw = canonical_json(_state_to_dict(state))
+            state_digest = text_digest(state_raw)
+            context_raw = canonical_json(dict(context.to_dict()))
+            context_digest = text_digest(context_raw)
+            authority = uow._execute_managed(
+                """SELECT scope_id, state_json, state_digest
+                   FROM runtime_agent_execution_states
+                   WHERE invocation_id = ?""",
+                (locator,),
+            ).fetchone()
+            if authority is None or self._decode_state_row(authority) != state:
+                raise AgentExecutionStateStoreConflictError(
+                    "recovery context缺少匹配的权威状态"
+                )
+            existing = uow._execute_managed(
+                """SELECT state_digest, context_json, context_digest
+                   FROM runtime_agent_execution_recovery_contexts
+                   WHERE invocation_id = ?""",
+                (locator,),
+            ).fetchone()
+            if existing is not None:
+                persisted = self._decode_recovery_context_row(
+                    existing[1], existing[2]
+                )
+                if existing[0] == state_digest and persisted == context:
+                    return AgentExecutionStateRecordResult.ALREADY_RECORDED
+                raise AgentExecutionStateStoreConflictError(
+                    "Invocation已绑定不同recovery context"
+                )
+            try:
+                uow._execute_managed(
+                    """INSERT INTO runtime_agent_execution_recovery_contexts(
+                        invocation_id, state_digest, context_json,
+                        context_digest
+                    ) VALUES (?, ?, ?, ?)""",
+                    (
+                        locator,
+                        state_digest,
+                        context_raw,
+                        context_digest,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise AgentExecutionStateStoreConflictError(
+                    "recovery context持久约束冲突"
+                ) from exc
+            return AgentExecutionStateRecordResult.CREATED
+        except BaseException:
+            if isinstance(uow, RuntimeUnitOfWork):
+                uow._abort_managed_operation()
+            raise
+
     def expected_for(
         self,
         invocation_id: str,
@@ -272,6 +392,761 @@ class SQLiteAgentExecutionStateStore:
             return self._decode_result_row(row[1], row[2])
         finally:
             connection.close()
+
+    def bound_session_for(
+        self,
+        *,
+        scope_id: str,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> str | None:
+        locator = self._binding_locator(
+            scope_id=scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        connection = self._open_read_connection()
+        try:
+            recovered = connection.execute(
+                """SELECT replacement_backend_session_id
+                   FROM runtime_backend_session_recoveries
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?
+                   ORDER BY recovery_generation DESC LIMIT 1""",
+                locator,
+            ).fetchone()
+            if recovered is not None:
+                return str(recovered[0])
+            row = connection.execute(
+                """SELECT backend_session_id
+                   FROM runtime_backend_session_bindings
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?""",
+                locator,
+            ).fetchone()
+            return None if row is None else str(row[0])
+        finally:
+            connection.close()
+
+    def recovery_context_for(
+        self,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+    ) -> AgentExecutionRecoveryContext | None:
+        locator = nonempty(invocation_id, "invocation_id")
+        if not isinstance(state, AgentExecutionStateEnvelope):
+            raise AgentExecutionStateStoreValidationError(
+                "state 必须是 AgentExecutionStateEnvelope"
+            )
+        expected_digest = text_digest(canonical_json(_state_to_dict(state)))
+        connection = self._open_read_connection()
+        try:
+            row = connection.execute(
+                """SELECT state_digest, context_json, context_digest
+                   FROM runtime_agent_execution_recovery_contexts
+                   WHERE invocation_id = ?""",
+                (locator,),
+            ).fetchone()
+            if row is None:
+                return None
+            if row[0] != expected_digest:
+                raise AgentExecutionStateStoreConflictError(
+                    "recovery context与权威状态不一致"
+                )
+            context = self._decode_recovery_context_row(row[1], row[2])
+            self._require_context_matches(state, context)
+            return context
+        finally:
+            connection.close()
+
+    def record_session_binding(
+        self,
+        *,
+        scope_id: str,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        backend_session_id: str,
+    ) -> str:
+        locator = self._binding_locator(
+            scope_id=scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        session_id = nonempty(backend_session_id, "backend_session_id")
+        with self._database.unit_of_work() as uow:
+            recovered = uow._execute_managed(
+                """SELECT replacement_backend_session_id
+                   FROM runtime_backend_session_recoveries
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?
+                   ORDER BY recovery_generation DESC LIMIT 1""",
+                locator,
+            ).fetchone()
+            if recovered is not None:
+                if recovered[0] != session_id:
+                    raise AgentExecutionStateStoreConflictError(
+                        "Backend Session恢复绑定不可覆盖"
+                    )
+                uow.commit()
+                return session_id
+            existing = uow._execute_managed(
+                """SELECT backend_session_id
+                   FROM runtime_backend_session_bindings
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?""",
+                locator,
+            ).fetchone()
+            if existing is not None:
+                if existing[0] != session_id:
+                    raise AgentExecutionStateStoreConflictError(
+                        "Backend Session绑定不可覆盖"
+                    )
+                uow.commit()
+                return session_id
+            try:
+                uow._execute_managed(
+                    """INSERT INTO runtime_backend_session_bindings(
+                        scope_id, thread_id, agent_id, backend_id,
+                        backend_session_id
+                    ) VALUES (?, ?, ?, ?, ?)""",
+                    (*locator, session_id),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise AgentExecutionStateStoreConflictError(
+                    "Backend Session已绑定其他Agent或Thread"
+                ) from exc
+            uow.commit()
+        return session_id
+
+    def record_session_recovery(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        stale_backend_session_id: str,
+        replacement_backend_session_id: str,
+    ) -> str:
+        locator = self._binding_locator(
+            scope_id=state.scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        invocation = nonempty(invocation_id, "invocation_id")
+        stale = nonempty(
+            stale_backend_session_id,
+            "stale_backend_session_id",
+        )
+        replacement = nonempty(
+            replacement_backend_session_id,
+            "replacement_backend_session_id",
+        )
+        if stale == replacement:
+            raise AgentExecutionStateStoreValidationError(
+                "replacement Backend Session必须不同于失效Session"
+            )
+        self._require_context_matches(state, context)
+        with self._database.unit_of_work() as uow:
+            context_row = uow._execute_managed(
+                """SELECT state_digest, context_json, context_digest
+                   FROM runtime_agent_execution_recovery_contexts
+                   WHERE invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if context_row is None:
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复缺少持久recovery context"
+                )
+            state_digest = text_digest(canonical_json(_state_to_dict(state)))
+            persisted_context = self._decode_recovery_context_row(
+                context_row[1], context_row[2]
+            )
+            if (
+                context_row[0] != state_digest
+                or persisted_context != context
+            ):
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复上下文与权威状态不一致"
+                )
+            base = uow._execute_managed(
+                """SELECT backend_session_id
+                   FROM runtime_backend_session_bindings
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?""",
+                locator,
+            ).fetchone()
+            latest = uow._execute_managed(
+                """SELECT recovery_generation,
+                          replacement_backend_session_id
+                   FROM runtime_backend_session_recoveries
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?
+                   ORDER BY recovery_generation DESC LIMIT 1""",
+                locator,
+            ).fetchone()
+            current = latest[1] if latest is not None else (
+                base[0] if base is not None else None
+            )
+            if current != stale:
+                raise AgentExecutionStateStoreConflictError(
+                    "失效Session不是当前私有绑定"
+                )
+            generation = 1 if latest is None else int(latest[0]) + 1
+            try:
+                uow._execute_managed(
+                    """INSERT INTO runtime_backend_session_recoveries(
+                        scope_id, thread_id, agent_id, backend_id,
+                        recovery_generation, invocation_id,
+                        stale_backend_session_id,
+                        replacement_backend_session_id, context_digest
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        *locator,
+                        generation,
+                        invocation,
+                        stale,
+                        replacement,
+                        context.context_digest,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise AgentExecutionStateStoreConflictError(
+                    "Backend Session恢复持久约束冲突"
+                ) from exc
+            uow.commit()
+        return replacement
+
+    def request_session_recovery_confirmation(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        stale_backend_session_id: str,
+    ) -> AgentExecutionRecoveryPrompt:
+        invocation = nonempty(invocation_id, "invocation_id")
+        locator = self._binding_locator(
+            scope_id=state.scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        stale = nonempty(
+            stale_backend_session_id,
+            "stale_backend_session_id",
+        )
+        self._require_context_matches(state, context)
+        state_digest = text_digest(canonical_json(_state_to_dict(state)))
+        confirmation_id = "session-recovery-" + text_digest(canonical_json({
+            "schema_version": "agent-execution-recovery-confirmation/v1",
+            "invocation_id": invocation,
+            "scope_id": state.scope_id,
+            "thread_id": locator[1],
+            "agent_id": locator[2],
+            "backend_id": locator[3],
+            "state_digest": state_digest,
+            "context_digest": context.context_digest,
+        }))
+        expected = (
+            confirmation_id,
+            invocation,
+            *locator,
+            stale,
+            state_digest,
+            context.context_digest,
+        )
+        with self._database.unit_of_work() as uow:
+            authority = uow._execute_managed(
+                """SELECT scope_id, state_json, state_digest
+                   FROM runtime_agent_execution_states
+                   WHERE invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            context_row = uow._execute_managed(
+                """SELECT state_digest, context_json, context_digest
+                   FROM runtime_agent_execution_recovery_contexts
+                   WHERE invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if (
+                authority is None
+                or self._decode_state_row(authority) != state
+                or context_row is None
+                or context_row[0] != state_digest
+                or context_row[2] != context.context_digest
+                or self._decode_recovery_context_row(
+                    context_row[1], context_row[2]
+                ) != context
+            ):
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复确认缺少匹配的权威状态或上下文"
+                )
+            current = self._current_bound_session(uow, locator)
+            if current != stale:
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复确认未绑定当前私有Session"
+                )
+            existing = uow._execute_managed(
+                """SELECT confirmation_id, invocation_id, scope_id,
+                          thread_id, agent_id, backend_id,
+                          stale_backend_session_id, state_digest,
+                          context_digest
+                   FROM runtime_backend_session_recovery_requests
+                   WHERE invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if existing is not None:
+                if tuple(existing) != expected:
+                    raise AgentExecutionStateStoreConflictError(
+                        "Invocation已绑定不同Session恢复确认请求"
+                    )
+                uow.commit()
+                return AgentExecutionRecoveryPrompt(
+                    confirmation_id=confirmation_id,
+                    invocation_id=invocation,
+                )
+            try:
+                uow._execute_managed(
+                    """INSERT INTO runtime_backend_session_recovery_requests(
+                        confirmation_id, invocation_id, scope_id, thread_id,
+                        agent_id, backend_id, stale_backend_session_id,
+                        state_digest, context_digest
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    expected,
+                )
+            except sqlite3.IntegrityError as exc:
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复确认请求持久约束冲突"
+                ) from exc
+            uow.commit()
+        return AgentExecutionRecoveryPrompt(
+            confirmation_id=confirmation_id,
+            invocation_id=invocation,
+        )
+
+    def record_session_recovery_confirmation(
+        self,
+        *,
+        confirmation: AgentExecutionRecoveryConfirmation,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+        stale_backend_session_id: str,
+    ) -> None:
+        if not isinstance(
+            confirmation,
+            AgentExecutionRecoveryConfirmation,
+        ):
+            raise AgentExecutionStateStoreValidationError(
+                "confirmation必须是AgentExecutionRecoveryConfirmation"
+            )
+        locator = self._binding_locator(
+            scope_id=state.scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        stale = nonempty(
+            stale_backend_session_id,
+            "stale_backend_session_id",
+        )
+        self._require_context_matches(state, context)
+        state_digest = text_digest(canonical_json(_state_to_dict(state)))
+        with self._database.unit_of_work() as uow:
+            row = uow._execute_managed(
+                """SELECT invocation_id, scope_id, thread_id, agent_id,
+                          backend_id, stale_backend_session_id,
+                          state_digest, context_digest
+                   FROM runtime_backend_session_recovery_requests
+                   WHERE confirmation_id = ?""",
+                (confirmation.confirmation_id,),
+            ).fetchone()
+            expected = (
+                confirmation.invocation_id,
+                *locator,
+                stale,
+                state_digest,
+                context.context_digest,
+            )
+            if row is None or tuple(row) != expected:
+                raise AgentExecutionRecoveryConfirmationRejected(
+                    "recovery_confirmation_mismatch"
+                )
+            if self._current_bound_session(uow, locator) != stale:
+                raise AgentExecutionRecoveryConfirmationRejected(
+                    "recovery_confirmation_expired"
+                )
+            existing = uow._execute_managed(
+                """SELECT invocation_id, decision, state_digest,
+                          context_digest
+                   FROM runtime_backend_session_recovery_decisions
+                   WHERE confirmation_id = ?""",
+                (confirmation.confirmation_id,),
+            ).fetchone()
+            decision_row = (
+                confirmation.invocation_id,
+                confirmation.decision.value,
+                state_digest,
+                context.context_digest,
+            )
+            if existing is not None:
+                if tuple(existing) != decision_row:
+                    raise AgentExecutionRecoveryConfirmationRejected(
+                        "recovery_confirmation_already_resolved"
+                    )
+                uow.commit()
+                return
+            try:
+                uow._execute_managed(
+                    """INSERT INTO runtime_backend_session_recovery_decisions(
+                        confirmation_id, invocation_id, decision,
+                        state_digest, context_digest
+                    ) VALUES (?, ?, ?, ?, ?)""",
+                    (confirmation.confirmation_id, *decision_row),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复确认决定持久约束冲突"
+                ) from exc
+            uow.commit()
+
+    def pending_session_recovery_confirmation(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> AgentExecutionRecoveryPrompt | None:
+        invocation = nonempty(invocation_id, "invocation_id")
+        locator = self._binding_locator(
+            scope_id=state.scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        state_digest = text_digest(canonical_json(_state_to_dict(state)))
+        connection = self._open_read_connection()
+        try:
+            row = connection.execute(
+                """SELECT r.confirmation_id, r.invocation_id, r.scope_id,
+                          r.thread_id, r.agent_id, r.backend_id,
+                          r.stale_backend_session_id, r.state_digest,
+                          r.context_digest, d.decision
+                   FROM runtime_backend_session_recovery_requests AS r
+                   LEFT JOIN runtime_backend_session_recovery_decisions AS d
+                     ON d.confirmation_id = r.confirmation_id
+                   WHERE r.invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if row is None or row[9] is not None:
+                return None
+            if (
+                tuple(row[1:6]) != (invocation, *locator)
+                or row[7] != state_digest
+            ):
+                raise AgentExecutionStateStoreConflictError(
+                    "待确认Session恢复请求与当前状态不匹配"
+                )
+            context_row = connection.execute(
+                """SELECT context_digest
+                   FROM runtime_agent_execution_recovery_contexts
+                   WHERE invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if context_row is None or context_row[0] != row[8]:
+                raise AgentExecutionStateStoreConflictError(
+                    "待确认Session恢复请求的Context已漂移"
+                )
+            latest = connection.execute(
+                """SELECT replacement_backend_session_id
+                   FROM runtime_backend_session_recoveries
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?
+                   ORDER BY recovery_generation DESC LIMIT 1""",
+                locator,
+            ).fetchone()
+            base = connection.execute(
+                """SELECT backend_session_id
+                   FROM runtime_backend_session_bindings
+                   WHERE scope_id = ? AND thread_id = ?
+                     AND agent_id = ? AND backend_id = ?""",
+                locator,
+            ).fetchone()
+            current = latest[0] if latest is not None else (
+                None if base is None else base[0]
+            )
+            if current != row[6]:
+                raise AgentExecutionStateStoreConflictError(
+                    "待确认Session恢复请求已过期"
+                )
+            return AgentExecutionRecoveryPrompt(
+                confirmation_id=str(row[0]),
+                invocation_id=invocation,
+            )
+        finally:
+            connection.close()
+
+    def validate_recorded_session_recovery_confirmation(
+        self,
+        *,
+        confirmation: AgentExecutionRecoveryConfirmation,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> None:
+        if not isinstance(
+            confirmation,
+            AgentExecutionRecoveryConfirmation,
+        ):
+            raise AgentExecutionStateStoreValidationError(
+                "confirmation必须是AgentExecutionRecoveryConfirmation"
+            )
+        locator = self._binding_locator(
+            scope_id=state.scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        self._require_context_matches(state, context)
+        state_digest = text_digest(canonical_json(_state_to_dict(state)))
+        connection = self._open_read_connection()
+        try:
+            row = connection.execute(
+                """SELECT r.invocation_id, r.scope_id, r.thread_id,
+                          r.agent_id, r.backend_id, r.state_digest,
+                          r.context_digest, d.decision
+                   FROM runtime_backend_session_recovery_requests AS r
+                   JOIN runtime_backend_session_recovery_decisions AS d
+                     ON d.confirmation_id = r.confirmation_id
+                   WHERE r.confirmation_id = ?""",
+                (confirmation.confirmation_id,),
+            ).fetchone()
+            expected = (
+                confirmation.invocation_id,
+                *locator,
+                state_digest,
+                context.context_digest,
+                confirmation.decision.value,
+            )
+            if row is None or tuple(row) != expected:
+                raise AgentExecutionRecoveryConfirmationRejected(
+                    "recovery_confirmation_mismatch"
+                )
+        finally:
+            connection.close()
+
+    def stopped_session_recovery_for(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> AgentExecutionRecoveryStopped | None:
+        invocation = nonempty(invocation_id, "invocation_id")
+        locator = self._binding_locator(
+            scope_id=state.scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        state_digest = text_digest(canonical_json(_state_to_dict(state)))
+        connection = self._open_read_connection()
+        try:
+            row = connection.execute(
+                """SELECT r.invocation_id, r.scope_id, r.thread_id,
+                          r.agent_id, r.backend_id, r.state_digest,
+                          r.context_digest, d.decision
+                   FROM runtime_backend_session_recovery_requests AS r
+                   JOIN runtime_backend_session_recovery_decisions AS d
+                     ON d.confirmation_id = r.confirmation_id
+                   WHERE r.invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if row is None or row[7] != "stop_task":
+                return None
+            expected = (
+                invocation,
+                *locator,
+                state_digest,
+            )
+            if tuple(row[:6]) != expected:
+                raise AgentExecutionStateStoreConflictError(
+                    "已停止Session恢复与当前状态不匹配"
+                )
+            context_row = connection.execute(
+                """SELECT context_digest
+                   FROM runtime_agent_execution_recovery_contexts
+                   WHERE invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if context_row is None or context_row[0] != row[6]:
+                raise AgentExecutionStateStoreConflictError(
+                    "已停止Session恢复的Context已漂移"
+                )
+            return AgentExecutionRecoveryStopped(invocation_id=invocation)
+        finally:
+            connection.close()
+
+    def claim_session_recovery_attempt(
+        self,
+        *,
+        confirmation: AgentExecutionRecoveryConfirmation,
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+    ) -> None:
+        if (
+            not isinstance(confirmation, AgentExecutionRecoveryConfirmation)
+            or confirmation.decision.value != "create_new_session"
+        ):
+            raise AgentExecutionStateStoreValidationError(
+                "只有create_new_session确认可以领取恢复尝试"
+            )
+        self._require_context_matches(state, context)
+        state_digest = text_digest(canonical_json(_state_to_dict(state)))
+        row = (
+            confirmation.confirmation_id,
+            confirmation.invocation_id,
+            state_digest,
+            context.context_digest,
+        )
+        with self._database.unit_of_work() as uow:
+            decision = uow._execute_managed(
+                """SELECT invocation_id, decision, state_digest,
+                          context_digest
+                   FROM runtime_backend_session_recovery_decisions
+                   WHERE confirmation_id = ?""",
+                (confirmation.confirmation_id,),
+            ).fetchone()
+            if decision is None or tuple(decision) != (
+                confirmation.invocation_id,
+                confirmation.decision.value,
+                state_digest,
+                context.context_digest,
+            ):
+                raise AgentExecutionRecoveryConfirmationRejected(
+                    "recovery_confirmation_mismatch"
+                )
+            existing = uow._execute_managed(
+                """SELECT 1 FROM runtime_backend_session_recovery_attempts
+                   WHERE confirmation_id = ?""",
+                (confirmation.confirmation_id,),
+            ).fetchone()
+            if existing is not None:
+                raise AgentExecutionRecoveryConfirmationRejected(
+                    "recovery_confirmation_already_used"
+                )
+            try:
+                uow._execute_managed(
+                    """INSERT INTO runtime_backend_session_recovery_attempts(
+                        confirmation_id, invocation_id, state_digest,
+                        context_digest
+                    ) VALUES (?, ?, ?, ?)""",
+                    row,
+                )
+            except sqlite3.IntegrityError as exc:
+                raise AgentExecutionRecoveryConfirmationRejected(
+                    "recovery_confirmation_already_used"
+                ) from exc
+            uow.commit()
+
+    def unresolved_session_recovery_attempt_for(
+        self,
+        *,
+        invocation_id: str,
+        state: AgentExecutionStateEnvelope,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> AgentExecutionRecoveryBlocked | None:
+        invocation = nonempty(invocation_id, "invocation_id")
+        locator = self._binding_locator(
+            scope_id=state.scope_id,
+            thread_id=thread_id,
+            agent_id=agent_id,
+            backend_id=backend_id,
+        )
+        state_digest = text_digest(canonical_json(_state_to_dict(state)))
+        connection = self._open_read_connection()
+        try:
+            row = connection.execute(
+                """SELECT r.invocation_id, r.scope_id, r.thread_id,
+                          r.agent_id, r.backend_id, r.state_digest,
+                          r.context_digest
+                   FROM runtime_backend_session_recovery_requests AS r
+                   JOIN runtime_backend_session_recovery_attempts AS a
+                     ON a.confirmation_id = r.confirmation_id
+                   WHERE r.invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if row is None:
+                return None
+            if tuple(row[:6]) != (invocation, *locator, state_digest):
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复尝试与当前状态不匹配"
+                )
+            context_row = connection.execute(
+                """SELECT context_digest
+                   FROM runtime_agent_execution_recovery_contexts
+                   WHERE invocation_id = ?""",
+                (invocation,),
+            ).fetchone()
+            if context_row is None or context_row[0] != row[6]:
+                raise AgentExecutionStateStoreConflictError(
+                    "Session恢复尝试的Context已漂移"
+                )
+            recovered = connection.execute(
+                """SELECT 1 FROM runtime_backend_session_recoveries
+                   WHERE invocation_id = ? AND context_digest = ?""",
+                (invocation, row[6]),
+            ).fetchone()
+            if recovered is not None:
+                return None
+            return AgentExecutionRecoveryBlocked(invocation_id=invocation)
+        finally:
+            connection.close()
+
+    @staticmethod
+    def _current_bound_session(
+        uow: RuntimeUnitOfWork,
+        locator: tuple[str, str, str, str],
+    ) -> str | None:
+        latest = uow._execute_managed(
+            """SELECT replacement_backend_session_id
+               FROM runtime_backend_session_recoveries
+               WHERE scope_id = ? AND thread_id = ?
+                 AND agent_id = ? AND backend_id = ?
+               ORDER BY recovery_generation DESC LIMIT 1""",
+            locator,
+        ).fetchone()
+        if latest is not None:
+            return str(latest[0])
+        base = uow._execute_managed(
+            """SELECT backend_session_id
+               FROM runtime_backend_session_bindings
+               WHERE scope_id = ? AND thread_id = ?
+                 AND agent_id = ? AND backend_id = ?""",
+            locator,
+        ).fetchone()
+        return None if base is None else str(base[0])
 
     def record_completed(
         self,
@@ -351,6 +1226,188 @@ class SQLiteAgentExecutionStateStore:
                     "runtime_agent_execution_results state digest 漂移"
                 )
             self._decode_result_row(row[0], row[1])
+        for row in connection.execute(
+            """SELECT scope_id, thread_id, agent_id, backend_id,
+                      backend_session_id
+               FROM runtime_backend_session_bindings
+               ORDER BY scope_id, thread_id, agent_id, backend_id"""
+        ):
+            for index, field_name in enumerate((
+                "scope_id",
+                "thread_id",
+                "agent_id",
+                "backend_id",
+                "backend_session_id",
+            )):
+                nonempty(row[index], field_name)
+        for row in connection.execute(
+            """SELECT c.invocation_id, c.state_digest, c.context_json,
+                      c.context_digest, s.scope_id, s.state_json,
+                      s.state_digest
+               FROM runtime_agent_execution_recovery_contexts AS c
+               JOIN runtime_agent_execution_states AS s
+                 ON s.invocation_id = c.invocation_id
+               ORDER BY c.invocation_id"""
+        ):
+            if row[1] != row[6]:
+                raise RuntimeStoredDataCorruptionError(
+                    "recovery context state digest漂移"
+                )
+            state = self._decode_state_row((row[4], row[5], row[6]))
+            context = self._decode_recovery_context_row(row[2], row[3])
+            try:
+                self._require_context_matches(state, context)
+            except AgentExecutionStateStoreError as exc:
+                raise RuntimeStoredDataCorruptionError(
+                    "recovery context权威引用漂移"
+                ) from exc
+        chains: dict[tuple[str, str, str, str], tuple[int, str]] = {}
+        base_sessions = {
+            (row[0], row[1], row[2], row[3]): row[4]
+            for row in connection.execute(
+                """SELECT scope_id, thread_id, agent_id, backend_id,
+                          backend_session_id
+                   FROM runtime_backend_session_bindings"""
+            )
+        }
+        for row in connection.execute(
+            """SELECT scope_id, thread_id, agent_id, backend_id,
+                      recovery_generation, stale_backend_session_id,
+                      replacement_backend_session_id
+               FROM runtime_backend_session_recoveries
+               ORDER BY scope_id, thread_id, agent_id, backend_id,
+                        recovery_generation"""
+        ):
+            key = (row[0], row[1], row[2], row[3])
+            previous = chains.get(key, (0, base_sessions.get(key, "")))
+            if row[4] != previous[0] + 1 or row[5] != previous[1]:
+                raise RuntimeStoredDataCorruptionError(
+                    "Backend Session恢复链漂移"
+                )
+            chains[key] = (row[4], row[6])
+        for row in connection.execute(
+            """SELECT r.confirmation_id, r.invocation_id, r.scope_id,
+                      r.thread_id, r.agent_id, r.backend_id,
+                      r.stale_backend_session_id, r.state_digest,
+                      r.context_digest, s.state_digest, c.context_digest
+               FROM runtime_backend_session_recovery_requests AS r
+               JOIN runtime_agent_execution_states AS s
+                 ON s.invocation_id = r.invocation_id
+               JOIN runtime_agent_execution_recovery_contexts AS c
+                 ON c.invocation_id = r.invocation_id
+               ORDER BY r.invocation_id"""
+        ):
+            for index, field_name in enumerate((
+                "confirmation_id",
+                "invocation_id",
+                "scope_id",
+                "thread_id",
+                "agent_id",
+                "backend_id",
+                "stale_backend_session_id",
+            )):
+                nonempty(row[index], field_name)
+            if row[7] != row[9] or row[8] != row[10]:
+                raise RuntimeStoredDataCorruptionError(
+                    "Session恢复确认请求digest漂移"
+                )
+        for row in connection.execute(
+            """SELECT d.confirmation_id, d.invocation_id, d.decision,
+                      d.state_digest, d.context_digest,
+                      r.invocation_id, r.state_digest, r.context_digest
+               FROM runtime_backend_session_recovery_decisions AS d
+               JOIN runtime_backend_session_recovery_requests AS r
+                 ON r.confirmation_id = d.confirmation_id
+               ORDER BY d.confirmation_id"""
+        ):
+            if (
+                row[1] != row[5]
+                or row[3] != row[6]
+                or row[4] != row[7]
+            ):
+                raise RuntimeStoredDataCorruptionError(
+                    "Session恢复确认决定漂移"
+                )
+        for row in connection.execute(
+            """SELECT a.confirmation_id, a.invocation_id,
+                      a.state_digest, a.context_digest, d.decision
+               FROM runtime_backend_session_recovery_attempts AS a
+               JOIN runtime_backend_session_recovery_decisions AS d
+                 ON d.confirmation_id = a.confirmation_id
+               ORDER BY a.confirmation_id"""
+        ):
+            if row[4] != "create_new_session":
+                raise RuntimeStoredDataCorruptionError(
+                    "停止决定不能拥有Session恢复尝试"
+                )
+
+    @staticmethod
+    def _binding_locator(
+        *,
+        scope_id: str,
+        thread_id: str,
+        agent_id: str,
+        backend_id: str,
+    ) -> tuple[str, str, str, str]:
+        return (
+            nonempty(scope_id, "scope_id"),
+            nonempty(thread_id, "thread_id"),
+            nonempty(agent_id, "agent_id"),
+            nonempty(backend_id, "backend_id"),
+        )
+
+    @staticmethod
+    def _require_context_matches(
+        state: AgentExecutionStateEnvelope,
+        context: AgentExecutionRecoveryContext,
+    ) -> None:
+        if not isinstance(state, AgentExecutionStateEnvelope):
+            raise AgentExecutionStateStoreValidationError(
+                "state 必须是 AgentExecutionStateEnvelope"
+            )
+        if not isinstance(context, AgentExecutionRecoveryContext):
+            raise AgentExecutionStateStoreValidationError(
+                "context 必须是 AgentExecutionRecoveryContext"
+            )
+        if (
+            context.scope_id != state.scope_id
+            or context.task_ref != state.task_ref
+            or context.task_snapshot.ref != state.snapshot_ref
+            or context.permission_snapshot.ref
+            != state.permission_snapshot_ref
+            or tuple(item.ref for item in context.artifacts)
+            != state.artifact_refs
+        ):
+            raise AgentExecutionStateStoreConflictError(
+                "recovery context与权威状态信封不一致"
+            )
+
+    @staticmethod
+    def _decode_recovery_context_row(
+        raw_value: object,
+        digest_value: object,
+    ) -> AgentExecutionRecoveryContext:
+        try:
+            raw = str(raw_value)
+            if text_digest(raw) != digest_value:
+                raise RuntimeStoredDataCorruptionError(
+                    "runtime recovery context digest漂移"
+                )
+            decoded = json.loads(raw)
+            if not isinstance(decoded, Mapping):
+                raise RuntimeProtocolError("recovery context必须是对象")
+            return _recovery_context_from_dict(decoded)
+        except RuntimeStoredDataCorruptionError:
+            raise
+        except (
+            RuntimeProtocolError,
+            TypeError,
+            ValueError,
+            json.JSONDecodeError,
+        ) as exc:
+            raise RuntimeStoredDataCorruptionError(
+                "runtime recovery context无法重建"
+            ) from exc
 
     @staticmethod
     def _decode_state_row(row) -> AgentExecutionStateEnvelope:

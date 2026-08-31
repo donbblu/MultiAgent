@@ -95,6 +95,12 @@ from .agent_execution import (
     AgentExecutionStateStoreValidationError,
     SQLiteAgentExecutionStateStore,
 )
+from .change_approval import SQLiteChangeApprovalStore
+from .product_history import (
+    ProductHistoryConflictError,
+    ProductHistoryError,
+    SQLiteProductHistoryStore,
+)
 
 __all__ = [
     "OutboxPolicy",
@@ -172,4 +178,8 @@ __all__ = [
     "AgentExecutionStateStoreError",
     "AgentExecutionStateStoreValidationError",
     "SQLiteAgentExecutionStateStore",
+    "SQLiteChangeApprovalStore",
+    "ProductHistoryError",
+    "ProductHistoryConflictError",
+    "SQLiteProductHistoryStore",
 ]
