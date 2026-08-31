@@ -31,12 +31,14 @@ PROFILE_LEGACY = "legacy_workspace_verify"
 PROFILE_VISIONFORGE_BUILD = "visionforge_build"
 PROFILE_VISIONFORGE_DEV = "visionforge_dev"
 PROFILE_VISIONFORGE_BROWSER = "visionforge_browser"
+PROFILE_CODEX_CLI = "codex_cli_agent"
 PROFILE_IDS = frozenset({
     PROFILE_CORE,
     PROFILE_LEGACY,
     PROFILE_VISIONFORGE_BUILD,
     PROFILE_VISIONFORGE_DEV,
     PROFILE_VISIONFORGE_BROWSER,
+    PROFILE_CODEX_CLI,
 })
 SANDBOX_REQUIRED = "SANDBOX_REQUIRED"
 CLEANUP_FAILED = "CLEANUP_FAILED"
@@ -59,7 +61,23 @@ _PROFILE_MAX_DEADLINE = MappingProxyType({
     PROFILE_VISIONFORGE_BUILD: 60.0,
     PROFILE_VISIONFORGE_BROWSER: 45.0,
     PROFILE_VISIONFORGE_DEV: 60.0,
+    PROFILE_CODEX_CLI: 300.0,
 })
+_CODEX_CLI_MAX_STDIN_CHARS = 64_000
+CODEX_CLI_SAFE_PREFIX_OPTIONS = (
+    "--strict-config",
+    "--ask-for-approval",
+    "never",
+    "-c",
+    "shell_environment_policy.inherit=none",
+    "-c",
+    "shell_environment_policy.ignore_default_excludes=false",
+    "-c",
+    f'shell_environment_policy.set={{PATH="{FROZEN_PATH}"}}',
+    "-c",
+    'shell_environment_policy.filters={CODEX_HOME="exclude"}',
+    "--sandbox",
+)
 
 def _canonical_digest(value: object) -> str:
     payload = json.dumps(
@@ -754,6 +772,9 @@ _ENVIRONMENT_SOURCES: Mapping[str, Mapping[str, str]] = MappingProxyType({
     "PYTHONUNBUFFERED": MappingProxyType({
         "value_source": "profile_constant"
     }),
+    "CODEX_HOME": MappingProxyType({
+        "value_source": "runtime_host_credential_cache"
+    }),
 })
 
 
@@ -772,6 +793,7 @@ class PreparedExecution:
     input_digest: str
     profile_digest: str
     profile_manifest: Mapping[str, object]
+    stdin_text: str = field(default="", repr=False, compare=False)
 
     @property
     def confirmation_request(self) -> Mapping[str, str]:
@@ -808,6 +830,9 @@ def _prepared_signature(prepared: PreparedExecution) -> str:
         "input_digest": prepared.input_digest,
         "profile_digest": prepared.profile_digest,
         "profile_manifest": _json_compatible(prepared.profile_manifest),
+        "stdin_sha256": hashlib.sha256(
+            prepared.stdin_text.encode("utf-8", errors="replace")
+        ).hexdigest(),
     })
 
 
@@ -859,6 +884,7 @@ def _validate_profile_request(
     output_limit_chars: int,
     output_kind: str,
     python_profile: bool,
+    stdin_text: str,
 ) -> None:
     expected_command: tuple[str, ...] | None = {
         PROFILE_LEGACY: _LEGACY_COMMAND,
@@ -894,6 +920,65 @@ def _validate_profile_request(
                 SANDBOX_REQUIRED,
                 "Browser execution argv is not registered for Profile",
             )
+    if profile_id == PROFILE_CODEX_CLI:
+        new_session = (
+            "exec",
+            "--ignore-user-config",
+            "--json",
+            "-",
+        )
+        resume_prefix = (
+            "exec",
+            "--ignore-user-config",
+            "resume",
+            "--json",
+        )
+        fixed_prefix = (str(executable), *CODEX_CLI_SAFE_PREFIX_OPTIONS)
+        permission_index = len(fixed_prefix)
+        valid_sandbox = (
+            len(command) > permission_index
+            and command[permission_index] in {
+            "read-only",
+            "workspace-write",
+            }
+        )
+        valid_root = command[
+            permission_index + 1:permission_index + 3
+        ] == (
+            "-C",
+            str(root),
+        )
+        tail = command[permission_index + 3:]
+        valid_tail = tail == new_session or (
+            len(tail) == 6
+            and tail[:4] == resume_prefix
+            and bool(re.fullmatch(r"[A-Za-z0-9_-]{1,128}", tail[4]))
+            and tail[5:] == ("-",)
+        )
+        if (
+            command[:permission_index] != fixed_prefix
+            or not valid_sandbox
+            or not valid_root
+            or not valid_tail
+        ):
+            raise LocalExecutionError(
+                SANDBOX_REQUIRED,
+                "Codex CLI argv is not registered for Profile",
+            )
+        if (
+            not stdin_text
+            or len(stdin_text) > _CODEX_CLI_MAX_STDIN_CHARS
+            or "\0" in stdin_text
+        ):
+            raise LocalExecutionError(
+                SANDBOX_REQUIRED,
+                "Codex CLI stdin is outside the registered Profile",
+            )
+    elif stdin_text:
+        raise LocalExecutionError(
+            SANDBOX_REQUIRED,
+            "execution Profile does not accept stdin",
+        )
     maximum_deadline = _PROFILE_MAX_DEADLINE[profile_id]
     if wall_deadline_seconds > maximum_deadline:
         raise LocalExecutionError(
@@ -921,7 +1006,12 @@ def _validate_profile_request(
             SANDBOX_REQUIRED,
             "execution output limit exceeds Profile",
         )
-    if executable.name != command[0]:
+    executable_matches = (
+        command[0] == str(executable)
+        if profile_id == PROFILE_CODEX_CLI
+        else executable.name == command[0]
+    )
+    if not executable_matches:
         raise LocalExecutionError(
             SANDBOX_REQUIRED,
             "execution executable does not match requested argv",
@@ -943,6 +1033,7 @@ def prepare_execution(
     output_limit_chars: int = 10_000,
     output_kind: str = "stdout_stderr",
     python_profile: bool = False,
+    stdin_text: str = "",
 ) -> PreparedExecution:
     if profile_id not in PROFILE_IDS:
         raise LocalExecutionError(SANDBOX_REQUIRED, "unregistered execution Profile")
@@ -975,6 +1066,8 @@ def prepare_execution(
         raise LocalExecutionError(SANDBOX_REQUIRED, "invalid output limit")
     if output_kind not in {"stdout_stderr", "server_log"}:
         raise LocalExecutionError(SANDBOX_REQUIRED, "invalid output kind")
+    if not isinstance(stdin_text, str):
+        raise LocalExecutionError(SANDBOX_REQUIRED, "invalid execution stdin")
 
     requested = tuple(command)
     _validate_profile_request(
@@ -986,6 +1079,7 @@ def prepare_execution(
         output_limit_chars=output_limit_chars,
         output_kind=output_kind,
         python_profile=python_profile,
+        stdin_text=stdin_text,
     )
     executed = (str(resolved_executable), *requested[1:])
     limits: dict[str, object] = {
@@ -1004,6 +1098,8 @@ def prepare_execution(
             "PYTHONDONTWRITEBYTECODE",
             "PYTHONUNBUFFERED",
         ))
+    if profile_id == PROFILE_CODEX_CLI:
+        environment_names.append("CODEX_HOME")
     environment_manifest = {
         name: dict(_ENVIRONMENT_SOURCES[name])
         for name in environment_names
@@ -1011,11 +1107,16 @@ def prepare_execution(
     input_summary = {
         "requested_argv": list(requested),
         "cwd": str(root),
+        "stdin_chars": len(stdin_text),
+        "stdin_sha256": hashlib.sha256(
+            stdin_text.encode("utf-8", errors="replace")
+        ).hexdigest(),
     }
     input_digest = _canonical_digest({
         "schema": "local-execution-input/v1",
         "requested_argv": requested,
         "cwd": str(root),
+        "stdin_sha256": input_summary["stdin_sha256"],
     })
     profile_preimage = {
         "contract_version": CONTRACT_VERSION,
@@ -1046,6 +1147,7 @@ def prepare_execution(
         input_digest,
         profile_digest,
         frozen_manifest,
+        stdin_text,
     )
     public = PreparedExecution(
         profile_id,
@@ -1061,6 +1163,7 @@ def prepare_execution(
         input_digest,
         profile_digest,
         frozen_manifest,
+        stdin_text,
     )
     _register_prepared(public, canonical)
     return public
@@ -1192,7 +1295,11 @@ def _close_private_environment_unbound(
     return _PrivateEnvironment.close(environment)
 
 
-def _private_environment(*, python_profile: bool) -> _PrivateEnvironment:
+def _private_environment(
+    *,
+    python_profile: bool,
+    codex_profile: bool = False,
+) -> _PrivateEnvironment:
     private_root = Path(tempfile.mkdtemp(prefix="local-trusted-execution-"))
     os.chmod(private_root, 0o700)
     home = private_root / "home"
@@ -1211,6 +1318,14 @@ def _private_environment(*, python_profile: bool) -> _PrivateEnvironment:
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONUNBUFFERED": "1",
         })
+    if codex_profile:
+        codex_home = Path.home().joinpath(".codex").resolve()
+        if not codex_home.is_dir():
+            raise LocalExecutionError(
+                SANDBOX_REQUIRED,
+                "Codex credential cache is unavailable",
+            )
+        values["CODEX_HOME"] = str(codex_home)
     return _PrivateEnvironment(
         private_root,
         home,
@@ -1231,7 +1346,7 @@ def _spawn(
         cwd=prepared.workspace_root,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT if background else subprocess.PIPE,
-        stdin=subprocess.DEVNULL,
+        stdin=(subprocess.PIPE if prepared.stdin_text else subprocess.DEVNULL),
         text=True,
         encoding="utf-8",
         errors="replace",
@@ -2195,7 +2310,10 @@ def _run_prepared_locked(
     ):
         _reject("invalid internal output assertion request")
     _consume_confirmation(prepared, trusted_local)
-    private = _private_environment(python_profile=prepared.python_profile)
+    private = _private_environment(
+        python_profile=prepared.python_profile,
+        codex_profile=prepared.profile_id == PROFILE_CODEX_CLI,
+    )
     private_handle = _claim_runtime_private_environment(private)
     started = time.monotonic()
     process = None
@@ -2225,10 +2343,16 @@ def _run_prepared_locked(
 
         try:
             if poll_interval is None:
+                communicate_kwargs: dict[str, object] = {
+                    "timeout": prepared.wall_deadline_seconds,
+                }
+                if prepared.stdin_text:
+                    communicate_kwargs["input"] = prepared.stdin_text
                 raw_stdout, raw_stderr = process.communicate(
-                    timeout=prepared.wall_deadline_seconds
+                    **communicate_kwargs
                 )
             else:
+                pending_stdin = prepared.stdin_text or None
                 while True:
                     checkpoint = getattr(lifecycle, "checkpoint", None)
                     if callable(checkpoint):
@@ -2242,11 +2366,17 @@ def _run_prepared_locked(
                             prepared.wall_deadline_seconds,
                         )
                     try:
+                        communicate_kwargs = {
+                            "timeout": min(poll_interval, remaining),
+                        }
+                        if pending_stdin is not None:
+                            communicate_kwargs["input"] = pending_stdin
                         raw_stdout, raw_stderr = process.communicate(
-                            timeout=min(poll_interval, remaining)
+                            **communicate_kwargs
                         )
                         break
                     except subprocess.TimeoutExpired:
+                        pending_stdin = None
                         continue
         except subprocess.TimeoutExpired as exc:
             timed_out = True

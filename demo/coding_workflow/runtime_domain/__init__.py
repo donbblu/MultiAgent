@@ -58,6 +58,16 @@ from .acceptance import (
     OutcomeStatus,
 )
 from .events import RuntimeActorType, RuntimeEvent
+from .assignment import (
+    AgentAvailability,
+    AgentCandidate,
+    AssignmentDecision,
+    AssignmentRisk,
+    CandidateEvaluation,
+    RoleAssignment,
+    RoleAssignmentPolicy,
+    RoleRequirement,
+)
 
 __all__ = [
     "RUNTIME_PROTOCOL_VERSION",
@@ -111,4 +121,12 @@ __all__ = [
     "Outcome",
     "RuntimeActorType",
     "RuntimeEvent",
+    "AgentAvailability",
+    "AgentCandidate",
+    "AssignmentDecision",
+    "AssignmentRisk",
+    "CandidateEvaluation",
+    "RoleAssignment",
+    "RoleAssignmentPolicy",
+    "RoleRequirement",
 ]

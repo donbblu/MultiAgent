@@ -517,24 +517,27 @@ class AgentMailboxTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(consumed, "")
 
-    def test_v4_agent_data_upgrades_to_v5_mailbox_without_loss(self) -> None:
+    def test_v4_agent_data_upgrades_through_v7_without_loss(self) -> None:
         with sqlite3.connect(str(self.path)) as connection:
             connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute("DROP TABLE runtime_agent_execution_results")
+            connection.execute("DROP TABLE runtime_agent_execution_states")
+            connection.execute("DROP TABLE runtime_role_assignments")
             connection.execute("DROP INDEX runtime_agent_messages_pending_idx")
             connection.execute("DROP TABLE runtime_agent_messages")
             connection.execute("DROP TABLE runtime_agent_mailbox_cursors")
             connection.execute(
                 """DELETE FROM runtime_schema_migrations
-                   WHERE component = 'runtime_kernel' AND schema_version = 5"""
+                   WHERE component = 'runtime_kernel' AND schema_version >= 5"""
             )
             connection.execute(
                 """UPDATE runtime_schema_metadata SET schema_version = 4
-                   WHERE component = 'runtime_kernel' AND schema_version = 5"""
+                   WHERE component = 'runtime_kernel' AND schema_version = 7"""
             )
 
         upgraded = self._database(self.path)
         upgraded.initialize()
-        self.assertEqual(upgraded.schema_version(), 5)
+        self.assertEqual(upgraded.schema_version(), 7)
         upgraded_agents = AgentManager(upgraded)
         self.assertIsNotNone(
             upgraded_agents.get_agent("scope-a", "thread-a", "agent-a")

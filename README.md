@@ -17,9 +17,9 @@ Multi-Agent Harness
 └── Coding / VisionForge / future Plugins
 ```
 
-## Quickstart：默认离线作品集 Demo
+## Quickstart：Runtime 工程演示与回归入口
 
-> 当前是已完成本地发布检查的 **作品集 Agent Runtime MVP 候选**，但不是生产系统、
+> 这是已经完成本地检查的 **Agent Runtime 工程演示**，不是最终用户产品入口，也不是生产系统、
 > Runtime Acceptance 或已对外发布版本。默认入口会
 > 创建持久 Thread、AgentInstance 和 AgentSession，经 SQLite Mailbox 投递结构化 Message，
 > 并在共享线程池的 Agent 泳道中执行现有 scripted Worker。Runtime 仍拥有 Validator 和
@@ -84,17 +84,17 @@ Runtime-owned build / unittest / CLI Validator
 结构化 Handoff + 公开时间线 + portfolio-demo-report/v2 JSON 报告
 ```
 
-作品集 Demo 的正式产品面是 CLI 和结构化报告。仓库仍保留 Coding 通用 CLI、现有 Web
-工作台与 VisionForge 场景，但它们不是默认 Quickstart：通用 CLI 可进入真实 Provider
-路径，Web 任务索引仍为进程内状态，且尚未成为完整持久 Thread/Agent 泳道。
+这个 CLI 和结构化报告是内部验收面，不是产品面。仓库仍保留 Coding 通用 CLI、现有 Web
+工作台与 VisionForge 场景，但它们还没有组成用户可用的统一产品：通用 CLI 可进入真实
+Provider 路径，Web 任务索引仍为进程内状态，且真实模型尚未接入完整持久 Thread/Agent 泳道。
 
 ## 当前状态
 
-项目目前是一个 **已完成本地作品集发布检查、但未达到生产级的原型**。`MVP-AGENT-RUNTIME-01A～01D` 已完成 Agent 实体与 SQLite Store、Mailbox 与执行泳道、真实 Handoff 和 Demo 接入；本地候选 `cbb35e3` 的干净检出 Quickstart、回归、compile、差异门禁和最终独立审查均通过，初审唯一文档新鲜度发现已关闭，最终 0 finding。默认入口精确得到 9 Trial、6 交付、3 个预期失败、3 个修复成功、21 次 scripted 调用和 0 次模型调用；这些结果只证明冻结场景下的 Runtime/Harness 控制流。
+项目当前状态是 **Runtime 工程里程碑完成，用户产品尚未完成**。`MVP-AGENT-RUNTIME-01A～01D` 已完成 Agent 实体与 SQLite Store、Mailbox 与执行泳道、真实 Handoff 和 Demo 接入；本地候选 `cbb35e3` 的干净检出 Quickstart、回归、compile、差异门禁和最终独立审查均通过。默认入口的 9 Trial、6 交付、3 个预期失败、3 个修复成功、21 次 scripted 调用和 0 次模型调用，只证明冻结场景下的 Runtime/Harness 控制流，不证明用户已经能输入任意任务并使用真实 Multi-Agent 产品。
 
 现有 Coding/VisionForge 纵向切片已经具备 DAG、Artifact、角色路由、受控工具、验证和局部修复资产；Runtime Kernel 已完成 `PROD-01A` 领域协议、`PROD-01B-1` SQLite Schema/Migration/UnitOfWork 事务底座、`PROD-01B-2` concrete Thread current-state + append-only RuntimeEvent 原子纵切、`PROD-01B-3A` durable Outbox intent 原子三写，以及 `PROD-01B-3B-1` 本地 claim/NACK/expiry-reclaim。`local_trusted_execution/v1` 的主体候选也已实现并提交，但没有完成生产安全认证。
 
-当前不再让完整 `PROD-01B`、durable Invocation、Incident Shadow 或生产安全认证阻塞作品集 MVP。近期主线 [`MVP-AGENT-RUNTIME-01`](Plan/Plan29.md) 已把现有 AgentInstance/AgentSession 协议接入单进程、共享线程池和 SQLite 的创建、状态、Mailbox、私有数据、调度与 Handoff；生产增强继续保留在 Roadmap。
+当前产品主线是 [`Plan30`](Plan/Plan30.md)：先冻结 Agent 通信、协作、上下文与收敛合同，再把一个真实 Provider 路径接入现有 Runtime，随后完成本地 Web 控制台和产品 E2E。完整 `PROD-01B`、durable Invocation、Incident Shadow 和生产安全认证继续后置，不阻塞第一版用户产品。
 
 ## 已实现能力与完成边界
 
@@ -156,15 +156,15 @@ EXPECTED_RED 证据，因此不能混入普通 discover 进程；它们不是当
 
 ## 后续路线
 
-`MVP-AGENT-RUNTIME-01D` 已完成文档、全量回归和独立审查；`MVP-CLOSE-01D` 已从本地候选
-`cbb35e3` 的干净检出复跑 Quickstart、定向/全量回归、Python compile和差异格式检查，
-并完成最终独立Review。当前没有活动作品集批次；tag、push或部署需用户另行决定。生产级持久
-Invocation、Transport publish/ACK、完整Thread Web、资源隔离、
-容量与事故运营继续作为后续Roadmap。
+`MVP-AGENT-RUNTIME-01D` 与 `MVP-CLOSE-01D` 的工程证据均已完成并保留。当前活动批次切换为
+[`Plan30`](Plan/Plan30.md) 的 `PRODUCT-01A`：先与用户冻结 Agent 通信和协作合同，再依次完成
+真实模型/API、Web 控制台和产品 E2E。生产级持久 Invocation、Transport publish/ACK、
+资源隔离、容量与事故运营继续作为后续 Roadmap；tag、push或部署仍需用户另行决定。
 
 ## 权威文档
 
-- [Plan/Plan29.md](Plan/Plan29.md)：当前作品集版项目闭环范围、批次和轻量验收口径；
+- [Plan/Plan30.md](Plan/Plan30.md)：当前产品优先主线、压缩批次和用户产品完成门槛；
+- [Plan/Plan29.md](Plan/Plan29.md)：已完成的 Runtime 工程演示范围和历史验收口径；
 - [HANDOFF.md](HANDOFF.md)：当前事实、边界、下一批与验证记录；
 - [Plan/Plan26.md](Plan/Plan26.md)：Harness 产品定位、Runtime Charter 与后续 PROD 路线；
 - [OPTIMIZATION_BACKLOG.md](OPTIMIZATION_BACKLOG.md)：生产演进 Backlog；

@@ -81,6 +81,20 @@ from .mailbox import (
     MailboxValidationError,
     SQLiteMailboxStore,
 )
+from .assignment import (
+    AssignmentRecordResult,
+    RoleAssignmentStoreConflictError,
+    RoleAssignmentStoreError,
+    RoleAssignmentStoreValidationError,
+    SQLiteRoleAssignmentStore,
+)
+from .agent_execution import (
+    AgentExecutionStateRecordResult,
+    AgentExecutionStateStoreConflictError,
+    AgentExecutionStateStoreError,
+    AgentExecutionStateStoreValidationError,
+    SQLiteAgentExecutionStateStore,
+)
 
 __all__ = [
     "OutboxPolicy",
@@ -148,4 +162,14 @@ __all__ = [
     "MailboxCursor",
     "MailboxDelivery",
     "SQLiteMailboxStore",
+    "AssignmentRecordResult",
+    "RoleAssignmentStoreConflictError",
+    "RoleAssignmentStoreError",
+    "RoleAssignmentStoreValidationError",
+    "SQLiteRoleAssignmentStore",
+    "AgentExecutionStateRecordResult",
+    "AgentExecutionStateStoreConflictError",
+    "AgentExecutionStateStoreError",
+    "AgentExecutionStateStoreValidationError",
+    "SQLiteAgentExecutionStateStore",
 ]

@@ -677,7 +677,7 @@ class RuntimeOutboxClaimLifecycleAdversarialTests(unittest.TestCase):
                         tokens=AttackTokenFactory(TOKEN_A),
                     )
                 self.assertEqual(self.raw_rows(path), before)
-                self.assertEqual(database.schema_version(), 5)
+                self.assertEqual(database.schema_version(), 7)
 
     def test_batch_token_failure_and_duplicate_roll_back_every_candidate(self) -> None:
         cases = {

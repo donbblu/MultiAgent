@@ -159,6 +159,32 @@ EXPECTED_RED 证据；不要把它们混入普通 discover 进程。
 以下入口会根据配置进入真实 Provider 路径，可能读取供应商配置并访问网络；它不属于
 离线作品集 Quickstart，也不能用 scripted Demo 的结果替代真实模型效果评测。
 
+真实Planner→Reviewer→Planner一跳smoke使用临时SQLite，正常调用DeepSeek两次；任一Action
+协议无效时各最多修正一次，因此最坏四次。必须显式确认真实网络和费用：
+
+```bash
+python3 one_hop_agent_smoke.py --trusted-real-api
+```
+
+默认smoke会把一段实际`Agent通信协议v1`正文交给Planner，要求其逐字放入持久Message，
+再由Runtime把同一正文作为Reviewer的`review_subject`。可覆盖公开任务和评审正文，但不要在参数中放入秘密：
+
+```bash
+python3 one_hop_agent_smoke.py \
+  --trusted-real-api \
+  --task "请Reviewer评审给定协议，并指出一项有依据的改进。" \
+  --subject "这里放要评审的公开协议正文"
+```
+
+输出只包含公开Action、白名单ContextBundle、两条Message、Assignment、Mailbox消费状态、
+Usage/延时、调用/修正次数和强制停止证据。inline模式只保留一份正文：
+`trigger_message.content`是原始Message，`review_subject.content_ref`指向它；pass会校验该引用、
+Trigger正文与Planner Message一致。不输出API Key、完整系统Prompt或私有推理。
+
+SEND_MESSAGE的幂等身份仍由`scope + invocation + step`确定。同一规范请求重放返回原Message，
+不再次调用模型或投递；相同身份提交不同规范请求时返回`rejected/idempotency_conflict`。
+Runtime只持久化请求摘要，不新增原始Prompt副本；模型输出content不参与message ID。
+
 ```bash
 python3 coding_agent_cli.py \
   "写一个冒泡排序函数，返回新列表且不修改输入" \

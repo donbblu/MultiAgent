@@ -2,7 +2,12 @@
 
 日期：2026-08-27
 
-状态：**已批准，当前主线；2026-08-27 按 workflow4 用户确认追加 Agent Runtime MVP 修订**。
+状态：**工程演示里程碑已完成；不再是当前产品主线。当前产品主线见 Plan30。**
+
+> 2026-08-27 产品口径纠正：本计划完成的是本地、确定性、scripted/offline 的 Runtime
+> 工程演示和发布检查，不是用户产品完成。此前 `portfolio-complete` 只保留为历史工程候选名称，
+> 不再表示已经有任意任务入口、真实模型协作或 Web 产品。用户产品从
+> [`Plan30`](Plan30.md) 的产品优先纵切继续。
 
 ## 决策
 
@@ -14,7 +19,7 @@
 
 ## 当前完成口径
 
-`MVP-CLOSE-01` 完成表示 **portfolio-complete / local demo ready**，不表示 production-ready、Runtime Acceptance 或任何生产安全认证。完成后项目应具备：
+`MVP-CLOSE-01` 完成表示 **engineering demo complete / local demo ready**，不表示用户产品完成、production-ready、Runtime Acceptance 或任何生产安全认证。完成后项目应具备：
 
 1. **一个权威入口**：README 只推荐一个默认离线入口；新用户不需要理解全部 PROD/INC 历史即可运行。
 2. **一条端到端闭环**：固定输入进入现有 Harness，真正创建 AgentInstance/AgentSession，经 Mailbox、独立执行泳道和结构化 Handoff 产生 Artifact，经过 Runtime-owned 验证后输出结构化结果和失败原因。只把 DAG StageAudit 标成 Agent 不满足本条。
@@ -269,4 +274,4 @@ limitations
 
 ## 下一动作
 
-`MVP-CLOSE-01A～01D`与`MVP-AGENT-RUNTIME-01A～01D`均已完成，本地作品集候选为`cbb35e3`；干净检出Quickstart、拒绝边界、33项定向、184项Runtime、579项非expected-red全仓回归、compile/diff、报告契约与最终独立Review均通过，初审唯一Medium已关闭。当前没有活动批次；tag、push或部署由用户另行决定，不自动扩张到Web、真实模型、Browser或完整PROD-01C～05。
+`MVP-CLOSE-01A～01D`与`MVP-AGENT-RUNTIME-01A～01D`均已完成，本地工程演示候选为`cbb35e3`；干净检出Quickstart、拒绝边界、33项定向、184项Runtime、579项非expected-red全仓回归、compile/diff、报告契约与最终独立Review均通过，初审唯一Medium已关闭。这些证据继续有效，但只证明底座和固定演示。当前活动主线已切换到 [`Plan30`](Plan30.md) 的 `PRODUCT-01A`；先冻结通信与产品合同，再接真实模型/API和Web，不自动恢复完整PROD-01C～05，也不自动tag、push或部署。

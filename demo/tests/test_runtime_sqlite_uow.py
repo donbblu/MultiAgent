@@ -133,6 +133,9 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         with sqlite3.connect(str(self.path)) as connection:
             connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute("DROP TABLE runtime_agent_execution_results")
+            connection.execute("DROP TABLE runtime_agent_execution_states")
+            connection.execute("DROP TABLE runtime_role_assignments")
             connection.execute("DROP TABLE runtime_agent_messages")
             connection.execute("DROP TABLE runtime_agent_mailbox_cursors")
             connection.execute("DROP TABLE runtime_agent_private_state")
@@ -204,7 +207,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
         database.initialize()
 
         self.assertEqual(database.schema_version(), RUNTIME_DB_SCHEMA_VERSION)
-        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 5)
+        self.assertEqual(RUNTIME_DB_SCHEMA_VERSION, 7)
         self.assertEqual(RUNTIME_DB_COMPONENT, "runtime_kernel")
         objects = self.raw_rows(
             self.path,
@@ -220,6 +223,9 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("index", "runtime_events_event_scope_uq"),
                 ("index", "runtime_events_recorded_idx"),
                 ("index", "runtime_outbox_scope_state_idx"),
+                ("index", "runtime_role_assignments_thread_idx"),
+                ("table", "runtime_agent_execution_results"),
+                ("table", "runtime_agent_execution_states"),
                 ("table", "runtime_agent_instances"),
                 ("table", "runtime_agent_mailbox_cursors"),
                 ("table", "runtime_agent_messages"),
@@ -229,9 +235,16 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("table", "runtime_outbox"),
                 ("table", "runtime_outbox_policy"),
                 ("table", "runtime_outbox_receipts"),
+                ("table", "runtime_role_assignments"),
                 ("table", "runtime_schema_metadata"),
                 ("table", "runtime_schema_migrations"),
                 ("table", "runtime_threads"),
+                ("trigger", "runtime_agent_execution_results_deny_delete"),
+                ("trigger", "runtime_agent_execution_results_deny_replace"),
+                ("trigger", "runtime_agent_execution_results_deny_update"),
+                ("trigger", "runtime_agent_execution_states_deny_delete"),
+                ("trigger", "runtime_agent_execution_states_deny_replace"),
+                ("trigger", "runtime_agent_execution_states_deny_update"),
                 ("trigger", "runtime_events_deny_delete"),
                 ("trigger", "runtime_events_deny_replace"),
                 ("trigger", "runtime_events_deny_update"),
@@ -244,6 +257,9 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("trigger", "runtime_outbox_receipts_deny_delete"),
                 ("trigger", "runtime_outbox_receipts_deny_replace"),
                 ("trigger", "runtime_outbox_receipts_deny_update"),
+                ("trigger", "runtime_role_assignments_deny_delete"),
+                ("trigger", "runtime_role_assignments_deny_replace"),
+                ("trigger", "runtime_role_assignments_deny_update"),
             ],
         )
         ledger = self.raw_rows(
@@ -260,6 +276,8 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 ("runtime_kernel", 3, "runtime_event_outbox_v3", 64),
                 ("runtime_kernel", 4, "runtime_agent_store_v4", 64),
                 ("runtime_kernel", 5, "runtime_agent_mailbox_v5", 64),
+                ("runtime_kernel", 6, "runtime_role_assignment_v6", 64),
+                ("runtime_kernel", 7, "runtime_agent_execution_state_v7", 64),
             ],
         )
         database.verify_integrity()
@@ -291,7 +309,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.database().initialize()
 
-        self.assertEqual(self.database().schema_version(), 5)
+        self.assertEqual(self.database().schema_version(), 7)
         self.assertEqual(
             self.raw_rows(self.path, "SELECT id, value FROM probe_parent"),
             [("v1", "stable")],
@@ -309,6 +327,8 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 (3, "runtime_event_outbox_v3", 64),
                 (4, "runtime_agent_store_v4", 64),
                 (5, "runtime_agent_mailbox_v5", 64),
+                (6, "runtime_role_assignment_v6", 64),
+                (7, "runtime_agent_execution_state_v7", 64),
             ],
         )
         self.assertEqual(
@@ -336,7 +356,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
 
         self.assertEqual(self.schema_snapshot(self.path), before)
         self.database().initialize()
-        self.assertEqual(self.database().schema_version(), 5)
+        self.assertEqual(self.database().schema_version(), 7)
 
     def test_required_v2_trigger_drift_fails_closed(self) -> None:
         self.database().initialize()
@@ -376,7 +396,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 connection.execute("PRAGMA table_info(runtime_snapshots)").fetchall(),
                 before_columns,
             )
-        self.assertEqual(self.database().schema_version(), 5)
+        self.assertEqual(self.database().schema_version(), 7)
 
     def test_initialization_preserves_database_global_version_pragmas(self) -> None:
         self.path.parent.mkdir(parents=True)
@@ -512,6 +532,8 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
                 (3, "integer"),
                 (4, "integer"),
                 (5, "integer"),
+                (6, "integer"),
+                (7, "integer"),
             ],
         )
 
@@ -575,7 +597,7 @@ class RuntimeSQLiteUnitOfWorkTests(unittest.TestCase):
             )
 
         self.database().initialize()
-        self.assertEqual(self.database().schema_version(), 5)
+        self.assertEqual(self.database().schema_version(), 7)
         self.assertEqual(
             self.raw_rows(self.path, "SELECT id, value FROM legacy_canary"),
             [("one", "stable")],

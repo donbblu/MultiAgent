@@ -743,7 +743,7 @@ class AgentRole:
 class AgentProfile:
     profile_id: str
     scope_id: str
-    role_ref: ScopedRef
+    role_ref: ScopedRef | None = None
     backend_policy_ref: ScopedRef | None = None
     tool_policy_ref: ScopedRef | None = None
     context_policy_ref: ScopedRef | None = None
@@ -772,7 +772,7 @@ class AgentProfile:
         object.__setattr__(
             self,
             "role_ref",
-            _ref(
+            _optional_ref(
                 self.role_ref,
                 "role_ref",
                 scope_id=scope_id,
@@ -813,7 +813,7 @@ class AgentProfile:
             schema_version=self.schema_version,
             profile_id=self.profile_id,
             scope_id=self.scope_id,
-            role_ref=dict(self.role_ref.to_dict()),
+            role_ref=optional_ref_to_dict(self.role_ref),
             backend_policy_ref=optional_ref_to_dict(self.backend_policy_ref),
             tool_policy_ref=optional_ref_to_dict(self.tool_policy_ref),
             context_policy_ref=optional_ref_to_dict(self.context_policy_ref),
@@ -834,13 +834,10 @@ class AgentProfile:
                 "output_contract_ref", "budget_policy_ref", "version", "created_at",
             }),
         )
-        role = root["role_ref"]
-        if not isinstance(role, Mapping):
-            raise RuntimeProtocolError("role_ref 必须是引用对象")
         return cls(
             profile_id=root["profile_id"],
             scope_id=root["scope_id"],
-            role_ref=ScopedRef.from_dict(role),
+            role_ref=optional_ref_from_dict(root["role_ref"], "role_ref"),
             backend_policy_ref=optional_ref_from_dict(
                 root["backend_policy_ref"], "backend_policy_ref"
             ),

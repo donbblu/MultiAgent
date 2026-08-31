@@ -4327,3 +4327,1041 @@ ps -axo pid=,ppid=,pgid=,command=
 - `supersedes_entry_id`：`TRACE-20260827-199 for final documentation seal status only; preserves its REVISE history and restores TRACE-198 completion decision`
 - `git_checkpoint`：`functional candidate cbb35e3 committed / final five evidence docs staged pending local commit / push=NOT_AUTHORIZED`
 - `next_action`：核对并提交五份本地证据文档；随后停止，等待用户决定是否push/tag/deploy或开启其他路线。
+
+### TRACE-20260827-201
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-201 / PRODUCT-MVP-01-RESET / PRE_REGISTER / 2026-08-27T21:27:05+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / product-first recovery plan after user correction / new Plan30 + user “产品部分是最重要的，时间更紧张”`
+- `what / why / expected_effect_or_gate`：纠正“工程验收候选=产品完成”的错误口径。保留已完成Runtime/CLI/测试作为内部底座和回归门禁，但把项目当前状态重新标为`runtime milestone complete / user product incomplete`；冻结一条最快可展示的产品纵切：用户在本地Web输入任意任务→真实模型Agent经Message/Handoff协作→用户查看/干预→Validator/Reviewer证据→历史结果。先讨论并冻结Agent通信/协作/收敛合同，再实施Backend/API、Web控制台和产品E2E。
+- `scope / non_goals`：只新增`Plan/Plan30.md`并修改`Plan/Plan29.md`、`README.md`、`HANDOFF.md`和追加Step；不改功能代码、测试、模型配置、Web或数据库，不stage/commit/push/tag/deploy，不触碰`demo/track.md`、`problems.md`、`prombles.md`、`Plan/Plan28.md`。暂停Outbox/分布式/Lease/Reaper/事故治理/生产认证等非产品关键扩建。
+- `baseline`：`branch=codex/mvp-close-01d; HEAD=8975ba5dd1e57e3792db3a60e375fa443cdfcfb0; local engineering candidate and clean gates complete; protected dirty paths unchanged; product lacks arbitrary user input, real-model Agent Runtime integration, communication UI and user intervention`
+- `commands`：已核对branch/HEAD/status、TRACE-200、Plan29/README/HANDOFF当前完成口径；用户已明确要求先讨论拓扑、协议、Context、黑板/路由/pubsub、角色/分解/冲突、SOP/Debate/Master-Worker、收敛/评估/幻觉/污染/复现与DAG，再修改代码并最终呈现在前端。
+- `stop_or_rollback_conditions`：若计划再次把CLI smoke、scripted worker、测试计数或底层可靠性等同于产品完成，若未先冻结用户流程/交流合同就扩建基础设施，若要求真实模型/网络密钥却无当次授权，或触碰保护路径，立即停止并纠正。
+- `result / effect`：`PENDING — product scope, compressed batches and honest status not yet written`
+- `artifacts / evidence`：`STEP pre=3520a38f1f6695661d46a071422e88d23cf236367343ca6562a2748a75a5b131; HANDOFF pre=9bfc89044b519deb156d26571496e1d1d2231a41b40ec004096753ae304eb3e9; Plan29 pre=b64d5ed167402ee70c6007ff56a1dd85d07ad322beb35f5331cf2452d290fb3c; README pre=5724efb97c5052344f72939b8481fe0fc637e92624531ff9543eccd5bf39adc3`
+- `remaining_risks`：时间紧张，必须限制为单用户、本地Web、一个主Thread、固定核心角色、一个真实Provider路径和基础可视化；动态Agent市场、多租户、生产恢复、移动/原生桌面、复杂视觉打磨全部后置。真实模型行为与成本仍需用户授权和配置。
+- `review`：`PENDING — planning-only consistency check; implementation review belongs to later product batches`
+- `supersedes_entry_id`：`TRACE-20260827-198/200 only for the phrase “portfolio-complete” as user-product completion; their engineering candidate and test evidence remain valid`
+- `git_checkpoint`：`PLANNING_WORKTREE_ONLY / HEAD=8975ba5 / staging empty / push=NOT_AUTHORIZED`
+- `next_action`：创建Plan30并把Plan29/README/HANDOFF统一为产品未完成；冻结8～12小时可用纵切与4～6小时可选打磨，不开始实现。
+
+### TRACE-20260827-202
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-202 / PRODUCT-MVP-01-RESET / ACTUAL / 2026-08-27T21:30:48+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / product-first planning correction / Plan30 + TRACE-201`
+- `what / why / expected_effect_or_gate`：已创建Plan30，把当前状态统一纠正为“Runtime工程里程碑完成、用户产品未完成”。Plan30冻结最快产品纵切、压缩批次、明确非目标和产品完成门槛；Plan29保留为历史工程演示证据；README把CLI改为内部验收/回归面；HANDOFF顶部、HandoffProposal和深层当前态切换到PRODUCT-01A。
+- `scope / non_goals`：只修改TRACE-201登记的五份规划/状态文档；未改功能代码、测试、模型配置、Web、数据库或保护路径，未运行可能改变报告/SQLite的smoke，未stage/commit/push/tag/deploy。
+- `baseline`：`HEAD=8975ba5dd1e57e3792db3a60e375fa443cdfcfb0; branch=codex/mvp-close-01d; protected dirty paths remain outside task scope`
+- `commands`：读取README/Plan29/HANDOFF和Step当前态；使用apply_patch新增Plan30并更新三份入口文档；用rg扫描过期主线表述；运行`git diff --check`、status、stat和sha256核对。
+- `stop_or_rollback_conditions`：未触发；没有把历史工程证据删除、改写为失败或扩张到实现。Plan30中的通信默认值明确标为提案，仍需用户确认。
+- `result / effect`：`PASS — current mainline=Plan30 PRODUCT-01A; runtime milestone=complete; user product=incomplete; implementation=not started`
+- `artifacts / evidence`：`Plan30=9bd4d9c0ed873f22b9df7b764b6ec2a5cb2fbc3cdc9a2bf65d29bc36de613224; Plan29=0ac44cfcb3b503e49d7a7d088980967b833296a4bc8a09724a6659e8ab563b02; README=feabd5b1b8488e499887648158f532d0b3a936022d218c9e26d63d0418df67a1; HANDOFF=bb9507b41796853c87981a181085601edd7f374b53a2b6b53e2b0505587722ca; pre-ACTUAL STEP=21ea1e3527ea654fb7530aeb4d94a6f33f033733357b1f23f780f55da5e975b0; diff-check=PASS`
+- `remaining_risks`：8～12小时估算依赖已有Provider配置、网络与模型调用授权；通信合同未确认前若直接编码仍可能返工。真实模型的非确定性、成本和效果尚无产品证据。
+- `review`：`planning consistency self-check PASS; no independent implementation review applicable`
+- `supersedes_entry_id`：`TRACE-20260827-198/200 only for user-product completion wording; preserves their release-candidate engineering evidence`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / protected paths unchanged / push=NOT_AUTHORIZED`
+- `next_action`：与用户继续PRODUCT-01A讨论，逐项确认Plan30的通信、协作、Context和收敛提案；确认后再登记PRODUCT-01B实现。
+
+### TRACE-20260827-203
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-203 / PRODUCT-MVP-01-RESET / CHECKPOINT / 2026-08-27T21:30:48+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / product-first current-state checkpoint / Plan30`
+- `what / why / expected_effect_or_gate`：产品优先纠偏完成。以后恢复任务时必须把现有CLI/Runtime当底座，把“任意任务+真实模型Agent协作+Web观察/介入+验证/历史”当第一版产品；不得再次用scripted smoke、测试数量或生产基础设施代替产品进度。
+- `scope / non_goals`：本检查点只冻结路线，不代表PRODUCT-01A合同已经由用户确认，不代表PRODUCT-01B～01D实现开始或完成，也不授权真实Provider、网络、模型费用、push/tag/deploy。
+- `result / effect`：`PRODUCT_MAINLINE_ACTIVE / next=PRODUCT-01A / code_change=NONE`
+- `remaining_risks`：时间紧张，必须坚持单用户、本地Web、固定核心角色、一个Provider和基础可视化；所有生产化与复杂体验后置。
+- `review`：`N/A — planning checkpoint`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / task docs unstaged / protected user changes untouched`
+- `next_action`：直接从用户已列出的讨论清单继续，先给出短句式产品选择并让用户逐项确认；不自动进入编码。
+
+### TRACE-20260827-204
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-204 / PRODUCT-01A-SCHEDULE-REVISION / PRE_REGISTER / 2026-08-27T22:07:07+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / API-only three-provider learning-in-product schedule / Plan30 + user decision`
+- `what / why / expected_effect_or_gate`：用户确认产品统一使用API Key，目标接入DeepSeek、Qwen和Kimi，并希望在项目实现中复刻Cat Café关键构建流程与失败来学习。修订Plan30：把原“一个Provider、8～12小时”改成三Provider、角色/模型解耦、关键故障实验内嵌的诚实时间表；区分第一版可用产品与完整00～15课程复刻。
+- `scope / non_goals`：只修改`Plan/Plan30.md`、`HANDOFF.md`并追加Step；不改Provider/Runtime/Web代码，不读取或写入API Key，不访问真实Provider，不stage/commit/push/tag/deploy，不触碰四个保护路径。
+- `baseline`：`Plan30=9bd4d9c0ed873f22b9df7b764b6ec2a5cb2fbc3cdc9a2bf65d29bc36de613224; HANDOFF=bb9507b41796853c87981a181085601edd7f374b53a2b6b53e2b0505587722ca; STEP=ae04e970a14c5c25354ad22f5b30b56c361c2991c058247ed2626952ef7ae6ca; HEAD=8975ba5`
+- `stop_or_rollback_conditions`：若仍以单Provider估时、把全部课程复刻隐含进产品时间、把API Key放进前端/数据库/消息，或把角色永久绑定供应商，停止并修正。
+- `result / effect`：`PENDING — revised batches and timetable not yet written`
+- `review`：`PENDING planning consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / push=NOT_AUTHORIZED`
+- `next_action`：更新Plan30/HANDOFF，给出按专注小时、压缩日程和稳健日程三种可调整视图。
+
+### TRACE-20260827-205
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-205 / PRODUCT-01A-SCHEDULE-REVISION / ACTUAL / 2026-08-27T22:08:29+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / revised API-only three-provider product-and-learning schedule / Plan30 + TRACE-204`
+- `what / why / expected_effect_or_gate`：Plan30已记录用户确认的API-only、DeepSeek/Qwen/Kimi、后端秘密边界和统一Provider合同；原四批扩为五批，把三Provider网关、真实Agent协作API、Web和E2E分开，并把A2A双路由/乒乓、公共私有输出、跨Thread Session污染和愿景漂移作为产品内故障实验。HANDOFF同步新的批次、范围和时间口径。
+- `scope / non_goals`：只改Plan30、HANDOFF和追加Step；未实现Provider、未调用模型、未读取Key、未改测试/Runtime/Web/数据库、未触碰保护路径、未stage/commit/push/tag/deploy。
+- `commands`：使用apply_patch修订计划和交接；运行rg扫描旧单Provider/旧批次/旧8～12小时口径，运行`git diff --check`、status、stat和sha256。
+- `stop_or_rollback_conditions`：未触发。角色与模型解耦仍明确标为待用户确认提案，没有冒充已确认决定。
+- `result / effect`：`PASS — product+critical labs=17～25 focused hours; risk buffer=3～5; compressed≈4 days; steady≈7 days; full lessons 00～15=35～50 focused hours`
+- `artifacts / evidence`：`Plan30=7ab49c5c15c3f02cddbe21a0fbc2638f0ea5c8840cbbe11cd836ad7c3a41154c; HANDOFF=231f28df6d151ffa1ad4163be1803cf4946461284c80ef1de1b80d2b4648bd36; pre-ACTUAL STEP=15b7ce01e599bd1394c29883bea03d0461f4223993eae7320edc97609e176b27; diff-check=PASS; stale-scan=0`
+- `remaining_risks`：真实Provider的当前API/模型名、Key/额度、限流与结构化输出差异要在PRODUCT-01B按官方文档和真实smoke核实；完整课程时间不能压进第一版产品时间。压缩日程依赖用户能连续确认产品决定。
+- `review`：`planning consistency self-check PASS; implementation review deferred`
+- `supersedes_entry_id`：`TRACE-20260827-202/203 only for one-provider and 8～12-hour schedule assumptions; preserves product-first decision`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / protected paths unchanged / push=NOT_AUTHORIZED`
+- `next_action`：由用户调整压缩版/稳健版和完整课程范围；随后继续PRODUCT-01A，从角色与模型是否解耦开始冻结通信合同。
+
+### TRACE-20260827-206
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-206 / PRODUCT-01A-SCHEDULE-REVISION / CHECKPOINT / 2026-08-27T22:08:29+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / current product timetable checkpoint / Plan30`
+- `what / why / expected_effect_or_gate`：当前时间表已可供用户取舍：第一版产品包含三Provider与关键故障学习，不删讨论；非关键的PWA/Rich Blocks/Voice/完整知识与Pack课程在产品后继续。任何后续估算必须说明采用17～25小时产品轨还是35～50小时全课程轨。
+- `scope / non_goals`：不表示PRODUCT-01A已完成或任何实现已开始，不授权真实模型费用、网络、Key、push/tag/deploy。
+- `result / effect`：`SCHEDULE_READY_FOR_USER_ADJUSTMENT`
+- `review`：`N/A planning checkpoint`
+- `git_checkpoint`：`WORKTREE_ONLY / task docs unstaged`
+- `next_action`：等待用户对时间表作调整，然后继续未决产品讨论。
+
+### TRACE-20260827-207
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-207 / PRODUCT-01A-SCHEDULE-SELECTION / PRE_REGISTER / 2026-08-27T22:35:12+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user schedule selection and post-product learning reminder / Plan30 + TRACE-206`
+- `what / why / expected_effect_or_gate`：用户选择约4天的压缩版；非产品关键的Cat Café课程与作业统一后置，并要求产品完成时提醒。记录为PRODUCT-01E完成门禁后的强制提醒检查点，不使用无日期的定时自动化。三Provider首版策略尚待用户在“全部先完成”与“DeepSeek先打通、Qwen/Kimi在最终E2E前补齐”的区别说明后确认；推荐后者。
+- `scope / non_goals`：只修改Plan30、HANDOFF并追加Step；不实现代码、不创建猜测日期的提醒、不调用Provider、不读取Key、不stage/commit/push/tag/deploy。
+- `baseline`：`Plan30=7ab49c5c15c3f02cddbe21a0fbc2638f0ea5c8840cbbe11cd836ad7c3a41154c; HANDOFF=231f28df6d151ffa1ad4163be1803cf4946461284c80ef1de1b80d2b4648bd36; STEP=ae3ce62c2164ff06e8e5dee790f6320c416c61504d5402db49f7786c6903ac02`
+- `stop_or_rollback_conditions`：若后续PRODUCT-01E完成时未先提醒用户选择是否恢复00～15课程，或把后置课程静默标为已完成，立即停止并纠正。
+- `result / effect`：`PENDING schedule/reminder gate documentation`
+- `review`：`PENDING planning consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty`
+- `next_action`：把压缩版设为选定日程，并新增产品完成后的LEARNING-POST-01提醒门禁。
+
+### TRACE-20260827-208
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-208 / PRODUCT-01A-SCHEDULE-SELECTION / ACTUAL / 2026-08-27T22:35:41+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / selected compressed schedule + milestone reminder gate / Plan30 + TRACE-207`
+- `what / why / expected_effect_or_gate`：Plan30已把压缩版设为当前日程：约4天、每天5～7专注小时；稳健版仅作外部阻塞回退。非产品关键课程统一命名为`LEARNING-POST-01`，并在PRODUCT-01E完成声明前设置强制用户提醒门禁。HANDOFF同步选定日程、未决Provider推进方式和提醒条件。
+- `scope / non_goals`：只改Plan30/HANDOFF/Step；没有创建无日期定时自动化，因为提醒条件是产品里程碑而非日历时间。未改代码、未调用Provider、未读取Key、未stage/commit/push/tag/deploy。
+- `commands`：apply_patch；`git diff --check`；Plan30 untracked diff-check；cached-scope检查；rg定位选定日程/提醒门禁；sha256。
+- `result / effect`：`PASS — compressed schedule SELECTED; LEARNING-POST-01 DEFERRED_NOT_CANCELLED; reminder gate ACTIVE`
+- `artifacts / evidence`：`Plan30=bfd8d9ec1309581ec4ee767ca63204828c2699d0a50eeb2ab5507317a6eee44d; HANDOFF=e8c5356ea70f9ac3ec43ca7c85d3b02442df2f769019cb6d6c72866d88c91a4e; pre-ACTUAL STEP=a03981a23c354bb6b42c4c63a89d66af867f3d9124a1613ae2eccfb4fa7d77c9; diff-check=PASS; staged files=0`
+- `remaining_risks`：三Provider推荐推进方式仍待用户确认；压缩日程依赖可用Key/额度与连续产品决策。里程碑提醒依赖后续执行者遵守Plan/HANDOFF/Step门禁，因此三处同时记录。
+- `review`：`planning consistency self-check PASS`
+- `supersedes_entry_id`：`TRACE-20260827-206 only for schedule awaiting selection; preserves estimates and scope`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / protected paths unchanged`
+- `next_action`：用户确认或调整三Provider推荐推进方式；随后继续PRODUCT-01A其他通信合同问题。
+
+### TRACE-20260827-209
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-209 / PRODUCT-01A-SCHEDULE-SELECTION / CHECKPOINT / 2026-08-27T22:35:41+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / compressed product schedule checkpoint / Plan30`
+- `what / why / expected_effect_or_gate`：当前产品轨固定为压缩版；产品关键踩坑保留，非关键课程产品后补。PRODUCT-01E不得在未提醒用户`LEARNING-POST-01`的情况下关闭。
+- `result / effect`：`SCHEDULE=COMPRESSED / POST_PRODUCT_REMINDER=REQUIRED`
+- `review`：`N/A planning checkpoint`
+- `git_checkpoint`：`WORKTREE_ONLY / no implementation started`
+- `next_action`：继续未决产品讨论，不自动编码。
+
+### TRACE-20260827-210
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-210 / PRODUCT-01A-PROVIDER-SEQUENCE / PRE_REGISTER / 2026-08-27T22:39:55+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-confirmed staged three-provider sequence / Plan30 PRODUCT-01A`
+- `what / why / expected_effect_or_gate`：用户选择第二种Provider推进方式：DeepSeek先打通从模型到Runtime/API/Web的完整纵切；Qwen和Kimi随后复用同一合同接入，不阻塞Web开始；三家真实smoke和至少一次跨Provider协作仍阻塞PRODUCT-01E完成。把该项从提案改为已确认决定。
+- `scope / non_goals`：只改Plan30、HANDOFF并追加Step；不实现Provider、不调用模型、不读取Key、不改变时间表、不stage/commit/push/tag/deploy。
+- `baseline`：`Plan30=bfd8d9ec1309581ec4ee767ca63204828c2699d0a50eeb2ab5507317a6eee44d; HANDOFF=e8c5356ea70f9ac3ec43ca7c85d3b02442df2f769019cb6d6c72866d88c91a4e; STEP=3b076fd7b63173be7dfda208a3e97b7e69c1d35ddf3eee757380f396de0dcd6a`
+- `stop_or_rollback_conditions`：若后续让Qwen/Kimi阻塞Web起步，或在PRODUCT-01E跳过任一家真实smoke/跨Provider协作，停止并按本决定纠正。
+- `result / effect`：`PENDING documentation sync`
+- `review`：`PENDING planning consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty`
+- `next_action`：更新Plan30/HANDOFF并关闭此open question。
+
+### TRACE-20260827-211
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-211 / PRODUCT-01A-PROVIDER-SEQUENCE / ACTUAL / 2026-08-27T22:40:25+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / confirmed staged Provider sequence documentation / Plan30 + TRACE-210`
+- `what / why / expected_effect_or_gate`：Plan30与HANDOFF已把DeepSeek优先纵切、Qwen/Kimi后续同合同接入写为用户确认决定，并从open questions移除。最终门槛不变：三家真实smoke和至少一次跨Provider协作。
+- `scope / non_goals`：仅规划文档同步；无代码、模型调用、Key、时间表、Git或保护路径变化。
+- `commands`：apply_patch；tracked/untracked diff-check；cached-scope；stale proposal scan；sha256。
+- `result / effect`：`PASS — PROVIDER_SEQUENCE=CONFIRMED_STAGED; DeepSeek=vertical-first; Qwen/Kimi=before final E2E`
+- `artifacts / evidence`：`Plan30=af8358478ce824cdbc5fc22682bfefcf110c8793f32fa0630b5d685f1bc93b14; HANDOFF=b115865dd8fb2a3c353de173185fa177b347af8ecd74db235158dee9ffa36429; pre-ACTUAL STEP=db4a6173939677b17217903b603d21e39b948ddd10affb942112b73c39a6cbc8; diff-check=PASS; staged files=0`
+- `remaining_risks`：Provider具体API/模型名、额度和行为仍留待PRODUCT-01B按官方文档及真实smoke核实；当前PRODUCT-01A其他合同问题仍未冻结。
+- `review`：`planning consistency self-check PASS`
+- `supersedes_entry_id`：`TRACE-20260827-208/209 only for Provider sequence pending confirmation; preserves selected schedule and reminder gate`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty`
+- `next_action`：继续PRODUCT-01A，下一个未决问题是角色与模型是否解耦。
+
+### TRACE-20260827-212
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-212 / PRODUCT-01A-ROLE-MODEL-DECOUPLING / PRE_REGISTER / 2026-08-27T22:41:53+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-confirmed Role and Provider/Model decoupling / Plan30 PRODUCT-01A`
+- `what / why / expected_effect_or_gate`：用户确认角色与模型解耦。冻结Role负责职责、权限、Context Policy、Tool Capability和Output Contract；Provider/Model是Agent Profile或Invocation上的可替换执行选择。UI可设置默认关联，但Runtime和领域合同不得永久绑定。
+- `scope / non_goals`：只改Plan30、HANDOFF并追加Step；不设计完整路由算法、不实现代码、不调用模型、不读取Key、不改变Provider顺序/时间表/Git状态。
+- `baseline`：`Plan30=af8358478ce824cdbc5fc22682bfefcf110c8793f32fa0630b5d685f1bc93b14; HANDOFF=b115865dd8fb2a3c353de173185fa177b347af8ecd74db235158dee9ffa36429; STEP=9dee1389db0f510b095796787ed918e389a3b9a965d83e232f92857553e75158`
+- `stop_or_rollback_conditions`：若实现把Planner/Developer/Reviewer硬编码到某供应商，或换模型会隐式改变Role权限、工具或完成权，停止并纠正。
+- `result / effect`：`PENDING documentation sync`
+- `review`：`PENDING planning consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty`
+- `next_action`：把解耦从提案改为已确认合同并从open questions移除。
+
+### TRACE-20260827-213
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-213 / PRODUCT-01A-ROLE-MODEL-DECOUPLING / ACTUAL / 2026-08-27T22:42:22+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / confirmed Role-Model decoupling contract / Plan30 + TRACE-212`
+- `what / why / expected_effect_or_gate`：Plan30/HANDOFF已把角色与模型解耦写为用户确认合同并从open questions移除。Role持有职责/权限/Context/Tool/Output边界；Provider/Model只作为可替换执行配置。文档同时记录不解耦导致角色单点故障、工作流耦合、无法降级/A-B/跨模型Review、评测归因污染和权限漂移风险。
+- `scope / non_goals`：仅规划文档同步；未设计自动模型路由评分、未实现代码或调用Provider，其他产品决定和时间表不变。
+- `commands`：apply_patch；tracked/untracked diff-check；cached-scope；stale proposal scan；sha256。
+- `result / effect`：`PASS — ROLE_MODEL_DECOUPLING=CONFIRMED`
+- `artifacts / evidence`：`Plan30=d857615bc1b8f57187f9f2b0b1148b9e8a6553d76551df863e65336ef67a7773; HANDOFF=c1221fa3d99ada76a4336b849b398c68497b95c7e386e261d9a0f798fadd473a; pre-ACTUAL STEP=1406ea18208c34b1c380404f69aaa5b818d3cdae037bb89e2845b5f7d1250984; diff-check=PASS; staged files=0`
+- `remaining_risks`：默认模型、按能力/成本/可用性路由和手动覆盖的具体优先级仍需在后续Product/Profile合同确定；解耦本身不等于自动路由已实现。
+- `review`：`planning consistency self-check PASS`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty`
+- `next_action`：继续PRODUCT-01A，讨论并冻结Agent通信拓扑。
+
+### TRACE-20260827-214
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-214 / PRODUCT-01A-DECISION-RECORD / PRE_REGISTER / 2026-08-27T23:38:13+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / user-requested main-product problem and decision record / Plan30 PRODUCT-01A`
+- `what / why / expected_effect_or_gate`：用户要求新增`主产品线遇到的问题.md`，记录角色/模型解耦和通信拓扑的策略、选择理由及其他方案对比。创建权威、易读的产品决策记录，并把“逻辑对等、物理Runtime中介、执行DAG+动态Handoff”的受控网状拓扑同步为已确认决定。
+- `scope / non_goals`：只新增`主产品线遇到的问题.md`、同步Plan30/HANDOFF并追加Step；不定义尚未讨论的完整Message字段，不实现代码/测试/Router，不调用模型、不读取Key、不stage/commit/push/tag/deploy，不触碰保护路径。
+- `baseline`：`Plan30=d857615bc1b8f57187f9f2b0b1148b9e8a6553d76551df863e65336ef67a7773; HANDOFF=c1221fa3d99ada76a4336b849b398c68497b95c7e386e261d9a0f798fadd473a; STEP=9dee1389db0f510b095796787ed918e389a3b9a965d83e232f92857553e75158; decision-record file=ABSENT`
+- `stop_or_rollback_conditions`：若把尚未确认的协议字段冒充决定、遗漏所选方案自身代价，或把通信拓扑写成Agent私下直连/单一Boss裁决，停止并纠正。
+- `result / effect`：`PENDING decision record creation and status sync`
+- `review`：`PENDING documentation consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty`
+- `next_action`：创建两条结构化决策记录，更新Plan30/HANDOFF的拓扑状态并检查一致性。
+
+### TRACE-20260827-215
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260827-215 / PRODUCT-01A-DECISION-RECORD / ACTUAL / 2026-08-27T23:39:22+08:00 / 2026-08-27`
+- `principal / slice / plan_ref`：`/root / main-product decision record creation and topology confirmation / Plan30 + TRACE-214`
+- `what / why / expected_effect_or_gate`：已新增`主产品线遇到的问题.md`。DEC-001记录Role/Model解耦的问题、最终策略、理由、四方案对比、不解耦的六类坏处和首版验收；DEC-002记录Runtime中介受控网状拓扑、三层结构、消息路径、五方案对比、所选方案自身代价和边界。Plan30/HANDOFF同步把通信拓扑标为已确认，下一项明确为通信协议。
+- `scope / non_goals`：仅文档；没有提前冻结Message/Handoff完整字段，没有代码/测试/模型/Key/Git外部动作，没有触碰保护路径。
+- `commands`：apply_patch；tracked与两个untracked文档diff-check；cached-scope；状态/反例rg；sha256。
+- `stop_or_rollback_conditions`：未触发。记录明确披露Router关键组件/单机故障边界及生产ACK/重投后置，没有只写优点或冒领生产能力。
+- `result / effect`：`PASS — DEC-001 recorded; DEC-002 recorded; TOPOLOGY=CONFIRMED_RUNTIME_MEDIATED_MESH`
+- `artifacts / evidence`：`decision_record=53a53510cbcd621c6ee3d3e64bb3da432df18d0881a0e78e6dba98618c92500c; Plan30=fd0bb21a3b879506de82bbf6fd9dc1f39451e56ddd952bf383cc609d99c64318; HANDOFF=680e2652523ea78cc404e4c55a0a9e772e99898faa14817834098f0fd93489ac; pre-ACTUAL STEP=a69e6d1b5a8a39a4501ed4624c6b11953bbf0396c943022a985695726f48287b; diff-check=PASS; staged files=0`
+- `remaining_risks`：通信协议、ContextBundle、冲突/辩论/终止和前端公开字段仍未冻结；Router去重/深度/错误合同只是待讨论方向，不得从本记录推断已实现。
+- `review`：`documentation consistency self-check PASS`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / new decision record untracked`
+- `next_action`：继续PRODUCT-01A，讨论通信协议。
+
+### TRACE-20260828-216
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260828-216 / PRODUCT-01A-ROLE-AGENT-ASSIGNMENT / PRE_REGISTER / 2026-08-28T00:21:35+08:00 / 2026-08-28`
+- `principal / slice / plan_ref`：`/root / user-confirmed dynamic Role-to-Agent assignment with stable Agent Profile/Model Policy / Plan30 PRODUCT-01A`
+- `what / why / expected_effect_or_gate`：用户澄清最终关系：Role是任务所需职责，Agent是带稳定Profile与主要Model Policy的可调度协作者；Role与Agent不永久绑定。调度器应从满足硬约束的Agent中选择最合适者，最佳Agent忙时可选择合格的第二候选。修正此前“Role/Model解耦”记录，新增持久`RoleAssignment`与可复现选择证据，保留Agent/Profile到Model Policy的间接版本化绑定。
+- `scope / non_goals`：只修改`Plan/Plan30.md`、`HANDOFF.md`、`主产品线遇到的问题.md`并追加Step；不实现schema/调度器，不冻结尚未讨论的完整评分权重，不改通信拓扑/协议，不调用模型、不读取Key、不stage/commit/push/tag/deploy，不触碰保护路径。
+- `baseline`：`Plan30=fd0bb21a3b879506de82bbf6fd9dc1f39451e56ddd952bf383cc609d99c64318; HANDOFF=680e2652523ea78cc404e4c55a0a9e772e99898faa14817834098f0fd93489ac; decision_record=53a53510cbcd621c6ee3d3e64bb3da432df18d0881a0e78e6dba98618c92500c; STEP=3ff950764e235bb7b9a653c488ffc80f5ac1f2fab5720afec6432e17b36cff60`
+- `stop_or_rollback_conditions`：若把Agent与Model完全无约束随机切换、把忙碌当成绕过能力/权限硬门槛的理由、静默中途换Agent、丢失选择理由，或隐瞒当前`AgentProfile.role_ref`需要小型协议迁移，停止并纠正。
+- `result / effect`：`PENDING decision correction and schedule impact sync`
+- `review`：`PENDING documentation consistency check`
+- `supersedes_entry_id`：`TRACE-20260827-212/213 and DEC-001 current wording only; preserves their historical discussion evidence`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty`
+- `next_action`：修订三份当前态文档，明确RoleAssignment、Agent-Model关系、选择边界和时间影响。
+
+### TRACE-20260828-217
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260828-217 / PRODUCT-01A-ROLE-AGENT-ASSIGNMENT / ACTUAL / 2026-08-28T00:23:51+08:00 / 2026-08-28`
+- `principal / slice / plan_ref`：`/root / corrected Role-Agent-Model contract and schedule / Plan30 + DEC-001 + TRACE-216`
+- `what / why / expected_effect_or_gate`：Plan30、HANDOFF和DEC-001已统一为：Role是任务需求；Agent以稳定Profile与主要Model Policy保持身份/能力；Runtime用持久RoleAssignment在通过硬约束的Agent中稳定选择。最佳Agent忙时可选择合格次优，无合格候选则排队或needs_input；Assignment执行中不能静默换Agent。当前必填`AgentProfile.role_ref`需迁移到任务级Assignment，但Agent/Session、Mailbox、FIFO/并行、Message/Handoff和Validator不重写。
+- `scope / non_goals`：仅当前态文档与追加证据；没有实现schema/调度器、没有冻结详细评分权重、没有改通信拓扑/协议、没有模型/Key/Git外部动作或保护路径变化。
+- `commands`：apply_patch；tracked与untracked文档diff-check；cached-scope；旧决定/旧时长/旧故障计数反例扫描；新合同定位；sha256。
+- `stop_or_rollback_conditions`：未触发。文档明确空闲不能覆盖硬能力/权限门槛，也没有把Agent与Model写成完全随机可换。
+- `result / effect`：`PASS — ROLE_AGENT=dynamic_assignment; AGENT_MODEL=profile-bound; RoleAssignment=persistent_required; runtime_change=minimal_domain+migration`
+- `artifacts / evidence`：`Plan30=63f2dcc47ca8b4380493a10925db80445d9c89a21c2f1d06328156e350383548; HANDOFF=b81b9c668270e5857ca6e6b056899cea6e05ceb83a516add15612d26822e47e9; decision_record=6f3e617f60a42f65abcd22ac407d5e878e4b88ca37d5a5b414e2de04a956188b; pre-ACTUAL STEP=4902dcb634f04f3f802d93cfb0106f8d3348c5252411e739afe267a3971adb1f; diff-check=PASS; stale-scan=0; staged files=0`
+- `remaining_risks`：RoleAssignment的适配度权重、忙碌等待阈值、优先级/公平和历史质量证据仍未确认；实现增加约2～3小时，第一版估算修订为19～28小时加3～5小时缓冲，约4天处于上沿并保留第5天风险缓冲。
+- `review`：`documentation consistency self-check PASS`
+- `supersedes_entry_id`：`TRACE-20260827-212/213 and TRACE-20260827-215 DEC-001 wording only; preserves their historical evidence and DEC-002 topology decision`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / protected paths unchanged`
+- `next_action`：继续PRODUCT-01A；先确认RoleAssignment在最佳Agent忙时的等待/次优选择规则，再继续通信协议。
+
+### TRACE-20260828-218
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260828-218 / PRODUCT-01C-ROLE-ASSIGNMENT / PRE_REGISTER / 2026-08-28T00:40:00+08:00 / 2026-08-28`
+- `principal / slice / plan_ref`：`/root / user-authorized RoleAssignment vertical slice / Plan30 PRODUCT-01C`
+- `what / why / expected_effect_or_gate`：用户明确要求先实现刚讨论的Role/Agent动态分配，再返回通信拓扑/协议讨论。按TDD冻结三个公开接缝：纯确定性`RoleRequirement → RoleAssignment`决策、持久Assignment查询/重开、Assignment与现有Mailbox的同事务投递。实现硬过滤、稳定同分、普通任务忙碌次优、强连续性等待/needs_input、不可静默覆盖和选择证据。
+- `scope / non_goals`：只改Runtime领域协议、SQLite v6迁移、RoleAssignment Store/Application API、必要导出和定向测试；现有Agent/Session/Mailbox/Lane不重写。通信正文协议、ContextBundle、真实Provider/模型、本地API、Web、分布式队列、ACK/重试、push/tag/deploy均不进入。
+- `baseline`：`HEAD=8975ba5dd1e57e3792db3a60e375fa443cdfcfb0; branch=codex/mvp-close-01d; staging=empty; existing user/protected worktree changes preserved`
+- `stop_or_rollback_conditions`：若实现要求提前固定通信拓扑细节、让LLM直接决定Agent、允许不合格次优、产生不稳定同分、非原子Assignment/消息、静默覆盖旧Assignment，或破坏既有9/6/3/3与Runtime回归，停止并纠正。
+- `result / effect`：`PENDING RED→GREEN vertical slices`
+- `review`：`PENDING implementation verification`
+- `git_checkpoint`：`WORKTREE_ONLY / no stage/commit/push/tag/deploy authorized`
+- `next_action`：先写领域/持久化公共行为红测，再做最小实现；预期红测不调用diagnosing-bugs。
+
+### TRACE-20260828-219
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260828-219 / PRODUCT-01C-ROLE-ASSIGNMENT / ACTUAL+CHECKPOINT / 2026-08-28T16:16:49+08:00 / 2026-08-28`
+- `principal / slice / plan_ref`：`/root / completed RoleAssignment vertical slice / Plan30 PRODUCT-01C + TRACE-218`
+- `what / why / expected_effect_or_gate`：按TDD完成Role/Agent动态分配的独立纵切。`AgentProfile.role_ref`改为可空并保持旧JSON兼容；新增`RoleRequirement`、`AgentCandidate`、选择证据、显式Policy、不可变`RoleAssignment`和Runtime-owned确定性Scheduler；新增SQLite v6追加式Store、Thread历史读取、同work/role/generation防重、显式supersede、提交时Agent/Session/Profile快照复核，以及Assignment与现有Mailbox同一UoW投递。未向Message增加未讨论字段，通信协议接缝保持可替换。
+- `scope / non_goals`：未接真实模型/Provider、API、Web、ContextBundle或新通信正文；未重写Agent/Session/Mailbox/Lane/Validator；未触碰四个保护路径，未stage/commit/push/tag/deploy。
+- `commands`：逐切片unittest红→绿；`python3 -m unittest -q tests.test_role_assignment`；`python3 -m unittest discover -s tests -p 'test_runtime*.py' -q`；排除expected-red的全仓unittest；compileall；portfolio offline smoke；`git diff --check`。
+- `result / effect`：`PASS — directed 10/10; Runtime 184/184; full non-expected-red 589/589 with 9 skipped; compile=PASS; diff-check=PASS; smoke=passed tasks3 trials9 delivered6 expected_failures3 repaired3 external_model_calls0`
+- `artifacts / evidence`：`interaction=b223f6acab283cfb9403128d822ff069d7e4810f17e3aaac37832f367f5421ba; domain_init=f243267ece3b98dd8460e54ee655cc6f56a0c59aae90a7f26223d7d33298ba90; assignment_domain=b0d27a5e438bd10dd36ea9c2ef6ec879f2edd8c0ebd729170754e87f2b4fb380; assignment_app=e9fa05fcd2c53dddf965384ddd982e55f07bc329bf6883879178494298cce610; sqlite=80dba146bf691ade760966851a2a98cea04ebc6c783aaac7e64465e72d74e54d; assignment_store=b2a824720c66cff37b50df60332f0c69f114dce83d221e5ebe9f74868ee03a66; persistence_init=6e0dee9522580f4915d7ead07889b50ee1fe70ce8df829c359e4b6990e16c09f; directed_tests=11c3f9313754ba0fe684517175e7b706d23450eae96565519615182755dbb4b4`
+- `failure_and_recovery`：最终v6防`INSERT OR REPLACE`触发器是在第一次smoke后新增，因此忽略目录中的旧运行库仍记录旧v6 checksum，全仓首次复跑按设计fail-closed。旧库及shm/wal已移动到`demo/.runs/portfolio-demo/checksum-backup-20260828-1615/`保留，随后重建当前v6运行库并全仓589项通过；没有改写迁移ledger绕过检查。
+- `remaining_risks`：Scheduler的Provider健康、预算、工具/Context和负载快照由后续产品编排器提供，本纵切负责验证、确定性决策和提交时Agent快照复核；等待秒数仍是显式Policy输入。真实Model/Usage、Assignment引用在公开消息中的字段和前端解释仍未接入。
+- `review`：`implementation self-review PASS; SQLite REPLACE bypass found and closed by RED→GREEN regression; full PRODUCT-01C code-review not yet due because Provider/API collaboration slice remains incomplete`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no commit/push/tag/deploy`
+- `next_action`：返回PRODUCT-01A，与用户讨论并冻结通信协议；不自动继续编码。
+
+### TRACE-20260828-220
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260828-220 / PRODUCT-01A-PLANNER-RUNTIME-AUTHORITY / PRE_REGISTER / 2026-08-28T23:54:38+08:00 / 2026-08-28`
+- `principal / slice / plan_ref`：`/root / user-confirmed Planner semantic authority and Runtime assignment authority / Plan30 PRODUCT-01A`
+- `what / why / expected_effect_or_gate`：用户确认团队任务的业务理解与拆分由Planner负责，具体Agent选择和执行调度由Runtime负责。没有@的团队任务先请求Planner Role；直接@单Agent或显式@多Agent可绕过Planner做单播/独立多播。Planner提交DAG、RoleRequirement和验收条件，不指定具体Agent；Runtime用已实现的RoleAssignment确定Agent/Session/Profile并投递。
+- `scope / non_goals`：只新增DEC-003并同步Plan30/HANDOFF/Step；不改workflow5（2）刚完成的RoleAssignment代码，不提前冻结通信Message字段，不实现Planner模型调用或API/Web，不stage/commit/push/tag/deploy，不触碰保护路径。
+- `baseline`：`Plan30=b767570ce5714e33ae4800a8c80fdeea82c11e6881ea2670909ee3501f04aeca; HANDOFF=811de54b26ccd60e033d4288875d7f858c2dc50d817dbb2b1e6a20c356f4f759; decision_record=ec8912b67eb2d09fdc1e100d8e8460c892193baebe2c872ecb387525d739d3aa; STEP=f17b539b1f68dc91f07c81151f0e3d88129dddd28e4acc762360bfb3da82817c; RoleAssignment implementation evidence=TRACE-218/219`
+- `stop_or_rollback_conditions`：若文档让Planner直接越权指定Agent、让Runtime解释原始业务并生成DAG、把团队任务广播给所有Agent，或覆盖RoleAssignment实现证据，停止并纠正。
+- `result / effect`：`PENDING decision record and current-state sync`
+- `review`：`PENDING documentation consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / RoleAssignment code untouched`
+- `next_action`：记录DEC-003并把该权责边界从讨论提案升级为已确认策略。
+
+### TRACE-20260828-221
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260828-221 / PRODUCT-01A-PLANNER-RUNTIME-AUTHORITY / ACTUAL / 2026-08-28T23:56:16+08:00 / 2026-08-28`
+- `principal / slice / plan_ref`：`/root / confirmed Planner semantic authority and Runtime assignment authority / Plan30 + DEC-003 + TRACE-220`
+- `what / why / expected_effect_or_gate`：已新增DEC-003并同步Plan30/HANDOFF。团队任务没有@时先请求Planner Role：Planner理解、澄清、拆分并提交DAG/RoleRequirement/验收条件；Runtime通过已完成的持久RoleAssignment选择具体Agent/Session/Profile并投递。直接@单Agent或显式@多Agent分别走单播/独立多播。Planner不得点名具体Agent，Runtime不得解释业务或生成计划。
+- `scope / non_goals`：仅文档与追加证据；RoleAssignment实现和测试未修改，通信Message字段仍未提前冻结，无模型/API/Web/Git外部动作或保护路径变化。
+- `commands`：apply_patch；tracked及两个untracked文档diff-check；cached-scope；Planner/Runtime旧状态与新决策定位；sha256。
+- `stop_or_rollback_conditions`：未触发。DEC-003同时记录四方案对比、已选方案代价、无合格Agent和Runtime拒绝Planner方案的失败边界，没有把团队任务写成全员广播。
+- `result / effect`：`PASS — PLANNER=semantic_decomposition; RUNTIME=concrete_assignment_and_scheduling; TEAM_DEFAULT=planner_first`
+- `artifacts / evidence`：`Plan30=b3dbfa59237d4f4f97226b657f2d42ae1d3ded16bb3456935325c5ec057423dd; HANDOFF=3f39bbbf7240602ff2893ebf994ab94c0c9e4b9a9608ced7ba6dfa1459e7480b; decision_record=cb34df56f2ebc1328660912738e51bcde6a733426a2ec14ea92a4747526b0646; pre-ACTUAL STEP=c32c187b567d481a59cce53e70763835122c88a76312850567878bcf326f356e; diff-check=PASS; staged files=0`
+- `remaining_risks`：Planner输出DAG/RoleRequirement的完整协议、Runtime拒绝原因、通信Action/Message/Handoff字段和循环修订上限仍待后续协议/收敛讨论；当前只冻结权责，不宣称Planner Agent Loop已实现。
+- `review`：`documentation consistency self-check PASS`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / RoleAssignment code untouched`
+- `next_action`：继续PRODUCT-01A通信协议讨论。
+
+### TRACE-20260829-222
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-222 / PRODUCT-VERTICAL-SLICE-METHOD / PRE_REGISTER / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / user-confirmed small-freeze plus vertical-slice delivery method / Plan30 PRODUCT-01A～01E`
+- `what / why / expected_effect_or_gate`：用户确认后续产品主线不等待全部设计完成，而是每次冻结一个最小决策，立即实现一条完整纵向链路，用测试和一次真实API验证取得反馈，再决定下一项。实践推翻原决策时必须留存原因和修订记录，不回写历史。本次只把该方法同步到Plan30、HANDOFF和主产品决策记录。
+- `scope / non_goals`：不实现Agent Loop或通信代码，不提前冻结Action字段、Context、收敛或前端合同，不调用真实Provider/API，不运行回归，不stage/commit/push/tag/deploy，不触碰保护路径。
+- `baseline`：`Plan30=b3dbfa59237d4f4f97226b657f2d42ae1d3ded16bb3456935325c5ec057423dd; HANDOFF=3f39bbbf7240602ff2893ebf994ab94c0c9e4b9a9608ced7ba6dfa1459e7480b; decision_record=cb34df56f2ebc1328660912738e51bcde6a733426a2ec14ea92a4747526b0646; STEP=c881961de188f6e659fcc6a3da42b30a3b93af3d7be3d1a43239b8b6de2a6232; staging=empty`
+- `stop_or_rollback_conditions`：若文档把“每个切片一次真实API”误写成“每个纯领域/持久化子切片都必须付费调用”，或因小步实施而绕过安全、私密、基础因果和幂等边界，停止并纠正。
+- `result / effect`：`PENDING documentation sync`
+- `review`：`PENDING consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / no commit or external action`
+- `next_action`：记录交付方法；随后只讨论并冻结最小Action合同。
+
+### TRACE-20260829-223
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-223 / PRODUCT-VERTICAL-SLICE-METHOD / ACTUAL+CHECKPOINT / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / confirmed small-freeze plus vertical-slice delivery method / Plan30 + DEC-004 + TRACE-222`
+- `what / why / expected_effect_or_gate`：已将用户确认的交付方法写入Plan30、HANDOFF和主产品DEC-004。原“PRODUCT-01A全部设计完且不写功能代码”的阶段门已改为分散讨论预算：每次最小冻结后立即TDD贯通垂直链路，每个可运行纵切以至少一次真实Provider API验证收取反馈；Fake仍用于快速红绿和故障注入。被实践推翻的决策必须追加修订证据，不回写历史。
+- `scope / non_goals`：仅文档与追加证据；未实现Agent Loop/Action/新Message字段，未调用真实Provider，未运行代码回归，未stage/commit/push/tag/deploy，保护路径与并发工作树代码未修改。
+- `commands`：读取HANDOFF/Plan30/决策记录/STEP与`git status`；`apply_patch`；相关文档定位与旧口径检查；跟踪文档`git diff --check`、未跟踪决策记录行尾检查、SHA-256与staging检查。
+- `stop_or_rollback_conditions`：未触发。文档明确真实API是每个“可运行纵切”的收口证据，而非每个纯领域/持久化红绿循环的付费门；Scope、权限/私密、幂等/因果和最小终止仍是切片前置边界。
+- `result / effect`：`PASS — delivery method frozen; next=minimal Action contract; implementation=not started`
+- `artifacts / evidence`：`Plan30=84ea3a51fddde6f347b5f7e8575929803f962fb76e4edb9e5385450f93969d70; HANDOFF=d1d6c66348c2acefde2728765a253c6f79860f70409d0b0e4df3ebedcab55466; decision_record=cfcab900b029ae8385196d1f4dd514d5790981b0221f7d49a784c5fe82747bd6; pre-ACTUAL STEP=598a261e009d9f6d50ce5594e9602f030deea838ef23212630abb19d33c46b60; tracked diff-check=PASS; decision-record trailing-whitespace=NONE; staged files=0`
+- `remaining_risks`：最小Action类型/字段、Runtime拒绝、幂等/因果和单轮终止尚未冻结；真实DeepSeek网络、Key、费用、模型名与当时官方协议尚未验证。
+- `review`：`documentation consistency self-check PASS`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no external action`
+- `next_action`：与用户只讨论并冻结第一条通信纵切的最小Action合同；确认后才按TDD开始代码。
+
+### TRACE-20260829-224
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-224 / PRODUCT-01C-SEND-MESSAGE-V1 / PRE_REGISTER / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / user-confirmed SEND_MESSAGE v1 vertical slice / Plan30 + DEC-004`
+- `what / why / expected_effect_or_gate`：用户确认首个Action只实现`agent-action/v1 send_message`。按TDD先从公共纵切seam建立红测：Fake ModelClient返回结构化Action，Runtime校验`schema_version/action/recipient_role/content`，通过已有RoleAssignment选择具体Agent，原子持久Message+投递Mailbox，接收者通过现有Mailbox公共查询看到同一Message。
+- `confirmed_seams`：`SendMessageActionRuntime.run(ModelRequest, ActionContext, role_candidates, RoleAssignmentPolicy) -> public result`；`MailboxManager.list_mailbox(...) -> durable recipient-visible delivery`。测试不直查SQLite表，不验证内部调用次数。
+- `scope / non_goals`：只做单recipient Role、纯文本、单Action、单轮投递；不做DELEGATE/Handoff/Artifact/多播/自动接收者模型调用/ContextBundle/Web。模型不生成Thread/发送者/具体Agent/ID/时间/因果/幂等字段。预期TDD红测不调用diagnosing-bugs。真实DeepSeek网络/费用调用留到离线纵切通过后另行授权。
+- `baseline`：`HEAD=8975ba5dd1e57e3792db3a60e375fa443cdfcfb0; worktree contains preserved concurrent/user changes; staging=empty; delivery-method evidence=TRACE-222/223; RoleAssignment evidence=TRACE-218/219`
+- `stop_or_rollback_conditions`：若实现需要模型点名具体Agent、新增独立Handoff实体、绕过Mailbox/RoleAssignment、让接收者自动回复，或修改保护路径/无关并发增量，停止并纠正。
+- `result / effect`：`PENDING RED→GREEN vertical slices`
+- `review`：`PENDING implementation verification`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / no commit/push/tag/deploy`
+- `next_action`：建立首个成功投递红测，证明现有代码还没有该公共seam；然后只做足以转绿的最小实现。
+
+### TRACE-20260829-225
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-225 / PRODUCT-01C-SEND-MESSAGE-V1 / ACTUAL+PARTIAL_CHECKPOINT / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / SEND_MESSAGE v1 offline vertical slice / Plan30 + DEC-005 + TRACE-224`
+- `what / why / expected_effect_or_gate`：已按确认合同新增`SendMessageActionRuntime`：`ModelClient.generate_structured`只产出`schema_version/action/recipient_role/content`，Runtime从Invocation上下文派生幂等Requirement/Assignment/Message身份，使用现有RoleAssignment选择Agent，并复用Assignment+Mailbox同事务投递。成功后单轮终止，不自动调用接收Agent。
+- `tdd_cycles`：`(1) missing module RED → valid Action/RoleAssignment/Message/Mailbox GREEN; (2) invalid first Action RED → one repair GREEN; (3) invalid repair RED → protocol_error/no partial write GREEN; (4) missing candidate reason RED → durable needs_input GREEN; (5) repeat model call RED → idempotent replay GREEN; (6) paused Thread model call RED → pre-provider rejection GREEN`。全部预期红测可直接解释，未调用diagnosing-bugs。
+- `scope / non_goals`：只有`send_message`、单Role、纯文本、单Action、单轮；没有DELEGATE/Handoff/Artifact/多播/自动回复/ContextBundle/Web，没有修改现有Message Schema、Mailbox、RoleAssignment、Provider Client或保护路径，未stage/commit/push/tag/deploy。
+- `commands`：6轮TDD定向测试；SEND_MESSAGE+RoleAssignment+Mailbox+Interaction 40项；Runtime `test_runtime*.py`；排除`*_expected_red.py`的全仓unittest；可写pycache下的`compileall`；`git diff --check`；`python3 demo/portfolio_demo.py --trusted-local-execution`；不输出值地检查DeepSeek Key；只读核对DeepSeek官方Chat Completions/JSON Output/模型文档。
+- `result / effect`：`OFFLINE PASS — slice=6/6; related=40/40; Runtime=184/184; full non-expected-red=595/595 (9 skipped); compile=PASS; diff-check=PASS; portfolio smoke=passed 9/6/3/3 external_model_calls=0`。
+- `artifacts / evidence`：`agent_actions=12e1c6a34f47d76ca8f1feeea57b1285bf3b5bfd435787b836f5f090a24892cc; tests=433b6f288204ea3330ca4ed6499cbb81435ee9357a067836ccd99d3d0f41efed; Plan30=a4f6fb73ae5e730b53ad0b810c3c124194efc91f4f8e8d594a8a90d9f76963a3; HANDOFF=74f390d7534efd45f1bcf0d8d549093bdd166f8e4a52c8e2bb196bcbca74e3a4; decision_record=68ecfebad6835779da47a80623c0c4670511977f6fb02357d65151115c76860a; pre-ACTUAL STEP=026ed13677109589944c7f9f4d37e3d968be61466c925027f2fa79f62f47f144; report=e9cdd646253286734e0c6064a3b577fa63680e3db942d30520a9732775e785d2`。
+- `failure_and_recovery`：首次`compileall`写默认macOS用户cache被sandbox拒绝，改用`PYTHONPYCACHEPREFIX=/tmp/codex-send-message-pycache`后通过；这是输出路径权限而非编译错误。全仓loader导入两个需要`--trusted-local-execution`的历史CLI模块时打印预期拒绝用法，但非expected-red的595项结果均为OK；独立portfolio smoke显式授权并通过。
+- `external_verification`：DeepSeek官方当前文档确认base URL为`https://api.deepseek.com`，Chat Completions支持`deepseek-v4-pro`/`deepseek-v4-flash`，JSON Output使用`response_format=json_object`且Prompt需明确要求JSON；仓库DeepSeek preset已匹配，无需猜测修改。
+- `remaining_risks`：环境为`DEEPSEEK_API_KEY=missing`，且用户尚未对本次网络/费用调用单独授权，所以本切片只能标记离线通过。`role_candidates`仍由上层编排器提供已分Role快照，其未来Registry编译不属于本切片。
+- `review`：`self-review PASS for frozen offline seam; independent full PRODUCT-01C review not due until later acceptance`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / preserved concurrent and user changes untouched`
+- `next_action`：用户在忽略的`demo/.env`中配置`DEEPSEEK_API_KEY`并明确授权一次网络/费用调用后，运行同一SEND_MESSAGE链路的真实smoke；收口前不进入下一决策。
+
+### TRACE-20260829-226
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-226 / PRODUCT-01C-SEND-MESSAGE-V1 / CORRECTION / 2026-08-29 / 2026-08-29`
+- `principal / supersedes_entry_id`：`/root / TRACE-20260829-225 remaining_risks and next_action only`
+- `correction`：TRACE-225只检查了Codex当前进程环境，没有先调用仓库既有`load_env_file(demo/.env)`，因此把Key误记为missing。随后只检查文件加载后的变量是否非空、不输出Key值，确认`demo/.env`加载后`DEEPSEEK_API_KEY=present`。用户此前配置有效，无需重新配置。
+- `unchanged_facts`：离线6/40/184/595测试、compile/diff、portfolio smoke、代码哈希、外部模型调用为0以及真实DeepSeek smoke尚未执行等证据不变。
+- `result / effect`：`KEY_PRESENT / REAL_API_NOT_CALLED / awaiting explicit network-and-cost authorization`
+- `next_action`：只请求用户授权一次真实DeepSeek API smoke；不再要求重新配置Key。
+
+### TRACE-20260829-227
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-227 / PRODUCT-01C-SEND-MESSAGE-V1-REAL-SMOKE / PRE_REGISTER / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / user-authorized one real DeepSeek SEND_MESSAGE smoke / Plan30 + DEC-005 + TRACE-226`
+- `what / why / expected_effect_or_gate`：用户明确授权一次真实DeepSeek API smoke及少量费用。使用已配置且被git忽略的`demo/.env`，让一个Planner模型输出单条`agent-action/v1 send_message`，经现有SendMessageActionRuntime、RoleAssignment、Message和Mailbox走完整链；记录脱敏status/provider/model/usage/latency/协议修正次数/Mailbox数量。
+- `scope / non_goals`：最多正常一次模型调用；只有首个Action协议无效时才允许一次修正调用。关闭thinking、限制输出Token和超时；接收Agent不调用模型，不形成对话，不输出Key、Authorization header、原始私有推理或`.env`内容，不调用Qwen/Kimi，不改产品合同，不push/tag/deploy。
+- `baseline`：`KEY_PRESENT after explicit demo/.env load; offline evidence=TRACE-225; correction=TRACE-226; real provider calls for this slice=0`
+- `stop_or_rollback_conditions`：若Key加载失败、Provider/模型与官方当前合同不一致、响应无法脱敏、需要超过一次协议修正、Thread/RoleAssignment/Message/Mailbox出现非预期副作用，停止并记录真实失败，不循环烧费。
+- `result / effect`：`PENDING one authorized real provider smoke`
+- `review`：`PENDING sanitized evidence check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / no commit/push/tag/deploy`
+- `next_action`：建立一次性脱敏smoke驱动，先做无网络编译检查，再发起一次受控DeepSeek调用。
+
+### TRACE-20260829-228
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-228 / PRODUCT-01C-SEND-MESSAGE-V1-REAL-SMOKE / ACTUAL+CHECKPOINT / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / first real DeepSeek SEND_MESSAGE smoke / TRACE-227`
+- `what / why / actual_effect`：按授权用`deepseek-v4-pro`、Chat Completions `json_object`、thinking disabled、max_tokens 256、timeout 60s运行一次真实Planner Action。Provider鉴权、网络、JSON解析和严格Action字段均成功，没有触发协议修正；随后Role候选映射精确查找未命中，RoleAssignment安全产生`needs_input/no_eligible_agent`，未写Message、Mailbox为空。
+- `sanitized_evidence`：`provider=deepseek; model=deepseek-v4-pro; provider_calls=1; protocol_repairs=0; input_tokens=169; output_tokens=42; total_tokens=211; latency_ms=1318; status=needs_input; assignment_decision=needs_input; error_code=no_eligible_agent; mailbox_messages=0; message_persisted=false`。未输出Key、Authorization header、`.env`内容或私有推理。
+- `failure_classification`：`EXPECTED PRODUCT DISCOVERY / semantic contract gap, not infrastructure or SQLite bug`。候选映射只含规范键`reviewer`且候选本身合格；进入`no_eligible_agent`说明模型产出的非空Role字符串与该规范键不精确相同。一次性脱敏驱动未保留具体原字符串，因此不得臆测它只是大小写差异。
+- `cost_and_safety`：只发生1次Provider调用，没有启动接收Agent、没有第二轮对话、没有协议修正重试、没有错误投递。临时SQLite随smoke进程清理；一次性驱动位于`/private/tmp`，未进入仓库。
+- `result / effect`：`REAL API PARTIAL — provider/json PASS; role canonicalization FAIL-CLOSED; end-to-end delivery NOT PASSED`
+- `review`：`sanitized output checked; failure directly explained; diagnosing-bugs not invoked`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / no commit/push/tag/deploy`
+- `next_action`：向用户报告真实踩坑并确认最小修订：将当前允许的规范Role ID编入动态JSON Schema/Prompt，Runtime仍精确匹配且未知Role保持needs_input；确认后TDD修复，真实复验需再次授权。
+
+### TRACE-20260829-229
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-229 / PRODUCT-01C-SEND-MESSAGE-V1-ROLE-ENUM / PRE_REGISTER / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / user-confirmed dynamic canonical Role ID contract / Plan30 + DEC-005 + TRACE-228`
+- `what / why / expected_effect_or_gate`：用户确认修改首次真实smoke暴露的Role语义接缝。按TDD在现有`SendMessageActionRuntime.run`与`ModelClient.generate_structured`公共边界建立红测：Runtime必须把当前`role_candidates`的规范键稳定写入`recipient_role.enum`，Fake Provider按该公开Schema选择规范ID后，完整Message/Mailbox链应成功。
+- `confirmed_seams`：调用方仍只使用`SendMessageActionRuntime.run`；Provider边界通过既有`ModelRequest.response_schema`观察当前允许Role ID；结果仍通过公开`SendMessageActionResult`和`MailboxManager.list_mailbox`验证，不查询SQLite表。
+- `scope / non_goals`：只动态编译允许Role ID；不做大小写归一、别名、相似度、LLM二次路由或自动创建Role。模型若仍输出列表外Role，保留现有`needs_input/no_eligible_agent`；不改Provider Client、Message Schema、RoleAssignment、Context或其他Action，不发起真实API，不stage/commit/push/tag/deploy。
+- `baseline`：`agent_actions=12e1c6a34f47d76ca8f1feeea57b1285bf3b5bfd435787b836f5f090a24892cc; tests=433b6f288204ea3330ca4ed6499cbb81435ee9357a067836ccd99d3d0f41efed; STEP=113270dd4dbdeab342f6c2dd1d8c06deda80af91ae892e63662038a924177ccb; staging=empty`
+- `stop_or_rollback_conditions`：若修复需要模糊猜测Role、让模型选择具体Agent、把无候选Role伪装成成功、修改无关Runtime/Provider代码或触发网络费用，停止并纠正。
+- `result / effect`：`PENDING one RED→GREEN vertical correction`
+- `review`：`PENDING directed and relevant regression`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / real re-smoke not authorized`
+- `next_action`：新增一个Schema-aware Fake Provider红测，再做仅够动态enum转绿的最小实现。
+
+### TRACE-20260829-230
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-230 / PRODUCT-01C-SEND-MESSAGE-V1-ROLE-ENUM / ACTUAL+CHECKPOINT / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / dynamic canonical Role ID Schema and Prompt fix / TRACE-229`
+- `what / why / actual_effect`：新增Schema-aware Fake Provider公共边界红测，要求`ModelRequest.response_schema.properties.recipient_role.enum`稳定等于当前规范Role ID，并要求system Prompt包含同一紧凑列表。红测以`KeyError: enum`失败；最小实现把`role_candidates`键做非空/无外围空格校验和稳定排序，动态生成enum与“原样复制、不得翻译/改写/使用显示名/创造Role”指令。Provider选择`reviewer`后RoleAssignment assigned、Message持久化、Reviewer Mailbox恰有一条消息。
+- `scope / non_goals`：没有大小写归一、别名、模糊匹配、相似度或二次LLM路由；空/未知Role继续既有needs_input语义。没有改Provider Client、Message Schema、RoleAssignment、Context或其他Action，没有真实API、stage/commit/push/tag/deploy。
+- `commands / result`：目标红→绿；切片`7/7`；SEND_MESSAGE+RoleAssignment+Mailbox+Interaction `41/41`；Runtime `184/184`；全仓非expected-red `596/596 (9 skipped)`；compile `PASS`；diff-check `PASS`。
+- `artifacts / evidence`：`agent_actions=90672318d6d181e2b7ed560fb89f9f17e67ee8882612915009a2ee6988b313dd; tests=dbfd417ef006cde4feb995c957f6b73b603fec6ea83e76f690fd492ce9a7d26d; pre-ACTUAL STEP=e25f7f93cf2d0e409013433ae0bbddb59e4330b07a61d636f5a2b413eb64259c`。
+- `failure_and_recovery`：红测失败与TRACE-228暴露的合同缺口完全一致，可直接解释；未调用diagnosing-bugs。全仓loader仍打印两个历史CLI显式本地执行拒绝用法，但596项非expected-red结果均为OK。
+- `result / effect`：`OFFLINE FIX PASS / real re-smoke pending separate authorization`
+- `review`：`self-review PASS for frozen correction seam`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / preserved concurrent and user changes untouched`
+- `next_action`：请求用户单独授权一次修复后的DeepSeek真实复验；首次真实失败证据保持不变。
+
+### TRACE-20260829-231
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-231 / PRODUCT-01C-SEND-MESSAGE-V1-REAL-RECHECK / PRE_REGISTER / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / user-authorized post-fix DeepSeek real recheck / Plan30 + TRACE-228/230`
+- `what / why / expected_effect_or_gate`：用户明确授权动态规范Role ID修复后的一次真实DeepSeek复验。使用与首次smoke相同的Planner任务、Provider、模型、费用/超时边界和脱敏输出，唯一产品差异是当前实现会把允许Role ID动态写入Schema与Prompt。通过门槛为`delivered + assigned + message_persisted=true + mailbox_messages=1`。
+- `scope / non_goals`：正常路径一次调用，只有协议字段无效时最多一次修正；不启动接收Agent模型、不扩展对话、不输出Key/私有推理、不调用其他Provider、不修改代码/合同、不push/tag/deploy。
+- `baseline`：`offline role-enum fix PASS=TRACE-230; first real failure preserved=TRACE-228; KEY_PRESENT; second real recheck calls before run=0`
+- `stop_or_rollback_conditions`：若需要超过一次修正、出现未知副作用或脱敏失败，停止并记录失败，不循环重试。
+- `result / effect`：`PENDING one real post-fix call`
+- `review`：`PENDING sanitized evidence check`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty`
+- `next_action`：运行一次性脱敏smoke驱动并核对端到端门槛。
+
+### TRACE-20260829-232
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260829-232 / PRODUCT-01C-SEND-MESSAGE-V1-REAL-RECHECK / ACTUAL+CHECKPOINT / 2026-08-29 / 2026-08-29`
+- `principal / slice / plan_ref`：`/root / post-fix DeepSeek real recheck / TRACE-231 + Plan30 + DEC-005`
+- `what / why / actual_effect`：执行用户授权的修复后真实复验。`deepseek-v4-pro`在动态`recipient_role.enum`与原样复制Prompt约束下，一次调用即生成可路由Action；Runtime得到`assigned`，选择`reviewer-agent`，持久化Message并向目标Mailbox投递恰好一条消息。接收Agent未自动调用模型。
+- `scope / non_goals`：只有一次DeepSeek Chat Completions调用；没有协议修正、循环重试、接收者模型调用、其他Provider、代码修改、Key/私有推理输出、stage/commit/push/tag/deploy。
+- `command / sanitized_result`：`python3 /private/tmp/send_message_action_real_smoke.py`（workdir=`demo`）→ exit `0`; `status=delivered`; `assignment_decision=assigned`; `recipient_agent=reviewer-agent`; `message_persisted=true`; `mailbox_messages=1`; `provider_calls=1`; `protocol_repairs=0`; `input_tokens=212`; `output_tokens=42`; `total_tokens=254`; `latency_ms=1310`; `message_content_length=10`; `error_code=''`。
+- `artifacts / evidence`：`agent_actions=90672318d6d181e2b7ed560fb89f9f17e67ee8882612915009a2ee6988b313dd; tests=dbfd417ef006cde4feb995c957f6b73b603fec6ea83e76f690fd492ce9a7d26d`；与TRACE-230修复候选一致。Key和模型私有推理未记录；smoke SQLite使用临时目录，不作为长期产品数据。
+- `comparison_to_first_smoke`：TRACE-228首次真实失败保持不变；本次在相同任务、Provider、模型及费用/超时边界下，通过动态规范Role ID合同把结果从`needs_input/no_eligible_agent + mailbox=0`变为`delivered/assigned + mailbox=1`。
+- `result / effect`：`PASS / all TRACE-231 end-to-end gates met / PRODUCT-01C-SEND-MESSAGE-V1 complete`
+- `review`：`sanitized evidence self-check PASS; no independent acceptance requested`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / concurrent and user changes preserved`
+- `next_action`：停止本切片并向用户汇报；不自动实现其他Action、接收Agent回复、Context或前端。下一最小决策由用户选择后再PRE_REGISTER。
+
+### TRACE-20260830-233
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-233 / PRODUCT-01C-RECIPIENT-CONTEXT-V1 / PRE_REGISTER / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / user-confirmed one-hop recipient execution and ContextBundle v1 / Plan30 + TRACE-232`
+- `what / why / expected_effect_or_gate`：用户确认完成三个最小决定：Runtime在持久Message后通过幂等接收执行门禁启动目标Agent；Context Compiler只提供白名单`task_goal/recipient_role/trigger_message/verified_facts/artifact_refs/constraints/allowed_actions`并按显式输入预算fail-closed；Reviewer只使用既有`SEND_MESSAGE v1`回复一次，Planner Mailbox收到后停止自动传播。通过门槛为公开接收执行接口一次调用可观察`processed + one auto hop + one action + reply delivered`，且重复调用不重复模型/Message。
+- `confirmed_seams`：调用方通过新增接收执行公共接口提交触发Message引用、接收Role候选和ContextPolicy；ModelClient是唯一Fake边界；结果通过公开Result、ContextBundle和`MailboxManager`观察，不查询SQLite表或私有实现。接收Invocation的幂等身份由触发Message与hop生成，Runtime元数据不交给模型控制。
+- `tdd_order`：先做Reviewer收到白名单Context并回复Planner一次的tracer红测；再分别加入重复执行不重复调用、Thread/Session门禁、必需上下文超预算显式`needs_input/context_overflow`、可选上下文按稳定优先级裁剪并报告省略引用。每条均保持一红一绿，不批量预建。
+- `scope / non_goals`：仅单Thread、单接收者、`max_auto_hops=1`、`max_actions_per_invocation=1`、既有`SEND_MESSAGE v1`；不实现Planner自动处理回复、连续对话、LLM摘要、HANDOFF/DELEGATE/ASK_USER/FINISH、多播、ACK/崩溃重投、Provider tokenizer、Web/API或真实模型调用。没有本轮网络/费用授权。
+- `baseline`：`HEAD=8975ba5; agent_actions=90672318d6d181e2b7ed560fb89f9f17e67ee8882612915009a2ee6988b313dd; send_message_tests=dbfd417ef006cde4feb995c957f6b73b603fec6ea83e76f690fd492ce9a7d26d; STEP=336c0374e926267db27e85497cb520b599c2794ab206750a47bc67599eb831df; staging=empty`。工作树已有用户/并行改动，继续只触碰本切片新文件及必要导出/文档。
+- `stop_or_rollback_conditions`：若实现需要Agent私下唤醒、把完整历史灌入模型、静默截断必需上下文、允许模型控制具体Agent/幂等/终止、自动触发第二Hop、修改现有Mailbox领取即推进语义或触发真实API，停止并先回到用户讨论。
+- `result / effect`：`PENDING RED→GREEN vertical slices`
+- `review`：`PENDING directed/relevant/full regression; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / staging empty / no stage/commit/push/tag/deploy`
+- `next_action`：读取现有AgentLane/Mailbox/Invocation公共行为，建立第一条双Agenttracer红测，再做最小实现。
+
+### TRACE-20260830-234
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-234 / PRODUCT-01C-RECIPIENT-CONTEXT-V1 / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / one-hop recipient execution and allowlisted ContextBundle v1 / TRACE-233 + Plan30 + DEC-006`
+- `what / why / actual_effect`：新增`RecipientMessageRuntime`与`OneHopExchangeRuntime`。一次Exchange先运行Planner的既有SEND_MESSAGE，成功后Runtime从Assignment确定Reviewer Agent/Session/Role，领取其Mailbox第一条消息，编译七字段白名单Context，再运行Reviewer的既有SEND_MESSAGE回复Planner；Planner Mailbox收到回复后明确不自动继续。接收Invocation ID由trigger Message、recipient Agent和hop稳定派生，并成为回复RoleAssignment work ref与Message causation ref。
+- `tdd_red_green`：tracer先因模块不存在红；最小实现后贯通双向一跳。暂停门禁红测先泄露`AgentPausedError`，转为结构化`rejected/recipient_paused`且消息未消费。必需Context超预算红测先泄露`RuntimeProtocolError`，转为`needs_input/context_overflow`、模型零调用和无静默截断。可选裁剪红测先整包`needs_input`，转为约束→事实→Artifact稳定纳入及`omitted_refs`。自动Exchange红测先因公共类不存在失败，转绿后只需一次Runtime调用即可完成两次Action并停在未消费的Planner回复。重复执行断言由首个Mailbox游标实现自然保持绿色，没有为此增加生产代码。
+- `scope / non_goals`：只新增`demo/coding_workflow/recipient_runtime.py`和`demo/tests/test_recipient_message_runtime.py`；复用SQLite v6、Mailbox领取即推进、RoleAssignment和SEND_MESSAGE。没有SQLite v7/pending Invocation Store、ACK/重投、第二hop、更多Action、完整历史、LLM摘要、Provider tokenizer、Web/API、网络或真实模型费用；没有stage/commit/push/tag/deploy。
+- `commands / result`：定向新增`6/6`；接收+SEND_MESSAGE+RoleAssignment+Mailbox相关`32/32`；Runtime`184/184`；全仓非expected-red`602/602 (9 skipped)`；正确`demo`工作目录下py_compile`PASS`；`git diff --check PASS`。一次compile命令从仓库根误用了demo内相对路径而得到`FileNotFoundError`，更正工作目录后立即通过，不是代码失败。
+- `artifacts / evidence`：`recipient_runtime=e9b140b15a2d8fb633eb3140946a52e1e37f94c82c50e317bf2e9d71860066ef; recipient_tests=b15fdb5b875b6b584076ed2543a3ef447874e19ae2661ee8ef480f74ecf2302b; HEAD=8975ba5`。
+- `limitations`：`max_input_tokens`由注入的Token计数器测量Context JSON，不宣称三Provider精确Tokenizer或完整请求窗口；确定性接收Invocation只在成功Action的Assignment/Message因果链中持久化，没有独立pending状态。Provider调用失败发生在Mailbox领取后时仍继承无ACK/不重投语义。
+- `result / effect`：`OFFLINE IMPLEMENTATION PASS / REAL TWO-MODEL DEEPSEEK SMOKE PENDING SEPARATE AUTHORIZATION`
+- `review`：`self-review PASS for frozen seams; no Runtime Acceptance or independent release review requested`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / concurrent and user changes preserved`
+- `next_action`：向用户报告离线实现与真实边界；如用户单独授权网络和两个DeepSeek调用，则PRE_REGISTER一次脱敏的一跳真实smoke，不自动扩大到第二hop或其他Action。
+
+### TRACE-20260830-235
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-235 / PRODUCT-01C-RECIPIENT-CONTEXT-V1-REAL-SMOKE-RUNNER / PRE_REGISTER / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / user-requested reusable real one-hop smoke command / TRACE-234 + DEC-006`
+- `what / why / expected_effect_or_gate`：用户要求由本人在终端执行并查看真实双Agent输出。新增仓库内一次性入口，显式`--trusted-real-api`后才读取`demo/.env`并运行Planner→Reviewer→Planner一跳；输出只包含公开Action、七字段ContextBundle、两条持久Message、Assignment、Mailbox消费状态、Usage/延时、调用/修正次数和强制停止证据。
+- `scope / non_goals`：执行者本轮只创建和离线检查runner，不调用网络/Provider，不读取或输出Key值；runner正常两次DeepSeek调用，每个Action协议无效时最多修正一次，最坏四次。无第二hop、Qwen/Kimi、完整历史、私有Prompt/推理、持久产品数据、stage/commit/push/tag/deploy。
+- `pass_gate`：真实运行exit 0要求Planner与Reviewer Action均delivered、两个RoleAssignment均assigned、Reviewer触发Message已消费、Planner回复未消费、Message正文与公开Action一致、`auto_hops_used=1`、`auto_continuation_scheduled=false`、总Provider calls在2～4且双方各不超过2。
+- `baseline`：`recipient_runtime=e9b140b15a2d8fb633eb3140946a52e1e37f94c82c50e317bf2e9d71860066ef; recipient_tests=b15fdb5b875b6b584076ed2543a3ef447874e19ae2661ee8ef480f74ecf2302b; real calls by producer this step=0`
+- `result / effect`：`PENDING runner implementation and offline guard/compile checks`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty`
+- `next_action`：新增脱敏runner，离线验证无确认参数时拒绝且不加载Key/调用Provider，再把明确命令交给用户自行执行。
+
+### TRACE-20260830-236
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-236 / PRODUCT-01C-RECIPIENT-CONTEXT-V1-REAL-SMOKE-RUNNER / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / reusable sanitized one-hop DeepSeek runner / TRACE-235`
+- `what / why / actual_effect`：新增`demo/one_hop_agent_smoke.py`。脚本使用临时SQLite创建Planner/Reviewer Agent，分别使用独立CountedClient，通过`OneHopExchangeRuntime`执行真实一跳；输出公开Planner Action/Assignment/Message/Usage、Reviewer七字段Context/Action/Assignment/Message/Usage、两侧调用与修正次数、Mailbox消费状态和Runtime停止证据。
+- `security_and_cost`：参数解析与`--trusted-real-api`门禁发生在`.env`加载和Client创建之前；默认任务无秘密，输出使用固定白名单，不打印Key、Authorization、完整系统Prompt、HTTP原文或私有推理。正常两次Provider调用；每个Action最多一次协议修正，最坏四次；没有第三hop。
+- `offline_commands / result`：py_compile`PASS`；无参数执行exit`2`并显示真实费用确认要求，证明未授权拒绝门禁；`git diff --check PASS`。生产者未运行`--trusted-real-api`，本条Provider calls=`0`。
+- `artifact`：`one_hop_agent_smoke=a97e85968f7b37c827081b7574b3644be677b2a4177d683252b61e50fcd5c7e7`。
+- `result / effect`：`RUNNER READY / REAL SMOKE NOT EXECUTED BY PRODUCER`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no commit/push/tag/deploy`
+- `next_action`：用户在`/Users/donbblu/codex/multiAgent/demo`运行`python3 one_hop_agent_smoke.py --trusted-real-api`并返回完整脱敏JSON；随后只分析实际结果，不自动重跑。
+
+### TRACE-20260830-237
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-237 / PRODUCT-01C-RECIPIENT-CONTEXT-V1-REAL-SMOKE / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`user terminal / real Planner→Reviewer→Planner DeepSeek smoke / TRACE-235～236 + DEC-006`
+- `command / trust_boundary`：用户在`demo`目录执行`python3 one_hop_agent_smoke.py --trusted-real-api`并提供完整脱敏JSON；producer未代跑、未重试。输出不含Key、Authorization、完整系统Prompt或私有推理。
+- `mechanical_result`：runner`status=passed`；Planner Action→`reviewer`、Assignment→`reviewer-agent/reviewer-session`、调用1/修正0、Usage`218+52=270`、latency`1339ms`；Reviewer Action→`planner`、Assignment→`planner-agent/planner-session`、调用1/修正0、Usage`361+65=426`、latency`2012ms`。Planner Message body等于Planner Action content；Reviewer Message body等于Reviewer Action content且parent指向第一条Message。Reviewer Mailbox=`1/[true]`，Planner Mailbox=`1/[false]`，`auto_hops_used=1`，`auto_continuation_scheduled=false`，总Provider calls=`2`。
+- `context_result`：公开Bundle只含允许七字段；estimated context=`194`、limit=`4000`、`omitted_refs=[]`、Provider Usage标志明确为false。实际Reviewer input=`361`，说明估算只覆盖Context JSON，不能当完整请求或计费Token。
+- `semantic_finding`：`artifact_refs=[]`且Bundle没有通信协议正文。Reviewer输出“最重要改进是明确响应JSON Schema”，但动态Role enum/JSON Schema已经是SEND_MESSAGE实现事实；该建议缺少被评审对象支撑并与现状重复。真实结果分类为`TRANSPORT/ROUTING/PERSISTENCE/STOP PASS`，`REVIEW QUALITY INCONCLUSIVE`，不得用runner机械pass宣称协议评审有效。
+- `cost / aggregate`：总输入579、输出117、合计696 Token；Provider latency合计3351ms；没有协议修正、第三次调用、第二hop或循环费用。
+- `result / effect`：`REAL ONE-HOP MECHANICS PASS / CONTEXT EVIDENCE GAP DISCOVERED / NO PRODUCT ACCEPTANCE`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / no new producer API call / no stage/commit/push/tag/deploy`
+- `next_action`：先与用户冻结评审对象绑定：trigger正文或不可变可解析Artifact；缺少二者时`needs_input/missing_review_subject`。确认前不实现、不重跑真实Provider。
+
+### TRACE-20260830-238
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-238 / PRODUCT-01C-REVIEW-SUBJECT-V1 / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / user-authorized review-subject binding vertical slice / Plan30 + DEC-007 + TRACE-237`
+- `what / why / actual_effect`：真实smoke已经证明双向通信，却因Reviewer没有协议正文而只能泛化作答。本批把评审对象升级为必需Context证据：`ReviewSubjectBinding.inline_message()`原样绑定已持久Message body；`ReviewSubjectBinding.artifact(ref)`只允许解析同一Message已持久化的`core:artifact`引用。Context新增公开`review_subject={source,content,artifact_ref}`；Reviewer系统约束要求只依据该字段评审。缺失对象返回`needs_input/missing_review_subject`，未绑定Artifact返回`needs_input/subject_artifact_unbound`，均不消费Mailbox、不调用模型；Artifact解析器缺失、引用不存在或内容为空返回`subject_artifact_unavailable`。评审对象计入必需Context预算，超限继续`context_overflow`。
+- `tdd_red_green`：沿用公开`RecipientMessageRuntime.run_next`和`OneHopExchangeRuntime.run`接缝。inline tracer先因`ReviewSubjectBinding`不存在ImportError红，最小实现后正文进入Context；缺失对象红测先错误调用模型并`processed`，改为fail-closed；Artifact纵切先因`SendMessageActionContext`不支持`artifact_refs`红，随后Message持久引用并由Runtime解析；未绑定Artifact红测先泄露`RuntimeProtocolError`，改为结构化`needs_input`。自查新增来源规范化红测，先发现外围空格校验后仍保存在对象中，最小修复后统一保存规范值。预期红测未调用`diagnosing-bugs`。
+- `real_smoke_runner`：`one_hop_agent_smoke.py`默认携带一段实际通信协议；Planner Prompt要求把公开`review_subject`逐字写入Action content，runner pass新增`Planner Message body == args.subject == Reviewer Context review_subject.content`。新增`--subject`可覆盖公开评审正文。仍需显式`--trusted-real-api`才加载`.env`并调用Provider，正常2次、协议修正时最多4次；本批生产者真实调用=`0`。
+- `scope / non_goals`：只扩展现有SEND_MESSAGE Context以持久Artifact引用、接收Context编译和真实smoke组合；没有修改SQLite schema/Mailbox领取语义、没有ACK/重投/第二hop/新Action、FastAPI、Redis、Web或其他Provider；没有stage/commit/push/tag/deploy。
+- `commands / result`：新增纵切`11/11`；接收+SEND_MESSAGE+RoleAssignment+Mailbox+Agent相关`45/45`；全仓非expected-red`607/607 (9 skipped)`；py_compile`PASS`；无授权参数的runner继续exit 2并在Key加载前拒绝；相关tracked diff-check和全目标尾随空白扫描`PASS`。
+- `artifacts / evidence`：`agent_actions=9abef6cee04a7684c669e55e036ae391a58398a9e372595613e8518c0e8b8f55; recipient_runtime=e7ecbc00ad9bf96733599c34b29850dd2a3705a332f79c560eb6058e5f4c79ca; runner=f09fa82bdf40b47761c61f71180aeac73bd3e3c438402bcb54e2a8c3a9a4ed91; tests=630be3aeab9ecf2841566d42b9e0107f42dcaeb4c56d337cb80f902bb4c2c295`。
+- `limitations`：Artifact内容解析仍是注入的Runtime接缝，尚未接产品级持久Artifact Store；短正文由Planner按Prompt逐字复制，真实模型是否稳定遵守必须通过下一次smoke观察。Context Token计数仍是注入估算而非Provider完整Usage；Mailbox仍无ACK/崩溃重投。
+- `result / effect`：`OFFLINE PASS / REVIEW EVIDENCE GAP FAIL-CLOSED / UPDATED REAL SMOKE PENDING USER AUTHORIZATION`
+- `review`：`self-review PASS for frozen vertical slice; PRODUCT-01C overall independent review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / concurrent and user changes preserved`
+- `next_action`：向用户报告实现与离线证据。仅当用户明确授权网络和少量DeepSeek费用时，再运行更新的真实双Agent smoke并判断Reviewer意见是否引用实际协议；不因机械pass直接宣布语义质量通过。
+
+### TRACE-20260830-239
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-239 / PRODUCT-01C-REVIEW-SUBJECT-V1-REAL-SMOKE / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`user terminal / repaired Planner→Reviewer→Planner DeepSeek smoke / TRACE-238 + DEC-007`
+- `command / trust_boundary`：用户在`demo`执行`python3 one_hop_agent_smoke.py --trusted-real-api`并提供完整脱敏JSON；producer未代跑或重试。输出不含Key、Authorization、完整系统Prompt或私有推理。
+- `mechanical_result`：runner`status=passed`；Planner与Reviewer各调用1次、协议修正均0；两个Assignment均`assigned`；Reviewer触发Message已消费、Planner回复未消费；`auto_hops_used=1`、`auto_continuation_scheduled=false`。Planner Usage=`326+109=435`、latency=`2059ms`；Reviewer Usage=`553+184=737`、latency=`5727ms`；合计1172 Token、Provider latency 7786ms。
+- `subject_binding_result`：Planner Action content、持久Message body、`trigger_message.content`与`review_subject.content`四者逐字一致；`review_subject.source=inline_message`、`artifact_ref=null`；Context estimate=`455/4000`、`omitted_refs=[]`。因此`SUBJECT BINDING PASS`，不再是TRACE-237的“有任务、无评审对象”。
+- `semantic_result`：Reviewer明确引用协议中Runtime“持久化Message并记录parent与causation”，再指出正文没有定义重复投递/重试处理，满足“意见必须有可定位材料依据”的本次门槛，判定`GROUNDED REVIEW PASS`。但建议只证明协议摘要没有说明幂等，不证明实现缺失；当前SEND_MESSAGE已有确定性message ID、Assignment幂等重放和Mailbox唯一投递。Reviewer提到网络重试/分布式恢复也超出当前本地单进程MVP范围，不自动形成代码需求。
+- `new_finding`：同一协议正文同时出现在`review_subject.content`与`trigger_message.content`。这不是幻觉，但属于可避免的上下文冗余；Context estimate从旧smoke的194增至455，Reviewer Provider input从361增至553，不能把全部增量精确归因于重复字段，但方向明确。下一决定应只保留一份模型可见正文，并让另一字段保留引用/元数据。
+- `result / effect`：`REAL TRANSPORT PASS / SUBJECT BINDING PASS / GROUNDED REVIEW PASS / CONTEXT DUPLICATION DISCOVERED`
+- `review`：`sanitized evidence self-check PASS; model recommendation not auto-accepted`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / user-authorized provider calls=2 / no producer call / no stage/commit/push/tag/deploy`
+- `next_action`：与用户冻结inline评审对象去重：推荐保留`review_subject.content`，让`trigger_message`只携带Message ID与sender Role；同时补齐评审摘要中的已验证幂等事实。确认前不改代码、不重跑API。
+
+### TRACE-20260830-240
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-240 / PRODUCT-01C-REVIEW-SUBJECT-INLINE-DEDUP / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / user-confirmed trigger-content-preserving dedup vertical slice / Plan30 + DEC-007 + TRACE-239`
+- `decision`：不删除`trigger_message.content`。它是Planner实际发送的持久Message正文，承担审计、历史、重放及未来非评审通信语义；inline `review_subject`只输出`content_ref="trigger_message.content"`。Artifact模式仍由Trigger保留原始指令、`review_subject.content`提供独立解析正文。
+- `tdd_red_green`：沿用公开`RecipientMessageRuntime.run_next → ContextBundle.to_model_payload`接缝。先把inline行为断言改为Trigger正文保留、Subject只有`content_ref`；红测显示旧Payload仍在两处输出相同正文。最小实现按Subject source投影：inline输出`content_ref`，artifact继续输出`content`。同步Reviewer Prompt要求解析引用路径，未修改Message/SQLite/Mailbox。
+- `smoke_contract`：默认协议正文补充当前已验证的确定性message ID与Invocation重放防重复事实；runner pass改为校验`Planner Message body == trigger_message.content == --subject`且inline Subject精确等于`{source,artifact_ref,content_ref}`，不再从重复Subject正文取值。仍需显式`--trusted-real-api`，本批producer Provider calls=`0`。
+- `scope / non_goals`：没有SQLite迁移、Message字段删除、Artifact模式删减、API/Web/FastAPI/Redis、第二hop、新Action或分布式幂等系统；没有stage/commit/push/tag/deploy。
+- `commands / result`：纵切`11/11`；接收+SEND_MESSAGE+RoleAssignment+Mailbox+Agent相关`45/45`；全仓非expected-red`607/607 (9 skipped)`；py_compile`PASS`。
+- `artifacts / evidence`：`recipient_runtime=b2cc2b77aeca50c6dc755832d75552eff3c3d732640b13a907c9a61a47db7c53; runner=dcf55b281409114f87140360e936402443267162b26c3e416f739fee171cf222; tests=73aadfbe3d11f60611801e3e00b890cdf0dbae94a51477ad0ae80a7a837e10d9`。
+- `result / effect`：`INLINE MODEL-PAYLOAD DEDUP PASS / TRIGGER SEMANTICS PRESERVED / REAL PROVIDER RECHECK PENDING USER AUTHORIZATION`
+- `review`：`self-review PASS for frozen public seam; expected RED did not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / user and concurrent changes preserved`
+- `next_action`：向用户报告；如用户明确授权，再运行一次真实DeepSeek smoke验证模型能沿`content_ref`读取正文。失败时记录真实模型差异并回到单份明确正文，不自动堆叠Prompt或重试。
+
+### TRACE-20260830-241
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-241 / PRODUCT-01C-REVIEW-SUBJECT-INLINE-DEDUP-REAL-SMOKE / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`user terminal / real DeepSeek content_ref recheck / TRACE-240 + DEC-007`
+- `command / trust_boundary`：用户在`demo`执行`python3 one_hop_agent_smoke.py --trusted-real-api`并提供完整脱敏JSON；producer未代跑或重试。Provider calls=2，Key、Authorization、完整Prompt和私有推理未记录。
+- `mechanical_result`：runner`status=passed`；Planner/Reviewer各1次调用、协议修正0；两个Assignment均assigned；Reviewer Mailbox=`1/[true]`，Planner Mailbox=`1/[false]`；`auto_hops_used=1`、无自动续跑。Planner Usage=`358+154=512`、latency=`2326ms`；Reviewer Usage=`520+154=674`、latency=`3940ms`；合计输入878、输出308、总计1186 Token，Provider latency合计6266ms。
+- `dedup_result`：公开inline `review_subject`精确为`artifact_ref=null/content_ref=trigger_message.content/source=inline_message`，不再包含正文；Trigger正文与Planner Action/Message逐字一致。Reviewer准确引用正文中的`scope/invocation/step`和重放语义，证明真实模型能沿引用读取。Context estimate=`378/4000`，上次为455；Reviewer input=`520`，上次553。本次协议正文更长且完整请求还有其他差异，不能把全部下降精确归因于去重，但方向符合预期。
+- `semantic_finding`：Reviewer建议message ID加入content哈希，并把同Invocation下不同content视为新消息。风险点有依据，但方案不采纳：当前identity在模型调用前由scope/invocation/step派生，已存在Assignment时直接重放原Message且不调用模型；此时没有新content可参与ID。幂等身份代表同一操作，不同请求复用同一key应返回`idempotency_conflict`，而不是创建第二条消息。正确候选为保存首次规范请求摘要并在重放时比较；作为后续故障实验记录，不在本切片扩张SQLite/schema。
+- `result / effect`：`REAL CONTENT_REF PASS / INLINE DUPLICATION CLOSED / GROUNDED REVIEW PASS / IDEMPOTENCY-MISUSE RISK RECORDED`
+- `review`：`sanitized evidence self-check PASS; reviewer proposal evaluated, not auto-accepted`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / user-authorized calls=2 / no producer call / no stage/commit/push/tag/deploy`
+- `next_action`：关闭DEC-007切片并停止付费调用。等待用户选择下一项；若选择幂等冲突检测，先冻结请求摘要范围和持久化接缝，再TDD，不采用content-hash-as-new-message方案。
+
+### TRACE-20260830-242
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-242 / PRODUCT-01C-SEND-MESSAGE-IDEMPOTENCY-CONFLICT / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / user-authorized request-digest conflict vertical slice / Plan30 + DEC-009 + TRACE-241`
+- `confirmed_seam`：只通过`SendMessageActionRuntime.run`公开结果、Fake Model调用门和Mailbox公开读取观察首次执行、同请求重放、异请求冲突；没有直接查询SQLite表或测试私有函数。
+- `tdd_red_green`：新增红测先执行方案A，再以相同scope/invocation/step提交方案B；旧逻辑错误返回A的原Message，断言期望`REJECTED`实际得到`DELIVERED`。最小实现于模型调用前生成规范请求摘要并以RoleRequirement ID持久化；重放摘要不一致返回`rejected/idempotency_conflict`。Fake模型第二次调用会直接失败，因此转绿同时证明冲突路径模型零调用；Mailbox仍只有A。
+- `digest_contract`：覆盖ModelRequest消息/能力/Schema、Scope及Thread/Turn/Invocation/发送Agent/step/parent/Artifact引用、允许Role ID、Assignment Policy版本和等待值；图片使用Artifact/MIME/detail/data SHA-256。动态候选Agent状态不参与。只持久64位摘要，不新增Prompt副本或SQLite schema。
+- `scope / non_goals`：不把模型content加入message ID，不把冲突当新消息，不新增独立IdempotencyRecord/SQLite v7、Provider调用、ACK/重投、API/Web/FastAPI/Redis、stage/commit/push/tag/deploy。
+- `commands / result`：SEND_MESSAGE`8/8`；接收+SEND_MESSAGE+RoleAssignment+Mailbox+Agent相关`46/46`；全仓非expected-red`608/608 (9 skipped)`；py_compile与diff-check`PASS`。
+- `artifacts / evidence`：`agent_actions=15d3336fc2135d519228a4627046926f1a47ceb29add5f739790b7541967f13c; runner=806fa5cf2c1665756afb8389cfe7cc4b02351e99438592ff8ab598ac30efcae0; tests=d40b14e6c3db4ab0b992a23cece9f1947151f019950346e811b4d9ca58b57b87`。
+- `limitations`：摘要算法尚无独立版本字段，旧pre-digest Assignment重放会表现为冲突；当前尚无产品历史数据库，因此不做迁移。进入长期本地API前必须冻结版本/兼容策略，不能把当前opaque ID技巧直接冒称最终持久协议。
+- `result / effect`：`IDEMPOTENCY KEY REUSE DETECTED / SAME REQUEST REPLAY PRESERVED / NO MODEL OR MAILBOX SIDE EFFECT ON CONFLICT`
+- `review`：`self-review PASS for frozen seam; expected RED did not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / user and concurrent changes preserved`
+- `next_action`：向用户汇报并停止本切片。下一步由用户选择ACK/领取语义、ASK_USER/FINISH终止Action、冲突消解，或本地产品API；不自动扩张。
+
+### TRACE-20260830-239
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-239 / PRODUCT-01B-PROVIDER-API-ENGINEERING-SELF-CHECK / PRE_REGISTER / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / user-requested adaptation of Cat Café lesson 02 homework / Plan30 PRODUCT-01B`
+- `what / why / expected_effect_or_gate`：用户要求把Cat Café第二课CLI工程化自检加入当前API-only产品计划。把stderr活跃、SIGTERM/SIGKILL、子进程生命周期和NDJSON检查翻译为Provider API对应合同：HTTP/stream活动、分层超时、取消与本地工具终止分权、增量流解析、环境/Key隔离、错误重试幂等、Provider健康快照和证据验收。保留原作业可迁移的工程思想，不把CLI信号冒充模型API生命信号。
+- `scope / non_goals`：只更新`Plan/Plan30.md`、`HANDOFF.md`、`主产品线遇到的问题.md`并追加Step；不实现Provider代码、不读取Key、不调用网络/模型、不改当前真实smoke状态、时间预算或通信纵切，不stage/commit/push/tag/deploy。
+- `baseline`：`HEAD=8975ba5; latest product checkpoint=TRACE-238; staging=empty; dirty worktree and protected user changes preserved`
+- `stop_or_rollback_conditions`：若文档要求用stderr沉默判断API Agent死亡、对Provider请求发送POSIX信号、盲目重试造成重复调用/费用，或把Key写入日志/SQLite/Message/Artifact/前端，停止并纠正。
+- `result / effect`：`PENDING documentation sync`
+- `review`：`PENDING consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / no external side effect authorized`
+- `next_action`：新增API版自检清单、验收归属和CLI/本地工具保留边界。
+
+### TRACE-20260830-240
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260830-240 / PRODUCT-01B-PROVIDER-API-ENGINEERING-SELF-CHECK / ACTUAL+CHECKPOINT / 2026-08-30 / 2026-08-30`
+- `principal / slice / plan_ref`：`/root / adapted Cat Café lesson 02 self-check added to product plan / TRACE-239 + Plan30 PRODUCT-01B + DEC-008`
+- `what / why / actual_effect`：Plan30的PRODUCT-01B新增八项必过Provider API工程化自检：HTTP/stream活动信号、连接/读取/请求/任务分层超时、Provider取消与本地工具两阶段kill分权、SSE/分块JSON增量解析、环境与Key隔离、错误/重试/幂等、Provider健康投影和语义证据验收。HANDOFF同步为已确认约束；主产品问题记录新增DEC-008，保留Cat Café原始作业链接、转换理由、01B/01C/01E归属和本地CLI边界。
+- `scope / non_goals`：仅文档和追加证据；没有实现Provider、读取Key、调用网络或模型，没有改变TRACE-238真实复验状态、通信合同、SQLite、代码、测试或Git外部状态。
+- `commands / result`：`apply_patch`; `git diff --check=PASS`; 关键术语/归属/反例`rg=PASS`; staging仍为空。文档细化原有超时/429/5xx/无效JSON/取消范围，PRODUCT-01B仍为4～6小时，真实差异返工使用既有3～5小时风险缓冲。
+- `artifacts / evidence`：`Plan30=d3998ad870530676dc409e3840d2db4794ec8d07e70bdd9bb85bf19981b5f8dd; HANDOFF=b9507099ca3ff628100b9da2ff8283acacc55bb3c75e61b1a7445c284a721321; decision_record=9f58d050627e20823bae0e4afb622bac3e79412a8b7b034e0b909845cdab6857; pre-ACTUAL_STEP=1c9340ca8d755a0183d6ce478c0a28ea0c37bfcedfede2e68a8e073cc0b3155c`
+- `result / effect`：`PASS — PROVIDER_API_SELF_CHECK=REQUIRED_PRODUCT_01B_GATE; CLI_SIGNAL_TRANSLATION=EXPLICIT; NO_NEW_BATCH`
+- `review`：`documentation consistency self-check PASS`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no commit/push/tag/deploy`
+- `next_action`：保持TRACE-238后的当前动作不变；修复后的真实DeepSeek评审对象smoke仍需用户单独授权。进入PRODUCT-01B实现时按八项清单逐条Fake→真实Provider验证。
+### TRACE-20260831-243
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-243 / PRODUCT-CLI-EXECUTOR-PIVOT / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-requested API-loop to mature-CLI execution pivot / Plan30`
+- `what / why / expected_effect_or_gate`：用户确认把产品执行边界改为成熟Agent CLI承担单Agent内部loop，项目集中实现多Agent Runtime、通信、上下文、路由、收敛、审计和Web。先同步Plan30、HANDOFF与决策记录，保留现有Raw API/DeepSeek smoke作为已验证对照，不删除或伪装成CLI证据；具体CLI、认证、权限和非交互输出合同未确认前不写生产代码或测试。
+- `confirmed_seams`：本步只有文档决策接缝；未来代码公共接缝暂定为Runtime调用统一`AgentExecutor`并观察规范Invocation Event/结果，但必须在用户确认首个CLI后再按TDD冻结。现有`ModelClient`继续作为`RawModelBackend`，不得让CLI Agent绕过Runtime私下通信。
+- `scope / non_goals`：只调整当前产品主线和接续摘要，不安装CLI、不读取认证文件、不调用模型/网络、不执行真实CLI任务、不修改SQLite/Message/Mailbox/RoleAssignment代码，不stage/commit/push/tag/deploy。ACK讨论暂停，待CLI执行接缝打通后再回到Mailbox可靠性。
+- `baseline`：`HEAD=8975ba5; staging=empty; installed CLI read-only check: codex=/Applications/ChatGPT.app/Contents/Resources/codex, version=codex-cli 0.149.0-alpha.4.3; claude/qwen/kimi not installed; dirty worktree and protected user changes preserved`
+- `stop_or_rollback_conditions`：若调整要求删除现有API证据、把CLI自身完成误当Runtime验收、允许CLI直接路由其他Agent，或在未确认CLI/认证/权限前实现供应商专用代码，则停止并请求用户决定。
+- `result / effect`：`PENDING documentation pivot and user input checklist`
+- `review`：`PENDING consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / no external side effect authorized`
+- `next_action`：更新Plan30、HANDOFF与主产品决策记录为CLI-first双Backend边界，然后报告用户必须提供的最少信息。
+
+### TRACE-20260831-244
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-244 / PRODUCT-CLI-EXECUTOR-PIVOT / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / CLI-first product architecture documentation pivot / TRACE-243 + Plan30 + DEC-010`
+- `what / why / actual_effect`：Plan30已从API-only修订为CLI-first：成熟Agent CLI承担单Agent内部loop，Runtime继续独占多Agent拆分、路由、Message/Mailbox、Context、Handoff、终止、审计和Acceptance；Web仍是用户入口。PRODUCT-01B改为统一`AgentExecutor/FullAgentBackend`与首个CLI，PRODUCT-01E改为同CLI两个隔离Agent Session的真实协作门槛。现有`ModelClient`、DeepSeek真实smoke和Provider自检保留为`RawModelBackend`历史/对照，Qwen/Kimi不再阻塞第一版。HANDOFF顶部接续摘要与DEC-010已同步。
+- `installed_cli_fact`：只读检查发现`codex=/Applications/ChatGPT.app/Contents/Resources/codex`，版本`codex-cli 0.149.0-alpha.4.3`；`claude/qwen/kimi`未安装。没有读取`~/.codex/auth.json`、Key、Token或登录身份，没有运行`codex login status`或真实Agent任务。
+- `tdd_boundary`：本步仅文档决策，没有生产代码行为，因此未写测试。按TDD技能要求，未来公共接缝`AgentExecutor.run(invocation) → events/result`仍需用户先确认首个CLI、认证、权限、Session和输出需求，确认后才进行一条Fake→真实CLI红绿纵切。
+- `commands / result`：相关文档`git diff --check=PASS`；CLI-first/AgentExecutor/RawModelBackend/FullAgentBackend关键术语检索`PASS`；未运行代码测试，原因是没有代码修改；staging仍为空。
+- `artifacts / evidence`：`Plan30=fb0e1c04cdf483f801e69ee94c8c08ffdc7ead1f3f2a641ba61303394c436d4e; HANDOFF=944d05e391d400cf2591c2cffc33c8a1f3e9cc293e6c807b9b15c098840a0e21; decision_record=a2ef3985822b0d1bdc673f7605f46447a5417d979a07b527545d4b126e268cc3; pre-ACTUAL_STEP=2a446eaacc11ac1f921bb4815f0ae1219e3ff4967fe91bcbaf8a7133c282a1be`。
+- `result / effect`：`PASS — PRODUCT PLAN IS CLI-FIRST / IMPLEMENTATION BLOCKED ONLY ON USER CLI CONTRACT CHOICES`
+- `review`：`documentation consistency self-check PASS; code review N/A because no production code changed`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no install, model call, network, commit, push, tag or deploy`
+- `next_action`：向用户收集首个CLI、认证付费、文件/命令权限、Session连续性和公开输出需求；确认后PRE_REGISTER首条AgentExecutor TDD纵切。
+
+### TRACE-20260831-245
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-245 / PRODUCT-01B-CODEX-AGENT-EXECUTOR-CONTRACT / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-confirmed Codex CLI first executor contract / Plan30 PRODUCT-01B + DEC-010`
+- `user_decisions`：首个Backend=Codex CLI；认证=ChatGPT订阅；Planner/Reviewer只读、Developer仅Workspace可写和运行测试，联网/删除/外部副作用另行确认；每Thread每Agent独立且可恢复Session；公开任务状态、工具名称、文件变化、diff/测试、耗时与最终消息，隐藏私有推理、完整stderr和凭据。
+- `environment_fact`：用户shell中`codex`因PATH未配置而command not found；只读检查确认内置可执行文件`/Applications/ChatGPT.app/Contents/Resources/codex`版本`0.149.0-alpha.4.3`，完整路径执行`login status`返回`Logged in using ChatGPT`。官方与本机帮助确认`codex exec --json`输出JSONL，默认read-only，支持workspace-write和按Session ID resume。
+- `confirmed_public_seam`：调用方只使用`CodexCliAgentExecutor.run(AgentExecutionRequest) -> AgentExecutionResult`；结果公开规范Session ID、状态、脱敏事件、最终消息、Usage和有效Sandbox。Codex CLI作为唯一外部边界通过注入Transport替身；测试不查询私有状态、不访问SQLite、不运行真实CLI/模型。
+- `first_vertical_slice`：一个新Session请求经只读/可写权限映射生成有界Codex exec启动请求，解析JSONL中的thread、公开工具/文件/Agent消息和turn终态，过滤reasoning，返回规范结果；同接口接受显式Session ID构造resume请求。畸形JSONL、缺失终态和非零退出留到后续一红一绿，不在首个tracer批量预建。
+- `scope / non_goals`：本步先实现公共合同、Codex命令/JSONL Adapter和Fake Transport tracer；不新增第二subprocess owner，不修改既有`local_execution`安全Profile，不读取auth文件，不运行真实Agent，不调用网络，不修改Mailbox/ACK/SQLite，不stage/commit/push/tag/deploy。真实Transport与CLI smoke作为紧邻下一纵切，需先解决认证环境和统一进程监督接缝。
+- `baseline`：`HEAD=8975ba5; staging=empty; no existing AgentExecutor/FullAgentBackend code; dirty worktree and protected user changes preserved`
+- `stop_or_rollback_conditions`：若首切需要直接新增`subprocess.Popen/run`绕过现有单一进程Owner、把reasoning/stderr/凭据公开、允许CLI直接写Mailbox/Acceptance，或必须真实消耗订阅额度才能测试，停止并保留Fake边界。
+- `result / effect`：`PENDING one RED→GREEN tracer`
+- `review`：`PENDING directed and relevant regression; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / no real CLI execution authorized`
+- `next_action`：新增一个公开AgentExecutor tracer红测，再写仅够解析受控Codex JSONL并返回规范结果的最小实现。
+
+### TRACE-20260831-246
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-246 / PRODUCT-01B-CODEX-AGENT-EXECUTOR-CONTRACT / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / Codex CLI AgentExecutor Fake transport vertical slice / TRACE-245 + Plan30 PRODUCT-01B`
+- `what / why / actual_effect`：新增`agent_executor.py`公开合同和Codex Adapter。`AgentExecutionRequest`携带Invocation/Thread/Agent、Prompt、Workspace、read-only/workspace-write、超时和可选Session ID；Adapter通过stdin传Prompt，生成新`codex exec --json`或显式Session `codex exec resume --json`启动请求，解析thread/turn/item/usage事件并返回规范`AgentExecutionResult`。公开结果包含Backend/CLI版本、Sandbox、Session、状态、脱敏工具/Agent消息、最终消息、Usage和耗时；reasoning、工具原始输出和完整stderr不进入结果。
+- `tdd_red_green`：首个tracer先因`coding_workflow.agent_executor`不存在而ImportError红，最小模块实现后转绿。Session恢复测试随后先因旧实现仍生成新exec argv而红，最小分支改为显式`resume <SESSION_ID>`后转绿。两次均是预期红测，未调用diagnosing-bugs。
+- `process_boundary`：Transport是注入的Codex CLI外部系统边界；本批仅使用Fake，不新增`subprocess.Popen/run` owner。真实Transport必须复用现有`local_execution`统一监督。用户PATH缺失不阻塞Adapter，因为请求使用显式绝对可执行路径；项目未修改用户shell配置。
+- `commands / result`：新增纵切`2/2 PASS`；AgentExecutor+AgentRuntime+Recipient+SEND_MESSAGE+RoleAssignment+Mailbox相关`48/48 PASS`；全仓排除`*_expected_red.py`后`610/610 PASS (9 skipped)`；py_compile和diff-check`PASS`。一次未排除expected-red的discovery按其设计因共享解释器报1个ImportError；一次py_compile因系统Python缓存写入受限失败，改用`PYTHONPYCACHEPREFIX=/private/tmp/multiagent-cli-pycache`后通过；两者均非代码失败。
+- `real_execution`：`0`次真实Codex Agent调用，`0`订阅额度消耗；只运行`--version`、`login status`和`--help`类本地只读命令。没有读取或记录auth文件、Key、Token、邮箱、私有推理或完整stderr。
+- `artifacts / evidence`：`agent_executor=9c43fc185c834989320a8dab783272bb7d10cb0cdd2ecbe2c60833554788afb5; tests=75d010b2a7516cb7502e09fe721f3a86efb6b97aceccf3a0a671a1ebc13477ea; Plan30=d59c74bcd16ddcc065e586bf3fb0bce667b4ac7e34955c475ba9903f1df250ad; HANDOFF=18f271b1be584af0ac4a9aa32a661693e951610e68028dcffd05e0d55f570de5; decision_record=3c915ce13cc11e633523172258bd449d7c1d4b7aed9496882296828487641616; pre-ACTUAL_STEP=a8d6e4348aa52f3f3de18588e225c945bdfebed8d8cdff5ab6dcf82016d4dd4b`。
+- `limitations`：当前仅成功路径合同；畸形/半帧JSONL、非零退出、缺失终态、超时/取消和输出上限尚未TDD。没有生产Transport，尚不能从产品Runtime真实启动Codex。Session ID映射到Agent/Thread的持久复核仍由后续Runtime接线实现。
+- `result / effect`：`FAKE CODEX EXECUTOR CONTRACT PASS / REAL TRANSPORT AND SMOKE PENDING`
+- `review`：`self-review PASS for frozen public seam; PRODUCT-01B overall independent review not due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / protected user changes preserved / no commit, push, tag or deploy`
+- `next_action`：下一纵切在现有唯一进程Owner中增加Codex Agent执行Profile/Transport并先覆盖失败、超时、取消、JSONL不完整和认证环境；离线通过后请求用户单独授权一次真实只读smoke。
+
+### TRACE-20260831-247
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-247 / PRODUCT-01B-CODEX-SUPERVISED-TRANSPORT / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-confirmed Codex subscription login and supervised Transport vertical slice / Plan30 PRODUCT-01B + TRACE-246`
+- `what / why / expected_effect_or_gate`：用户用完整内置路径确认`codex login status`为`Logged in using ChatGPT`。本切片只把既有AgentExecutor接入仓库唯一进程Owner：Prompt仅走stdin；argv严格限制为固定Codex路径、`never`批准策略、read-only/workspace-write、精确Workspace、新Session或显式Session恢复；执行必须消费Composition签发的一次性批准。未批准不得spawn，公开结果不得包含完整stderr、reasoning或工具原始输出。
+- `confirmed_public_seam`：仍只通过`CodexCliAgentExecutor.run(AgentExecutionRequest) -> AgentExecutionResult`观察产品行为；ProcessRunner/Transport是外部边界实现，不改变Runtime调用方合同。
+- `scope / non_goals`：只做Fake进程离线红绿，不调用真实Agent/网络、不消费订阅额度、不读取auth文件、不继承真实HOME、不接第二CLI、不修改Mailbox/ACK/SQLite，不stage/commit/push/tag/deploy。
+- `stop_or_rollback_conditions`：若实现新增第二个`subprocess` owner、Prompt进入argv/Manifest、非Codex Profile获得stdin、未批准也能spawn、允许danger-full-access/任意CLI参数，或把认证凭据放入项目状态，则停止并回退本切片。
+- `result / effect`：`PENDING one supervised Fake RED→GREEN tracer`
+- `review`：`PENDING directed, local-execution and full regression`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / dirty user and concurrent changes preserved`
+- `next_action`：先写通过公开AgentExecutor调用受控Transport的红测，再增加最小Profile、stdin绑定、一次性批准和Outcome映射。
+
+### TRACE-20260831-248
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-248 / PRODUCT-01B-CODEX-SUPERVISED-TRANSPORT / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / supervised Codex CLI Fake-process vertical slice / TRACE-247 + Plan30 PRODUCT-01B`
+- `what / why / actual_effect`：新增`CodexCliProcessRunner`与`SupervisedCodexCliTransport`，复用`local_execution`唯一Popen owner、超时/进程组清理、输出界限和一次性`LocalExecutionApprover`。新增`codex_cli_agent` Profile，最长单次300秒、stdin最多64000字符；Prompt正文只存在于瞬时PreparedExecution且repr隐藏，批准摘要和公开Manifest仅记录字符数/SHA-256。非Codex Profile仍拒绝stdin并继续使用DEVNULL。
+- `argv_and_permission_contract`：固定`/Applications/ChatGPT.app/Contents/Resources/codex --ask-for-approval never --sandbox <read-only|workspace-write> -C <exact-root> exec --ignore-user-config ...`；只允许`--json -`新Session或带受限Session ID的resume，其他flag、Workspace、danger-full-access和Prompt argv均不在白名单。`--ignore-user-config`减少用户配置导致的不可复现差异；认证仍需后续安全桥接。
+- `tdd_red_green`：红测先因`CodexCliProcessRunner`不存在而ImportError；最小实现后4/4转绿。成功Tracer以Fake Process证明Prompt经`communicate(input=...)`送入、一次性批准被消费、JSONL回到公开Agent结果且stderr秘密不泄漏；拒绝Tracer证明Composition不批准时在spawn前fail-closed。均为预期红测，未使用diagnosing-bugs。
+- `commands / result`：纵切`4/4 PASS`；LocalExecution Approval/Supervisor/CommandValidators+AgentExecutor`63/63 PASS`；全仓非expected-red`612/612 PASS (9 skipped)`；py_compile和diff-check`PASS`。
+- `real_execution`：用户只执行`login status`确认订阅登录；本切片真实Codex Agent调用`0`、订阅额度消耗`0`。未读取/复制/记录auth文件、Token、Key、邮箱或私有推理。
+- `artifacts / evidence`：`agent_executor=cf451402dc31c0f27605887257270434b68c08cb2a26d55a147c070e60646b75; local_execution=8ab6f8d2a372c619c20ef34c7e93e7ee3647298d8c500f858a3fec12bbe7bba3; approval=b9279c55b8551a61a6166e159c59965bb2e895b216f429c3d92c4311f7dabbb6; tests=cbbb93bb4bded164fa30d83f4fdde44d127c1118276cc8570a0fd4b2441ae457; Plan30=681a8fece4fb040d89eaaf1f5b3f10d30e04aaab486c696e630f45458a5e3169; HANDOFF=439531bd7ef6c3f1bf01724307d0316eeb75d6fe0307daec1123ec733f47a166; decision_record=c5282662d641d8eea4a34dc6bd2436058a78a68b9a3ab862c566eb357467e355`。
+- `limitations`：当前隔离子进程没有ChatGPT认证环境，因此安全执行链已存在但真实调用仍会缺失登录态。不能通过继承真实HOME粗暴解决；下一切片必须证明最小认证桥接只供Codex本体使用，且不进入Agent shell、Message、日志或公开结果。畸形/半帧JSONL、缺失终态、超时/取消的Agent级错误分类仍待后续逐条TDD。
+- `result / effect`：`SUPERVISED TRANSPORT PASS OFFLINE / SINGLE PROCESS OWNER PRESERVED / REAL AGENT NOT YET AUTHORIZED`
+- `review`：`self-review PASS for frozen seam; PRODUCT-01B overall independent review not due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no commit, push, tag or deploy`
+- `next_action`：设计并TDD最小ChatGPT认证桥接及Agent工具环境泄漏测试；离线通过后向用户请求一次真实read-only Codex smoke授权。
+
+### TRACE-20260831-249
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-249 / PRODUCT-01B-CODEX-AUTH-BRIDGE / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / minimal ChatGPT subscription auth bridge / Plan30 PRODUCT-01B + TRACE-248`
+- `evidence_before_change`：用户正常环境`codex login status=Logged in using ChatGPT`；无模型隔离探针在仅有私有HOME/TMPDIR和冻结PATH时返回`Not logged in`。这证明现有Harness隔离会切断CLI登录态。探针未读取认证文件、未调用模型，临时目录已清理。
+- `what / why / expected_effect_or_gate`：只向Codex主进程增加宿主`CODEX_HOME`路径，同时通过固定CLI config把Agent工具环境设为core继承、启用秘密名默认排除并明确排除`CODEX_HOME`；继续使用私有HOME/TMPDIR和`--ignore-user-config`。目标是恢复订阅认证但不把认证路径、Key、Token或完整用户环境传给工具。
+- `confirmed_public_seam`：调用方和产品结果仍是既有AgentExecutor接口；认证位置只属于Process Profile，不新增到Request、Message、SQLite、Context或公开Result。
+- `scope / non_goals`：不读取/copy/auth.json，不改用户Codex配置或登录状态，不运行真实Agent，不接第二CLI，不修改Mailbox/ACK，不stage/commit/push/tag/deploy。
+- `stop_or_rollback_conditions`：若必须继承真实HOME、把CODEX_HOME暴露到工具环境、把认证路径写入公开结果、关闭Sandbox或需要API Key，则停止；不以登录探针代替真实Agent安全验证。
+- `result / effect`：`PENDING auth-environment RED→GREEN and no-model host probe`
+- `review`：`PENDING targeted and full regression`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / real Agent calls=0`
+- `next_action`：先让受控Transport测试要求主进程环境存在CODEX_HOME且无Provider Key，再加入固定shell环境过滤与Profile manifest source。
+
+### TRACE-20260831-250
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-250 / PRODUCT-01B-CODEX-AUTH-BRIDGE / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / Codex main-process-only auth bridge / TRACE-249 + Plan30 PRODUCT-01B`
+- `what / why / actual_effect`：Codex Profile的私有执行环境新增`CODEX_HOME`，值由Runtime从宿主用户Codex目录确定，不由Agent请求提供；公开Manifest只记录`runtime_host_credential_cache`来源，不记录路径或文件内容。固定argv新增`--strict-config`以及三项shell环境策略：`inherit=core`、`ignore_default_excludes=false`、`exclude=[CODEX_HOME]`；仍使用`--ignore-user-config`，防止用户插件/MCP/模型设置静默改变产品行为。其他Profile环境不变。
+- `tdd_red_green`：测试先因启动argv缺少固定config且私有环境没有CODEX_HOME出现2个断言失败和1个KeyError；最小实现后纵切4/4及相关63/63转绿。红测为预期合同差异，未使用diagnosing-bugs。
+- `host_probes`：本机完整Codex exec `--help`在相同严格config/权限/Workspace参数下成功解析，证明当前CLI版本识别这些选项；私有HOME+显式宿主CODEX_HOME的`login status`恢复`Logged in using ChatGPT`。一次把`--strict-config`用于`login status`被CLI明确拒绝，因为该子命令不支持此选项；改以exec help验证，属于直接可解释的子命令差异，不是产品代码失败。全部探针真实Agent调用0、模型/网络调用0，临时目录已清理。
+- `security_basis`：OpenAI官方当前文档说明auth文件位于CODEX_HOME或OS credential store，`--ignore-user-config`仍使用CODEX_HOME认证；shell_environment_policy支持inherit、秘密名排除和变量排除；本地OS sandbox通常把Agent限制在Workspace。当前离线证据只证明配置和登录可用，Agent工具中确实看不到CODEX_HOME仍必须由下一次真实read-only smoke验证。
+- `commands / result`：纵切`4/4 PASS`；LocalExecution Approval/Supervisor/CommandValidators+AgentExecutor`63/63 PASS`；全仓非expected-red`612/612 PASS (9 skipped)`；py_compile和diff-check`PASS`。
+- `artifacts / evidence`：`agent_executor=d0a111867b922524c429e21a6339314ea7b34195127038fffe6b9d34721df7a4; local_execution=d209c82bda253a21fda78a14f856ea86c0c5eff8d56f63f392a0c860e29d611f; approval=b9279c55b8551a61a6166e159c59965bb2e895b216f429c3d92c4311f7dabbb6; tests=832262701b2fff13d435f4fe624c35111ca4853e0a9394acb603ab0259c9da01; Plan30=4906405140562ed6ff64db5c17018e7696caadeca3ffc7f26852e2ccc30ce334; HANDOFF=5ed05b4f426fa775e22bab2db3eff5d62c4b99d44d9ba098fb9c0d9accdf1466; decision_record=d05aad16122bd789b1578eedcf8ebc91a2dcba7dec47013024f7035d3af65967`。
+- `limitations`：尚无真实Agent/JSONL/Usage/Session证据；工具环境变量过滤尚未由真实Codex shell事件验证；认证缓存路径由宿主Runtime持有且CLI会在其中维护自身Session历史，这是成熟CLI恢复能力的必要外部状态，仍不得投影到项目Message或前端。
+- `result / effect`：`AUTH BRIDGE OFFLINE PASS / PRIVATE HOME PRESERVED / REAL READ-ONLY SMOKE PENDING USER AUTHORIZATION`
+- `review`：`self-review PASS for frozen seam; PRODUCT-01B overall independent review not due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no commit, push, tag or deploy`
+- `next_action`：请求用户授权一次受控read-only Codex smoke；Prompt只要求报告工具环境是否存在CODEX_HOME（不输出值、不访问认证文件）并返回固定短答。成功后记录Session/Usage/公开事件和泄漏检查，再决定resume smoke或错误分类。
+
+### TRACE-20260831-251
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-251 / PRODUCT-STATELESS-TOOL-STATEFUL-RUNTIME-DECISION / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-confirmed MCP-inspired state boundary / Plan30 PRODUCT-01C`
+- `what / why / expected_effect_or_gate`：用户要求借鉴“协议无状态、业务状态显式化”：工具通信与Agent任务状态解耦；每次调用独立自描述，不依赖连接Session；任务进度、记忆、权限和恢复点由Runtime持久化，并用task/snapshot/artifact等引用显式传递。本步先冻结决策和实施边界，避免后续Codex Session被误用为业务真相。
+- `scope / non_goals`：仅更新Plan30、HANDOFF和主产品决策记录；不声称当前AgentExecutionRequest已含全部引用，不实现Store/迁移/MCP Server，不批量重命名Thread/Invocation，不运行测试/模型/网络，不stage/commit/push/tag/deploy。
+- `stop_or_rollback_conditions`：若文档把Runtime也写成无状态、要求每次复制完整任务正文、允许工具直接改任务状态、把CLI Session作为唯一恢复点，或为了原则提前扩张分布式架构，则停止并纠正。
+- `result / effect`：`PENDING documentation freeze and consistency check`
+- `review`：`PENDING`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / protected changes preserved`
+- `next_action`：新增明确的请求引用、SessionBinding降级语义、工具结果提交权和最小纵切范围。
+
+### TRACE-20260831-252
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-252 / PRODUCT-STATELESS-TOOL-STATEFUL-RUNTIME-DECISION / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / DEC-011 frozen across product plan and handoff / TRACE-251 + Plan30`
+- `what / why / actual_effect`：Plan30通信合同新增无状态调用/显式状态引用边界；PRODUCT-01C调整为Runtime接线前先扩展Executor信封。主产品记录新增DEC-011，明确每次请求至少绑定`task_id/invocation_id/snapshot_id/permission_snapshot_id/artifact_id`引用，Runtime持久化进度、事实、记忆、预算、权限和恢复点；工具只返回事件、Artifact和候选delta，Runtime验证后提交下一Snapshot。HANDOFF同步当前决定、下一步与已过期open question/risk。
+- `session_boundary`：CLI/Provider Session保留为Runtime持有的可替换`SessionBinding`优化，不是业务状态真相。Session丢失、失效或Backend切换时必须可由Snapshot/Message/Artifact重建；引用错配、Snapshot过期或Permission版本错误在Backend调用前fail-closed。
+- `implementation_boundary`：不立即引入MCP Server、分布式状态服务或全库ID重命名。下一TDD切片只证明相同Snapshot可重放、无CLI Session可重建、错误Task/Snapshot/Permission组合零Backend调用；真实Session恢复随后验证优化与真相源分离。
+- `commands / result`：`apply_patch`; `git diff --check=PASS`; 决策、计划、接续关键术语`rg=PASS`。本步无生产代码行为，因此未运行代码测试；此前`612/612 PASS (9 skipped)`基线未冒充本步新证据。
+- `artifacts / evidence`：`Plan30=31c7fd3d2399eecaecdf77607b4f9e29ddf93c1abb2d2ea3bafd6a92c467b418; HANDOFF=db7b7c97faa20e628192abeb0c6e96a14021f748ee1041754a816ae3b0eccbd9; decision_record=3648b37980aad83a3ca2482bbef8be73c62ede377687d5447f14000c07e6f70a`。
+- `result / effect`：`PASS — STATELESS CALL PROTOCOL / STATEFUL RUNTIME / SESSION IS OPTIMIZATION ONLY`
+- `review`：`documentation consistency self-check PASS; code review N/A`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging empty / no commit, push, tag or deploy`
+- `next_action`：保持真实Codex read-only smoke为紧邻下一步；smoke通过后先讨论并冻结Snapshot最小内容和生命周期，再按TDD扩展AgentExecutionRequest，不批量预建通用状态平台。
+
+### TRACE-20260831-253
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-253 / PRODUCT-01B-CODEX-REAL-READONLY-SMOKE / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-authorized single real Codex subscription invocation / Plan30 PRODUCT-01B + TRACE-250`
+- `confirmed_public_seam`：新增`demo/codex_cli_smoke.py --trusted-real-cli`。成功或失败都只输出一份脱敏JSON报告；未给显式可信开关时必须在启动Codex前拒绝。脚本内部复用`CodexCliAgentExecutor → SupervisedCodexCliTransport → CodexCliProcessRunner → local_execution`既有单一进程Owner。
+- `acceptance`：先用Fake外部边界完成红绿：固定read-only权限、固定短Prompt、一次Agent Invocation、Session ID、公开事件种类、Usage、耗时和最终短答可见；reasoning、完整stderr、认证路径、Key/Token和值不得进入报告。真实Prompt只要求工具判断`CODEX_HOME`是否存在，不输出其值、不读取认证文件、不联网、不修改文件、不调用其他Agent；最终短答必须声明`env_codex_home_present=false`。
+- `scope / non_goals`：用户的“下一步”仅授权本切片恰好一次真实Codex模型调用；不自动resume、不重试、不启动第二Agent、不修改Mailbox/Snapshot合同、不stage/commit/push/tag/deploy。若真实结果不通过，保留证据并停止分析，不用第二次调用掩盖首次结果。
+- `stop_conditions`：离线测试或全仓回归失败；CLI要求继承真实HOME；报告泄露`CODEX_HOME`值、认证文件内容、私有推理或完整stderr；执行尝试workspace-write、网络或第二次模型调用。
+- `result / effect`：`PENDING RED→GREEN, regression, then exactly one real invocation`
+- `review`：`PENDING`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / dirty user and prior product changes preserved`
+- `next_action`：写公开smoke报告合同红测，确认因入口不存在而失败。
+
+### TRACE-20260831-254
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-254 / PRODUCT-01B-CODEX-REAL-READONLY-SMOKE / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / sanitized entrypoint plus exactly one real Codex subscription invocation / TRACE-253 + Plan30 PRODUCT-01B`
+- `tdd_red_green`：首个公开报告测试先因`codex_cli_smoke`不存在而ImportError红，最小入口实现后转绿；失败脱敏测试随后先因外部边界异常正文直接抛出而红，最小固定错误信封后转绿。两者都是预期TDD红测。真实环境观察不符合预期后启用`diagnosing-bugs`，但因单次调用授权已经消费，无法在不进行第二次模型调用的前提下建立可重复红色反馈环，故未猜测根因、未修改环境策略、未重试。
+- `implementation`：新增`demo/codex_cli_smoke.py --trusted-real-cli`。固定Reviewer、read-only、120秒、一次Invocation和短安全Prompt；Prompt要求shell仅判断变量是否存在，不输出值、不访问认证文件、不联网、不修改文件、不调用Agent。报告只公开固定状态/错误码、Backend/CLI版本、Agent/Session、Sandbox、事件种类、固定最终标记、Usage与耗时；不公开命令、工具输出、reasoning、完整stderr、异常正文或认证路径。
+- `offline_commands / result`：smoke入口`2/2 PASS`；Codex/Approval/Supervisor定向`54/54 PASS`；全仓排除两个expected-red后`614/614 PASS (9 skipped)`；py_compile和`git diff --check`均PASS。一次未排除expected-red的discovery按其固定设计出现1个ImportError；未用该结果替代正式排除后的614项证据。
+- `real_command / call_count`：`python3 demo/codex_cli_smoke.py --trusted-real-cli`；真实Codex Agent Invocation恰好`1`，无resume、无retry、无第二Agent。
+- `real_mechanical_result`：`execution_completed=true; session_observed=true; read_only_sandbox=true; shell_tool_observed=true; turn_completed=true; agent_reported_workspace_unchanged=true`。Session ID为`01a055ea-c179-7db2-86da-35f718d0d798`；JSONL/订阅认证/进程监督/公开事件链成立。
+- `real_security_result`：最终固定短答为`CODEX_SMOKE_OK env_codex_home_present=true workspace_modified=false`，因此`codex_home_hidden_from_agent_tools=false`，脚本退出1并返回`status=failed / SMOKE_ACCEPTANCE_FAILED`。变量值、auth文件、Token、Key、完整stderr、工具原始输出和私有推理均未公开。该结果推翻了离线“配置存在即可证明过滤生效”的推断。
+- `usage / latency`：`duration_ms=22689; input_tokens=30574; cached_input_tokens=22016; output_tokens=139; reasoning_output_tokens=42`。短任务仍有明显CLI固定上下文和延时，应进入后续产品成本/响应体验评估。
+- `official_contract_check`：OpenAI当前配置参考将`shell_environment_policy.exclude`描述为legacy exclusion patterns，并建议新配置使用`shell_environment_policy.filters`；这只是下一轮可检验假设的依据，不是本次根因结论。
+- `artifacts / evidence`：`smoke_entry=e078810d7188db9af7a7ee0daf5d86565b75fb7ec2dbeeb0206cee2cc60b0c65; smoke_tests=c87ec85d59255d0a853a3f34fb517c61881c17c12d0968369ccd20df9c7d380f; Plan30=710105226078a7d7cb8fd1d3290bc18d3fa37f7cc896b073a983d8379fdd14f9; HANDOFF=36d554264073167a33f8c00f9c92fff2537c5d27eb5441d9db2f6c414285a9e3; decision_record=45f772eafa905cf8670359596038cfd6c11faf24507fb7cfc6666f631b9e6d17`。
+- `result / effect`：`MECHANICAL CLI PATH PASS / TOOL ENVIRONMENT ISOLATION FAIL / NO RETRY`
+- `review`：`self-review PASS for truthful failure classification; PRODUCT-01B acceptance NOT MET`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：需要新的真实调用授权前，先设计能区分过滤配置失效与Agent误判且不泄露环境值的最小反馈环；按TDD采用证据支持的最小修复，离线回归后再申请一次真实复验。
+
+### TRACE-20260831-255
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-255 / PRODUCT-01B-CODEX-TOOL-ENV-FILTER-CANDIDATE / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-authorized offline candidate repair only / TRACE-254 + Plan30 PRODUCT-01B`
+- `bug_signal`：首次真实read-only smoke已经形成原始红色命令`python3 demo/codex_cli_smoke.py --trusted-real-cli`，精确捕获Agent shell仍存在`CODEX_HOME`；但该环需要真实模型、约23秒且本批未获新的外部调用授权，尚不满足可重复/快速诊断环。不得用离线结构测试冒充原始问题已修复。
+- `ranked_hypotheses`：H1 legacy `shell_environment_policy.exclude`在当前CLI版本未实际过滤，改为canonical `filters`后真实结果应转为false；H2配置层或参数顺序使过滤未进入工具环境，有效配置观测会缺少规则；H3 shell/profile重新注入变量，显式禁用profile或更窄inherit才改变结果；H4模型误读工具结果，Runtime-owned安全布尔观测会与模型短答不一致。本批只对H1做官方合同与无模型参数解析验证。
+- `confirmed_public_seam`：继续通过`CodexCliAgentExecutor.run(AgentExecutionRequest)`观察固定启动合同，不新增配置对象或第二进程Owner。已有用户确认的AgentExecutor seam继续有效。
+- `acceptance`：先让公开Executor测试以官方规范字面值要求`-c 'shell_environment_policy.filters={CODEX_HOME="exclude"}'`，并拒绝同时存在legacy `exclude`；确认红后做唯一最小常量替换。随后用本机Codex `exec --help`做零模型、零网络配置解析探针，再跑定向和全仓离线回归。
+- `scope / non_goals`：不运行`codex exec`任务、不调用模型/网络、不消费订阅、不读取auth文件、不改真实HOME/CODEX_HOME、不自动真实复验、不改Prompt/Mailbox/Snapshot、不stage/commit/push/tag/deploy。
+- `stop_conditions`：canonical filters不能被当前CLI严格解析；实现同时保留legacy与canonical形式；其他Profile获得CODEX_HOME/stdin；测试需要读取凭据；或回归出现无法解释失败。
+- `result / effect`：`PENDING STRUCTURAL RED→GREEN / REAL FIX UNVERIFIED`
+- `review`：`diagnosing-bugs limited by no repeatable real loop; TDD pending`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / dirty user and prior product changes preserved`
+- `next_action`：修改既有公开Executor argv期望，观察当前legacy配置导致红测。
+
+### TRACE-20260831-256
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-256 / PRODUCT-01B-CODEX-TOOL-ENV-FILTER-CANDIDATE / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / canonical filter structural candidate / TRACE-255 + Plan30 PRODUCT-01B`
+- `tdd_red_green`：在已确认的公开`CodexCliAgentExecutor.run` seam新增一条外部Transport观察测试。它先因argv中不存在官方canonical `shell_environment_policy.filters={CODEX_HOME="exclude"}`而红，并显示旧legacy `exclude=["CODEX_HOME"]`仍在；生产代码只替换这一个固定config值后转绿。随后同步既有new/resume外部Transport期望，未改Executor请求/结果合同。
+- `implementation`：Codex主进程仍使用私有HOME/TMPDIR和Runtime持有的宿主CODEX_HOME认证桥；Agent工具环境仍为`inherit=core`且启用默认秘密名排除。唯一变化是用case-insensitive canonical filters map排除`CODEX_HOME`，不与legacy exclude/include_only混用；Sandbox、批准、Workspace、stdin Prompt和单一Popen owner均未变化。
+- `no_model_probe`：本机同一Codex CLI以`--strict-config`、完整global权限参数、canonical filters及`exec --ignore-user-config --help`退出0，确认TOML字面值和当前CLI配置字段可解析。仅出现无法创建PATH aliases的受限环境warning；命令未启动Agent、未认证调用、未访问网络或消费订阅。
+- `diagnosis_boundary`：原始真实红色环仍需要模型且本批没有外部调用授权，因此无法满足diagnosing-bugs的可重复原场景门槛。本次只形成H1的结构性候选，不声明根因、不把help/Fake测试冒充工具环境已隔离；H2～H4保持未判定。没有增加调试日志或throwaway artifact。
+- `commands / result`：新tracer RED后GREEN；Codex Executor+smoke`7/7 PASS`；Codex/Approval/Supervisor定向`55/55 PASS`；全仓排除expected-red后`615/615 PASS (9 skipped)`；py_compile、`git diff --check`、`[DEBUG-`清理检查均PASS。
+- `real_execution`：真实Codex Agent调用`0`、resume`0`、网络/Provider调用`0`；没有读取/复制auth文件或输出CODEX_HOME值。
+- `artifacts / evidence`：`local_execution=f5419975bd10a236574e8e650ef808e56eeadb898473f0e9931458ec13f7b034; tests=8c87adce3ca99f8ed253dcc5c836c85a9fe9163951d889ba4af77116d2025201; Plan30=ad31298e82e28fb2521f6b4573e3081860d3ff119dcc1a1e0bde14db6319f36c; HANDOFF=213562ce227e1c1e61eb54164f3ab2f107c600bee4992db13c7f36a2c0df24ae; decision_record=7f4a27921e42c31ddc44c0ed042e9acc8cb4cccdbe257592ad7859afe19e14bb`。
+- `result / effect`：`CANONICAL FILTER CANDIDATE OFFLINE PASS / REAL TOOL ENVIRONMENT UNVERIFIED`
+- `review`：`self-review PASS for minimal config-only diff and truthful evidence boundary; PRODUCT-01B acceptance still pending`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：等待用户单独授权一次新的真实read-only smoke。成功条件仍为Agent shell判断`CODEX_HOME`不存在；失败时不自动重试，转向H2配置层观测与H4 Runtime-owned布尔证据设计。
+
+### TRACE-20260831-257
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-257 / PRODUCT-01B-CODEX-CANONICAL-FILTER-REAL-RETEST / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-authorized exactly one new real read-only smoke / TRACE-256 + Plan30 PRODUCT-01B`
+- `authorization`：用户明确回复“确认真实复验”。本授权只覆盖一次新的Codex订阅Invocation，不覆盖resume、retry、第二Agent或失败后的另一调用。
+- `acceptance`：复用脱敏`demo/codex_cli_smoke.py --trusted-real-cli`；机械链路需完成Session/JSONL/shell/turn/read-only，安全门槛必须为固定短答`env_codex_home_present=false`且Workspace未修改。不得输出变量值、认证文件、完整stderr、工具原始输出或私有推理。
+- `evidence_before_call`：canonical filters候选已经TDD红绿，本机严格配置零模型解析通过；定向55/55、全仓615/615（9 skip）、编译和diff-check通过。该离线证据不预判真实结果。
+- `stop_conditions`：无论PASS或FAIL都在一次调用后停止；FAIL不得自动重试或改写首次/本次证据。
+- `result / effect`：`PENDING EXACTLY ONE REAL INVOCATION`
+- `review`：`PENDING truthful classification`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched`
+- `next_action`：执行一次真实read-only smoke并保存脱敏结果。
+
+### TRACE-20260831-258
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-258 / PRODUCT-01B-CODEX-CANONICAL-FILTER-REAL-RETEST / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / exactly one canonical-filter real retest / TRACE-257 + Plan30 PRODUCT-01B`
+- `real_command / call_count`：`python3 demo/codex_cli_smoke.py --trusted-real-cli`；新Codex Agent Invocation恰好`1`，无resume、无retry、无第二Agent。
+- `mechanical_result`：`execution_completed=true; session_observed=true; read_only_sandbox=true; shell_tool_observed=true; turn_completed=true; agent_reported_workspace_unchanged=true`。新Session ID为`01a05608-d05d-70d3-b388-89f45b8b7b9f`；JSONL/认证/进程监督链再次成立。
+- `security_result`：canonical filters下最终固定短答仍为`CODEX_SMOKE_OK env_codex_home_present=true workspace_modified=false`，因此`codex_home_hidden_from_agent_tools=false`，脚本退出1并返回`SMOKE_ACCEPTANCE_FAILED`。没有输出变量值、auth文件、完整stderr、工具原始输出或私有推理。
+- `usage / latency`：`duration_ms=16638; input_tokens=30598; cached_input_tokens=22016; output_tokens=163; reasoning_output_tokens=68`。
+- `diagnosis`：原始smoke已在两个独立新Session中重现相同红色安全症状，H1“仅legacy exclude导致”被否定。当前公开结果只含模型最终短答，缺少Runtime-owned shell哨兵布尔证据，无法在不泄露原始输出的前提下区分H2/H3真实环境继承与H4模型误判；因此不继续假设性配置修改。
+- `artifacts / evidence`：`Plan30=df18a30842dd2df6dacc148c82c21adff59729861b94c1d3942b804e94550d82; HANDOFF=b90e6977d4767cd7c35f5f6c1d64116f142648706eac63b4f53108e44d2bacc1; decision_record=be49bdd6537afae702ac57ab9cec39f1a4a72dacd39d4e1e77cada395447b154`。
+- `result / effect`：`MECHANICAL PATH RECONFIRMED / CANONICAL FILTER REAL FAIL / H1 FALSIFIED / NO RETRY`
+- `review`：`truthful failure classification PASS; PRODUCT-01B acceptance NOT MET`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：按TDD增加Runtime-owned固定shell哨兵解析并保留公开布尔证据，先用Fake JSONL建立无需模型的差分seam；新的真实调用仍需另行授权。
+
+### TRACE-20260831-259
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-259 / PRODUCT-01B-RUNTIME-OWNED-SAFE-SENTINEL / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-authorized offline evidence seam / TRACE-258 + Plan30 PRODUCT-01B`
+- `privacy_boundary`：本批真实CLI/模型/网络调用0。Fake工具输出包含固定布尔哨兵和伪造秘密噪声；Runtime只允许把`codex_home_present: bool`投影到公开事件，原始输出、变量值、用户路径、认证文件、stderr、命令结果和私有推理不得进入Result、报告、异常或日志。
+- `confirmed_public_seams`：沿用用户已确认的`CodexCliAgentExecutor.run(AgentExecutionRequest) → AgentExecutionResult`与`run_codex_read_only_smoke(...) → Mapping`。前者从外部Codex JSONL边界提取安全观察，后者以Runtime观察为验收依据并把模型短答降为交叉验证；不新增第二进程Owner或私有测试入口。
+- `acceptance_slice_1`：先用Fake JSONL让`command_execution.aggregated_output`含唯一固定行`CODEX_RUNTIME_ENV_CHECK codex_home_present=false`以及不可公开噪声；公共tool事件必须只增加`runtime_observation={codex_home_present:false}`，且repr中不存在原始行之外内容。缺失、冲突或非严格哨兵不得猜值。
+- `acceptance_slice_2`：Smoke报告必须分别公开`runtime_observation_observed`、`codex_home_hidden_from_agent_tools`与`model_matches_runtime_observation`。PASS必须依赖Runtime观察为false且模型短答一致；仅有模型声称false不再足够。
+- `scope / non_goals`：不修改认证桥或环境过滤、不运行第三次真实smoke、不读取任何环境变量或auth状态、不实现通用遥测DSL、不改Mailbox/Snapshot、不stage/commit/push/tag/deploy。
+- `stop_conditions`：必须保留/公开aggregated_output才能判断；任意文本可伪造布尔值；冲突哨兵被选择其一；现有reasoning/stderr脱敏回归失败；或全仓出现无法解释失败。
+- `result / effect`：`PENDING TWO VERTICAL RED→GREEN SLICES`
+- `review`：`TDD + diagnosing-bugs evidence seam pending`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / protected changes preserved`
+- `next_action`：新增第一个AgentExecutor公开行为红测并确认当前事件没有Runtime观察。
+
+### TRACE-20260831-260
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-260 / PRODUCT-01B-RUNTIME-OWNED-SAFE-SENTINEL / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / two offline TDD evidence slices / TRACE-259 + Plan30 PRODUCT-01B`
+- `slice_1_red_green`：既有AgentExecutor公开行为测试先因tool事件没有`runtime_observation`而KeyError红；最小实现只识别整行false哨兵并丢弃其余aggregated_output后转绿。第二条public-seam测试再因true哨兵没有观察而红，补齐true后转绿。第三条冲突测试随后证明旧优先级会把同时出现的false/true错误选成false；实现改为收集唯一集合，只有集合大小恰为1才公开布尔，冲突转绿。
+- `slice_2_red_green`：Smoke外部Executor测试构造“工具观察true、模型最终声称false”，旧报告错误返回passed；修改后Runtime观察成为验收真相，模型短答只做一致性检查，测试转绿。成功报告新增`runtime_observation_observed`、`codex_home_hidden_from_agent_tools`、`model_matches_runtime_observation`及单一nullable布尔投影；异常、缺失或冲突不能通过。
+- `privacy_and_security`：Prompt要求shell标准输出只能是一行固定哨兵，禁止输出变量值或访问认证文件。AgentExecutor解析过程不把aggregated_output保存到Event；公开结果只有`codex_home_present: bool|None`。测试在同一tool输出放入伪造私密噪声并验证Result repr无该内容；命令、stderr、reasoning和工具原文继续不进入smoke报告。
+- `diagnosis_effect`：后续真实smoke可同时观察Runtime解析的工具布尔与模型陈述，从而区分H4模型误判。该机制仍依赖Agent实际执行环境检查命令，不被冒充为OS级独立证明；下一差分应收紧环境继承并维持相同观察协议。
+- `commands / result`：三个AgentExecutor行为各自RED→GREEN；Smoke不一致行为RED→GREEN；Codex Executor+smoke`10/10 PASS`；Codex/Approval/Supervisor定向`58/58 PASS`；全仓排除expected-red后`618/618 PASS (9 skipped)`；py_compile、`git diff --check`和debug/private marker cleanup均PASS。
+- `real_execution`：真实CLI Agent调用`0`、网络/Provider调用`0`；未读取环境值、用户路径或auth文件。本批严格遵守用户“不泄露我的信息”。
+- `artifacts / evidence`：`agent_executor=8ece469da78097d48c18d25c4043d4c2f52980789064f9edff046d449e9b1eba; smoke=cc1ae47da5c84a545b2b70ab2bad3285c486edfac8455c91a916264d3b4489fb; executor_tests=e2f2747939c5c03f2b5333fbc0958b9b4805358c9c5410b3831561872b04df7a; smoke_tests=8a8b782951b778ac85b4dca9ab1e7d2da829b568c80793d6a7612cc322c129e1; Plan30=7ed432951cb2cb21bf28c28c6704d377bc9c1d8e538905e2247bedce75dff14b; HANDOFF=a29025a779e0f7bfaa3892672d811ecf99189985b11c23de83ffc00de434db2d; decision_record=fe1ff359b65aa9d62b8ce60c9323d9c755e99fd316164ef67280457dc02f254c`。
+- `result / effect`：`RUNTIME-OWNED SAFE BOOLEAN EVIDENCE PASS OFFLINE / REAL ENVIRONMENT STILL UNVERIFIED`
+- `review`：`self-review PASS for fixed allowlisted observation and no raw-output projection; PRODUCT-01B acceptance still pending`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：与用户确认环境继承策略。推荐`inherit=none + 显式安全PATH/set`，因为认证只供Codex主进程，Agent工具应默认拿不到任何宿主变量；确认后按TDD做单变量候选，不自动真实调用。
+
+### TRACE-20260831-261
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-261 / PRODUCT-01B-CODEX-DEFAULT-DENY-TOOL-ENV / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-authorized offline default-deny environment candidate / TRACE-260 + Plan30 PRODUCT-01B`
+- `decision / why`：冻结本切环境策略为`inherit=none + shell_environment_policy.set`只显式提供仓库既有固定安全`PATH`。Codex主进程继续通过私有执行环境获得订阅认证，但Agent工具子进程默认不得继承任何宿主变量；canonical `CODEX_HOME`排除和默认秘密名排除继续作为纵深防御。相比逐项黑名单，该方案的安全边界更易解释，新增宿主变量不会自动穿透到工具环境。
+- `official_contract`：官方当前配置参考确认`inherit`接受`all | core | none`并控制子进程基线继承；`set`是在排除后显式注入固定键值。本步只依赖这两个公开字段，不读取用户配置或认证内容。
+- `confirmed_public_seam`：继续只通过`CodexCliAgentExecutor.run(AgentExecutionRequest)`及注入Transport观察完整启动argv；不测试内部私有函数，不新增配置对象或第二进程Owner。
+- `expected_red`：新增公共行为测试要求argv包含`inherit=none`和唯一固定`PATH` set，拒绝`inherit=core`，并证明set中没有`HOME`或`CODEX_HOME`。当前实现仍为`inherit=core`且没有set，因此应只因合同差异失败。
+- `scope / non_goals`：只修改固定Codex CLI安全前缀及其外部Transport测试期望；不运行真实Agent/模型/网络，不读取或输出任何环境值，不改认证桥、Prompt、Mailbox、Snapshot或SQLite，不stage/commit/push/tag/deploy。
+- `verification`：预期红后做最小常量修改；运行新测试、Codex定向回归、全仓非expected-red回归、py_compile、diff-check，并用相同内置CLI的`exec --help`做严格配置解析。help不启动Agent或消耗订阅。
+- `stop_conditions`：当前CLI不能严格解析`inherit=none`或PATH set；需要显式传入HOME/CODEX_HOME才能解析；其他Profile行为变化；回归出现无法直接解释失败；或任意输出包含宿主环境值。
+- `result / effect`：`PENDING STRUCTURAL RED→GREEN / REAL TOOL ENVIRONMENT UNVERIFIED`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / protected changes preserved`
+- `next_action`：新增默认拒绝工具环境的公共Executor行为测试并确认红色差异。
+
+### TRACE-20260831-262
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-262 / PRODUCT-01B-CODEX-DEFAULT-DENY-TOOL-ENV / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / default-deny tool environment offline candidate / TRACE-261 + Plan30 PRODUCT-01B`
+- `tdd_red_green`：既有公共`CodexCliAgentExecutor.run` seam的Transport观察测试先要求`inherit=none`并因实际argv仍为`inherit=core`而失败；最小实现把继承改为none并只增加一个固定PATH set，测试随即转绿。测试同时拒绝旧core、HOME/CODEX_HOME set和legacy exclude，保留canonical CODEX_HOME filter。该红色结果是预期合同差异，未调用diagnosing-bugs。
+- `implementation / rationale`：Codex主进程的私有HOME/TMPDIR与宿主CODEX_HOME认证桥完全不变；只有模型工具子进程改为默认不继承宿主环境，再显式获得`/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`。与继续增加黑名单相比，新出现的宿主变量不会自动穿透；canonical filter和默认秘密名排除仍作纵深防御。
+- `official_and_local_probe`：官方当前配置参考确认`inherit=none`属于公开取值，`set`用于显式注入键值。内置Codex以完整严格参数运行`exec --ignore-user-config --help`退出0，证明当前版本能解析候选；只出现既有受限环境PATH alias warning。命令未启动Agent、未登录探测、未访问网络或消费订阅。
+- `commands / result`：新行为测试RED后GREEN；Codex Executor+smoke+Approval+Supervisor定向`58/58 PASS`；全仓排除expected-red后`618/618 PASS (9 skipped)`；py_compile、`git diff --check`及最终配置检索均PASS。
+- `safe_acceptance_gate`：离线argv、Fake、help或CLI退出0都不能关闭安全项。下一次真实read-only smoke必须由Runtime从工具事件直接观察唯一`codex_home_present=false`；模型短答必须一致；Sandbox/read-only、Workspace未修改、一次Invocation无重试、公开报告无变量值/认证/工具原文/reasoning/stderr、缺失或冲突观察fail-closed也必须同时成立。
+- `real_execution`：真实Codex Agent调用`0`、resume`0`、Provider/网络调用`0`；没有读取或输出环境值、认证文件、用户身份或私有推理。
+- `artifacts / evidence`：`local_execution=f454015fa531f80baa8c453cb288b0640dbbbdb9232b4c0a641b1b3083c5c04d; executor_tests=a2afc0a1e1adfa1e5c09cb8c409b0c4a2f50ba851d208c4b7de0617904b2ae41; Plan30=ae68d2f99b0bf3b7a47761fbfb7d08e01c7bb2d5f36d9045d534128e6f4dcf7e; HANDOFF=712a932d791c8b3bd98f4f70093d01cf194c484e8a1afc984db146ac5fcf77bf; decision_record=7a87734fc8d001469e5956827a315510b4014d5d67fb435429a8e68b8ccbd365; pre-ACTUAL_STEP=2a30dcb81da5c9d9298474624d18b9d65ae422f71a0f38c7addbac75e78c7028`。
+- `limitations`：候选尚未观察真实Agent工具环境，不能宣称CODEX_HOME已隐藏或PRODUCT-01B安全验收通过；PATH是否足以支持后续具体Agent任务也需在各工具需求出现时以最小allowlist扩展，不预先加入HOME、语言运行时环境或Provider Key。
+- `result / effect`：`DEFAULT-DENY TOOL ENV CANDIDATE PASS OFFLINE / REAL SAFETY ACCEPTANCE PENDING`
+- `review`：`self-review PASS for minimal fixed-argv change and fail-closed acceptance boundary; independent PRODUCT-01B review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / protected user changes preserved / no commit, push, tag or deploy`
+- `next_action`：等待用户单独授权一次新的真实read-only smoke；成功后才关闭环境隔离安全缺口，失败则不重试并按Runtime观察继续定位。
+
+### TRACE-20260831-263
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-263 / PRODUCT-01B-CODEX-DEFAULT-DENY-REAL-RETEST / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-authorized exactly one default-deny real read-only smoke / TRACE-262 + Plan30 PRODUCT-01B`
+- `authorization`：用户在获知“下一步是在单独授权后进行一次新的真实read-only smoke”后明确回复“下一步”。本授权只覆盖一个全新Codex订阅Invocation；不覆盖resume、retry、第二Agent、workspace-write或失败后的追加调用。
+- `candidate_under_test`：Codex主进程认证桥不变；Agent工具环境为`inherit=none`，只显式set固定安全PATH，并保留默认秘密名排除及canonical CODEX_HOME filter。Runtime只解析固定布尔哨兵，原始工具输出不进入公开结果。
+- `acceptance`：必须同时满足`execution_completed/session_observed/read_only_sandbox/shell_tool_observed/turn_completed/agent_reported_workspace_unchanged/runtime_observation_observed/codex_home_hidden_from_agent_tools/model_matches_runtime_observation=true`。Runtime观察必须唯一且为`codex_home_present=false`；缺失、冲突或模型不一致均失败。
+- `privacy_and_process`：公开报告不得包含环境值、认证路径/文件、用户身份、命令原文、工具原始输出、完整stderr或私有推理。执行后无论PASS/FAIL都停止，不自动重试或改配置。
+- `evidence_before_call`：默认拒绝公共行为已RED→GREEN；内置CLI严格配置help解析通过；定向58/58、全仓618/618（9 skip）、编译和diff-check通过。该离线证据不预判真实结果。
+- `result / effect`：`PENDING EXACTLY ONE REAL INVOCATION`
+- `review`：`PENDING truthful Runtime-owned classification`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched`
+- `next_action`：执行一次`python3 demo/codex_cli_smoke.py --trusted-real-cli`并保存脱敏结果。
+
+### TRACE-20260831-264
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-264 / PRODUCT-01B-CODEX-DEFAULT-DENY-REAL-RETEST / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / exactly one default-deny real read-only smoke / TRACE-263 + Plan30 PRODUCT-01B`
+- `real_command / call_count`：`python3 demo/codex_cli_smoke.py --trusted-real-cli`；新Codex Agent Invocation恰好`1`，无resume、retry、第二Agent或第二次调用。
+- `runtime_owned_security_result`：Runtime从shell工具事件直接解析到唯一`codex_home_present=false`；`runtime_observation_observed=true`、`codex_home_hidden_from_agent_tools=true`、`model_matches_runtime_observation=true`。模型最终固定短答也为`env_codex_home_present=false / workspace_modified=false`，但只作为交叉检查，不是验收真相。
+- `mechanical_and_permission_result`：`execution_completed/session_observed/read_only_sandbox/shell_tool_observed/turn_completed/agent_reported_workspace_unchanged=true`；公开事件依次包含Session、turn开始、tool完成、Agent消息和turn完成。报告`status=passed`，进程退出0。
+- `privacy_result`：公开报告没有环境变量值、认证路径/文件、用户身份、命令原文、工具原始输出、完整stderr或私有推理。没有修改Workspace或用户配置。
+- `usage / latency`：`duration_ms=17912; input_tokens=30671; cached_input_tokens=26112; output_tokens=153; reasoning_output_tokens=32`。
+- `diagnosis_conclusion`：前两次真实失败与本次唯一策略差分共同支持：`inherit=core + filter`未能隔离当前认证桥，而`inherit=none + 固定PATH`在真实工具进程中实现了预期隔离。由于Runtime观察与模型陈述一致，本次没有H4模型误判证据；不需要重试。
+- `scope_of_claim`：关闭“Codex主进程CODEX_HOME认证桥泄漏到Agent工具环境”这一已复现安全缺口。不得扩大为所有环境变量、workspace-write、网络、全部CLI错误语义、PRODUCT-01B整体或生产安全认证已经完成。
+- `artifacts / evidence`：`Plan30=06fc3bd26ac8f523b0652f4d1412614c1727e636eae8bdc68abc376549135203; HANDOFF=a2e906af1b6edfaf762e78d33bb56dfc58604692315198bc0b7537524237b190; decision_record=da48df6a22f3123a64cefe728e57c3290a6312417afe5100bfe4b247947ca4ec; pre-ACTUAL_STEP=2acd9021897a6aa5ec87c8379d1e4166f8d13d3067daec6cbf75cde1d5655dea`。
+- `result / effect`：`DEFAULT-DENY REAL SAFETY SMOKE PASS / SPECIFIC TOOL-ENV LEAK CLOSED`
+- `review`：`Runtime-owned acceptance PASS for this bounded safety gate; PRODUCT-01B independent final review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / no commit, push, tag or deploy`
+- `next_action`：回到已冻结的协议无状态原则；按TDD给AgentExecutionRequest增加最小Task/Snapshot/Permission/Artifact引用信封，并在CLI启动前验证引用组合，先用Fake完成，不自动真实调用。
+
+### TRACE-20260831-265
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-265 / PRODUCT-NO-AUTONOMOUS-EVOLUTION-GATE / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / user-frozen no-self-evolution product boundary / Plan30 + historical Plan26 Harness Evolution`
+- `user_decision`：产品不得自进化。任何涉及Agent Prompt、Role/Profile、模型选择、工具/权限、协作/终止策略、Skill、Runtime路由/验收规则或系统自身代码的演进，只能先形成可审阅提案；每一次必须由用户查看精确内容并单独明确批准后才能应用。不得使用一次长期授权、Agent投票、Evaluator高分或历史KEEP代替用户批准。
+- `current_fact`：仓库检索未发现自动Evolver、自动改Prompt/Role/Skill/策略或自动采纳经验的产品代码。Plan26/HANDOFF中的Harness Evolution是人工评测驱动开发协议，文本已明确“不等于允许Agent自主修改生产”；当前也记录“尚无自动Evolver”。
+- `identified_gap`：现有Codex权限只有read-only/workspace-write等执行边界，一次性Composition批准是进程启动授权，不是用户对系统自身精确ChangeSet的产品级批准。若未来让Developer对本仓库workspace-write，单凭现有边界不能证明每项自修改都经过用户检阅。
+- `documentation_change`：本步只冻结产品原则、受保护演进面、逐次批准和批准失效语义；不新增Evolver、不运行Agent/模型/网络、不修改执行权限代码。后续在启用面向产品的workspace-write前，以TDD实现`PROPOSED → USER_APPROVED → APPLIED`门禁并绑定不可变change digest；内容变化必须重新批准。
+- `result / effect`：`PENDING DOCUMENTED HARD GATE / NO EVOLUTION FEATURE AUTHORIZED`
+- `review`：`PENDING consistency check`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched`
+- `next_action`：更新Plan30、HANDOFF与主产品决策记录，明确当前无自进化及现有workspace-write尚缺产品级逐次批准门。
+
+### TRACE-20260831-266
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-266 / PRODUCT-NO-AUTONOMOUS-EVOLUTION-GATE / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / documented no-self-evolution hard boundary / TRACE-265 + Plan30 + DEC-012`
+- `fact_check`：代码与计划检索确认当前没有自动Evolver、自动改Prompt/Role/Profile/Skill/模型或工具策略、自动采纳评测结论的产品实现。历史Harness Evolution是人工评测驱动开发协议；Plan26原文已经明确它不等于允许Agent自主修改生产，HANDOFF也记录尚无自动Evolver。
+- `frozen_contract`：产品永久禁止自主进化。Agent只能创建含精确diff/config、风险、证据和不可变change digest的`ChangeProposal`，状态停在`PROPOSED / PENDING_USER_REVIEW`。每个精确digest必须由用户逐次检阅并明确批准后才能一次性应用；内容、范围、权限、依赖或digest变化立即使批准失效。Agent/Reviewer/Voting/Validator/评分/KEEP/长期授权均不能替代用户批准。
+- `protected_surfaces`：至少覆盖Prompt、Role/Profile、模型策略、工具/权限、通信/路由/终止/预算、Skill、Context/Memory、Validator/Acceptance及系统自身代码。
+- `enforcement_gap`：现有workspace-write与Composition一次性批准不是产品级精确ChangeSet用户批准。由于当前没有自主演进路径，今天不存在自动应用行为；但在启用Developer修改本项目自身或治理面前，必须TDD实现`PROPOSED → USER_APPROVED → APPLIED`、digest绑定、变更后重新批准和无批准fail-closed。此前只能保存只读Proposal Artifact。
+- `commands / result`：相关代码/计划检索完成；Plan30、HANDOFF和DEC-012一致性检索PASS；`git diff --check=PASS`。本步只改文档，无生产行为变化，因此未运行代码测试。
+- `external_effects`：真实Agent/模型/网络调用0；没有修改执行权限、用户配置、Git staging、commit、push、tag或deploy。
+- `artifacts / evidence`：`Plan30=a82659aa9a51aada372b708e0d9ab43e0937152da7f6a80c1221fab70336dc0e; HANDOFF=cf29c5ac6af9858961edb9f0c6e062f95b4613f83f8d118a492665e551f8abca; decision_record=42b69b53cba3d227b21a3fabae0cc185ef070ec83a78be2ced21a7b199a5acfa; pre-ACTUAL_STEP=3126599ece959d4c49a58c3f6c864889a0d6435b3165e9510e340e2e72f00715`。
+- `result / effect`：`NO AUTONOMOUS EVOLUTION PRESENT / USER-BY-USER APPROVAL CONTRACT FROZEN / ENFORCEMENT GATE PENDING BEFORE SELF-WRITE`
+- `review`：`documentation consistency PASS; production-code review N/A`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched`
+- `next_action`：继续只读Fake的显式状态引用信封；在任何面向产品的系统自身/治理面workspace-write之前，先实现并让用户验收精确ChangeSet逐次批准门。
+
+### TRACE-20260831-267
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-267 / PRODUCT-01C-EXPLICIT-AGENT-STATE-ENVELOPE / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / read-only Fake AgentExecutor state-envelope vertical slice / Plan30 PRODUCT-01C + DEC-011 + DEC-012`
+- `confirmed_public_seam`：调用方通过`AgentExecutionRuntime.run(AgentExecutionRequest) → AgentExecutionResult`；底层`AgentExecutor`是成熟CLI/Backend边界，测试只在这里使用记录型Fake。Runtime权威状态使用不可变、只读的固定Authority，不查询私有函数、SQLite或Transport。
+- `contract`：`AgentExecutionRequest`必须携带`AgentExecutionStateEnvelope`。信封包含单一Scope内的typed Task ref、带content hash的Task Snapshot ref、带content hash的Permission Snapshot ref、零到多个带content hash的Artifact refs，以及本次声明的read-only/workspace-write权限。Runtime按Invocation ID读取权威信封，先验证请求权限与信封一致，再要求整个信封精确相等；不存在或任一引用/version/hash/权限/Artifact顺序变化均在Backend调用前typed fail-closed。
+- `tdd_slices`：第一条tracer证明合法显式信封只调用Fake Executor一次并原样返回结果；最小实现只打通公共Runtime wrapper。第二条tracer随后用错误Permission Snapshot证明旧pass-through会错误调用Backend，再增加精确权威比较并要求Fake零调用。每条独立RED→GREEN，不预建后续测试。
+- `scope / non_goals`：只实现内存Authority与调用前合同，不新增SQLite迁移、不恢复真实CLI Session、不实现分布式状态服务、不运行真实Agent/模型/网络、不修改workspace-write或自进化批准策略。该切片本身只使用Fake且不写任何工作区业务文件。
+- `stop_conditions`：需要把Prompt/Artifact正文复制进信封；允许调用方缺省状态或Backend被不一致状态调用；用Session ID作为状态真相；现有Codex smoke/Executor回归无法机械迁移；或出现无法直接解释失败。
+- `result / effect`：`PENDING TWO TDD TRACERS / REAL CALLS FORBIDDEN`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / no evolution changes authorized`
+- `next_action`：新增合法信封公共行为红测，预期因状态信封/Runtime接口不存在而失败。
+
+### TRACE-20260831-268
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-268 / PRODUCT-01C-EXPLICIT-AGENT-STATE-ENVELOPE / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / two read-only Fake state-envelope TDD tracers / TRACE-267 + Plan30 PRODUCT-01C`
+- `slice_1_red_green`：新增公共行为测试先因`AgentExecutionRuntime`、`AgentExecutionStateEnvelope`与Authority不存在而ImportError红。最小实现增加显式信封结构、只读Frozen Authority和Runtime wrapper；Runtime先按Invocation查找权威状态，合法请求再原样调用Fake Executor一次，测试转绿。该阶段没有预先实现不一致比较。
+- `slice_2_red_green`：第二条测试把请求的Permission Snapshot ref/version/hash替换为未授权值；旧pass-through未抛错并错误调用Fake，形成独立红色证据。最小实现要求`request.permission == state_envelope.permission`且请求信封与权威信封精确相等，否则抛`AgentExecutionStateRejected(code=state_mismatch)`；修复后Fake调用数为零。不存在的Invocation返回`state_not_found`。
+- `contract`：信封强制包含同Scope typed `core:task` ref、带SHA-256 content hash的`core:task_snapshot`和`core:permission_snapshot` refs、零或多个带hash的`core:artifact` refs及声明权限；Artifact ref不能重复。精确dataclass相等使Task/ref version/content hash/Permission/Artifact顺序任一变化都无法复用权威授权。Session ID没有进入信封，也不作为业务真相。
+- `compatibility`：既有Codex Executor测试和脱敏smoke请求已机械补齐固定显式状态信封；当前诊断smoke仍可直接测Backend，但产品调用路径应经过AgentExecutionRuntime Authority门。没有修改Transport、Sandbox、认证桥、Message/Mailbox或SQLite。
+- `commands / result`：两条tracer各自RED→GREEN；新Runtime+Codex+Smoke+Approval+Supervisor定向`60/60 PASS`；全仓排除expected-red后`620/620 PASS (9 skipped)`；py_compile、`git diff --check`和debug marker检查均PASS。
+- `external_effects`：真实Agent/模型/网络调用0；没有运行CLI、写业务Workspace、应用自进化提案、修改用户配置、stage/commit/push/tag/deploy。
+- `artifacts / evidence`：`agent_executor=cf96f03fc6b076b5d55aec5b4fdbb8984d725134ae071c8bc2df1cbab50c6569; state_tests=3f8f6957d16580b651897f84cbd599418d17ea5c50e80814364fc2b38f851406; codex_tests=97bb8f3c496ce807a9e6fc2eca9180f55c5f6ed2921df4261e3610bce42357a5; smoke=027d1399034d175a7d5c94855a4b0aace8a911613c790a0c7e5e9385a5f2aee1; Plan30=b5bba9f88a60d09e97b3693c808ca8a8dbb6ed04e91e235023b5baec4162a86b; HANDOFF=d94e312d47216415d296b2c531a22526727ef8a082c633dab37e578a14f81cf4; decision_record=ced9567b57e5496fd7e4728038454b4f40799afd68748598d996d32f025c5ec2; pre-ACTUAL_STEP=615bfd942b37963daee7932c47021a32655527025976ae1268b0ca0960d111e0`。
+- `limitations`：Authority当前是进程内冻结映射，不是SQLite持久真相；本切未证明跨进程重放、相同Snapshot确定重建、Session丢失后的Context恢复或迟到授权撤销。直接构造CodexCliAgentExecutor仍是诊断Backend seam，产品Composition必须只暴露Runtime wrapper。
+- `result / effect`：`EXPLICIT STATE ENVELOPE PASS OFFLINE / MISMATCH FAILS BEFORE BACKEND / PERSISTED REPLAY PENDING`
+- `review`：`self-review PASS for public seam, bounded exact comparison and no speculative persistence; PRODUCT-01C final independent review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / protected user changes preserved`
+- `next_action`：下一切片把Authority接到Runtime持久状态；先用Fake证明同一Snapshot可确定重放、错误Task/Snapshot/Permission/Artifact组合在Backend前拒绝，再处理Session丢失的Context重建。不自动真实调用或应用系统演进。
+
+### TRACE-20260831-269
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-269 / PRODUCT-01C-EXPLICIT-AGENT-STATE-ENVELOPE / CORRECTION / 2026-08-31 / 2026-08-31`
+- `supersedes_entry_id`：`TRACE-20260831-268 artifacts / evidence 中的HANDOFF hash only`
+- `correction`：TRACE-268记录后只对HANDOFF顶部`target_role`做一致性措辞修正：从“目标转为显式状态信封”更新为“显式状态信封/内存Authority已完成，目标转为持久Authority和重放”。没有修改代码、测试结果、范围、结论或其他证据。
+- `corrected_artifact`：`HANDOFF=2762f1a954433a56ce994dfdb6e1fb807ae47f7040bb4c8a81200d9333be67a8`。
+- `verification`：`git diff --check=PASS`；文档only，因此未重跑代码测试。
+- `result / effect`：`TRACE-268 RESULT UNCHANGED / HANDOFF HASH CORRECTED`
+
+### TRACE-20260831-270
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-270 / PRODUCT-01C-PERSISTED-AGENT-STATE-REPLAY / PRE_REGISTER / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / SQLite authoritative state plus completed-result replay with Fake Backend / Plan30 PRODUCT-01C + TRACE-268`
+- `confirmed_public_seam`：继续通过`AgentExecutionRuntime.run(AgentExecutionRequest) → AgentExecutionResult`观察行为；真实临时SQLite只作为Runtime持久边界，测试不直接查表证明业务结果；`AgentExecutor`仍是唯一Fake外部边界。该seam已在Plan30、TRACE-267/268与用户确认的下一步中冻结。`
+- `tdd_slice_1`：先新增“第一次完成后重建Runtime/Store，相同Invocation与显式状态返回已持久结果，Fake Backend总调用仍为1”的公共行为红测；最小实现受管SQLite Authority与不可变Completed Result。`
+- `tdd_slice_2`：第一切转绿后，再独立新增Task/Snapshot/Permission/Artifact任一错误时跨进程仍在Backend前fail-closed的红测，不预写第二切实现。`
+- `scope / non_goals`：本批不改`session_id`命名、不实现`backend_session_id`绑定、不做Session丢失Context重建、不运行真实CLI/模型/网络，不扩大至通用工作流重构或自进化。`
+- `stop_conditions`：需要将Prompt或Artifact正文存入Authority；重放仍调用Backend；结果能被覆盖；状态不匹配后Backend被调用；SQLite迁移/并发出现无法直接解释失败；或现有Runtime schema完整性退化。`
+- `result / effect`：`PENDING VERTICAL TDD RED→GREEN / REAL CALLS FORBIDDEN`
+- `review`：`TDD pending; expected RED does not invoke diagnosing-bugs`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / protected user changes preserved`
+- `next_action`：写第一条跨Runtime重建的SQLite重放红测，只运行该测捕获预期失败。
+
+### TRACE-20260831-271
+
+- `entry_id / step_id / entry_type / recorded_at / occurred_at`：`TRACE-20260831-271 / PRODUCT-01C-PERSISTED-AGENT-STATE-REPLAY / ACTUAL+CHECKPOINT / 2026-08-31 / 2026-08-31`
+- `principal / slice / plan_ref`：`/root / SQLite authoritative state plus completed-result replay with Fake Backend / TRACE-270 + Plan30 PRODUCT-01C`
+- `slice_1_red_green`：公共行为测试先尝试导入尚不存在的`SQLiteAgentExecutionStateStore`，以ImportError红且Backend零调用。最小实现增加Runtime SQLite v7、不可变权威状态/完成结果表、Store与Runtime Replay seam后转绿；第一次Fake完成后重建Database/Store/Runtime，第二次相同Invocation返回相同结果，Fake总调用数恰好1。`
+- `persisted_contract`：`runtime_agent_execution_states`以Invocation ID唯一绑定canonical显式状态信封；`runtime_agent_execution_results`以同一Invocation和state digest持久结果。两表都带canonical JSON digest、append-only update/delete/replace trigger与受管UoW写边界；SQLite integrity检查新增外键和解码/digest校验。Runtime只在权威信封精确匹配后查找重放结果。`
+- `mismatch_regression`：Task ref、Task Snapshot ref/hash、Permission Snapshot ref/hash和Artifact ref/hash四类变化在SQLite重启后全部返回`state_mismatch`，Fake Backend总调用为0。该能力由TRACE-268的精确信封比较已实现，本次只是新持久Authority上的回归，因此首次即绿；没有伪造第二个RED或调用diagnosing-bugs。`
+- `schema_regression`：首轮Runtime SQLite定向测试出现5个断言失败和3个升级fixture错误，均精确对应旧current-version=6和降级fixture未移除v7表；更新发布schema期望、ledger、降级fixture和v4数据升级路径后63/63通过。这些是可直接解释的迁移合同差异，未使用diagnosing-bugs。`
+- `commands / result`：新持久重放纵切与Runtime SQLite/Outbox/Agent/RoleAssignment定向`63/63 PASS`；全仓按既有协议排除必须独立解释器运行的`test_local_trusted_execution_behavior_expected_red.py`后`630/630 PASS (9 skipped)`；`PYTHONPYCACHEPREFIX=/private/tmp/multiagent-pycache python3 -m py_compile ...=PASS`；`git diff --check=PASS`。首次py_compile因默认用户Cache目录不在工作区沙箱可写范围而PermissionError，将bytecode cache重定向允许的临时目录后通过，不是代码失败。`
+- `external_effects`：真实Codex CLI/Agent/模型/网络调用0；没有resume、API Key读取、用户配置修改、业务Workspace写入、自进化应用、Git stage/commit/push/tag/deploy。`
+- `limitations`：当前只证明已持久完成结果的确定重放；Backend已完成但结果入库前崩溃的窗口仍未有claim/fencing闭环，不宣称exactly-once。还没有`backend_id + backend_session_id`绑定、字段重命名、Session丢失Context重建或真实resume。`
+- `artifacts / evidence`：`agent_executor=dcf0c69299b160b30fc71ce5ab843ff3b077cae599a810d3beba090ec2c95cf9; execution_store=68a5b9261113c53a8eb53334ef17b37af4a6ec0ef9b2547bc65b05d7c3180f00; runtime_sqlite=e3619a8108fd51c1e94930be4be393c5a0b751d22454fb37cc3283861387e2dc; persistence_exports=79f22c2cc55e898ae2b19aecf92cddb7904e5ebae366077264f31eb18b6a20ee; state_tests=8218dd987410217e24428461c074dd8fe0cf48ae29461d09cd4d3891459bf271; sqlite_tests=95adb99bc272b63eb98791f7737b2989c5201d4a8d4bcc04a90cd9538cc1933c; Plan30=e725e340715f20e65f26e6c8e700ff35543b49035497033efc5204c78af2006d; HANDOFF=1d661f5e74882bedb33be454c8a609e02d14ca34162ca1951b79b9ae5f9db7ed; decision_record=3e7f8b6a688be4067edb09845e9f9b60208550aa905cf72cd0cdd199bbfad23c; pre-ACTUAL_STEP=6256d8e40b6ec2ff7702ba21e02ba97bac27744c47c09c0a8d0d2d2f86819f4d`。`
+- `result / effect`：`PERSISTED AUTHORITY + COMPLETED REPLAY PASS OFFLINE / SESSION RECOVERY PENDING`
+- `review`：`self-review PASS for frozen public seam, append-only persistence and truthful crash-window limitation; PRODUCT-01C final independent code-review not yet due`
+- `git_checkpoint`：`WORKTREE_ONLY / HEAD=8975ba5 / staging untouched / protected user changes preserved`
+- `next_action`：下一纵切按Plan30实现`backend_id=codex_cli + backend_session_id`私有持久绑定；先用Fake证明首次捕获、同Agent/Thread/Backend resume和错误绑定零CLI调用，再处理Session丢失时的Context重建。不自动运行真实CLI。

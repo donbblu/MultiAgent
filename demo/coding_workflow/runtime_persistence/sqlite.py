@@ -13,12 +13,14 @@ from typing import Callable, Iterable, Mapping
 
 
 RUNTIME_DB_COMPONENT = "runtime_kernel"
-RUNTIME_DB_SCHEMA_VERSION = 5
+RUNTIME_DB_SCHEMA_VERSION = 7
 _MIGRATION_V1_NAME = "runtime_kernel_base_v1"
 _MIGRATION_V2_NAME = "runtime_thread_event_v2"
 _MIGRATION_V3_NAME = "runtime_event_outbox_v3"
 _MIGRATION_V4_NAME = "runtime_agent_store_v4"
 _MIGRATION_V5_NAME = "runtime_agent_mailbox_v5"
+_MIGRATION_V6_NAME = "runtime_role_assignment_v6"
+_MIGRATION_V7_NAME = "runtime_agent_execution_state_v7"
 _OUTBOX_DESTINATION = "core:runtime_events"
 _SQLITE_SIGNED_INT64_MAX = (1 << 63) - 1
 
@@ -252,6 +254,9 @@ _MANAGED_DATA_TABLES = frozenset(
         "runtime_agent_private_state",
         "runtime_agent_mailbox_cursors",
         "runtime_agent_messages",
+        "runtime_role_assignments",
+        "runtime_agent_execution_states",
+        "runtime_agent_execution_results",
     }
 )
 
@@ -697,6 +702,156 @@ _MIGRATION_V5_CHECKSUM = sha256(
     ("\n".join(_MIGRATION_V5_DDL) + "\n" + _MIGRATION_V5_NAME).encode("utf-8")
 ).hexdigest()
 
+_MIGRATION_V6_DDL = (
+    """CREATE TABLE runtime_role_assignments (
+        assignment_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        work_type TEXT NOT NULL
+            CHECK (work_type IN ('core:invocation', 'core:task', 'core:turn')),
+        work_id TEXT NOT NULL,
+        role_id TEXT NOT NULL,
+        generation INTEGER NOT NULL
+            CHECK (typeof(generation) = 'integer' AND generation >= 1),
+        decision TEXT NOT NULL
+            CHECK (decision IN ('assigned', 'waiting', 'needs_input')),
+        selected_agent_instance_id TEXT,
+        selected_agent_session_id TEXT,
+        selected_profile_id TEXT,
+        supersedes_assignment_id TEXT,
+        created_at TEXT NOT NULL,
+        assignment_json TEXT NOT NULL CHECK (json_valid(assignment_json)),
+        assignment_digest TEXT NOT NULL CHECK (length(assignment_digest) = 64),
+        UNIQUE (
+            scope_id, thread_id, work_type, work_id, role_id, generation
+        ),
+        CHECK (
+            (
+                decision = 'assigned'
+                AND selected_agent_instance_id IS NOT NULL
+                AND selected_agent_session_id IS NOT NULL
+                AND selected_profile_id IS NOT NULL
+            ) OR (
+                decision IN ('waiting', 'needs_input')
+                AND selected_agent_instance_id IS NULL
+                AND selected_agent_session_id IS NULL
+                AND selected_profile_id IS NULL
+            )
+        ),
+        CHECK (
+            (generation = 1 AND supersedes_assignment_id IS NULL)
+            OR (generation > 1 AND supersedes_assignment_id IS NOT NULL)
+        ),
+        FOREIGN KEY (scope_id, thread_id)
+            REFERENCES runtime_threads(scope_id, thread_id)
+            ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (
+            scope_id, thread_id, selected_agent_instance_id,
+            selected_agent_session_id
+        ) REFERENCES runtime_agent_sessions(
+            scope_id, thread_id, agent_instance_id, agent_session_id
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (supersedes_assignment_id)
+            REFERENCES runtime_role_assignments(assignment_id)
+            ON UPDATE RESTRICT ON DELETE RESTRICT
+    )""",
+    """CREATE INDEX runtime_role_assignments_thread_idx
+        ON runtime_role_assignments(
+            scope_id, thread_id, created_at, assignment_id
+        )""",
+    """CREATE TRIGGER runtime_role_assignments_deny_update
+        BEFORE UPDATE ON runtime_role_assignments
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_role_assignments is append-only');
+        END""",
+    """CREATE TRIGGER runtime_role_assignments_deny_delete
+        BEFORE DELETE ON runtime_role_assignments
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_role_assignments is append-only');
+        END""",
+    """CREATE TRIGGER runtime_role_assignments_deny_replace
+        BEFORE INSERT ON runtime_role_assignments
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_role_assignments
+            WHERE assignment_id = NEW.assignment_id
+               OR (
+                    scope_id = NEW.scope_id
+                    AND thread_id = NEW.thread_id
+                    AND work_type = NEW.work_type
+                    AND work_id = NEW.work_id
+                    AND role_id = NEW.role_id
+                    AND generation = NEW.generation
+               )
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_role_assignments append collision');
+        END""",
+)
+_MIGRATION_V6_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V6_DDL) + "\n" + _MIGRATION_V6_NAME).encode("utf-8")
+).hexdigest()
+
+_MIGRATION_V7_DDL = (
+    """CREATE TABLE runtime_agent_execution_states (
+        invocation_id TEXT PRIMARY KEY,
+        scope_id TEXT NOT NULL,
+        state_json TEXT NOT NULL CHECK (json_valid(state_json)),
+        state_digest TEXT NOT NULL CHECK (length(state_digest) = 64),
+        UNIQUE (invocation_id, state_digest)
+    ) WITHOUT ROWID""",
+    """CREATE TABLE runtime_agent_execution_results (
+        invocation_id TEXT PRIMARY KEY,
+        state_digest TEXT NOT NULL CHECK (length(state_digest) = 64),
+        result_json TEXT NOT NULL CHECK (json_valid(result_json)),
+        result_digest TEXT NOT NULL CHECK (length(result_digest) = 64),
+        FOREIGN KEY (invocation_id, state_digest)
+            REFERENCES runtime_agent_execution_states(
+                invocation_id, state_digest
+            ) ON UPDATE RESTRICT ON DELETE RESTRICT
+    ) WITHOUT ROWID""",
+    """CREATE TRIGGER runtime_agent_execution_states_deny_update
+        BEFORE UPDATE ON runtime_agent_execution_states
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_states is append-only');
+        END""",
+    """CREATE TRIGGER runtime_agent_execution_states_deny_delete
+        BEFORE DELETE ON runtime_agent_execution_states
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_states is append-only');
+        END""",
+    """CREATE TRIGGER runtime_agent_execution_states_deny_replace
+        BEFORE INSERT ON runtime_agent_execution_states
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_agent_execution_states
+            WHERE invocation_id = NEW.invocation_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_states append collision');
+        END""",
+    """CREATE TRIGGER runtime_agent_execution_results_deny_update
+        BEFORE UPDATE ON runtime_agent_execution_results
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_results is append-only');
+        END""",
+    """CREATE TRIGGER runtime_agent_execution_results_deny_delete
+        BEFORE DELETE ON runtime_agent_execution_results
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_results is append-only');
+        END""",
+    """CREATE TRIGGER runtime_agent_execution_results_deny_replace
+        BEFORE INSERT ON runtime_agent_execution_results
+        WHEN EXISTS (
+            SELECT 1 FROM runtime_agent_execution_results
+            WHERE invocation_id = NEW.invocation_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'runtime_agent_execution_results append collision');
+        END""",
+)
+_MIGRATION_V7_CHECKSUM = sha256(
+    ("\n".join(_MIGRATION_V7_DDL) + "\n" + _MIGRATION_V7_NAME).encode("utf-8")
+).hexdigest()
+
 
 @dataclass(frozen=True)
 class _RuntimeMigration:
@@ -712,6 +867,8 @@ _MIGRATIONS = (
     _RuntimeMigration(3, _MIGRATION_V3_NAME, _MIGRATION_V3_DDL, _MIGRATION_V3_CHECKSUM),
     _RuntimeMigration(4, _MIGRATION_V4_NAME, _MIGRATION_V4_DDL, _MIGRATION_V4_CHECKSUM),
     _RuntimeMigration(5, _MIGRATION_V5_NAME, _MIGRATION_V5_DDL, _MIGRATION_V5_CHECKSUM),
+    _RuntimeMigration(6, _MIGRATION_V6_NAME, _MIGRATION_V6_DDL, _MIGRATION_V6_CHECKSUM),
+    _RuntimeMigration(7, _MIGRATION_V7_NAME, _MIGRATION_V7_DDL, _MIGRATION_V7_CHECKSUM),
 )
 
 _REQUIRED_SCHEMA_OBJECTS = {
@@ -753,6 +910,23 @@ _REQUIRED_SCHEMA_OBJECTS = {
         ("table", "runtime_agent_mailbox_cursors", _MIGRATION_V5_DDL[0]),
         ("table", "runtime_agent_messages", _MIGRATION_V5_DDL[1]),
         ("index", "runtime_agent_messages_pending_idx", _MIGRATION_V5_DDL[2]),
+    ),
+    6: (
+        ("table", "runtime_role_assignments", _MIGRATION_V6_DDL[0]),
+        ("index", "runtime_role_assignments_thread_idx", _MIGRATION_V6_DDL[1]),
+        ("trigger", "runtime_role_assignments_deny_update", _MIGRATION_V6_DDL[2]),
+        ("trigger", "runtime_role_assignments_deny_delete", _MIGRATION_V6_DDL[3]),
+        ("trigger", "runtime_role_assignments_deny_replace", _MIGRATION_V6_DDL[4]),
+    ),
+    7: (
+        ("table", "runtime_agent_execution_states", _MIGRATION_V7_DDL[0]),
+        ("table", "runtime_agent_execution_results", _MIGRATION_V7_DDL[1]),
+        ("trigger", "runtime_agent_execution_states_deny_update", _MIGRATION_V7_DDL[2]),
+        ("trigger", "runtime_agent_execution_states_deny_delete", _MIGRATION_V7_DDL[3]),
+        ("trigger", "runtime_agent_execution_states_deny_replace", _MIGRATION_V7_DDL[4]),
+        ("trigger", "runtime_agent_execution_results_deny_update", _MIGRATION_V7_DDL[5]),
+        ("trigger", "runtime_agent_execution_results_deny_delete", _MIGRATION_V7_DDL[6]),
+        ("trigger", "runtime_agent_execution_results_deny_replace", _MIGRATION_V7_DDL[7]),
     ),
 }
 _MANAGED_SCHEMA_OBJECT_NAMES = frozenset(
@@ -975,6 +1149,18 @@ class SQLiteRuntimeDatabase:
                 connection.execute(
                     "PRAGMA foreign_key_check(runtime_agent_messages)"
                 )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_role_assignments)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_execution_states)"
+                )
+            ) + tuple(
+                connection.execute(
+                    "PRAGMA foreign_key_check(runtime_agent_execution_results)"
+                )
             )
             if foreign_key_rows:
                 raise RuntimeDatabaseIntegrityError(
@@ -983,10 +1169,14 @@ class SQLiteRuntimeDatabase:
             from .state_event import SQLiteThreadEventStore
             from .agent import SQLiteAgentStore
             from .mailbox import SQLiteMailboxStore
+            from .assignment import SQLiteRoleAssignmentStore
+            from .agent_execution import SQLiteAgentExecutionStateStore
 
             SQLiteThreadEventStore(self)._verify_connection(connection)
             SQLiteAgentStore(self)._verify_connection(connection)
             SQLiteMailboxStore(self)._verify_connection(connection)
+            SQLiteRoleAssignmentStore(self)._verify_connection(connection)
+            SQLiteAgentExecutionStateStore(self)._verify_connection(connection)
         finally:
             connection.close()
 

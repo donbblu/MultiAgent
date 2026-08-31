@@ -296,6 +296,25 @@ class LocalExecutionApprover:
             trusted_local=trusted_local,
         ), expected_type=CommandResult)
 
+    def run_codex(self, runner: object, launch: object) -> object:
+        from .agent_executor import (
+            CodexCliLaunch,
+            CodexCliProcessResult,
+            CodexCliProcessRunner,
+        )
+
+        if type(runner) is not CodexCliProcessRunner:
+            raise TypeError("runner is not a registered Codex Runtime entrypoint")
+        if type(launch) is not CodexCliLaunch:
+            raise TypeError("launch is not a registered Codex request")
+        return self._invoke_fixed(
+            lambda trusted_local: runner.run(
+                launch,
+                trusted_local=trusted_local,
+            ),
+            expected_type=CodexCliProcessResult,
+        )
+
     def _invoke_fixed(
         self,
         operation,
